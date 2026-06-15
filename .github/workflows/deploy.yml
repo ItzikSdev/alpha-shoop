@@ -1,0 +1,130 @@
+name: Deploy → GCP Cloud Run
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # allow manual deploys
+
+env:
+  GCP_REGION: us-central1
+  ARTIFACT_REGISTRY: us-central1-docker.pkg.dev
+  IMAGE_API: us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/alpha-shoop/api
+  IMAGE_DOCS: us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/alpha-shoop/docs
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write       # required for Workload Identity Federation
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Authenticate to GCP via Workload Identity ─────────────────────────
+      - name: Auth GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      # ── Fetch secrets from GCP Secret Manager → env ───────────────────────
+      - name: Fetch secrets
+        run: |
+          secrets=(
+            ANTHROPIC_API_KEY
+            LITELLM_MASTER_KEY
+            SHOPIFY_STORE_DOMAIN
+            SHOPIFY_ACCESS_TOKEN
+            CJ_EMAIL
+            CJ_API_KEY
+            POSTGRES_PASSWORD
+          )
+          for s in "${secrets[@]}"; do
+            val=$(gcloud secrets versions access latest \
+              --secret="alpha-shoop-${s}" \
+              --project="${{ vars.GCP_PROJECT_ID }}" 2>/dev/null || echo "")
+            echo "${s}=${val}" >> $GITHUB_ENV
+          done
+
+      # ── Build & push Docker images ────────────────────────────────────────
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }} --quiet
+
+      - name: Build & push API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: prod
+          push: true
+          tags: |
+            ${{ env.IMAGE_API }}:${{ github.sha }}
+            ${{ env.IMAGE_API }}:latest
+          cache-from: type=registry,ref=${{ env.IMAGE_API }}:latest
+          cache-to: type=inline
+
+      - name: Build & push Docs
+        uses: docker/build-push-action@v5
+        with:
+          context: ./docs-app
+          push: true
+          tags: |
+            ${{ env.IMAGE_DOCS }}:${{ github.sha }}
+            ${{ env.IMAGE_DOCS }}:latest
+          cache-from: type=registry,ref=${{ env.IMAGE_DOCS }}:latest
+          cache-to: type=inline
+
+      # ── Deploy API to Cloud Run ───────────────────────────────────────────
+      - name: Deploy API
+        run: |
+          gcloud run deploy alpha-shoop-api \
+            --image "${{ env.IMAGE_API }}:${{ github.sha }}" \
+            --region "${{ env.GCP_REGION }}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --min-instances 1 \
+            --max-instances 10 \
+            --memory 1Gi \
+            --cpu 1 \
+            --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }}" \
+            --set-env-vars "REDIS_URL=${{ secrets.REDIS_URL }}" \
+            --set-env-vars "LITELLM_PROXY_URL=${{ secrets.LITELLM_PROXY_URL }}" \
+            --set-env-vars "LITELLM_MASTER_KEY=${{ env.LITELLM_MASTER_KEY }}" \
+            --set-env-vars "ANTHROPIC_API_KEY=${{ env.ANTHROPIC_API_KEY }}" \
+            --set-env-vars "SHOPIFY_STORE_DOMAIN=${{ env.SHOPIFY_STORE_DOMAIN }}" \
+            --set-env-vars "SHOPIFY_ACCESS_TOKEN=${{ env.SHOPIFY_ACCESS_TOKEN }}" \
+            --set-env-vars "CJ_EMAIL=${{ env.CJ_EMAIL }}" \
+            --set-env-vars "CJ_API_KEY=${{ env.CJ_API_KEY }}" \
+            --project "${{ vars.GCP_PROJECT_ID }}"
+
+      # ── Deploy Docs to Cloud Run ──────────────────────────────────────────
+      - name: Deploy Docs
+        run: |
+          gcloud run deploy alpha-shoop-docs \
+            --image "${{ env.IMAGE_DOCS }}:${{ github.sha }}" \
+            --region "${{ env.GCP_REGION }}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --memory 256Mi \
+            --cpu 1 \
+            --project "${{ vars.GCP_PROJECT_ID }}"
+
+      # ── Print URLs ────────────────────────────────────────────────────────
+      - name: Print service URLs
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════╗"
+          echo "║  Deploy complete ✓               ║"
+          echo "╠══════════════════════════════════╣"
+          gcloud run services describe alpha-shoop-api \
+            --region ${{ env.GCP_REGION }} \
+            --format "value(status.url)" | xargs -I{} echo "║  API:  {}"
+          gcloud run services describe alpha-shoop-docs \
+            --region ${{ env.GCP_REGION }} \
+            --format "value(status.url)" | xargs -I{} echo "║  Docs: {}"
+          echo "╚══════════════════════════════════╝"

@@ -1,0 +1,47 @@
+# LiteLLM Proxy — Alpha Shoop
+#
+# Start: make proxy
+# URL:   http://localhost:4000
+# Docs:  http://localhost:4000/ui
+#
+# All agents call this proxy via the OpenAI-compatible API.
+# Model aliases decouple agent code from specific Claude model IDs.
+
+model_list:
+
+  # ── Director: most capable, higher cost ──────────────────────────────────
+  - model_name: alpha/director
+    litellm_params:
+      model: anthropic/claude-opus-4-8
+      api_key: os.environ/ANTHROPIC_API_KEY
+      max_tokens: 4096
+
+  # ── Worker smart: balanced cost/quality (E-com + Marketing) ──────────────
+  - model_name: alpha/worker-smart
+    litellm_params:
+      model: anthropic/claude-sonnet-4-6
+      api_key: os.environ/ANTHROPIC_API_KEY
+      max_tokens: 4096
+
+  # ── Worker fast: cheapest, high volume (Scraper + Fulfillment) ───────────
+  - model_name: alpha/worker-fast
+    litellm_params:
+      model: anthropic/claude-haiku-4-5-20251001
+      api_key: os.environ/ANTHROPIC_API_KEY
+      max_tokens: 2048
+
+litellm_settings:
+  drop_params: true          # ignore unsupported params (e.g. top_k) instead of erroring
+  num_retries: 3             # retry transient Anthropic errors automatically
+  request_timeout: 90        # seconds before a request is killed
+
+router_settings:
+  routing_strategy: simple-shuffle
+  num_retries: 3
+  timeout: 90
+  retry_after: 2             # seconds to wait before retry
+  allowed_fails: 3           # mark a model unhealthy after this many failures
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY   # Bearer token agents must send
+  store_model_in_db: false                     # disable LiteLLM's own DB (we use ours)

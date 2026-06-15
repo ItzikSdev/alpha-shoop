@@ -1,0 +1,25 @@
+# Dev overrides: hot-reload, volume mounts, Vite dev server
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+services:
+
+  api:
+    build:
+      target: dev          # uses the dev stage in Dockerfile
+    volumes:
+      - ./src:/app/src:ro
+      - ./mcp_server.py:/app/mcp_server.py:ro
+    environment:
+      APP_ENV: development
+    # override the prod CMD with reload
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+
+  docs:
+    build:
+      context: ./docs-app
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./docs-app/src:/app/src:ro
+      - ./docs-app/public:/app/public:ro

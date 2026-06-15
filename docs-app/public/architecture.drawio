@@ -1,0 +1,595 @@
+<mxfile host="app.diagrams.net" pages="2">
+  <diagram id="arch" name="Alpha Shoop — Multi-Agent Architecture">
+    <mxGraphModel dx="671" dy="434" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="1700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="bg0" parent="1" style="text;html=1;strokeColor=#6c8ebf;fillColor=#dae8fc;align=left;verticalAlign=top;spacingLeft=10;spacingTop=5;fontSize=13;fontStyle=1;rounded=0;" value="LAYER 0 — ENTRY POINTS" vertex="1">
+          <mxGeometry height="140" width="1960" x="20" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="bg1" parent="1" style="text;html=1;strokeColor=#82b366;fillColor=#d5e8d4;align=left;verticalAlign=top;spacingLeft=10;spacingTop=5;fontSize=13;fontStyle=1;rounded=0;" value="LAYER 1 — FASTAPI GATEWAY :8000" vertex="1">
+          <mxGeometry height="150" width="1960" x="20" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="bg2" parent="1" style="text;html=1;strokeColor=#9673a6;fillColor=#e1d5e7;align=left;verticalAlign=top;spacingLeft=10;spacingTop=5;fontSize=13;fontStyle=1;rounded=0;" value="LAYER 2 — LANGGRAPH STATE MANAGEMENT ENGINE" vertex="1">
+          <mxGeometry height="170" width="1960" x="20" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="bg3" parent="1" style="text;html=1;strokeColor=#d6b656;fillColor=#ffe6cc;align=left;verticalAlign=top;spacingLeft=10;spacingTop=5;fontSize=13;fontStyle=1;rounded=0;" value="LAYER 3 — ORCHESTRATOR / DIRECTOR AGENT  (Node: director)" vertex="1">
+          <mxGeometry height="170" width="1960" x="20" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="bg4" parent="1" style="text;html=1;strokeColor=#b85450;fillColor=#f8cecc;align=left;verticalAlign=top;spacingLeft=10;spacingTop=5;fontSize=13;fontStyle=1;rounded=0;" value="LAYER 4 — WORKER AGENT POOL  (LangGraph Nodes)" vertex="1">
+          <mxGeometry height="190" width="1960" x="20" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="bg5" parent="1" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=left;verticalAlign=top;spacingLeft=10;spacingTop=5;fontSize=13;fontStyle=1;rounded=0;" value="LAYER 5 — EXTERNAL APIs &amp; PLATFORMS" vertex="1">
+          <mxGeometry height="250" width="1960" x="20" y="890" as="geometry" />
+        </mxCell>
+        <mxCell id="bg5a" parent="1" style="text;html=1;strokeColor=#6c8ebf;fillColor=#dae8fc;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=11;fontStyle=1;rounded=0;" value="SUPPLIER APIs" vertex="1">
+          <mxGeometry height="195" width="590" x="30" y="925" as="geometry" />
+        </mxCell>
+        <mxCell id="bg5b" parent="1" style="text;html=1;strokeColor=#82b366;fillColor=#d5e8d4;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=11;fontStyle=1;rounded=0;" value="SHOPIFY PLATFORM" vertex="1">
+          <mxGeometry height="195" width="680" x="635" y="925" as="geometry" />
+        </mxCell>
+        <mxCell id="bg5c" parent="1" style="text;html=1;strokeColor=#9673a6;fillColor=#e1d5e7;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=11;fontStyle=1;rounded=0;" value="ADVERTISING PLATFORMS" vertex="1">
+          <mxGeometry height="195" width="640" x="1330" y="925" as="geometry" />
+        </mxCell>
+        <mxCell id="bg6" parent="1" style="text;html=1;strokeColor=#b85450;fillColor=#f8cecc;align=left;verticalAlign=top;spacingLeft=10;spacingTop=5;fontSize=13;fontStyle=1;rounded=0;" value="LAYER 6 — GUARDRAILS &amp; SAFETY LAYER" vertex="1">
+          <mxGeometry height="185" width="1960" x="20" y="1150" as="geometry" />
+        </mxCell>
+        <mxCell id="bg7" parent="1" style="text;html=1;strokeColor=#6c8ebf;fillColor=#dae8fc;align=left;verticalAlign=top;spacingLeft=10;spacingTop=5;fontSize=13;fontStyle=1;rounded=0;" value="LAYER 7 — PERSISTENCE &amp; MEMORY LAYER" vertex="1">
+          <mxGeometry height="155" width="1960" x="20" y="1345" as="geometry" />
+        </mxCell>
+        <mxCell id="bg8" parent="1" style="text;html=1;strokeColor=#666666;fillColor=#d5d5d5;align=left;verticalAlign=top;spacingLeft=10;spacingTop=5;fontSize=13;fontStyle=1;rounded=0;" value="LAYER 8 — OBSERVABILITY &amp; MONITORING" vertex="1">
+          <mxGeometry height="155" width="1960" x="20" y="1510" as="geometry" />
+        </mxCell>
+        <mxCell id="n-wh-order" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" value="&lt;b&gt;Shopify Order Webhook&lt;/b&gt;&lt;br&gt;POST /webhook/shopify/order&lt;br&gt;{order_id, line_items, address}" vertex="1">
+          <mxGeometry height="90" width="460" x="40" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="n-wh-payment" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" value="&lt;b&gt;Payment Webhook&lt;/b&gt;&lt;br&gt;POST /webhook/shopify/payment&lt;br&gt;{payment_status, order_id}" vertex="1">
+          <mxGeometry height="90" width="460" x="520" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="n-http-trig" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" value="&lt;b&gt;Manual HTTP Trigger&lt;/b&gt;&lt;br&gt;POST /api/v1/trigger&lt;br&gt;{task_type, params}" vertex="1">
+          <mxGeometry height="90" width="460" x="1000" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="n-cron" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" value="&lt;b&gt;Cron Scheduler&lt;/b&gt;&lt;br&gt;APScheduler — Every 6h&lt;br&gt;Task: scrape_trending_products" vertex="1">
+          <mxGeometry height="90" width="480" x="1480" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="n-auth-mw" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" value="&lt;b&gt;Auth Middleware&lt;/b&gt;&lt;br&gt;HMAC-SHA256 Webhook Sig Validation&lt;br&gt;+ JWT Bearer Token Verification" vertex="1">
+          <mxGeometry height="100" width="460" x="40" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="n-rate-lim" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" value="&lt;b&gt;Rate Limiter&lt;/b&gt;&lt;br&gt;slowapi — 100 req/min per IP&lt;br&gt;Redis-backed counter" vertex="1">
+          <mxGeometry height="100" width="460" x="520" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="n-api-router" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" value="&lt;b&gt;FastAPI Router&lt;/b&gt;&lt;br&gt;Route Dispatcher&lt;br&gt;/webhook/* to /api/v1/*" vertex="1">
+          <mxGeometry height="100" width="460" x="1000" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="n-task-queue" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" value="&lt;b&gt;Async Task Queue&lt;/b&gt;&lt;br&gt;ARQ / Celery Worker&lt;br&gt;graph.ainvoke(state, config)" vertex="1">
+          <mxGeometry height="100" width="480" x="1480" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="n-state-obj" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;" value="&lt;b&gt;AgentState TypedDict&lt;/b&gt;&lt;br&gt;trend_data: list[TrendItem]&lt;br&gt;products · orders · ad_campaigns&lt;br&gt;budget_remaining: float · next_action: str" vertex="1">
+          <mxGeometry height="115" width="460" x="40" y="365" as="geometry" />
+        </mxCell>
+        <mxCell id="n-compiled-graph" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;" value="&lt;b&gt;CompiledStateGraph&lt;/b&gt;&lt;br&gt;graph.compile(checkpointer=cp)&lt;br&gt;Interrupt points + retry policy&lt;br&gt;Conditional edges wired" vertex="1">
+          <mxGeometry height="115" width="460" x="520" y="365" as="geometry" />
+        </mxCell>
+        <mxCell id="n-checkpointer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;" value="&lt;b&gt;PostgresCheckpointer&lt;/b&gt;&lt;br&gt;thread_id + checkpoint_id&lt;br&gt;Serialized state JSON blob&lt;br&gt;Auto-resume on failure" vertex="1">
+          <mxGeometry height="115" width="460" x="1000" y="365" as="geometry" />
+        </mxCell>
+        <mxCell id="n-cond-router" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;" value="&lt;b&gt;Conditional Edge Router&lt;/b&gt;&lt;br&gt;route_to_next_agent(state) to str&lt;br&gt;Returns node name or END&lt;br&gt;Reads: state.next_action" vertex="1">
+          <mxGeometry height="115" width="480" x="1480" y="365" as="geometry" />
+        </mxCell>
+        <mxCell id="n-director-llm" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;fontSize=9;" value="&lt;b&gt;Claude Opus 4 / Sonnet 4&lt;/b&gt;&lt;br&gt;Role: Director Agent&lt;br&gt;Analyzes trends, assigns sub-agents&lt;br&gt;Enforces budget constraints" vertex="1">
+          <mxGeometry height="115" width="460" x="40" y="545" as="geometry" />
+        </mxCell>
+        <mxCell id="n-task-plan" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;fontSize=9;" value="&lt;b&gt;Task Planner&lt;/b&gt;&lt;br&gt;Prioritize execution order:&lt;br&gt;scrape to create to advertise to fulfill&lt;br&gt;Apply business rules" vertex="1">
+          <mxGeometry height="115" width="460" x="520" y="545" as="geometry" />
+        </mxCell>
+        <mxCell id="n-tool-bind" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;fontSize=9;" value="&lt;b&gt;Bound Tool Registry&lt;/b&gt;&lt;br&gt;scrape_trends() · create_product()&lt;br&gt;deploy_ad() · fulfill_order()&lt;br&gt;get_budget_status()" vertex="1">
+          <mxGeometry height="115" width="460" x="1000" y="545" as="geometry" />
+        </mxCell>
+        <mxCell id="n-next-action" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;fontSize=9;" value="&lt;b&gt;Decision Output&lt;/b&gt;&lt;br&gt;Writes next_action to AgentState&lt;br&gt;e.g. trend_scraper or END&lt;br&gt;Controls graph routing" vertex="1">
+          <mxGeometry height="115" width="480" x="1480" y="545" as="geometry" />
+        </mxCell>
+        <mxCell id="n-scraper" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;fontSize=9;" value="&lt;b&gt;Trend &amp; Product Scraper Agent&lt;/b&gt;&lt;br&gt;Claude Haiku 4  |  Node: trend_scraper&lt;br&gt;search_trending_keywords() · fetch_supplier_catalog()&lt;br&gt;calculate_profit_margin() · filter_by_min_margin()" vertex="1">
+          <mxGeometry height="140" width="460" x="40" y="725" as="geometry" />
+        </mxCell>
+        <mxCell id="n-ecom" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;fontSize=9;" value="&lt;b&gt;E-commerce Manager Agent&lt;/b&gt;&lt;br&gt;Claude Sonnet 4  |  Node: ecommerce_manager&lt;br&gt;create_shopify_product() · update_inventory()&lt;br&gt;set_dynamic_pricing() · publish_to_sales_channel()" vertex="1">
+          <mxGeometry height="140" width="460" x="520" y="725" as="geometry" />
+        </mxCell>
+        <mxCell id="n-mkt" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;fontSize=9;" value="&lt;b&gt;Marketing &amp; Ads Agent&lt;/b&gt;&lt;br&gt;Claude Sonnet 4  |  Node: marketing_agent&lt;br&gt;create_google_search_campaign() · create_meta_ad()&lt;br&gt;pause_low_roas_campaigns() · get_performance_metrics()" vertex="1">
+          <mxGeometry height="140" width="460" x="1000" y="725" as="geometry" />
+        </mxCell>
+        <mxCell id="n-fulfill" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;fontSize=9;" value="&lt;b&gt;Fulfillment &amp; Logistics Agent&lt;/b&gt;&lt;br&gt;Claude Haiku 4  |  Node: fulfillment_agent&lt;br&gt;place_supplier_order() · get_tracking_number()&lt;br&gt;update_shopify_fulfillment() · notify_customer()" vertex="1">
+          <mxGeometry height="140" width="480" x="1480" y="725" as="geometry" />
+        </mxCell>
+        <mxCell id="n-cj-api" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;align=left;" value="&lt;b&gt;CJ Dropshipping REST API v2&lt;/b&gt;&lt;br&gt;GET /v2/products?sort=trending&lt;br&gt;POST /v2/orders/create&lt;br&gt;GET /v2/orders/{id}/tracking" vertex="1">
+          <mxGeometry height="148" width="270" x="45" y="958" as="geometry" />
+        </mxCell>
+        <mxCell id="n-ali-api" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;align=left;" value="&lt;b&gt;AliExpress DS API&lt;/b&gt;&lt;br&gt;GET /ds/product/list&lt;br&gt;POST /ds/order/create&lt;br&gt;GET /ds/order/tracking/query" vertex="1">
+          <mxGeometry height="148" width="270" x="335" y="958" as="geometry" />
+        </mxCell>
+        <mxCell id="n-shopify-gql" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;align=left;" value="&lt;b&gt;Shopify Admin GraphQL API&lt;/b&gt;&lt;br&gt;Version: 2024-07&lt;br&gt;productCreate() · fulfillmentCreate()&lt;br&gt;inventoryAdjust()" vertex="1">
+          <mxGeometry height="148" width="320" x="648" y="958" as="geometry" />
+        </mxCell>
+        <mxCell id="n-shopify-wh" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;align=left;" value="&lt;b&gt;Shopify Webhook Emitter&lt;/b&gt;&lt;br&gt;Topic: orders/create&lt;br&gt;Topic: orders/fulfilled&lt;br&gt;POST to /webhook/shopify/order" vertex="1">
+          <mxGeometry height="148" width="320" x="985" y="958" as="geometry" />
+        </mxCell>
+        <mxCell id="n-google-ads" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=left;" value="&lt;b&gt;Google Ads API v17&lt;/b&gt;&lt;br&gt;CampaignService · AdGroupService&lt;br&gt;POST /customers/{id}/campaigns&lt;br&gt;{budget_micros, targeting, keywords}" vertex="1">
+          <mxGeometry height="148" width="305" x="1343" y="958" as="geometry" />
+        </mxCell>
+        <mxCell id="n-meta-ads" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=left;" value="&lt;b&gt;Meta Marketing API v19&lt;/b&gt;&lt;br&gt;AdSet · Ad · AdCreative endpoints&lt;br&gt;POST /act_{account}/campaigns&lt;br&gt;{objective, bid_amount, audience}" vertex="1">
+          <mxGeometry height="148" width="297" x="1663" y="958" as="geometry" />
+        </mxCell>
+        <mxCell id="n-kill-switch" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;fontStyle=1;" value="&lt;b&gt;Kill-Switch Monitor&lt;/b&gt;&lt;br&gt;HARDCODED: MAX_AD_SPEND = $500/day&lt;br&gt;HARDCODED: MAX_ORDER_VALUE = $200&lt;br&gt;spend &gt;= limit: graph.interrupt()&lt;br&gt;Halts ALL agent nodes immediately" vertex="1">
+          <mxGeometry height="130" width="460" x="40" y="1185" as="geometry" />
+        </mxCell>
+        <mxCell id="n-budget-tracker" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" value="&lt;b&gt;Budget Tracker Service&lt;/b&gt;&lt;br&gt;Polls Google Ads + Meta every 60s&lt;br&gt;Aggregates real-time spend&lt;br&gt;Writes to state.budget_remaining" vertex="1">
+          <mxGeometry height="130" width="460" x="520" y="1185" as="geometry" />
+        </mxCell>
+        <mxCell id="n-sandbox" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" value="&lt;b&gt;Dynamic Sandbox&lt;/b&gt;&lt;br&gt;RestrictedPython executor&lt;br&gt;Blocked globals: os · subprocess&lt;br&gt;socket · open · __import__" vertex="1">
+          <mxGeometry height="130" width="460" x="1000" y="1185" as="geometry" />
+        </mxCell>
+        <mxCell id="n-io-validator" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" value="&lt;b&gt;I/O Pydantic Validator&lt;/b&gt;&lt;br&gt;Validates all agent inputs + outputs&lt;br&gt;Schemas: TrendItem · ProductInput&lt;br&gt;CampaignConfig · OrderPayload" vertex="1">
+          <mxGeometry height="130" width="480" x="1480" y="1185" as="geometry" />
+        </mxCell>
+        <mxCell id="n-postgres" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" value="&lt;b&gt;PostgreSQL 15&lt;/b&gt;&lt;br&gt;Tables: agent_checkpoints · agent_run_logs&lt;br&gt;products · orders · campaigns · budget_ledger" vertex="1">
+          <mxGeometry height="100" width="600" x="40" y="1380" as="geometry" />
+        </mxCell>
+        <mxCell id="n-redis" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" value="&lt;b&gt;Redis 7&lt;/b&gt;&lt;br&gt;Session state TTL:3600s · Rate limit counters&lt;br&gt;Pub/Sub: agent_signals · Task lock dedup" vertex="1">
+          <mxGeometry height="100" width="600" x="690" y="1380" as="geometry" />
+        </mxCell>
+        <mxCell id="n-vector-db" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" value="&lt;b&gt;ChromaDB / Pinecone&lt;/b&gt;&lt;br&gt;Product &amp; trend embeddings&lt;br&gt;Semantic search · Collection: trending_products_v1" vertex="1">
+          <mxGeometry height="100" width="610" x="1350" y="1380" as="geometry" />
+        </mxCell>
+        <mxCell id="n-langsmith" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5d5d5;strokeColor=#666666;fontSize=9;" value="&lt;b&gt;LangSmith&lt;/b&gt;&lt;br&gt;Full traces per thread_id&lt;br&gt;Token usage · latency · tool calls · error rate" vertex="1">
+          <mxGeometry height="100" width="600" x="40" y="1545" as="geometry" />
+        </mxCell>
+        <mxCell id="n-prometheus" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5d5d5;strokeColor=#666666;fontSize=9;" value="&lt;b&gt;Prometheus + Grafana&lt;/b&gt;&lt;br&gt;Metrics: api_req_rate · agent_duration_ms&lt;br&gt;roas_ratio · ad_spend_daily_usd" vertex="1">
+          <mxGeometry height="100" width="600" x="690" y="1545" as="geometry" />
+        </mxCell>
+        <mxCell id="n-alert-system" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5d5d5;strokeColor=#666666;fontSize=9;" value="&lt;b&gt;Alert System&lt;/b&gt;&lt;br&gt;PagerDuty + Slack Webhook&lt;br&gt;Triggers: kill_switch · budget_90pct · error_spike" vertex="1">
+          <mxGeometry height="100" width="610" x="1350" y="1545" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="n-wh-order" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-auth-mw" value="POST JSON">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="n-wh-payment" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-auth-mw" value="POST JSON">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="n-http-trig" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-auth-mw" value="POST JSON">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="n-cron" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-auth-mw" value="Scheduled trigger">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="n-auth-mw" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-rate-lim" value="Validated">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="n-rate-lim" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-api-router" value="Approved">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="n-api-router" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-task-queue" value="Dispatch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="n-task-queue" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;fontStyle=1;" target="n-compiled-graph" value="await graph.ainvoke(state)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="n-compiled-graph" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-checkpointer" value="Write checkpoint">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9b" edge="1" parent="1" source="n-checkpointer" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#22AA22;" target="n-compiled-graph" value="Load checkpoint">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="n-compiled-graph" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-state-obj" value="Current AgentState">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="n-state-obj" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-cond-router" value="Eval next_action">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="n-cond-router" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#d6b656;fontStyle=1;" target="n-director-llm" value="route: director">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="n-cond-router" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#b85450;" target="n-scraper" value="route: trend_scraper">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="1" source="n-cond-router" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#b85450;" target="n-ecom" value="route: ecommerce_manager">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="1" source="n-cond-router" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#b85450;" target="n-mkt" value="route: marketing_agent">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" edge="1" parent="1" source="n-cond-router" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#b85450;" target="n-fulfill" value="route: fulfillment_agent">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" edge="1" parent="1" source="n-director-llm" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-task-plan" value="chain-of-thought">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" edge="1" parent="1" source="n-task-plan" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-tool-bind" value="invoke tools">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" edge="1" parent="1" source="n-tool-bind" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-next-action" value="next_action resolved">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" edge="1" parent="1" source="n-next-action" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-state-obj" value="Mutate AgentState.next_action">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22" edge="1" parent="1" source="n-scraper" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-cj-api" value="GET trending products">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e23" edge="1" parent="1" source="n-scraper" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-ali-api" value="GET product list">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e24" edge="1" parent="1" source="n-cj-api" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#22AA22;" target="n-scraper" value="[{id, cost, stock, rating}]">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e25" edge="1" parent="1" source="n-ali-api" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#22AA22;" target="n-scraper" value="[{item_id, price, ship_days}]">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e26" edge="1" parent="1" source="n-scraper" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#9673a6;" target="n-state-obj" value="state.trend_data updated">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e28" edge="1" parent="1" source="n-ecom" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-shopify-gql" value="productCreate(ProductInput)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e29" edge="1" parent="1" source="n-shopify-gql" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#22AA22;" target="n-ecom" value="{product: {id, handle}}">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e30" edge="1" parent="1" source="n-ecom" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#9673a6;" target="n-state-obj" value="state.products updated">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e32" edge="1" parent="1" source="n-mkt" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-google-ads" value="POST campaigns {budget, keywords}">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e33" edge="1" parent="1" source="n-mkt" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-meta-ads" value="POST adsets {audience, bid}">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e34" edge="1" parent="1" source="n-google-ads" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#22AA22;" target="n-mkt" value="{campaign_id, impressions, spend}">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e35" edge="1" parent="1" source="n-meta-ads" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#22AA22;" target="n-mkt" value="{adset_id, roas, spend}">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e36" edge="1" parent="1" source="n-mkt" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#9673a6;" target="n-state-obj" value="state.ad_campaigns updated">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e37" edge="1" parent="1" source="n-shopify-wh" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#0050ef;" target="n-wh-order" value="Webhook: orders/create">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e39" edge="1" parent="1" source="n-fulfill" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-cj-api" value="POST /orders/create">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e40" edge="1" parent="1" source="n-cj-api" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#22AA22;" target="n-fulfill" value="{supplier_order_id, tracking}">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e41" edge="1" parent="1" source="n-fulfill" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-shopify-gql" value="fulfillmentCreate {tracking}">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e42" edge="1" parent="1" source="n-fulfill" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#9673a6;" target="n-state-obj" value="state.orders updated">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e43" edge="1" parent="1" source="n-budget-tracker" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-google-ads" value="Poll spend every 60s">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e44" edge="1" parent="1" source="n-budget-tracker" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-meta-ads" value="Poll spend every 60s">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e45" edge="1" parent="1" source="n-budget-tracker" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#9673a6;" target="n-state-obj" value="state.budget_remaining">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e46" edge="1" parent="1" source="n-kill-switch" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-state-obj" value="Observe budget">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e47" edge="1" parent="1" source="n-kill-switch" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#FF0000;fontStyle=1;fontColor=#FF0000;" target="n-compiled-graph" value="HALT: graph.interrupt()">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e48" edge="1" parent="1" source="n-kill-switch" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#FF0000;" target="n-alert-system" value="CRITICAL alert">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e49" edge="1" parent="1" source="n-io-validator" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-director-llm" value="Validate I/O schemas">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e50" edge="1" parent="1" source="n-sandbox" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-scraper" value="Sandbox exec wrapper">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e51" edge="1" parent="1" source="n-sandbox" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-ecom" value="Sandbox exec wrapper">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e53" edge="1" parent="1" source="n-checkpointer" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-postgres" value="INSERT checkpoint">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e54" edge="1" parent="1" source="n-postgres" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;strokeColor=#22AA22;" target="n-checkpointer" value="SELECT checkpoint WHERE thread_id=?">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e55" edge="1" parent="1" source="n-state-obj" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-redis" value="Cache state EX 3600s">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e56" edge="1" parent="1" source="n-task-queue" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-redis" value="SET lock:{task_id} NX EX 300">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e57" edge="1" parent="1" source="n-scraper" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-vector-db" value="upsert product embedding">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e58" edge="1" parent="1" source="n-director-llm" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-vector-db" value="semantic product search">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e59" edge="1" parent="1" source="n-compiled-graph" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-langsmith" value="Trace per ainvoke() call">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e60" edge="1" parent="1" source="n-director-llm" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-langsmith" value="token_usage · latency · tool_calls">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e61" edge="1" parent="1" source="n-api-router" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-prometheus" value="Expose /metrics scrape every 15s">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e62" edge="1" parent="1" source="n-prometheus" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=8;" target="n-alert-system" value="roas breach alert">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="Xq9hiL3DsQbgPpl2CxGU" name="Page-2">
+    <mxGraphModel dx="1174" dy="760" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <UserObject label="" mermaidData="{&#xa;  &quot;data&quot;: &quot;graph TB\n    %% סגנונות ועיצובים\n    classDef llmZone fill:#f9fbfd,stroke:#338333,stroke-width:2px;\n    classDef mcpZone fill:#f5f6fa,stroke:#2f3640,stroke-width:2px;\n    classDef apiZone fill:#fff5f5,stroke:#c23616,stroke-width:2px;\n    \n    %% שכבת ה-Client / AI\n    subgraph Client_Layer [\&quot;שכבת ה-AI / Client\&quot;]\n        A[Claude Desktop / LangGraph Client]\n    end\n    class Client_Layer llmZone;\n\n    %% שכבת ה-MCP Server\n    subgraph MCP_Server [\&quot;E-commerce Arbitrage MCP Server\&quot;]\n        B[MCP Protocol Engine &lt;br&gt; Stdio / SSE Transport]\n        \n        subgraph Tools_Registry [\&quot;Tools Registry (JSON Schemas)\&quot;]\n            T1[\&quot;1. Sourcing Tools&lt;br&gt;• search_trending_products&lt;br&gt;• get_shipping_cost\&quot;]\n            T2[\&quot;2. Market Validation Tools&lt;br&gt;• search_market_prices&lt;br&gt;• check_google_trends\&quot;]\n            T3[\&quot;3. Shopify Tools&lt;br&gt;• create_shopify_product&lt;br&gt;• update_inventory\&quot;]\n            T4[\&quot;4. Ads Tools&lt;br&gt;• create_google_campaign&lt;br&gt;• get_campaign_metrics\&quot;]\n            T5[\&quot;5. Fulfillment Tools&lt;br&gt;• place_supplier_order&lt;br&gt;• fulfill_shopify_order\&quot;]\n        end\n        \n        C[Secure Context &amp; Environment Config&lt;br&gt;• API Keys Locked Inside Server •]\n    end\n    class MCP_Server mcpZone;\n\n    %% שכבת ה-APIs החיצוניים\n    subgraph External_APIs [\&quot;עולם חיצוני (External APIs)\&quot;]\n        E1[Supplier APIs &lt;br&gt; CJ / AliExpress]\n        E2[Market Data APIs &lt;br&gt; Google Shopping / Trends]\n        E3[Shopify Admin GraphQL API]\n        E4[Google / Meta Ads API]\n    end\n    class External_APIs apiZone;\n\n    %% זרימת הנתונים והתקשורת (Data Flow)\n    A &lt;--&gt; |\&quot;1. list_tools() &amp; call_tool()&lt;br&gt;(No API Keys Exposes)\&quot;| B\n    B --&gt; T1 &amp; T2 &amp; T3 &amp; T4 &amp; T5\n    \n    %% חיבור הכלים ל-APIs האמיתיים עם ה-Keys המוגנים\n    C -.-&gt; T1 &amp; T2 &amp; T3 &amp; T4 &amp; T5\n    \n    T1 &lt;--&gt; |\&quot;REST / JSON\&quot;| E1\n    T2 &lt;--&gt; |\&quot;REST / Serper\&quot;| E2\n    T3 &lt;--&gt; |\&quot;GraphQL (Admin Token)\&quot;| E3\n    T4 &lt;--&gt; |\&quot;gRPC / REST\&quot;| E4\n    T5 &lt;--&gt; |\&quot;Secure Webhooks / Post\&quot;| E1 &amp; E3&quot;,&#xa;  &quot;config&quot;: null&#xa;}" id="uI5UBBW1wjnPFzFWvCIV-1">
+          <mxCell connectable="0" parent="1" style="group;transparentBounds=1;editIcon=1;lockedGroup=0;groupPadding=20;" vertex="1">
+            <mxGeometry as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="שכבת ה-AI / Client" mermaidId="n:Client_Layer" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="שכבת ה-AI / Client" id="uI5UBBW1wjnPFzFWvCIV-2">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-1" style="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="124" width="383" x="963" y="40" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Claude Desktop / LangGraph Client" mermaidId="n:A" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Claude Desktop / LangGraph Client" id="uI5UBBW1wjnPFzFWvCIV-3">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-2" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="54" width="313" x="35" y="45" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="E-commerce Arbitrage MCP Server" mermaidId="n:MCP_Server" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="E-commerce Arbitrage MCP Server" id="uI5UBBW1wjnPFzFWvCIV-4">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-1" style="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="336" width="1805" x="40" y="232" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Tools Registry (JSON Schemas)" mermaidId="n:Tools_Registry" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Tools Registry (JSON Schemas)" id="uI5UBBW1wjnPFzFWvCIV-5">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-4" style="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="163" width="1735" x="35" y="148" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="1. Sourcing Tools&#xa;• search_trending_products&#xa;• get_shipping_cost" mermaidId="n:T1" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="1. Sourcing Tools&#xa;• search_trending_products&#xa;• get_shipping_cost" id="uI5UBBW1wjnPFzFWvCIV-6">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-5" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="93" width="259" x="1441" y="45" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="2. Market Validation Tools&#xa;• search_market_prices&#xa;• check_google_trends" mermaidId="n:T2" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="2. Market Validation Tools&#xa;• search_market_prices&#xa;• check_google_trends" id="uI5UBBW1wjnPFzFWvCIV-7">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-5" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="93" width="245" x="1121" y="45" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="3. Shopify Tools&#xa;• create_shopify_product&#xa;• update_inventory" mermaidId="n:T3" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="3. Shopify Tools&#xa;• create_shopify_product&#xa;• update_inventory" id="uI5UBBW1wjnPFzFWvCIV-8">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-5" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="93" width="243" x="389" y="45" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="4. Ads Tools&#xa;• create_google_campaign&#xa;• get_campaign_metrics" mermaidId="n:T4" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="4. Ads Tools&#xa;• create_google_campaign&#xa;• get_campaign_metrics" id="uI5UBBW1wjnPFzFWvCIV-9">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-5" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="93" width="251" x="35" y="45" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="5. Fulfillment Tools&#xa;• place_supplier_order&#xa;• fulfill_shopify_order" mermaidId="n:T5" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="5. Fulfillment Tools&#xa;• place_supplier_order&#xa;• fulfill_shopify_order" id="uI5UBBW1wjnPFzFWvCIV-10">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-5" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="93" width="225" x="767" y="45" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="MCP Protocol Engine&#xa;Stdio / SSE Transport" mermaidId="n:B" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="MCP Protocol Engine&#xa;Stdio / SSE Transport" id="uI5UBBW1wjnPFzFWvCIV-11">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-4" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="73" width="210" x="1009" y="45" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Secure Context &amp; Environment Config&#xa;• API Keys Locked Inside Server •" mermaidId="n:C" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Secure Context &amp; Environment Config&#xa;• API Keys Locked Inside Server •" id="uI5UBBW1wjnPFzFWvCIV-12">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-4" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="73" width="331" x="628" y="45" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="" mermaidId="e:B-&gt;T1#0" mermaidBaseStyle="curved=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=1;exitY=0.66;entryX=0.63;entryY=1;" mermaidBaseValue="" id="uI5UBBW1wjnPFzFWvCIV-19">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-4" source="uI5UBBW1wjnPFzFWvCIV-11" style="curved=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=1;exitY=0.66;entryX=0.63;entryY=1;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-6">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1667" y="143" />
+                <mxPoint x="1667" y="168" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="" mermaidId="e:C-&gt;T1#0" mermaidBaseStyle="curved=1;dashed=1;dashPattern=2 3;fixDash=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=1;exitY=0.71;entryX=0.11;entryY=1;" mermaidBaseValue="" id="uI5UBBW1wjnPFzFWvCIV-24">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-4" source="uI5UBBW1wjnPFzFWvCIV-12" style="curved=1;dashed=1;dashPattern=2 3;fixDash=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=1;exitY=0.71;entryX=0.11;entryY=1;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-6">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1463" y="143" />
+                <mxPoint x="1463" y="168" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="" mermaidId="e:B-&gt;T2#0" mermaidBaseStyle="curved=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=1;exitY=0.77;entryX=0.91;entryY=1;" mermaidBaseValue="" id="uI5UBBW1wjnPFzFWvCIV-20">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-4" source="uI5UBBW1wjnPFzFWvCIV-11" style="curved=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=1;exitY=0.77;entryX=0.91;entryY=1;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-7">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1443" y="143" />
+                <mxPoint x="1443" y="168" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="" mermaidId="e:C-&gt;T2#0" mermaidBaseStyle="curved=1;dashed=1;dashPattern=2 3;fixDash=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=1;exitY=0.96;entryX=0;entryY=1;" mermaidBaseValue="" id="uI5UBBW1wjnPFzFWvCIV-25">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-4" source="uI5UBBW1wjnPFzFWvCIV-12" style="curved=1;dashed=1;dashPattern=2 3;fixDash=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=1;exitY=0.96;entryX=0;entryY=1;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-7">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1097" y="143" />
+                <mxPoint x="1097" y="168" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="" mermaidId="e:B-&gt;T3#0" mermaidBaseStyle="curved=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=0;exitY=0.7;entryX=0.83;entryY=1;" mermaidBaseValue="" id="uI5UBBW1wjnPFzFWvCIV-21">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-4" source="uI5UBBW1wjnPFzFWvCIV-11" style="curved=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=0;exitY=0.7;entryX=0.83;entryY=1;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-8">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="678" y="143" />
+                <mxPoint x="678" y="168" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="" mermaidId="e:C-&gt;T3#0" mermaidBaseStyle="curved=1;dashed=1;dashPattern=2 3;fixDash=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=0;exitY=0.84;entryX=0.05;entryY=1;" mermaidBaseValue="" id="uI5UBBW1wjnPFzFWvCIV-26">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-4" source="uI5UBBW1wjnPFzFWvCIV-12" style="curved=1;dashed=1;dashPattern=2 3;fixDash=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=0;exitY=0.84;entryX=0.05;entryY=1;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-8">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="386" y="143" />
+                <mxPoint x="386" y="168" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="" mermaidId="e:B-&gt;T4#0" mermaidBaseStyle="curved=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=0;exitY=0.62;entryX=0.91;entryY=1;" mermaidBaseValue="" id="uI5UBBW1wjnPFzFWvCIV-22">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-4" source="uI5UBBW1wjnPFzFWvCIV-11" style="curved=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=0;exitY=0.62;entryX=0.91;entryY=1;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-9">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="366" y="143" />
+                <mxPoint x="366" y="168" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="" mermaidId="e:C-&gt;T4#0" mermaidBaseStyle="curved=1;dashed=1;dashPattern=2 3;fixDash=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=0;exitY=0.71;entryX=0.29;entryY=1;" mermaidBaseValue="" id="uI5UBBW1wjnPFzFWvCIV-27">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-4" source="uI5UBBW1wjnPFzFWvCIV-12" style="curved=1;dashed=1;dashPattern=2 3;fixDash=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=0;exitY=0.71;entryX=0.29;entryY=1;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-9">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="125" y="143" />
+                <mxPoint x="125" y="168" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="" mermaidId="e:B-&gt;T5#0" mermaidBaseStyle="curved=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=0.4;exitY=1;entryX=0.94;entryY=1;" mermaidBaseValue="" id="uI5UBBW1wjnPFzFWvCIV-23">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-4" source="uI5UBBW1wjnPFzFWvCIV-11" style="curved=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=0.4;exitY=1;entryX=0.94;entryY=1;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-10">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1077" y="143" />
+                <mxPoint x="1077" y="168" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="" mermaidId="e:C-&gt;T5#0" mermaidBaseStyle="curved=1;dashed=1;dashPattern=2 3;fixDash=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=0.33;exitY=1;entryX=0;entryY=1;" mermaidBaseValue="" id="uI5UBBW1wjnPFzFWvCIV-28">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-4" source="uI5UBBW1wjnPFzFWvCIV-12" style="curved=1;dashed=1;dashPattern=2 3;fixDash=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=0.33;exitY=1;entryX=0;entryY=1;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-10">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="698" y="143" />
+                <mxPoint x="698" y="168" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="עולם חיצוני (External APIs)" mermaidId="n:External_APIs" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="עולם חיצוני (External APIs)" id="uI5UBBW1wjnPFzFWvCIV-13">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-1" style="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="143" width="1593" x="92" y="617" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Supplier APIs&#xa;CJ / AliExpress" mermaidId="n:E1" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Supplier APIs&#xa;CJ / AliExpress" id="uI5UBBW1wjnPFzFWvCIV-14">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-13" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="73" width="166" x="1392" y="45" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Market Data APIs&#xa;Google Shopping / Trends" mermaidId="n:E2" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Market Data APIs&#xa;Google Shopping / Trends" id="uI5UBBW1wjnPFzFWvCIV-15">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-13" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="73" width="243" x="848" y="45" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Shopify Admin GraphQL API" mermaidId="n:E3" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Shopify Admin GraphQL API" id="uI5UBBW1wjnPFzFWvCIV-16">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-13" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="54" width="254" x="509" y="55" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Google / Meta Ads API" mermaidId="n:E4" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Google / Meta Ads API" id="uI5UBBW1wjnPFzFWvCIV-17">
+          <mxCell parent="uI5UBBW1wjnPFzFWvCIV-13" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="54" width="218" x="35" y="55" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="1. list_tools() &amp; call_tool()&#xa;(No API Keys Exposes)" mermaidId="e:A-&gt;B#0" mermaidBaseStyle="curved=1;startArrow=block;startSize=7;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);html=1;fontSize=16;labelBackgroundColor=light-dark(#E8E8E88D,#2a2a2a8D);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontColor=light-dark(#333333,#cccccc);exitX=0.5;exitY=1;entryX=0.5;entryY=0;" mermaidBaseValue="1. list_tools() &amp; call_tool()&#xa;(No API Keys Exposes)" id="uI5UBBW1wjnPFzFWvCIV-18">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-1" source="uI5UBBW1wjnPFzFWvCIV-3" style="curved=1;startArrow=block;startSize=7;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);html=1;fontSize=16;labelBackgroundColor=light-dark(#E8E8E88D,#2a2a2a8D);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontColor=light-dark(#333333,#cccccc);exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-11">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="REST / JSON" mermaidId="e:T1-&gt;E1#0" mermaidBaseStyle="curved=1;startArrow=block;startSize=7;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);html=1;fontSize=16;labelBackgroundColor=light-dark(#E8E8E88D,#2a2a2a8D);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontColor=light-dark(#333333,#cccccc);exitX=0.47;exitY=1;entryX=0.78;entryY=0;" mermaidBaseValue="REST / JSON" id="uI5UBBW1wjnPFzFWvCIV-29">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-1" source="uI5UBBW1wjnPFzFWvCIV-6" style="curved=1;startArrow=block;startSize=7;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);html=1;fontSize=16;labelBackgroundColor=light-dark(#E8E8E88D,#2a2a2a8D);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontColor=light-dark(#333333,#cccccc);exitX=0.47;exitY=1;entryX=0.78;entryY=0;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-14">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1645" y="543" />
+                <mxPoint x="1645" y="568" />
+                <mxPoint x="1645" y="603" />
+                <mxPoint x="1645" y="637" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="REST / Serper" mermaidId="e:T2-&gt;E2#0" mermaidBaseStyle="curved=1;startArrow=block;startSize=7;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);html=1;fontSize=16;labelBackgroundColor=light-dark(#E8E8E88D,#2a2a2a8D);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontColor=light-dark(#333333,#cccccc);exitX=0;exitY=1;entryX=0.5;entryY=0;" mermaidBaseValue="REST / Serper" id="uI5UBBW1wjnPFzFWvCIV-30">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-1" source="uI5UBBW1wjnPFzFWvCIV-7" style="curved=1;startArrow=block;startSize=7;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);html=1;fontSize=16;labelBackgroundColor=light-dark(#E8E8E88D,#2a2a2a8D);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontColor=light-dark(#333333,#cccccc);exitX=0;exitY=1;entryX=0.5;entryY=0;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-15">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1061" y="543" />
+                <mxPoint x="1061" y="568" />
+                <mxPoint x="1061" y="603" />
+                <mxPoint x="1061" y="637" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="GraphQL (Admin Token)" mermaidId="e:T3-&gt;E3#0" mermaidBaseStyle="curved=1;startArrow=block;startSize=7;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);html=1;fontSize=16;labelBackgroundColor=light-dark(#E8E8E88D,#2a2a2a8D);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontColor=light-dark(#333333,#cccccc);exitX=0.97;exitY=1;entryX=0.77;entryY=0;" mermaidBaseValue="GraphQL (Admin Token)" id="uI5UBBW1wjnPFzFWvCIV-31">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-1" source="uI5UBBW1wjnPFzFWvCIV-8" style="curved=1;startArrow=block;startSize=7;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);html=1;fontSize=16;labelBackgroundColor=light-dark(#E8E8E88D,#2a2a2a8D);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontColor=light-dark(#333333,#cccccc);exitX=0.97;exitY=1;entryX=0.77;entryY=0;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-16">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="885" y="543" />
+                <mxPoint x="885" y="568" />
+                <mxPoint x="885" y="603" />
+                <mxPoint x="885" y="637" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="gRPC / REST" mermaidId="e:T4-&gt;E4#0" mermaidBaseStyle="curved=1;startArrow=block;startSize=7;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);html=1;fontSize=16;labelBackgroundColor=light-dark(#E8E8E88D,#2a2a2a8D);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontColor=light-dark(#333333,#cccccc);exitX=0.47;exitY=1;entryX=0.5;entryY=0;" mermaidBaseValue="gRPC / REST" id="uI5UBBW1wjnPFzFWvCIV-32">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-1" source="uI5UBBW1wjnPFzFWvCIV-9" style="curved=1;startArrow=block;startSize=7;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);html=1;fontSize=16;labelBackgroundColor=light-dark(#E8E8E88D,#2a2a2a8D);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontColor=light-dark(#333333,#cccccc);exitX=0.47;exitY=1;entryX=0.5;entryY=0;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-17">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Secure Webhooks / Post" mermaidId="e:T5-&gt;E1#0" mermaidBaseStyle="curved=1;startArrow=block;startSize=7;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);html=1;fontSize=16;labelBackgroundColor=light-dark(#E8E8E88D,#2a2a2a8D);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontColor=light-dark(#333333,#cccccc);exitX=0.97;exitY=1;entryX=0;entryY=0.22;" mermaidBaseValue="Secure Webhooks / Post" id="uI5UBBW1wjnPFzFWvCIV-33">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-1" source="uI5UBBW1wjnPFzFWvCIV-10" style="curved=1;startArrow=block;startSize=7;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);html=1;fontSize=16;labelBackgroundColor=light-dark(#E8E8E88D,#2a2a2a8D);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontColor=light-dark(#333333,#cccccc);exitX=0.97;exitY=1;entryX=0;entryY=0.22;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-14">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="1316" y="543" />
+                <mxPoint x="1316" y="568" />
+                <mxPoint x="1316" y="603" />
+                <mxPoint x="1316" y="637" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <UserObject label="Secure Webhooks / Post" mermaidId="e:T5-&gt;E3#0" mermaidBaseStyle="curved=1;startArrow=block;startSize=7;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);html=1;fontSize=16;labelBackgroundColor=light-dark(#E8E8E88D,#2a2a2a8D);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontColor=light-dark(#333333,#cccccc);exitX=0;exitY=1;entryX=0.44;entryY=0;" mermaidBaseValue="Secure Webhooks / Post" id="uI5UBBW1wjnPFzFWvCIV-34">
+          <mxCell edge="1" parent="uI5UBBW1wjnPFzFWvCIV-1" source="uI5UBBW1wjnPFzFWvCIV-10" style="curved=1;startArrow=block;startSize=7;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);html=1;fontSize=16;labelBackgroundColor=light-dark(#E8E8E88D,#2a2a2a8D);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontColor=light-dark(#333333,#cccccc);exitX=0;exitY=1;entryX=0.44;entryY=0;rounded=0;" target="uI5UBBW1wjnPFzFWvCIV-16">
+            <mxGeometry relative="1" as="geometry">
+              <Array as="points">
+                <mxPoint x="695" y="543" />
+                <mxPoint x="695" y="568" />
+                <mxPoint x="695" y="603" />
+                <mxPoint x="695" y="637" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

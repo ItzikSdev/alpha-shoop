@@ -1,0 +1,42 @@
+# ── Core ───────────────────────────────────────────────────────────────────
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.9.0
+pydantic-settings>=2.6.0
+python-dotenv>=1.0.1
+
+# ── Auth & Security ────────────────────────────────────────────────────────
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.12
+
+# ── Rate Limiting ─────────────────────────────────────────────────────────
+slowapi>=0.1.9
+
+# ── AI / LLM ──────────────────────────────────────────────────────────────
+anthropic>=0.40.0
+langgraph>=0.2.56
+langchain-anthropic>=0.3.0
+langchain-openai>=0.2.0
+langsmith>=0.1.147
+mcp[cli]>=1.3.0
+# litellm proxy runs in Docker (see: make proxy / litellm_config.yaml)
+
+# ── HTTP Client ────────────────────────────────────────────────────────────
+httpx>=0.27.0
+aiohttp>=3.11.0
+
+# ── Database ───────────────────────────────────────────────────────────────
+asyncpg>=0.30.0
+sqlalchemy[asyncio]>=2.0.36
+redis[asyncio]>=5.2.0
+chromadb>=0.5.20
+
+# ── Task Queue ─────────────────────────────────────────────────────────────
+arq>=0.26.1
+
+# ── Testing ────────────────────────────────────────────────────────────────
+pytest>=8.3.0
+pytest-asyncio>=0.24.0
+pytest-cov>=6.0.0
+respx>=0.21.1

@@ -1,0 +1,28 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+htmlcov/
+.coverage
+*.egg-info/
+
+# Node
+docs-app/node_modules/
+docs-app/dist/
+
+# Git & IDE
+.git/
+.gitignore
+.env
+*.env
+.DS_Store
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+
+# Docs & CI (not needed in image)
+.github/
+scripts/
+*.md
