@@ -7,6 +7,7 @@ import { Agents } from './pages/Agents';
 import { Endpoints } from './pages/Endpoints';
 import { Architecture } from './pages/Architecture';
 import { Technologies } from './pages/Technologies';
+import { RunsPage } from './pages/RunsPage';
 
 export default function App() {
   const [page, setPage] = useState<Page>('overview');
@@ -18,6 +19,7 @@ export default function App() {
     endpoints: <Endpoints />,
     architecture: <Architecture />,
     technologies: <Technologies />,
+    runs: <RunsPage />,
   }[page];
 
   return (

@@ -5,8 +5,9 @@ interface Props {
   onNavigate: (page: Page) => void;
 }
 
-const NAV: { page: Page; icon: string; label: string }[] = [
+const NAV: { page: Page; icon: string; label: string; highlight?: boolean }[] = [
   { page: 'overview', icon: '🏠', label: 'Overview' },
+  { page: 'runs', icon: '📡', label: 'Live Runs', highlight: true },
   { page: 'tools', icon: '🔌', label: 'MCP Tools' },
   { page: 'agents', icon: '🤖', label: 'AI Agents' },
   { page: 'endpoints', icon: '⚡', label: 'API Endpoints' },
@@ -56,11 +57,16 @@ export function Sidebar({ current, onNavigate }: Props) {
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
               current === item.page
                 ? 'bg-indigo-900/60 text-indigo-200 font-medium'
+                : item.highlight
+                ? 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/20'
                 : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'
             }`}
           >
             <span>{item.icon}</span>
             <span>{item.label}</span>
+            {item.highlight && current !== item.page && (
+              <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            )}
           </button>
         ))}
       </nav>

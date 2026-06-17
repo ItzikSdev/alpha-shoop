@@ -3,10 +3,12 @@ from __future__ import annotations
 from langchain_core.messages import HumanMessage
 from src.agents.state import AgentState
 from src.mcp_tools.fulfillment import place_supplier_order, fulfill_shopify_order
+from src.tracing.context import current_node
 
 
 async def fulfillment_node(state: AgentState) -> dict:
     """LangGraph node: places CJ/AliExpress orders and pushes tracking to Shopify."""
+    current_node.set("fulfillment_agent")
     fulfilled: list[str] = []
 
     for order in state.get("pending_orders", []):

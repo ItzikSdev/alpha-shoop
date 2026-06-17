@@ -5,12 +5,14 @@ from src.agents.state import AgentState
 from src.config import get_settings
 from src.mcp_tools.ads import create_google_campaign, get_campaign_metrics
 from src.guardrails.kill_switch import KillSwitch
+from src.tracing.context import current_node
 
 _kill_switch = KillSwitch()
 
 
 async def marketing_node(state: AgentState) -> dict:
     """LangGraph node: creates campaigns and tracks spend against guardrail."""
+    current_node.set("marketing_agent")
     settings = get_settings()
     budget_per_campaign = min(
         state.get("budget_remaining_usd", 0) / max(len(state.get("shopify_products_created", [])), 1),
