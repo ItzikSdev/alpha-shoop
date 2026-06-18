@@ -34,6 +34,9 @@ class AgentState(TypedDict):
     # Fulfillment results
     fulfilled_orders: list[str]
 
+    # Store branding (set once by store_setup node)
+    store_brand: Optional[dict]
+
     # Guardrails
     budget_remaining_usd: float
     kill_switch_triggered: bool

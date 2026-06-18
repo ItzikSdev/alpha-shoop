@@ -48,6 +48,7 @@ async def _execute_graph(thread_id: str, task: str, operator: str, max_budget_us
         "total_ad_spend_usd": 0.0,
         "fulfilled_orders": [],
         "budget_remaining_usd": max_budget_usd,
+        "store_brand": None,
         "kill_switch_triggered": False,
         "run_complete": False,
         "error": None,

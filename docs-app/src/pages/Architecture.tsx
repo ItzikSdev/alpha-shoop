@@ -25,7 +25,7 @@ export function Architecture() {
       <div>
         <h1 className="text-2xl font-bold text-white">Architecture</h1>
         <p className="text-gray-400 text-sm mt-1">
-          Three views of the system: MCP server (Mermaid), full LangGraph flow (Mermaid), and the detailed Draw.io diagram.
+          Three views: MCP server, full LangGraph flow with store setup + niche-aware scraper, and Draw.io diagram. Use +/− or Ctrl+scroll to zoom.
         </p>
       </div>
 
@@ -78,28 +78,42 @@ export function Architecture() {
   );
 }
 
-const SYSTEM_MERMAID = `graph TD
-    WH[Shopify Webhooks] -->|HMAC SHA-256| GW
-    TR[Manual Trigger POST /api/v1/run] --> GW
-    GW[FastAPI Gateway :8000<br>JWT · slowapi · CORS]
-    GW --> DIR
-
-    subgraph LangGraph["LangGraph StateGraph"]
-        DIR[Director Agent<br>Claude Opus 4.8]
-        TS[Trend Scraper<br>Claude Haiku 4.5]
-        EM[E-com Manager<br>Claude Sonnet 4.6]
-        MA[Marketing Agent<br>Claude Sonnet 4.6]
-        FA[Fulfillment Agent<br>Claude Haiku 4.5]
-        DIR -->|route| TS & EM & MA & FA
-        TS & EM & MA & FA -->|loop back| DIR
+const SYSTEM_MERMAID = `graph TB
+    subgraph IN ["Triggers & Auth"]
+        direction LR
+        WH["Webhooks\nHMAC SHA-256"]
+        RUN["POST /api/v1/run"]
+        AT["POST /auth/token\nJWT Issuer"]
     end
 
-    subgraph MCP["MCP Server (Stdio/SSE)"]
-        T1[Sourcing Tools]
-        T2[Market Validation]
-        T3[Shopify Tools]
-        T4[Ads Tools]
-        T5[Fulfillment Tools]
+    GW["FastAPI :8000\nJWT · CORS · rate-limit"]
+    IN --> GW
+
+    subgraph GRAPH ["LangGraph StateGraph"]
+        direction LR
+        DIR["Director\nClaude Opus 4.8"]
+        SS["Store Setup\nSonnet 4.6\nruns once"]
+        TS["Trend Scraper\nHaiku 4.5\nniche-aware"]
+        EM["E-com Manager\nSonnet 4.6"]
+        MA["Marketing\nSonnet 4.6"]
+        FA["Fulfillment\nHaiku 4.5"]
+        DIR --> SS & TS & EM & MA & FA
+        SS & TS & EM & MA & FA -.->|"report"| DIR
+    end
+
+    GW --> DIR
+
+    THEME["shopify_theme.py\ncolors · hero · marquee · story · nav"]
+    HZ["Horizon Theme\nkgg8n0-k0.myshopify.com"]
+    SS --> THEME --> HZ
+
+    subgraph MCP ["MCP Tools"]
+        direction LR
+        T1["Sourcing\nCJ · price cap 3×"]
+        T2["Market Data\nSerper / Trends"]
+        T3["Shopify\nGraphQL + REST"]
+        T4["Ads Tools"]
+        T5["Fulfillment"]
     end
 
     TS --> T1 & T2
@@ -107,33 +121,23 @@ const SYSTEM_MERMAID = `graph TD
     MA --> T4
     FA --> T5 & T3
 
-    T1 & T5 --> CJ[CJ Dropshipping API]
-    T2 --> SERP[Serper / Google Trends]
-    T3 --> SHOP[Shopify Admin GraphQL]
-    T4 --> GADS[Google Ads API v17]
+    CJ["CJ Dropshipping"]
+    SERP["Serper"]
+    SHOP["Shopify Admin\nGraphQL 2024-07"]
+    GADS["Google Ads"]
 
-    subgraph Guardrails
-        KS[Kill-Switch<br>MAX_AD=$500/day]
-        VAL[Pydantic Validator]
-    end
-
-    MA -.->|spend check| KS
-    FA -.->|order check| KS
-
-    subgraph Persistence
-        PG[(PostgreSQL 15<br>checkpoints)]
-        RD[(Redis 7<br>state cache)]
-        CH[(ChromaDB<br>embeddings)]
-    end
-
-    DIR --- PG
-    GW --- RD
+    T1 & T5 --> CJ
+    T2 --> SERP
+    T3 --> SHOP
+    T4 --> GADS
 
     classDef agent fill:#4B0082,stroke:#6d28d9,color:#e2e8f0
-    classDef mcp fill:#7C3AED,stroke:#8b5cf6,color:#e2e8f0
-    classDef ext fill:#1e3a5f,stroke:#2563eb,color:#e2e8f0
-    classDef guard fill:#7f1d1d,stroke:#dc2626,color:#e2e8f0
-    class DIR,TS,EM,MA,FA agent
+    classDef mcp fill:#1e3a5f,stroke:#2563eb,color:#e2e8f0
+    classDef ext fill:#450a0a,stroke:#dc2626,color:#fee2e2
+    classDef theme fill:#065f46,stroke:#059669,color:#d1fae5
+    classDef gw fill:#292524,stroke:#78716c,color:#d6d3d1
+    class DIR,SS,TS,EM,MA,FA agent
     class T1,T2,T3,T4,T5 mcp
     class CJ,SERP,SHOP,GADS ext
-    class KS,VAL guard`;
+    class THEME,HZ theme
+    class GW gw`;

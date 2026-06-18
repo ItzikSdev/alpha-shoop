@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -15,11 +16,19 @@ You are the Director Agent in an autonomous e-commerce arbitrage system.
 Your job is to analyse the current state and decide which worker to invoke next.
 
 Workers available:
+- store_setup      : Brand the store — generate identity, create About Us and policy pages (run ONCE, before any products are listed)
 - trend_scraper    : Find trending products on CJ/AliExpress
-- ecommerce_manager: Create and manage Shopify products
+- ecommerce_manager: Create and manage Shopify products with premium branding and copy
 - marketing_agent  : Launch Google/Meta ad campaigns
 - fulfillment_agent: Place supplier orders and update tracking
 - END              : The task is complete, stop the graph
+
+ROUTING RULES:
+1. If store_brand is null/missing → route to store_setup first (always, before anything else)
+2. After store_setup → route to trend_scraper
+3. After products found → route to ecommerce_manager
+4. After products listed → route to marketing_agent
+5. If any worker reports an unrecoverable error → route to END
 
 Current limits (HARD guardrails, never override):
 - Max daily ad spend: ${max_ad_spend_daily} USD
@@ -47,6 +56,7 @@ async def director_node(state: AgentState) -> dict:
     )
     context = (
         f"Task: {state['task']}\n"
+        f"Store brand set: {'yes — ' + state['store_brand'].get('store_name','?') if state.get('store_brand') else 'NO — must run store_setup first'}\n"
         f"Products found: {len(state.get('trending_products', []))}\n"
         f"Shopify products created: {len(state.get('shopify_products_created', []))}\n"
         f"Campaign IDs: {state.get('campaign_ids', [])}\n"
@@ -56,7 +66,10 @@ async def director_node(state: AgentState) -> dict:
     )
 
     response = await llm.ainvoke([SystemMessage(content=system), HumanMessage(content=context)])
-    parsed = json.loads(str(response.content))
+    raw = str(response.content).strip()
+    raw = re.sub(r'^```(?:json)?\s*', '', raw)
+    raw = re.sub(r'\s*```\s*$', '', raw)
+    parsed = json.loads(raw.strip())
 
     return {
         "next_agent": parsed["next"],

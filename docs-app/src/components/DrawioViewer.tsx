@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface Props {
   url: string;
@@ -9,6 +9,8 @@ export function DrawioViewer({ url, height = 600 }: Props) {
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fullscreen, setFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch(url)
@@ -17,11 +19,14 @@ export function DrawioViewer({ url, height = 600 }: Props) {
         return r.text();
       })
       .then(xml => {
-        // diagrams.net viewer accepts inline XML via hash encoding
+        // diagrams.net viewer accepts inline XML via hash encoding — fully
+        // self-contained, no GitHub login or external storage involved.
         // Format: https://viewer.diagrams.net/#HXML_ENCODED
         // XML is URI-encoded then base64-encoded
         const encoded = btoa(unescape(encodeURIComponent(xml)));
-        setViewerUrl(`https://viewer.diagrams.net/?lightbox=1&highlight=0001ff&nav=1&title=Architecture#H${encoded}`);
+        // toolbar=zoom gives real zoom in/out/fit/reset controls instead of
+        // the static lightbox preview (which had no usable zoom UI).
+        setViewerUrl(`https://viewer.diagrams.net/?toolbar=zoom&nav=1&fit=1&resize=1&edit=_blank&title=Architecture#H${encoded}`);
         setLoading(false);
       })
       .catch(e => {
@@ -29,6 +34,23 @@ export function DrawioViewer({ url, height = 600 }: Props) {
         setLoading(false);
       });
   }, [url]);
+
+  useEffect(() => {
+    function onFsChange() {
+      setFullscreen(!!document.fullscreenElement);
+    }
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
+  function toggleFullscreen() {
+    if (!containerRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      containerRef.current.requestFullscreen();
+    }
+  }
 
   if (loading) {
     return (
@@ -48,8 +70,14 @@ export function DrawioViewer({ url, height = 600 }: Props) {
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 justify-end">
+    <div ref={containerRef} className={fullscreen ? 'bg-gray-900 p-2 h-screen' : 'space-y-2'}>
+      <div className="flex items-center gap-3 justify-end">
+        <button
+          onClick={toggleFullscreen}
+          className="text-xs text-blue-400 hover:text-blue-300"
+        >
+          {fullscreen ? '✕ Exit fullscreen' : '⛶ Fullscreen'}
+        </button>
         <a
           href={viewerUrl!}
           target="_blank"
@@ -69,7 +97,7 @@ export function DrawioViewer({ url, height = 600 }: Props) {
       <iframe
         src={viewerUrl!}
         width="100%"
-        height={height}
+        height={fullscreen ? 'calc(100% - 2rem)' : height}
         className="rounded-xl border border-gray-700 bg-white"
         title="Architecture Diagram"
         sandbox="allow-scripts allow-same-origin allow-popups"

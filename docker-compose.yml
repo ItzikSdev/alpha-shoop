@@ -39,8 +39,11 @@ services:
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-alpha-shoop-local}
+      GOOGLE_APPLICATION_CREDENTIALS: /app/gcp-adc.json
+      GOOGLE_CLOUD_PROJECT: alpha-shoop
     volumes:
       - ./litellm_config.yaml:/app/config.yaml:ro
+      - ${HOME}/.config/gcloud/application_default_credentials.json:/app/gcp-adc.json:ro
     command: --config /app/config.yaml
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4000/health/liveliness', timeout=4)"]
@@ -51,6 +54,7 @@ services:
 
   # ── FastAPI ───────────────────────────────────────────────────────────────
   api:
+    image: alpha-shoop-api:prod
     build:
       context: .
       dockerfile: Dockerfile
@@ -81,6 +85,7 @@ services:
 
   # ── React Docs (production build, nginx) ─────────────────────────────────
   docs:
+    image: alpha-shoop-docs:prod
     build:
       context: ./docs-app
       dockerfile: Dockerfile

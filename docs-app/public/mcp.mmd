@@ -1,49 +1,33 @@
-graph TB
-    %% סגנונות ועיצובים
-    classDef llmZone fill:#f9fbfd,stroke:#338333,stroke-width:2px;
-    classDef mcpZone fill:#f5f6fa,stroke:#2f3640,stroke-width:2px;
-    classDef apiZone fill:#fff5f5,stroke:#c23616,stroke-width:2px;
-    
-    %% שכבת ה-Client / AI
-    subgraph Client_Layer ["שכבת ה-AI / Client"]
-        A[Claude Desktop / LangGraph Client]
-    end
-    class Client_Layer llmZone;
+graph LR
+    CLIENT["Claude Desktop\n/ LangGraph Client"]
 
-    %% שכבת ה-MCP Server
-    subgraph MCP_Server ["E-commerce Arbitrage MCP Server"]
-        B[MCP Protocol Engine <br> Stdio / SSE Transport]
-        
-        subgraph Tools_Registry ["Tools Registry (JSON Schemas)"]
-            T1["1. Sourcing Tools<br>• search_trending_products<br>• get_shipping_cost"]
-            T2["2. Market Validation Tools<br>• search_market_prices<br>• check_google_trends"]
-            T3["3. Shopify Tools<br>• create_shopify_product<br>• update_inventory"]
-            T4["4. Ads Tools<br>• create_google_campaign<br>• get_campaign_metrics"]
-            T5["5. Fulfillment Tools<br>• place_supplier_order<br>• fulfill_shopify_order"]
-        end
-        
-        C[Secure Context & Environment Config<br>• API Keys Locked Inside Server •]
+    subgraph SRV ["E-commerce Arbitrage MCP Server"]
+        direction TB
+        PROTO["Protocol Engine\nStdio / SSE Transport"]
+        T1["Sourcing Tools\nsearch_trending_products\nget_shipping_cost"]
+        T2["Market Validation\nsearch_market_prices\ncheck_google_trends"]
+        T3["Shopify Tools\ncreate_product · update_inventory\n_publish_product"]
+        T4["Ads Tools\ncreate_campaign\nget_campaign_metrics"]
+        T5["Fulfillment Tools\nplace_supplier_order\nfulfill_shopify_order"]
+        PROTO --> T1 & T2 & T3 & T4 & T5
     end
-    class MCP_Server mcpZone;
 
-    %% שכבת ה-APIs החיצוניים
-    subgraph External_APIs ["עולם חיצוני (External APIs)"]
-        E1[Supplier APIs <br> CJ / AliExpress]
-        E2[Market Data APIs <br> Google Shopping / Trends]
-        E3[Shopify Admin GraphQL API]
-        E4[Google / Meta Ads API]
-    end
-    class External_APIs apiZone;
+    CJ["CJ Dropshipping\nAliExpress"]
+    SERP["Google Trends\nSerper"]
+    SHOP["Shopify Admin\nGraphQL 2024-07"]
+    ADS["Google Ads\nMeta Ads"]
 
-    %% זרימת הנתונים והתקשורת (Data Flow)
-    A <--> |"1. list_tools() & call_tool()<br>(No API Keys Exposes)"| B
-    B --> T1 & T2 & T3 & T4 & T5
-    
-    %% חיבור הכלים ל-APIs האמיתיים עם ה-Keys המוגנים
-    C -.-> T1 & T2 & T3 & T4 & T5
-    
-    T1 <--> |"REST / JSON"| E1
-    T2 <--> |"REST / Serper"| E2
-    T3 <--> |"GraphQL (Admin Token)"| E3
-    T4 <--> |"gRPC / REST"| E4
-    T5 <--> |"Secure Webhooks / Post"| E1 & E3
+    CLIENT -->|"call_tool — no API keys exposed"| PROTO
+    T1 -->|REST| CJ
+    T2 -->|REST| SERP
+    T3 -->|GraphQL + REST| SHOP
+    T4 -->|REST/gRPC| ADS
+    T5 -->|REST| CJ
+    T5 -->|REST| SHOP
+
+    classDef client fill:#14532d,stroke:#22c55e,color:#d1fae5
+    classDef tool fill:#1e1b4b,stroke:#6d28d9,color:#e0e7ff
+    classDef ext fill:#450a0a,stroke:#dc2626,color:#fee2e2
+    class CLIENT client
+    class T1,T2,T3,T4,T5,PROTO tool
+    class CJ,SERP,SHOP,ADS ext

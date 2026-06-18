@@ -4,6 +4,7 @@
 services:
 
   api:
+    image: alpha-shoop-api:dev
     build:
       target: dev          # uses the dev stage in Dockerfile
     volumes:
@@ -15,6 +16,7 @@ services:
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 
   docs:
+    image: alpha-shoop-docs:dev
     build:
       context: ./docs-app
       dockerfile: Dockerfile.dev

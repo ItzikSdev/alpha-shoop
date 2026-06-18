@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-
-const API = 'http://localhost:8000/api/v1';
+import { apiGet, apiPost } from '../api/client';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,6 +41,7 @@ interface RunTrace extends RunSummary {
 
 const NODE_META: Record<string, { label: string; color: string; icon: string }> = {
   director:          { label: 'Director',       color: '#CC785C', icon: 'D' },
+  store_setup:       { label: 'Store Setup',    color: '#F59E0B', icon: 'S' },
   trend_scraper:     { label: 'Trend Scraper',  color: '#E67E22', icon: 'T' },
   ecommerce_manager: { label: 'E-com Manager',  color: '#5E8E3E', icon: 'E' },
   marketing_agent:   { label: 'Marketing',      color: '#4285F4', icon: 'M' },
@@ -56,6 +56,9 @@ const STATUS_STYLE: Record<string, string> = {
   killed:    'text-orange-400 bg-orange-400/10 border-orange-400/30',
   pending:   'text-gray-400 bg-gray-400/10 border-gray-400/30',
 };
+
+const DEFAULT_TASK =
+  'Build a store for trending home decor products under $50. Set up the store brand, find top products with 30%+ margin, list them on Shopify with great copy.';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -147,49 +150,29 @@ function LLMCallCard({ call, index }: { call: LLMCall; index: number }) {
     <div className={`border rounded-xl overflow-hidden transition-all ${
       call.error ? 'border-red-900/50' : 'border-gray-800'
     }`}>
-      {/* Header row */}
       <button
         onClick={() => setExpanded(e => !e)}
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-800/30 transition-colors text-left"
       >
-        {/* Call number */}
         <span className="text-gray-700 font-mono text-xs w-5 shrink-0">#{index + 1}</span>
-
-        {/* Node chip */}
         <NodeChip node={call.node} />
-
-        {/* Model */}
         <span className="text-gray-600 font-mono text-[10px] shrink-0">{call.model}</span>
-
-        {/* Short prompt preview */}
         <span className="text-gray-500 text-xs truncate flex-1 min-w-0">
           {call.user_prompt.slice(0, 80).replace(/\n/g, ' ')}
           {call.user_prompt.length > 80 && '…'}
         </span>
-
-        {/* Error badge */}
         {call.error && (
           <span className="shrink-0 text-[10px] text-red-400 bg-red-400/10 border border-red-400/30 px-1.5 py-0.5 rounded">
             ERROR
           </span>
         )}
-
-        {/* Token count */}
-        <span className="shrink-0 font-mono text-xs text-gray-500">
-          {fmt(call.total_tokens)} tok
-        </span>
-
-        {/* Duration */}
+        <span className="shrink-0 font-mono text-xs text-gray-500">{fmt(call.total_tokens)} tok</span>
         <span className="shrink-0 font-mono text-xs text-gray-600">{fmtMs(call.duration_ms)}</span>
-
-        {/* Expand toggle */}
         <span className="shrink-0 text-gray-700 ml-1">{expanded ? '▾' : '▸'}</span>
       </button>
 
-      {/* Expanded detail */}
       {expanded && (
         <div className="px-4 pb-4 space-y-3 border-t border-gray-800">
-          {/* Token breakdown */}
           <div className="pt-3">
             <TokenBar
               input={call.input_tokens}
@@ -198,22 +181,16 @@ function LLMCallCard({ call, index }: { call: LLMCall; index: number }) {
               cacheWrite={call.cache_write_tokens}
             />
           </div>
-
-          {/* Meta row */}
           <div className="flex gap-4 text-[10px] font-mono text-gray-600">
             <span>Time: <span className="text-gray-400">{fmtTime(call.timestamp)}</span></span>
             <span>Duration: <span className="text-gray-400">{fmtMs(call.duration_ms)}</span></span>
             <span>Model: <span className="text-gray-400">{call.model}</span></span>
           </div>
-
-          {/* Error */}
           {call.error && (
             <div className="p-3 rounded-lg bg-red-950/30 border border-red-900/50 text-red-300 text-xs font-mono">
               {call.error}
             </div>
           )}
-
-          {/* Prompts + response */}
           <PromptSection label="System Prompt" text={call.system_prompt} />
           <PromptSection label="User Prompt" text={call.user_prompt} defaultOpen />
           <PromptSection label="Response" text={call.response} defaultOpen />
@@ -223,14 +200,8 @@ function LLMCallCard({ call, index }: { call: LLMCall; index: number }) {
   );
 }
 
-function RunCard({
-  run,
-  selected,
-  onClick,
-}: {
-  run: RunSummary;
-  selected: boolean;
-  onClick: () => void;
+function RunCard({ run, selected, onClick }: {
+  run: RunSummary; selected: boolean; onClick: () => void;
 }) {
   return (
     <button
@@ -242,9 +213,7 @@ function RunCard({
       }`}
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
-        <span
-          className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${STATUS_STYLE[run.status] ?? STATUS_STYLE.pending}`}
-        >
+        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${STATUS_STYLE[run.status] ?? STATUS_STYLE.pending}`}>
           {run.status === 'running' && (
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1 animate-pulse" />
           )}
@@ -254,15 +223,75 @@ function RunCard({
           {fmtTime(run.started_at)}
         </span>
       </div>
-
       <div className="text-gray-300 text-xs font-medium truncate mb-1.5">{run.task}</div>
-
       <div className="flex items-center gap-3 text-[10px] font-mono text-gray-600">
         <span>{run.total_llm_calls} calls</span>
         <span>{fmt(run.total_tokens)} tok</span>
         <span>{elapsed(run.started_at, run.finished_at)}</span>
       </div>
     </button>
+  );
+}
+
+// ── Start Run panel ───────────────────────────────────────────────────────────
+
+function StartRunPanel({ onStarted }: { onStarted: (threadId: string) => void }) {
+  const [task, setTask] = useState(DEFAULT_TASK);
+  const [budget, setBudget] = useState(100);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!task.trim()) return;
+    setLoading(true);
+    setErr(null);
+    try {
+      const data = await apiPost<{ thread_id: string }>('/run', {
+        task: task.trim(),
+        max_budget_usd: budget,
+      });
+      onStarted(data.thread_id);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="border-b border-gray-800 p-3 space-y-2">
+      <textarea
+        value={task}
+        onChange={e => setTask(e.target.value)}
+        rows={3}
+        placeholder="Describe the store task…"
+        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-200 placeholder-gray-600 resize-none focus:outline-none focus:border-indigo-500 transition-colors"
+      />
+      <div className="flex items-center gap-2">
+        <label className="text-gray-600 text-[10px] shrink-0">Budget $</label>
+        <input
+          type="number"
+          value={budget}
+          onChange={e => setBudget(Number(e.target.value))}
+          min={1}
+          max={10000}
+          className="w-20 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
+        />
+        <button
+          type="submit"
+          disabled={loading || !task.trim()}
+          className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors"
+        >
+          {loading ? 'Starting…' : '▶ Start Run'}
+        </button>
+      </div>
+      {err && (
+        <div className="text-red-400 text-[10px] font-mono bg-red-950/30 border border-red-900/40 rounded px-2 py-1">
+          {err}
+        </div>
+      )}
+    </form>
   );
 }
 
@@ -275,12 +304,9 @@ export function RunsPage() {
   const [loadingTrace, setLoadingTrace] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Poll runs list every 2 seconds
   const fetchRuns = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/runs`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: RunSummary[] = await res.json();
+      const data = await apiGet<RunSummary[]>('/runs');
       setRuns(data);
       setError(null);
     } catch (e) {
@@ -294,15 +320,12 @@ export function RunsPage() {
     return () => clearInterval(id);
   }, [fetchRuns]);
 
-  // Fetch full trace when a run is selected (and re-poll if running)
   const fetchTrace = useCallback(async (threadId: string) => {
     setLoadingTrace(true);
     try {
-      const res = await fetch(`${API}/runs/${threadId}/trace`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: RunTrace = await res.json();
+      const data = await apiGet<RunTrace>(`/runs/${threadId}/trace`);
       setTrace(data);
-    } catch (e) {
+    } catch {
       setTrace(null);
     } finally {
       setLoadingTrace(false);
@@ -319,6 +342,12 @@ export function RunsPage() {
     }
   }, [selectedId, fetchTrace, runs]);
 
+  const handleStarted = (threadId: string) => {
+    fetchRuns();
+    setSelectedId(threadId);
+    setTrace(null);
+  };
+
   const handleSelect = (id: string) => {
     setSelectedId(id);
     setTrace(null);
@@ -328,12 +357,14 @@ export function RunsPage() {
   return (
     <div className="flex h-screen overflow-hidden">
 
-      {/* ── Left: runs list ──────────────────────────────────────────────── */}
+      {/* ── Left: runs list + start form ─────────────────────────────────── */}
       <div className="w-72 shrink-0 border-r border-gray-800 flex flex-col bg-gray-950">
         <div className="px-4 py-4 border-b border-gray-800">
           <h2 className="text-sm font-semibold text-white">Live Runs</h2>
           <p className="text-gray-500 text-xs mt-0.5">Auto-refreshes every 2s</p>
         </div>
+
+        <StartRunPanel onStarted={handleStarted} />
 
         {error && (
           <div className="mx-3 mt-3 p-2.5 rounded-lg bg-red-950/40 border border-red-900/50 text-red-400 text-xs">
@@ -345,10 +376,10 @@ export function RunsPage() {
           {runs.length === 0 && !error && (
             <div className="flex flex-col items-center justify-center h-40 text-gray-600 text-xs text-center gap-2">
               <span className="text-2xl opacity-40">🤖</span>
-              <span>No runs yet.<br />POST /api/v1/run to start one.</span>
+              <span>No runs yet.<br />Use the form above to start one.</span>
             </div>
           )}
-          {runs.map(run => (
+          {[...runs].reverse().map(run => (
             <RunCard
               key={run.thread_id}
               run={run}
@@ -359,7 +390,7 @@ export function RunsPage() {
         </div>
       </div>
 
-      {/* ── Right: trace inspector ─────────────────────────────────────── */}
+      {/* ── Right: trace inspector ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto bg-gray-950">
         {!selectedId && (
           <div className="flex flex-col items-center justify-center h-full text-gray-600 gap-3">
@@ -392,13 +423,12 @@ export function RunsPage() {
                 </span>
               </div>
 
-              {/* Stats row */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { label: 'LLM Calls',    value: String(trace.total_llm_calls) },
-                  { label: 'Input Tokens', value: fmt(trace.total_input_tokens) },
-                  { label: 'Output Tokens',value: fmt(trace.total_output_tokens) },
-                  { label: 'Duration',     value: elapsed(trace.started_at, trace.finished_at) },
+                  { label: 'LLM Calls',     value: String(trace.total_llm_calls) },
+                  { label: 'Input Tokens',  value: fmt(trace.total_input_tokens) },
+                  { label: 'Output Tokens', value: fmt(trace.total_output_tokens) },
+                  { label: 'Duration',      value: elapsed(trace.started_at, trace.finished_at) },
                 ].map(({ label, value }) => (
                   <div key={label} className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
                     <div className="text-gray-600 text-[10px] uppercase tracking-wide mb-0.5">{label}</div>
@@ -407,7 +437,6 @@ export function RunsPage() {
                 ))}
               </div>
 
-              {/* Overall token bar */}
               <TokenBar
                 input={trace.total_input_tokens}
                 output={trace.total_output_tokens}
@@ -440,7 +469,6 @@ export function RunsPage() {
               </div>
             </div>
 
-            {/* Live refresh hint */}
             {trace.status === 'running' && (
               <div className="text-center text-gray-700 text-xs pb-4 animate-pulse">
                 Live — refreshing every 2s

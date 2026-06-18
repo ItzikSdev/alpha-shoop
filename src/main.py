@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 
-from src.api.routes import health, agents, webhooks
+from src.api.routes import health, agents, webhooks, auth
 
 
 @asynccontextmanager
@@ -41,6 +41,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router, prefix="/api/v1", tags=["Auth"])
 app.include_router(health.router, prefix="/api/v1", tags=["Health"])
 app.include_router(agents.router, prefix="/api/v1", tags=["Agents"])
 app.include_router(webhooks.router, prefix="/webhook", tags=["Webhooks"])

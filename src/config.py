@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     # CJ Dropshipping
     cj_api_key: str = ""
     cj_email: str = ""
+    cj_mcp_key: str = ""  # pre-issued CJ-Access-Token (JWT) — skips the getAccessToken exchange
 
     # AliExpress
     aliexpress_app_key: str = ""

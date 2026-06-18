@@ -6,6 +6,21 @@
 #
 # All agents call this proxy via the OpenAI-compatible API.
 # Model aliases decouple agent code from specific Claude model IDs.
+#
+# TEMPORARY: all three tiers run on the direct Anthropic API right now.
+# Vertex AI (GCP project alpha-shoop, region us-east5) is set up and Opus 4.1
+# is enabled there, but its per-minute token quota hasn't started enforcing
+# the displayed 1500/min limit yet (new GenAI quota propagation — can take a
+# while after first enabling a model). Once a Vertex call succeeds, migrate
+# alpha/director back to:
+#   model: vertex_ai/claude-opus-4-1@20250805
+#   vertex_project: alpha-shoop
+#   vertex_location: us-east5
+# alpha/worker-smart needs Claude Sonnet 4.5 enabled first at
+# https://console.cloud.google.com/vertex-ai/publishers/anthropic/model-garden?project=alpha-shoop
+# alpha/worker-fast stays on direct Anthropic permanently — Haiku isn't
+# available in this project's Vertex AI Model Garden at all (403, not just
+# un-enabled).
 
 model_list:
 
