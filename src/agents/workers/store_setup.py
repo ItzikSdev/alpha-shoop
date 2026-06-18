@@ -8,6 +8,7 @@ from src.agents.state import AgentState
 from src.llm import get_llm
 from src.mcp_tools.shopify import _shopify_gql, _shopify_rest
 from src.mcp_tools.shopify_theme import full_store_setup, setup_navigation
+from src.tracing import agent_log
 from src.tracing.context import current_node
 
 
@@ -170,15 +171,21 @@ async def store_setup_node(state: AgentState) -> dict:
     if state.get("store_brand"):
         return {}
 
+    agent_log("Generating brand brief...", "info")
     brief = await _write_brand_brief(state.get("task", ""))
     if not brief:
+        agent_log("Brand brief generation failed", "error")
         return {"messages": [HumanMessage(content="Store setup skipped (brief generation failed)")]}
+
+    store_name = brief.get("store_name", "")
+    agent_log(f"Brand: {store_name} — \"{brief.get('tagline', '')}\"", "success")
+    agent_log(f"Differentiator: {brief.get('differentiator', '')[:80]}", "info")
 
     actions_done = []
 
     # 1. Update store name
-    store_name = brief.get("store_name", "")
     if store_name:
+        agent_log(f"Updating store name to '{store_name}'...", "action")
         if await _update_store_name(store_name):
             actions_done.append(f"Store renamed to '{store_name}'")
 
@@ -206,15 +213,20 @@ async def store_setup_node(state: AgentState) -> dict:
             actions_done.append("Shipping & Returns page")
 
     # 4. Full theme setup — colors, announcement bar, homepage, navigation
+    agent_log("Running full theme setup (colors → announcement → homepage → nav)...", "action")
     theme_results = await full_store_setup(brief)
-    if theme_results.get("colors"):
-        actions_done.append("Brand colors applied")
-    if theme_results.get("announcement"):
-        actions_done.append("Announcement bar with trust signals")
-    if theme_results.get("homepage"):
-        actions_done.append("Homepage rebuilt (hero → products → story → collections)")
-    if theme_results.get("navigation"):
-        actions_done.append(f"Navigation menu ({len(brief.get('collections', []))} collections)")
+    for key, label in [
+        ("colors", "Brand colors applied"),
+        ("announcement", "Announcement bar set"),
+        ("homepage", "Homepage rebuilt (hero → products → story → collections)"),
+        ("navigation", f"Navigation menu ({len(brief.get('collections', []))} collections)"),
+    ]:
+        ok = theme_results.get(key)
+        if ok:
+            actions_done.append(label)
+            agent_log(f"✓ {label}", "success")
+        else:
+            agent_log(f"✗ {label} failed", "warning")
 
     summary = (
         f"Store brand: {store_name} — \"{brief.get('tagline', '')}\"\n"

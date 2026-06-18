@@ -9,6 +9,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from src.agents.state import AgentState
 from src.config import get_settings
 from src.llm import get_llm
+from src.tracing import agent_log
 from src.tracing.context import current_node
 
 _SYSTEM_PROMPT = """\
@@ -65,15 +66,20 @@ async def director_node(state: AgentState) -> dict:
         f"Last error: {state.get('error') or 'none'}\n"
     )
 
+    agent_log("Deciding next step...", "info")
     response = await llm.ainvoke([SystemMessage(content=system), HumanMessage(content=context)])
     raw = str(response.content).strip()
     raw = re.sub(r'^```(?:json)?\s*', '', raw)
     raw = re.sub(r'\s*```\s*$', '', raw)
     parsed = json.loads(raw.strip())
 
+    next_node = parsed["next"]
+    reasoning = parsed.get("reasoning", "")
+    agent_log(f"→ {next_node}  ({reasoning})", "action")
+
     return {
-        "next_agent": parsed["next"],
-        "director_reasoning": parsed.get("reasoning", ""),
+        "next_agent": next_node,
+        "director_reasoning": reasoning,
         "messages": [response],
     }
 

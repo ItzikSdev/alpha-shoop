@@ -10,6 +10,7 @@ from src.agents.state import AgentState
 from src.config import get_settings
 from src.llm import get_llm
 from src.mcp_tools.sourcing import search_trending_products, get_shipping_cost
+from src.tracing import agent_log
 from src.tracing.context import current_node
 
 logger = logging.getLogger(__name__)
@@ -72,8 +73,9 @@ async def trend_scraper_node(state: AgentState) -> dict:
 
     # Determine which categories to search based on the store brand
     if store_brand:
+        agent_log("Translating store niche to CJ categories...", "info")
         categories = await _get_niche_categories(store_brand)
-        logger.info("Searching CJ for niche categories: %s", categories)
+        agent_log(f"Categories: {', '.join(categories)}", "action")
     else:
         categories = ["general"]
 
@@ -83,6 +85,7 @@ async def trend_scraper_node(state: AgentState) -> dict:
     per_category = max(3, settings.max_products_per_run // len(categories))
 
     for cat in categories:
+        agent_log(f"Searching CJ: '{cat}'...", "action")
         batch = await search_trending_products(
             category=cat,
             max_results=per_category,
@@ -109,6 +112,7 @@ async def trend_scraper_node(state: AgentState) -> dict:
             "shipping_days": shipping["estimated_days"],
         })
 
+    agent_log(f"✓ Found {len(enriched)} products across: {', '.join(categories)}", "success")
     cat_summary = ", ".join(categories)
     return {
         "trending_products": enriched,

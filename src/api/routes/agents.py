@@ -1,9 +1,11 @@
 """Agent execution endpoints — trigger and poll the LangGraph graph."""
 from __future__ import annotations
 import asyncio
+import json
 import logging
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from src.agents.graph import graph
 from src.agents.state import AgentState
 from src.models.requests import RunAgentRequest, KillSwitchRequest, TestToolRequest
@@ -195,3 +197,46 @@ async def get_run_trace(thread_id: str) -> dict:
     if not run:
         raise HTTPException(status_code=404, detail=f"Trace for {thread_id!r} not found")
     return run.to_dict()
+
+
+@router.get(
+    "/runs/{thread_id}/stream",
+    summary="SSE stream of live log entries and LLM call completions",
+    # No JWT dep — EventSource cannot set Authorization headers
+)
+async def stream_run(thread_id: str) -> StreamingResponse:
+    async def generate():
+        run = trace_store.get_run(thread_id)
+        if not run:
+            yield f"data: {json.dumps({'type': 'error', 'msg': 'Run not found'})}\n\n"
+            return
+
+        sent_logs = 0
+        sent_calls = 0
+
+        while True:
+            # Flush new log entries
+            new_logs = run.logs[sent_logs:]
+            for entry in new_logs:
+                yield f"data: {json.dumps({'type': 'log', **entry.to_dict()})}\n\n"
+                sent_logs += 1
+
+            # Flush new LLM call completions (summary only — full trace via /trace)
+            new_calls = run.llm_calls[sent_calls:]
+            for call in new_calls:
+                yield f"data: {json.dumps({'type': 'llm_call', 'node': call.node, 'model': call.model, 'tokens': call.input_tokens + call.output_tokens, 'duration_ms': round(call.duration_ms), 'ts': call.timestamp, 'error': call.error})}\n\n"
+                sent_calls += 1
+
+            if run.status not in ("running", "pending"):
+                yield f"data: {json.dumps({'type': 'done', 'status': run.status})}\n\n"
+                return
+
+            # Keepalive comment (prevents proxy timeout)
+            yield ": keepalive\n\n"
+            await asyncio.sleep(0.4)
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

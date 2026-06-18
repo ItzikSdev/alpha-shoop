@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { apiGet, apiPost } from '../api/client';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { apiGet, apiPost, getToken } from '../api/client';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -295,6 +295,132 @@ function StartRunPanel({ onStarted }: { onStarted: (threadId: string) => void })
   );
 }
 
+// ── Live Log ──────────────────────────────────────────────────────────────────
+
+interface LogEvent {
+  type: 'log' | 'llm_call' | 'done' | 'error';
+  ts?: string;
+  node?: string;
+  msg?: string;
+  level?: 'info' | 'action' | 'success' | 'error' | 'warning';
+  // llm_call fields
+  model?: string;
+  tokens?: number;
+  duration_ms?: number;
+  error?: string | null;
+  // done fields
+  status?: string;
+}
+
+const LEVEL_STYLE: Record<string, string> = {
+  info:    'text-gray-400',
+  action:  'text-blue-400',
+  success: 'text-emerald-400',
+  error:   'text-red-400',
+  warning: 'text-yellow-400',
+};
+
+const LEVEL_ICON: Record<string, string> = {
+  info: '·', action: '→', success: '✓', error: '✗', warning: '⚠',
+};
+
+function LiveLogPanel({ threadId, isRunning }: { threadId: string; isRunning: boolean }) {
+  const [events, setEvents] = useState<LogEvent[]>([]);
+  const [connected, setConnected] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const esRef = useRef<EventSource | null>(null);
+
+  useEffect(() => {
+    if (!threadId) return;
+
+    // Close any previous SSE connection
+    esRef.current?.close();
+    setEvents([]);
+
+    const API = (import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL ?? 'http://localhost:8000/api/v1';
+    const url = `${API}/runs/${threadId}/stream`;
+    const es = new EventSource(url);
+    esRef.current = es;
+
+    es.onopen = () => setConnected(true);
+    es.onerror = () => setConnected(false);
+
+    es.onmessage = (e) => {
+      try {
+        const data: LogEvent = JSON.parse(e.data);
+        if (data.type === 'done') {
+          setConnected(false);
+          es.close();
+        }
+        setEvents(prev => [...prev, { ...data, ts: data.ts ?? new Date().toISOString() }]);
+      } catch { /* ignore parse errors */ }
+    };
+
+    return () => { es.close(); esRef.current = null; };
+  }, [threadId]);
+
+  // Auto-scroll to bottom on new events
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [events]);
+
+  return (
+    <div className="border border-gray-800 rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800 bg-gray-900/50">
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Live Log</span>
+        <div className="flex items-center gap-1.5">
+          <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-emerald-400 animate-pulse' : 'bg-gray-600'}`} />
+          <span className="text-[10px] text-gray-600">{connected ? 'streaming' : isRunning ? 'connecting...' : 'ended'}</span>
+        </div>
+      </div>
+
+      <div className="overflow-y-auto font-mono text-[11px] leading-relaxed bg-gray-950/60" style={{ maxHeight: 280, minHeight: 80 }}>
+        {events.length === 0 && (
+          <div className="px-4 py-6 text-gray-700 text-center">Waiting for agent activity…</div>
+        )}
+        {events.map((ev, i) => {
+          if (ev.type === 'log') {
+            const style = LEVEL_STYLE[ev.level ?? 'info'];
+            const icon = LEVEL_ICON[ev.level ?? 'info'];
+            return (
+              <div key={i} className="flex gap-2 px-4 py-0.5 hover:bg-gray-900/40">
+                <span className="text-gray-700 shrink-0 w-20 truncate">{ev.ts ? fmtTime(ev.ts) : ''}</span>
+                <NodeChip node={ev.node ?? 'unknown'} />
+                <span className={`${style} shrink-0`}>{icon}</span>
+                <span className={style}>{ev.msg}</span>
+              </div>
+            );
+          }
+          if (ev.type === 'llm_call') {
+            return (
+              <div key={i} className="flex gap-2 px-4 py-0.5 hover:bg-gray-900/40">
+                <span className="text-gray-700 shrink-0 w-20 truncate">{ev.ts ? fmtTime(ev.ts) : ''}</span>
+                <NodeChip node={ev.node ?? 'unknown'} />
+                <span className="text-purple-400 shrink-0">◈</span>
+                <span className="text-purple-300">LLM</span>
+                <span className="text-gray-600 text-[10px]">{ev.model}</span>
+                <span className="text-gray-500 text-[10px] ml-auto shrink-0">{fmt(ev.tokens ?? 0)} tok · {fmtMs(ev.duration_ms ?? 0)}</span>
+                {ev.error && <span className="text-red-400 text-[10px]">ERR</span>}
+              </div>
+            );
+          }
+          if (ev.type === 'done') {
+            return (
+              <div key={i} className="flex gap-2 px-4 py-1 border-t border-gray-800 mt-1">
+                <span className={`font-semibold ${ev.status === 'completed' ? 'text-emerald-400' : 'text-red-400'}`}>
+                  ■ Run {ev.status}
+                </span>
+              </div>
+            );
+          }
+          return null;
+        })}
+        <div ref={bottomRef} />
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function RunsPage() {
@@ -444,6 +570,9 @@ export function RunsPage() {
                 cacheWrite={trace.llm_calls.reduce((s, c) => s + c.cache_write_tokens, 0)}
               />
             </div>
+
+            {/* Live log */}
+            <LiveLogPanel threadId={trace.thread_id} isRunning={trace.status === 'running'} />
 
             {/* LLM calls */}
             <div>

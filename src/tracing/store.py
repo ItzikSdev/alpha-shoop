@@ -5,6 +5,17 @@ from typing import Optional
 
 
 @dataclass
+class LogEntry:
+    ts: str
+    node: str
+    msg: str
+    level: str  # info | action | success | error | warning
+
+    def to_dict(self) -> dict:
+        return {"ts": self.ts, "node": self.node, "msg": self.msg, "level": self.level}
+
+
+@dataclass
 class LLMCallTrace:
     id: int
     node: str
@@ -48,6 +59,7 @@ class RunTrace:
     started_at: str
     finished_at: Optional[str]
     llm_calls: list[LLMCallTrace] = field(default_factory=list)
+    logs: list[LogEntry] = field(default_factory=list)
     _call_counter: int = field(default=0, repr=False)
 
     def add_call(self, **kwargs) -> LLMCallTrace:
@@ -55,6 +67,16 @@ class RunTrace:
         call = LLMCallTrace(id=self._call_counter, **kwargs)
         self.llm_calls.append(call)
         return call
+
+    def add_log(self, node: str, msg: str, level: str = "info") -> LogEntry:
+        entry = LogEntry(
+            ts=datetime.now(timezone.utc).isoformat(),
+            node=node,
+            msg=msg,
+            level=level,
+        )
+        self.logs.append(entry)
+        return entry
 
     @property
     def total_input_tokens(self) -> int:
@@ -86,6 +108,7 @@ class RunTrace:
         return {
             **self.to_summary(),
             "llm_calls": [c.to_dict() for c in self.llm_calls],
+            "logs": [e.to_dict() for e in self.logs],
         }
 
 
@@ -122,6 +145,11 @@ class TraceStore:
         if run:
             return run.add_call(**kwargs)
         return None
+
+    def add_log(self, thread_id: str, node: str, msg: str, level: str = "info") -> None:
+        run = self._runs.get(thread_id)
+        if run:
+            run.add_log(node=node, msg=msg, level=level)
 
 
 trace_store = TraceStore()
