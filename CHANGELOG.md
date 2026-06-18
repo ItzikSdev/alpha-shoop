@@ -4,6 +4,16 @@ Newest first. Each entry added by `/status` skill after completing a task.
 
 ---
 
+## [2026-06-18 12:30] — Fix navigation 403 — switch to GraphQL menuUpdate
+
+`menus.json` REST endpoint removed in Shopify API 2024-07 → returned 403.
+Replaced with GraphQL `menuCreate` / `menuUpdate` mutations.
+Key findings: default menus (main-menu) cannot be deleted — must use `menuUpdate` in-place.
+`menuUpdate` requires `title` as mandatory arg. `$items` must be non-nullable (`[MenuItemUpdateInput!]!`).
+Items use `type: HTTP` with full `https://{domain}/...` URLs.
+Tested live: menu now has 5 items (3 collections + About Us + Shipping & Returns). `userErrors: []`.
+- Files: `src/mcp_tools/shopify_theme.py`
+
 ## [2026-06-18 10:00] — Architecture page zoom + fullscreen + diagram redesign
 
 Rewrote `MermaidDiagram.tsx` to support real zoom (resizes the container div so the responsive SVG scales naturally, not CSS `zoom` magnifying-glass). Added fullscreen button via Fullscreen API. Added Ctrl+scroll support.

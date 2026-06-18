@@ -9,7 +9,8 @@ from __future__ import annotations
 import json
 import logging
 import secrets
-from .shopify import _shopify_rest
+from .shopify import _shopify_rest, _shopify_gql
+from src.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -372,32 +373,70 @@ async def build_homepage(brief: dict, theme_id: str) -> bool:
 
 # ── 4. Navigation menu ────────────────────────────────────────────────────────
 
+_GQL_GET_MENUS = """
+{ menus(first: 10) { nodes { id handle } } }
+"""
+
+_GQL_MENU_CREATE = """
+mutation menuCreate($title: String!, $handle: String!, $items: [MenuItemCreateInput!]!) {
+  menuCreate(title: $title, handle: $handle, items: $items) {
+    menu { id handle }
+    userErrors { field message }
+  }
+}
+"""
+
+_GQL_MENU_UPDATE = """
+mutation menuUpdate($id: ID!, $title: String!, $items: [MenuItemUpdateInput!]!) {
+  menuUpdate(id: $id, title: $title, items: $items) {
+    menu { id handle }
+    userErrors { field message }
+  }
+}
+"""
+
+
 async def setup_navigation(store_name: str, collections: list[str]) -> bool:
-    items = []
+    """Rebuild the main-menu via GraphQL (REST menus.json removed in API 2024-07).
+    Default Shopify menus cannot be deleted — we update them in-place instead."""
+    domain = get_settings().shopify_store_domain
+
+    nav_items = []
     for coll in collections:
         handle = coll.lower().replace(" ", "-").replace("&", "and").replace("/", "-")
-        items.append({
+        nav_items.append({
             "title": coll,
-            "type": "collection_link",
-            "url": f"/collections/{handle}",
-            "items": [],
+            "type": "HTTP",
+            "url": f"https://{domain}/collections/{handle}",
         })
-    items += [
-        {"title": "About Us", "type": "page_link", "url": "/pages/about-us", "items": []},
-        {"title": "Shipping & Returns", "type": "page_link", "url": "/pages/shipping-returns", "items": []},
+    nav_items += [
+        {"title": "About Us",           "type": "HTTP", "url": f"https://{domain}/pages/about-us"},
+        {"title": "Shipping & Returns", "type": "HTTP", "url": f"https://{domain}/pages/shipping-returns"},
     ]
+
     try:
-        existing = await _shopify_rest("GET", "menus.json")
-        menus = existing.get("menus", [])
-        main = next((m for m in menus if m.get("handle") in ("main-menu", "frontend")), None)
-        payload = {"menu": {"title": "Main Menu", "handle": "main-menu", "items": items}}
+        data = await _shopify_gql(_GQL_GET_MENUS, {})
+        menus = data.get("menus", {}).get("nodes", [])
+        main = next((m for m in menus if m.get("handle") in ("main-menu", "frontend-navigation")), None)
+
         if main:
-            await _shopify_rest("PUT", f"menus/{main['id']}.json", payload)
+            # Update in-place — items without id replace all existing items
+            result = await _shopify_gql(_GQL_MENU_UPDATE, {"id": main["id"], "title": "Main Menu", "items": nav_items})
+            errors = result.get("menuUpdate", {}).get("userErrors", [])
         else:
-            await _shopify_rest("POST", "menus.json", payload)
+            result = await _shopify_gql(_GQL_MENU_CREATE, {
+                "title": "Main Menu",
+                "handle": "main-menu",
+                "items": nav_items,
+            })
+            errors = result.get("menuCreate", {}).get("userErrors", [])
+
+        if errors:
+            logger.warning("Navigation userErrors: %s", errors)
+            return False
         return True
     except Exception as exc:
-        logger.warning("Navigation failed: %s", exc)
+        logger.warning("Navigation failed (GQL): %s", exc)
         return False
 
 
