@@ -1,5 +1,7 @@
 """FastAPI application — entry point for the Alpha Shoop agent system."""
 from __future__ import annotations
+import asyncio
+import logging
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -8,13 +10,30 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 
 from src.api.routes import health, agents, webhooks, auth
+from src.tracing import trace_store
+from src.tracing.persist import init_db, load_all, save_all
+
+logger = logging.getLogger(__name__)
+
+
+async def _checkpoint_loop() -> None:
+    """Save all in-memory traces to SQLite every 5 seconds."""
+    while True:
+        await asyncio.sleep(5)
+        await asyncio.to_thread(save_all, trace_store)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: could initialise DB pool, Redis, LangSmith here
+    # Init SQLite and load persisted runs into memory
+    await asyncio.to_thread(init_db)
+    n = await asyncio.to_thread(load_all, trace_store)
+    logger.info("Loaded %d persisted runs from SQLite", n)
+    task = asyncio.create_task(_checkpoint_loop())
     yield
-    # Shutdown: clean up connections
+    # Shutdown: final checkpoint, cancel loop
+    task.cancel()
+    await asyncio.to_thread(save_all, trace_store)
 
 
 app = FastAPI(

@@ -19,6 +19,7 @@ from src.models.responses import (
 from src.api.deps import get_current_operator
 from src.guardrails.kill_switch import KillSwitch
 from src.tracing import trace_store, TraceCallback, current_thread_id
+from src.tracing.persist import save_all
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -73,6 +74,7 @@ async def _execute_graph(thread_id: str, task: str, operator: str, max_budget_us
                 return
         run.status = RunStatus.COMPLETED
         trace_store.finish_run(thread_id, "completed")
+        await asyncio.to_thread(save_all, trace_store)
         run.result = {
             "trending_products": state.get("trending_products", []),
             "shopify_products_created": state.get("shopify_products_created", []),
@@ -84,6 +86,7 @@ async def _execute_graph(thread_id: str, task: str, operator: str, max_budget_us
         logger.exception("Agent run %s failed", thread_id)
         run.status = RunStatus.FAILED
         trace_store.finish_run(thread_id, "failed")
+        await asyncio.to_thread(save_all, trace_store)
         run.error = str(exc)
         run.result = {
             "trending_products": state.get("trending_products", []),

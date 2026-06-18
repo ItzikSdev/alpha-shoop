@@ -12,6 +12,7 @@ from src.mcp_tools.shopify import (
     create_collection,
     add_product_to_collection,
 )
+from src.tracing import agent_log
 from src.tracing.context import current_node
 
 logger = logging.getLogger(__name__)
@@ -127,6 +128,8 @@ async def ecommerce_node(state: AgentState) -> dict:
     candidates = [p for p in products if p.get("product_id") not in already_created]
     top = sorted(candidates, key=lambda p: p.get("margin_pct", 0), reverse=True)[:5]
 
+    agent_log(f"{len(candidates)} candidates → processing top {len(top)}", "info")
+
     created_ids: list[str] = list(already_created)
     last_error: str | None = None
     created_count = 0
@@ -139,24 +142,29 @@ async def ecommerce_node(state: AgentState) -> dict:
         category = product.get("category", "General")
 
         # Step 1: Generate brand identity for this product
+        agent_log(f"Branding: '{supplier_title[:50]}'...", "action")
         brand = await _brand_product(supplier_title, category)
         brand_title = brand.get("brand_title", supplier_title)
         collection_name = brand.get("collection", category)
         hook = brand.get("hook", "")
         audience = brand.get("audience", "")
+        agent_log(f"→ '{brand_title}' in [{collection_name}]", "info")
 
         # Step 2: Write premium copy
+        agent_log(f"Writing premium copy for '{brand_title}'...", "action")
         description = await _write_description(brand_title, category, hook, audience)
 
         # Step 3: Get or create the collection
         if collection_name not in collection_cache:
+            agent_log(f"Creating collection '{collection_name}'...", "action")
             coll_result = await create_collection(collection_name)
             if coll_result.get("collection_id"):
                 collection_cache[collection_name] = coll_result["collection_id"]
 
         # Step 4: Create the Shopify product
         price = product.get("estimated_price_shopify_usd", 0.0) or 0.0
-        compare_price = round(price * 1.35, 2)  # 35% markup as "original" price
+        compare_price = round(price * 1.35, 2)
+        agent_log(f"Publishing to Shopify: '{brand_title}' @ ${price:.2f}...", "action")
 
         result = await create_shopify_product(
             title=brand_title,
@@ -171,10 +179,12 @@ async def ecommerce_node(state: AgentState) -> dict:
             pid = result["product"]["id"]
             created_ids.append(str(pid))
             created_count += 1
+            agent_log(f"✓ Published '{brand_title}' (ID: {pid})", "success")
 
             # Step 5: Assign to collection
             if collection_name in collection_cache:
                 await add_product_to_collection(pid, collection_cache[collection_name])
+                agent_log(f"  → Added to '{collection_name}'", "info")
 
             # Step 6: Update inventory
             inventory_item_id = (
@@ -193,6 +203,7 @@ async def ecommerce_node(state: AgentState) -> dict:
                 )
         else:
             last_error = result.get("error")
+            agent_log(f"✗ Failed: '{brand_title}' — {last_error}", "error")
             logger.warning("Failed to create product %s: %s", brand_title, last_error)
 
     msg = f"Created {created_count} branded products"

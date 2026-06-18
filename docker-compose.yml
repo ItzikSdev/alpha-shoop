@@ -75,6 +75,8 @@ services:
       SHOPIFY_ACCESS_TOKEN: ${SHOPIFY_ACCESS_TOKEN:-}
       CJ_EMAIL: ${CJ_EMAIL:-}
       CJ_API_KEY: ${CJ_API_KEY:-}
+    volumes:
+      - traces_data:/app/data
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,3 +97,4 @@ services:
 
 volumes:
   postgres_data:
+  traces_data:
