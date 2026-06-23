@@ -18,40 +18,85 @@ from src.models.responses import (
 )
 from src.api.deps import get_current_operator
 from src.guardrails.kill_switch import KillSwitch
+from src.stores import _current_store, get_store, update_store_brand
 from src.tracing import trace_store, TraceCallback, current_thread_id
 from src.tracing.persist import save_all
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# In-memory run store (replace with Redis/DB in production)
+# In-memory run store (kill-switch tracking)
 _runs: dict[str, RunStatusResponse] = {}
 _kill_switch = KillSwitch()
 
+# ── Daemon mode config (in-memory) ────────────────────────────────────────────
+DEFAULT_DAEMON_TASK = (
+    "Build a store for trending home decor products under $50. "
+    "Set up the store brand, find top products with 30%+ margin, "
+    "list them on Shopify with great copy."
+)
 
-async def _execute_graph(thread_id: str, task: str, operator: str, max_budget_usd: float) -> None:
+_daemon: dict = {
+    "enabled": False,
+    "interval_minutes": 60,
+    "task": DEFAULT_DAEMON_TASK,
+    "last_started_at": None,
+    "next_run_at": None,
+}
+
+
+async def _execute_graph(
+    thread_id: str, task: str, operator: str, max_budget_usd: float, store_id: str | None = None
+) -> None:
     """Background task: streams the LangGraph run, updating _runs live per node."""
-    # Set context var so TraceCallback can find this thread's store entry
     current_thread_id.set(thread_id)
-    trace_store.start_run(thread_id=thread_id, task=task, operator=operator)
+    # NOTE: trace_store.start_run() is called before this task is spawned so the
+    # /trace endpoint is immediately available (avoids 404 race condition).
 
     run = _runs[thread_id]
     run.status = RunStatus.RUNNING
+
+    # Activate per-store credentials so all Shopify tools use the right store
+    store_cfg = None
+    cached_brand: dict | None = None
+    if store_id:
+        store_cfg = get_store(store_id)
+        if store_cfg:
+            _current_store.set(store_cfg)
+            if store_cfg.store_brand:
+                cached_brand = store_cfg.store_brand
+
+    # [SETUP_ONLY] and [REBUILD] always start fresh — ignore cached brand/design
+    # so design_agent + store_setup are guaranteed to run
+    force_rebuild = "[SETUP_ONLY]" in task or "[REBUILD]" in task
+    if force_rebuild:
+        cached_brand = None
 
     state: AgentState = {
         "task": task,
         "thread_id": thread_id,
         "operator": operator,
+        "store_id": store_id,
         "messages": [],
         "next_agent": None,
         "director_reasoning": None,
         "trending_products": [],
+        "sourcing_attempts": 0,
+        "sourcing_feedback": None,
         "shopify_products_created": [],
         "campaign_ids": [],
         "total_ad_spend_usd": 0.0,
         "fulfilled_orders": [],
         "budget_remaining_usd": max_budget_usd,
-        "store_brand": None,
+        # Pre-load cached brand brief so agents don't rebuild from scratch
+        "store_brand": cached_brand,
+        "store_designed": bool(cached_brand) and not force_rebuild,
+        "design_spec": None,
+        "design_iterations": 0,
+        "design_approved": False,
+        "frontend_report": None,
+        "store_health": None,
+        "store_knowledge": None,
         "kill_switch_triggered": False,
         "run_complete": False,
         "error": None,
@@ -60,7 +105,7 @@ async def _execute_graph(thread_id: str, task: str, operator: str, max_budget_us
         callback = TraceCallback()
         async for step in graph.astream(
             state,
-            config={"recursion_limit": 25, "callbacks": [callback]},
+            config={"recursion_limit": 50, "callbacks": [callback]},
         ):
             for node_name, delta in step.items():
                 state.update(delta)
@@ -75,6 +120,11 @@ async def _execute_graph(thread_id: str, task: str, operator: str, max_budget_us
         run.status = RunStatus.COMPLETED
         trace_store.finish_run(thread_id, "completed")
         await asyncio.to_thread(save_all, trace_store)
+
+        # Persist brand brief back to store config so future runs reuse it
+        if store_id and state.get("store_brand"):
+            await asyncio.to_thread(update_store_brand, store_id, state["store_brand"])
+
         run.result = {
             "trending_products": state.get("trending_products", []),
             "shopify_products_created": state.get("shopify_products_created", []),
@@ -97,6 +147,15 @@ async def _execute_graph(thread_id: str, task: str, operator: str, max_budget_us
         }
 
 
+def _spawn_run(
+    thread_id: str, task: str, operator: str, max_budget_usd: float, store_id: str | None = None
+) -> None:
+    """Create trace entry + _runs entry, then spawn background task."""
+    trace_store.start_run(thread_id=thread_id, task=task, operator=operator)
+    _runs[thread_id] = RunStatusResponse(thread_id=thread_id, status=RunStatus.PENDING)
+    asyncio.create_task(_execute_graph(thread_id, task, operator, max_budget_usd, store_id))
+
+
 @router.post(
     "/run",
     response_model=AgentRunResponse,
@@ -116,11 +175,8 @@ async def trigger_run(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Kill-switch is active — all runs are halted.",
         )
-
     thread_id = body.thread_id or str(uuid.uuid4())
-    _runs[thread_id] = RunStatusResponse(thread_id=thread_id, status=RunStatus.PENDING)
-    asyncio.create_task(_execute_graph(thread_id, body.task, operator, body.max_budget_usd))
-
+    _spawn_run(thread_id, body.task, operator, body.max_budget_usd, body.store_id)
     return AgentRunResponse(thread_id=thread_id, status=RunStatus.PENDING)
 
 
@@ -203,13 +259,31 @@ async def get_run_trace(thread_id: str) -> dict:
 
 
 @router.get(
+    "/runs/{thread_id}/logs",
+    summary="All log entries for a run (no SSE — snapshot)",
+)
+async def get_run_logs(thread_id: str) -> list[dict]:
+    run = trace_store.get_run(thread_id)
+    if not run:
+        raise HTTPException(status_code=404, detail=f"Trace for {thread_id!r} not found")
+    return [e.to_dict() for e in run.logs]
+
+
+@router.get(
     "/runs/{thread_id}/stream",
     summary="SSE stream of live log entries and LLM call completions",
     # No JWT dep — EventSource cannot set Authorization headers
 )
 async def stream_run(thread_id: str) -> StreamingResponse:
     async def generate():
-        run = trace_store.get_run(thread_id)
+        # Retry up to 3s for run to appear (handles very fast clients)
+        run = None
+        for _ in range(15):
+            run = trace_store.get_run(thread_id)
+            if run:
+                break
+            await asyncio.sleep(0.2)
+
         if not run:
             yield f"data: {json.dumps({'type': 'error', 'msg': 'Run not found'})}\n\n"
             return
@@ -219,14 +293,12 @@ async def stream_run(thread_id: str) -> StreamingResponse:
 
         while True:
             # Flush new log entries
-            new_logs = run.logs[sent_logs:]
-            for entry in new_logs:
+            for entry in run.logs[sent_logs:]:
                 yield f"data: {json.dumps({'type': 'log', **entry.to_dict()})}\n\n"
                 sent_logs += 1
 
             # Flush new LLM call completions (summary only — full trace via /trace)
-            new_calls = run.llm_calls[sent_calls:]
-            for call in new_calls:
+            for call in run.llm_calls[sent_calls:]:
                 yield f"data: {json.dumps({'type': 'llm_call', 'node': call.node, 'model': call.model, 'tokens': call.input_tokens + call.output_tokens, 'duration_ms': round(call.duration_ms), 'ts': call.timestamp, 'error': call.error})}\n\n"
                 sent_calls += 1
 
@@ -243,3 +315,19 @@ async def stream_run(thread_id: str) -> StreamingResponse:
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+# ── Daemon mode endpoints ─────────────────────────────────────────────────────
+
+@router.get("/daemon", summary="Get daemon (auto-run) config")
+async def get_daemon() -> dict:
+    return dict(_daemon)
+
+
+@router.post("/daemon", summary="Update daemon (auto-run) config")
+async def set_daemon(body: dict) -> dict:
+    allowed = {"enabled", "interval_minutes", "task"}
+    for k, v in body.items():
+        if k in allowed:
+            _daemon[k] = v
+    return dict(_daemon)

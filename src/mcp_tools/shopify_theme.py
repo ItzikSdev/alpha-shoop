@@ -9,12 +9,18 @@ from __future__ import annotations
 import json
 import logging
 import secrets
-from .shopify import _shopify_rest, _shopify_gql
+from .shopify import _shopify_rest, _shopify_gql, _shopify_creds
 from src.config import get_settings
 
 logger = logging.getLogger(__name__)
 
 THEME_ID_CACHE: str | None = None
+
+
+def clear_theme_id_cache() -> None:
+    """Call this after installing a new theme so the next request fetches the fresh active theme."""
+    global THEME_ID_CACHE
+    THEME_ID_CACHE = None
 
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
@@ -65,6 +71,27 @@ def _uid(prefix: str = "") -> str:
     return (prefix + secrets.token_hex(4))[:12]
 
 
+def _resolve_current_settings(settings: dict) -> dict:
+    """
+    Normalize settings_data.json's "current" field to always be a dict we can mutate.
+
+    Shopify allows "current" to be either an inline settings object OR a string
+    naming one of the "presets" entries. In the latter case we copy the named
+    preset into an inline dict and write it back as "current" so downstream
+    code (and Shopify) always sees a concrete settings object.
+    """
+    current = settings.get("current")
+    if isinstance(current, dict):
+        return current
+    if isinstance(current, str):
+        presets = settings.get("presets", {})
+        current = dict(presets.get(current, {}))
+    else:
+        current = {}
+    settings["current"] = current
+    return current
+
+
 # ── 1. Brand colors ───────────────────────────────────────────────────────────
 
 _TONE_PALETTES = {
@@ -76,17 +103,43 @@ _TONE_PALETTES = {
 }
 
 
+def _contrast(hex_color: str) -> str:
+    """Pick black or white text/label color for legibility against hex_color."""
+    h = hex_color.lstrip("#")
+    if len(h) != 6:
+        return "#FFFFFF"
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    luma = 0.299 * r + 0.587 * g + 0.114 * b
+    return "#000000" if luma > 160 else "#FFFFFF"
+
+
 async def apply_brand_colors(tone: str, theme_id: str) -> bool:
     pal = _TONE_PALETTES.get(tone.lower(), _TONE_PALETTES["warm"])
     settings = await _read_asset(theme_id, "config/settings_data.json")
     if not isinstance(settings, dict):
         return False
-    current = settings.setdefault("current", {})
-    current["color_palette"] = {"background": pal["bg"], "foreground": pal["fg"]}
-    # Rounded pill buttons look premium
-    current["button_border_radius_primary"] = 2
-    current["button_border_radius_secondary"] = 2
-    current["card_corner_radius"] = 2
+    current = _resolve_current_settings(settings)
+
+    if isinstance(current.get("color_schemes"), dict):
+        # Dawn-style: named schemes (scheme-1..N), each its own bg/text/button/shadow.
+        # Override scheme-1 (the default light scheme most sections start on) with
+        # the brand palette so the whole storefront picks it up without per-section edits.
+        schemes = current["color_schemes"]
+        contrast = _contrast(pal["accent"])
+        schemes["scheme-1"] = {"settings": {
+            "background": pal["bg"], "background_gradient": "",
+            "text": pal["fg"], "button": pal["accent"], "button_label": contrast,
+            "secondary_button_label": pal["fg"], "shadow": pal["fg"],
+        }}
+        current["buttons_radius"] = 0
+        current["card_corner_radius"] = 2
+    else:
+        # Horizon-style: flat global palette.
+        current["color_palette"] = {"background": pal["bg"], "foreground": pal["fg"]}
+        current["button_border_radius_primary"] = 2
+        current["button_border_radius_secondary"] = 2
+        current["card_corner_radius"] = 2
+
     return await _write_asset(theme_id, "config/settings_data.json", settings)
 
 
@@ -103,44 +156,168 @@ async def set_announcement_bar(messages: list[str], theme_id: str, bg_color: str
 
     sections = header_group.get("sections", {})
     ann_key = next(
-        (k for k, v in sections.items() if v.get("type") == "header-announcements"),
+        (k for k, v in sections.items() if v.get("type") in ("header-announcements", "announcement-bar")),
         None
     )
     if not ann_key:
         return False
 
     ann = sections[ann_key]
-    # Rebuild blocks
+    is_dawn = ann.get("type") == "announcement-bar"
+
     blocks = {}
     order = []
     for msg in messages[:5]:
         bid = _uid("ann_")
-        blocks[bid] = {
-            "type": "_announcement",
-            "settings": {
-                "text": msg,
-                "font": "var(--font-subheading--family)",
-                "font_size": "0.75rem",
-                "letter_spacing": "widest",
-                "case": "uppercase",
-            },
-            "blocks": {},
-        }
+        if is_dawn:
+            blocks[bid] = {"type": "announcement", "settings": {"text": msg, "link": ""}}
+        else:
+            blocks[bid] = {
+                "type": "_announcement",
+                "settings": {
+                    "text": msg,
+                    "font": "var(--font-subheading--family)",
+                    "font_size": "0.75rem",
+                    "letter_spacing": "widest",
+                    "case": "uppercase",
+                },
+                "blocks": {},
+            }
         order.append(bid)
 
     ann["blocks"] = blocks
     ann["block_order"] = order
-    ann["settings"]["background_color"] = bg_color
-    ann["settings"]["speed"] = 4
-    ann["settings"]["padding-block-start"] = 12
-    ann["settings"]["padding-block-end"] = 12
+
+    if is_dawn:
+        ann["settings"]["auto_rotate"] = len(messages) > 1
+        ann["settings"]["change_slides_speed"] = 4
+    else:
+        ann["settings"]["background_color"] = bg_color
+        ann["settings"]["speed"] = 4
+        ann["settings"]["padding-block-start"] = 12
+        ann["settings"]["padding-block-end"] = 12
 
     return await _write_asset(theme_id, "sections/header-group.json", header_group)
 
 
 # ── 3. Homepage template ──────────────────────────────────────────────────────
 
+async def _is_dawn_architecture(theme_id: str) -> bool:
+    """Dawn/Online-Store-2.0-family themes ship sections/image-banner.liquid; Horizon doesn't."""
+    asset = await _read_asset(theme_id, "sections/image-banner.liquid")
+    return bool(asset)
+
+
 async def build_homepage(brief: dict, theme_id: str) -> bool:
+    """
+    Rebuild the homepage with TANAOR-quality sections, using each theme family's
+    actual native section types (Horizon and Dawn use entirely different schemas
+    for the same concepts — hero vs image-banner, product-list vs featured-collection).
+    """
+    if await _is_dawn_architecture(theme_id):
+        return await _build_homepage_dawn(brief, theme_id)
+    return await _build_homepage_horizon(brief, theme_id)
+
+
+async def _build_homepage_dawn(brief: dict, theme_id: str) -> bool:
+    """Dawn-native homepage: image-banner (hero) → featured-collection → custom-liquid (story) → collection-list."""
+    index = await _read_asset(theme_id, "templates/index.json")
+    if not isinstance(index, dict):
+        return False
+
+    store_name = brief.get("store_name", "Our Store")
+    tagline = brief.get("tagline", "")
+    differentiator = brief.get("differentiator", "")
+    about_us = brief.get("about_us", "")
+    collections = brief.get("collections", [])
+    tone = brief.get("tone", "warm")
+    pal = _TONE_PALETTES.get(tone.lower(), _TONE_PALETTES["warm"])
+    about_short = about_us.split("\n\n")[0] if about_us else differentiator
+    first_collection_handle = (
+        collections[0].lower().replace(" ", "-").replace("&", "and") if collections else "all"
+    )
+
+    hero_id = "hero_main"
+    featured_id = "featured_products"
+    story_id = "story_brand"
+    collection_list_id = "collections_browse"
+
+    sections = {
+        hero_id: {
+            "type": "image-banner",
+            "blocks": {
+                "heading": {"type": "heading", "settings": {"heading": tagline, "heading_size": "h0"}},
+                "text": {"type": "text", "settings": {"text": differentiator, "text_style": "subtitle"}},
+                "buttons": {
+                    "type": "buttons",
+                    "settings": {
+                        "button_label_1": "Shop Now",
+                        "button_link_1": f"shopify://collections/{first_collection_handle}",
+                        "button_style_secondary_1": False,
+                    },
+                },
+            },
+            "block_order": ["heading", "text", "buttons"],
+            "settings": {
+                "image_height": "large",
+                "color_scheme": "scheme-1",
+                "image_overlay_opacity": 30,
+                "show_text_box": True,
+                "desktop_content_position": "middle-center",
+                "desktop_content_alignment": "center",
+            },
+        },
+        featured_id: {
+            "type": "featured-collection",
+            "blocks": {},
+            "settings": {
+                "collection": first_collection_handle,
+                "products_to_show": 4,
+                "columns_desktop": 4,
+                "title": "Best Sellers",
+                "heading_size": "h1",
+                "color_scheme": "scheme-1",
+            },
+        },
+        story_id: {
+            "type": "custom-liquid",
+            "blocks": {},
+            "settings": {
+                "liquid": (
+                    f'<div style="max-width:1100px;margin:0 auto;padding:80px 32px;'
+                    f'display:flex;gap:60px;align-items:center;flex-wrap:wrap;">'
+                    f'<div style="flex:1;min-width:280px;">'
+                    f'<p style="font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;'
+                    f'color:{pal["accent"]};margin-bottom:12px;">Our Story</p>'
+                    f'<h2 style="font-size:2rem;font-weight:700;line-height:1.2;margin-bottom:20px;">Why {store_name}?</h2>'
+                    f'<p style="font-size:1rem;line-height:1.7;color:#666;margin-bottom:28px;">{about_short}</p>'
+                    f'<a href="/pages/about-us" style="display:inline-block;padding:12px 28px;'
+                    f'border:1.5px solid {pal["fg"]};color:{pal["fg"]};text-decoration:none;'
+                    f'font-size:0.8rem;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;">'
+                    f'Learn More</a></div>'
+                    f'<div style="flex:1;min-width:280px;aspect-ratio:4/5;background:{pal["bg"]};'
+                    f'border-radius:2px;border:1px solid #eee;"></div></div>'
+                ),
+            },
+        },
+        collection_list_id: {
+            "type": "collection-list",
+            "blocks": {},
+            "settings": {
+                "title": "Shop by Category",
+                "heading_size": "h1",
+                "columns_desktop": min(len(collections), 4) if collections else 3,
+                "color_scheme": "scheme-1",
+            },
+        },
+    }
+
+    index["sections"] = sections
+    index["order"] = [hero_id, featured_id, story_id, collection_list_id]
+    return await _write_asset(theme_id, "templates/index.json", index)
+
+
+async def _build_homepage_horizon(brief: dict, theme_id: str) -> bool:
     """
     Rebuild the homepage template with TANAOR-quality sections:
       1. Hero — brand tagline + CTA
@@ -396,23 +573,53 @@ mutation menuUpdate($id: ID!, $title: String!, $items: [MenuItemUpdateInput!]!) 
 """
 
 
+_GQL_LIST_COLLECTIONS = """
+{ collections(first: 50) { nodes { title handle } } }
+"""
+
+
 async def setup_navigation(store_name: str, collections: list[str]) -> bool:
-    """Rebuild the main-menu via GraphQL (REST menus.json removed in API 2024-07).
-    Default Shopify menus cannot be deleted — we update them in-place instead."""
-    domain = get_settings().shopify_store_domain
+    """
+    Rebuild the main-menu via GraphQL (REST menus.json removed in API 2024-07).
+    Default Shopify menus cannot be deleted — we update them in-place instead.
+
+    Only links to collections/pages that ACTUALLY exist in the store — `collections`
+    is the brief's wishlist, not a guarantee; linking to a not-yet-created collection
+    produces a broken 404 nav link, so we verify against the real store state first.
+    """
+    domain, _ = _shopify_creds()
+
+    try:
+        existing_collections = await _shopify_gql(_GQL_LIST_COLLECTIONS, {})
+        real_handles = {
+            c["handle"] for c in existing_collections.get("collections", {}).get("nodes", [])
+        }
+    except Exception:
+        real_handles = set()
 
     nav_items = []
     for coll in collections:
         handle = coll.lower().replace(" ", "-").replace("&", "and").replace("/", "-")
-        nav_items.append({
-            "title": coll,
-            "type": "HTTP",
-            "url": f"https://{domain}/collections/{handle}",
-        })
-    nav_items += [
-        {"title": "About Us",           "type": "HTTP", "url": f"https://{domain}/pages/about-us"},
-        {"title": "Shipping & Returns", "type": "HTTP", "url": f"https://{domain}/pages/shipping-returns"},
-    ]
+        if handle in real_handles:
+            nav_items.append({
+                "title": coll,
+                "type": "HTTP",
+                "url": f"https://{domain}/collections/{handle}",
+            })
+
+    try:
+        existing_pages = await _shopify_rest("GET", "pages.json")
+        page_handles = {p.get("handle", "") for p in existing_pages.get("pages", [])}
+    except Exception:
+        page_handles = set()
+
+    for title, handle in [("About Us", "about-us"), ("Shipping & Returns", "shipping-returns")]:
+        if handle in page_handles:
+            nav_items.append({"title": title, "type": "HTTP", "url": f"https://{domain}/pages/{handle}"})
+
+    if not nav_items:
+        logger.warning("No real collections/pages found yet — skipping nav rebuild to avoid an empty menu")
+        return False
 
     try:
         data = await _shopify_gql(_GQL_GET_MENUS, {})

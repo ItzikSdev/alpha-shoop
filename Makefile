@@ -9,7 +9,7 @@ PT    := $(VENV)/bin/pytest
 .PHONY: dev run stop restart logs ps migrate \
         setup install proxy proxy-stop proxy-logs \
         test test-cov test-file test-watch \
-        mcp mcp-test mcp-config \
+        mcp mcp-test mcp-config storefront \
         docs docs-build open-api open-docs \
         push secrets clean help
 
@@ -109,6 +109,10 @@ mcp:
 mcp-test:
 	PYTHONPATH=$(ROOT) $(PY) $(ROOT)/test_mcp_tools.py
 
+## Run the host-side Hydrogen storefront runner (NOT Docker) on 127.0.0.1:8788
+storefront:
+	PYTHONPATH=$(ROOT) $(UV) src.storefront.runner:app --host 127.0.0.1 --port 8788 --reload
+
 mcp-config:
 	@echo ""
 	@echo "╔══════════════════════════════════════════════════════╗"
@@ -176,6 +180,7 @@ help:
 	@echo "    make proxy         Start LiteLLM proxy (Docker)"
 	@echo "    make mcp-test      Smoke-test MCP tools"
 	@echo "    make mcp-config    Print Claude Desktop config"
+	@echo "    make storefront    Run host Hydrogen storefront runner (127.0.0.1:8788)"
 	@echo "    make test          Run pytest"
 	@echo ""
 	@echo "  GitHub / GCP:"

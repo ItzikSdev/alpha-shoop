@@ -6,7 +6,8 @@ from pathlib import Path
 
 from .store import LLMCallTrace, LogEntry, RunTrace, TraceStore
 
-DB_PATH = Path("/app/data/traces.db")
+import os
+DB_PATH = Path(os.environ.get("TRACES_DB_PATH", "/app/data/traces.db"))
 logger = logging.getLogger(__name__)
 
 

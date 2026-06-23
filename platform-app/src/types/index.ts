@@ -76,4 +76,4 @@ export interface APIEndpoint {
   response: TypeSchema;
 }
 
-export type Page = 'overview' | 'tools' | 'agents' | 'endpoints' | 'architecture' | 'technologies' | 'runs';
+export type Page = 'overview' | 'tools' | 'agents' | 'endpoints' | 'architecture' | 'technologies' | 'runs' | 'stores';

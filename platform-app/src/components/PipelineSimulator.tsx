@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 
 const AGENT_META: Record<string, { name: string; color: string; icon: string; model: string }> = {
   director:          { name: 'Director',       color: '#CC785C', icon: '🎯', model: 'Opus 4.8' },
+  store_setup:       { name: 'Store Setup',    color: '#F59E0B', icon: '🏪', model: 'Sonnet 4.6' },
+  design_agent:      { name: 'Design Agent',   color: '#EC4899', icon: '✦',  model: 'Sonnet 4.6' },
   trend_scraper:     { name: 'Trend Scraper',  color: '#E67E22', icon: '📦', model: 'Haiku 4.5' },
   ecommerce_manager: { name: 'E-com Manager',  color: '#5E8E3E', icon: '🛒', model: 'Sonnet 4.6' },
   marketing_agent:   { name: 'Marketing',      color: '#4285F4', icon: '📢', model: 'Sonnet 4.6' },
@@ -11,7 +13,7 @@ const AGENT_META: Record<string, { name: string; color: string; icon: string; mo
 };
 
 const AGENT_ORDER = [
-  'director', 'trend_scraper', 'ecommerce_manager', 'marketing_agent', 'fulfillment_agent',
+  'director', 'store_setup', 'design_agent', 'trend_scraper', 'ecommerce_manager', 'marketing_agent', 'fulfillment_agent',
 ];
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -20,6 +22,8 @@ type RunStatus = 'idle' | 'running' | 'done';
 type EntryType = 'routing' | 'tool_call' | 'tool_result' | 'decision' | 'complete' | 'webhook';
 
 interface PipelineState {
+  store_brand: string;
+  store_designed: boolean;
   target_keyword: string;
   supplier_product_id: string;
   supplier_price: number | null;
@@ -48,6 +52,8 @@ interface LogEntry extends Step {
 // ── Initial state ────────────────────────────────────────────────────────────
 
 const INITIAL_STATE: PipelineState = {
+  store_brand: '',
+  store_designed: false,
   target_keyword: '',
   supplier_product_id: '',
   supplier_price: null,
@@ -65,16 +71,67 @@ const INITIAL_STATE: PipelineState = {
 const STEPS: Step[] = [
   {
     agentId: 'director', delayMs: 0, type: 'routing',
-    message: 'Pipeline started. supplier_product_id is empty → routing to Trend Scraper.',
-    data: { next_node: 'trend_scraper', reason: 'no product in state', iteration: 1 },
-    stateUpdate: { target_keyword: 'Electronics' },
+    message: 'Pipeline started. store_brand is null → routing to Store Setup.',
+    data: { next_node: 'store_setup', reason: 'brand identity not set', iteration: 1 },
   },
   {
-    agentId: 'trend_scraper', delayMs: 700, type: 'tool_call',
-    message: 'search_trending_products(category="Electronics", max_results=10, min_margin_pct=30.0)',
+    agentId: 'store_setup', delayMs: 600, type: 'tool_call',
+    message: 'Generating brand brief (name · tagline · palette · differentiator)…',
   },
   {
-    agentId: 'trend_scraper', delayMs: 2200, type: 'tool_result',
+    agentId: 'store_setup', delayMs: 1800, type: 'tool_result',
+    message: '✓ Brand: "LumeNest" — "Light your living, effortlessly." · tone: warm · accent: #D4750A',
+    data: {
+      store_name: 'LumeNest',
+      tagline: 'Light your living, effortlessly.',
+      tone: 'warm',
+      differentiator: 'Curated home ambiance essentials at honest prices',
+      palette: { bg: '#FAFAF7', fg: '#1C1917', accent: '#D4750A' },
+    },
+    stateUpdate: { store_brand: 'LumeNest (warm · #D4750A)' },
+  },
+  {
+    agentId: 'store_setup', delayMs: 2600, type: 'tool_call',
+    message: 'build_homepage(5 sections: hero · marquee · brand-story · products · CTA)',
+  },
+  {
+    agentId: 'store_setup', delayMs: 3800, type: 'tool_result',
+    message: '✓ Homepage built · About Us page created · Policies added · Navigation wired (GraphQL)',
+  },
+  {
+    agentId: 'director', delayMs: 4500, type: 'routing',
+    message: 'Store brand set ✓ · store_designed = false → routing to Design Agent.',
+    data: { next_node: 'design_agent', reason: 'CSS design pass not yet applied', iteration: 2 },
+  },
+  {
+    agentId: 'design_agent', delayMs: 5000, type: 'tool_call',
+    message: 'read_theme_context() → reading settings_data.json + templates/index.json',
+  },
+  {
+    agentId: 'design_agent', delayMs: 5700, type: 'tool_call',
+    message: 'Generating premium CSS (typography · spacing · buttons · cards · header · mobile)…',
+  },
+  {
+    agentId: 'design_agent', delayMs: 7100, type: 'tool_result',
+    message: '✓ 2847 chars of CSS → assets/custom-alpha.css · injected into layout/theme.liquid',
+    data: {
+      css_size_chars: 2847,
+      sections_covered: ['root-vars', 'typography', 'breathing-room', 'buttons', 'product-cards', 'header', 'announcement-bar', 'footer', 'micro-interactions', 'mobile'],
+    },
+    stateUpdate: { store_designed: true },
+  },
+  {
+    agentId: 'director', delayMs: 7800, type: 'routing',
+    message: 'Design pass complete ✓ · no products yet → routing to Trend Scraper.',
+    data: { next_node: 'trend_scraper', reason: 'store ready, no products in state', iteration: 3 },
+    stateUpdate: { target_keyword: 'Home Decor' },
+  },
+  {
+    agentId: 'trend_scraper', delayMs: 8500, type: 'tool_call',
+    message: 'search_trending_products(category="Home Decor", max_results=10, min_margin_pct=30.0)',
+  },
+  {
+    agentId: 'trend_scraper', delayMs: 10000, type: 'tool_result',
     message: 'CJ API → 10 products fetched, 7 passed margin filter.',
     data: {
       found: 7,
@@ -87,71 +144,70 @@ const STEPS: Step[] = [
     },
   },
   {
-    agentId: 'trend_scraper', delayMs: 3200, type: 'decision',
-    message: 'Best pick: "Wireless Bluetooth Earbuds TWS Pro" — highest order volume at 60% margin.',
+    agentId: 'trend_scraper', delayMs: 10900, type: 'decision',
+    message: 'Best pick: "Minimalist LED Desk Lamp" — highest order volume at 58% margin.',
     stateUpdate: {
-      supplier_product_id: 'CJ-8812433',
-      supplier_price: 8.50,
-      supplier_sku: 'CJ-8812433-BLK',
+      supplier_product_id: 'CJ-4421987',
+      supplier_price: 11.20,
+      supplier_sku: 'CJ-4421987-WHT',
     },
   },
   {
-    agentId: 'director', delayMs: 4000, type: 'routing',
-    message: 'Margin 60% ≥ 30% threshold ✓ — routing to E-commerce Manager.',
-    data: { next_node: 'ecommerce_manager', margin_approved: true, iteration: 2 },
+    agentId: 'director', delayMs: 11700, type: 'routing',
+    message: 'Margin 58% ≥ 30% threshold ✓ — routing to E-commerce Manager.',
+    data: { next_node: 'ecommerce_manager', margin_approved: true, iteration: 4 },
     stateUpdate: { arbitrage_margin_approved: true },
   },
   {
-    agentId: 'ecommerce_manager', delayMs: 4900, type: 'tool_call',
-    message: 'create_shopify_product(title="Wireless Bluetooth Earbuds TWS Pro", price=21.25, supplier_product_id="CJ-8812433", supplier_sku="CJ-8812433-BLK", supplier_cost=8.50)',
+    agentId: 'ecommerce_manager', delayMs: 12500, type: 'tool_call',
+    message: 'create_shopify_product(title="Minimalist LED Desk Lamp", price=26.90, compare_at_price=36.00)',
   },
   {
-    agentId: 'ecommerce_manager', delayMs: 6500, type: 'tool_result',
-    message: 'Shopify DRAFT created ✓ — mapping row written to product_mappings DB.',
+    agentId: 'ecommerce_manager', delayMs: 14200, type: 'tool_result',
+    message: 'Shopify ACTIVE product created ✓ — added to "Home Decor" collection.',
     data: {
       success: true,
       product: {
         id: 9876543210,
-        title: 'Wireless Bluetooth Earbuds TWS Pro',
-        status: 'draft',
-        price: '21.25',
+        title: 'Minimalist LED Desk Lamp',
+        status: 'active',
+        price: '26.90',
+        compare_at_price: '36.00',
         admin_url: 'https://alpha-shoop.myshopify.com/admin/products/9876543210',
       },
-      db: { saved: true, cost_price: 8.50, retail_price: 21.25, margin_pct: 60.0 },
     },
     stateUpdate: {
       shopify_product_id: '9876543210',
-      final_retail_price: 21.25,
-      store_url: 'https://alpha-shoop.myshopify.com/products/wireless-bluetooth-earbuds',
+      final_retail_price: 26.90,
+      store_url: 'https://alpha-shoop.myshopify.com/products/minimalist-led-desk-lamp',
     },
   },
   {
-    agentId: 'director', delayMs: 7300, type: 'routing',
+    agentId: 'director', delayMs: 15000, type: 'routing',
     message: 'Product on Shopify ✓ — routing to Marketing Agent.',
-    data: { next_node: 'marketing_agent', iteration: 3 },
+    data: { next_node: 'marketing_agent', iteration: 5 },
   },
   {
-    agentId: 'marketing_agent', delayMs: 8100, type: 'tool_call',
-    message: 'create_google_campaign(name="AS-wireless-earbuds-Jun25", daily_budget_usd=25.0, keywords=["wireless earbuds","bluetooth earbuds","TWS earphones"], target_countries=["US"])',
+    agentId: 'marketing_agent', delayMs: 15800, type: 'tool_call',
+    message: 'create_google_campaign(name="AS-led-lamp-Jun26", daily_budget_usd=25.0, keywords=["led desk lamp","minimalist lamp","home office lighting"], target_countries=["US"])',
   },
   {
-    agentId: 'marketing_agent', delayMs: 9700, type: 'tool_result',
+    agentId: 'marketing_agent', delayMs: 17400, type: 'tool_result',
     message: 'Campaign ENABLED ✓ — $25/day · $475.00 guardrail remaining today.',
     data: {
       campaign_id: 'G-2847562',
       status: 'ENABLED',
       daily_budget_usd: 25.0,
-      keywords: ['wireless earbuds', 'bluetooth earbuds', 'TWS earphones'],
+      keywords: ['led desk lamp', 'minimalist lamp', 'home office lighting'],
       guardrail_remaining_usd: 475.0,
-      resource_name: 'customers/1234567/campaigns/G-2847562',
     },
     stateUpdate: { google_campaign_id: 'G-2847562' },
   },
   {
-    agentId: 'director', delayMs: 10500, type: 'complete',
-    message: 'Pipeline complete ✓ — product live, campaign running, DB mapping saved.',
+    agentId: 'director', delayMs: 18200, type: 'complete',
+    message: 'Pipeline complete ✓ — branded store live, product published, campaign running.',
     data: {
-      gross_margin_pct: 60.0,
+      gross_margin_pct: 58.0,
       shopify_product_id: '9876543210',
       google_campaign_id: 'G-2847562',
       daily_ad_budget_usd: 25.0,
@@ -161,21 +217,21 @@ const STEPS: Step[] = [
   },
   // Simulated order arriving
   {
-    agentId: 'fulfillment_agent', delayMs: 12500, type: 'webhook',
-    message: 'Shopify Order webhook received → order #1042 for "Wireless Bluetooth Earbuds TWS Pro".',
+    agentId: 'fulfillment_agent', delayMs: 20200, type: 'webhook',
+    message: 'Shopify Order webhook received → order #1042 for "Minimalist LED Desk Lamp".',
     data: {
       shopify_order_id: '5554321098',
-      customer: 'John Doe',
+      customer: 'Sarah K.',
       quantity: 1,
-      paid_usd: 21.25,
+      paid_usd: 26.90,
     },
   },
   {
-    agentId: 'fulfillment_agent', delayMs: 13200, type: 'tool_call',
-    message: 'place_supplier_order(product_id="CJ-8812433", quantity=1, order_reference="SH-1042")',
+    agentId: 'fulfillment_agent', delayMs: 20900, type: 'tool_call',
+    message: 'place_supplier_order(product_id="CJ-4421987", quantity=1, order_reference="SH-1042")',
   },
   {
-    agentId: 'fulfillment_agent', delayMs: 14700, type: 'tool_result',
+    agentId: 'fulfillment_agent', delayMs: 22400, type: 'tool_result',
     message: 'Supplier order placed ✓ — tracking: YT2498765432 · ETA 12–15 days.',
     data: {
       supplier_order_id: 'CJ-SH-1042',
@@ -185,11 +241,11 @@ const STEPS: Step[] = [
     },
   },
   {
-    agentId: 'fulfillment_agent', delayMs: 15400, type: 'tool_call',
+    agentId: 'fulfillment_agent', delayMs: 23100, type: 'tool_call',
     message: 'fulfill_shopify_order(shopify_order_id="5554321098", tracking_number="YT2498765432", carrier="CJ Packet")',
   },
   {
-    agentId: 'fulfillment_agent', delayMs: 16600, type: 'tool_result',
+    agentId: 'fulfillment_agent', delayMs: 24300, type: 'tool_result',
     message: 'Shopify order marked Fulfilled ✓ — customer notification email sent.',
     data: {
       fulfillment_id: '9876543210',
@@ -554,8 +610,16 @@ export function PipelineSimulator() {
           </div>
 
           <div className="space-y-0 text-xs">
-            {/* sourcing section */}
+            {/* brand section */}
             <div className="text-gray-700 text-[10px] uppercase tracking-wider px-2 pt-2 pb-1">
+              Brand
+            </div>
+            {(['store_brand', 'store_designed'] as const).map(k => (
+              <StateField key={k} label={k} value={pipeState[k]} changed={changedKeys.has(k)} />
+            ))}
+
+            {/* sourcing section */}
+            <div className="text-gray-700 text-[10px] uppercase tracking-wider px-2 pt-3 pb-1">
               Sourcing
             </div>
             {(['target_keyword', 'supplier_product_id', 'supplier_price', 'supplier_sku'] as const).map(k => (

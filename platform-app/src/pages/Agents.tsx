@@ -10,7 +10,7 @@ export function Agents() {
       <div>
         <h1 className="text-2xl font-bold text-white">AI Agents</h1>
         <p className="text-gray-400 text-sm mt-1">
-          5 LangGraph nodes in a Director → Worker loop. Director routes on every iteration;
+          7 LangGraph nodes in a Director → Worker loop. Director routes on every iteration;
           workers return control to Director after completing their task.
         </p>
       </div>
@@ -24,6 +24,10 @@ export function Agents() {
         <div className="flex items-center gap-2 flex-wrap justify-center text-sm">
           {[
             'Director (Opus)',
+            '→',
+            'Store Setup (Sonnet)',
+            '→',
+            'Design Agent (Sonnet)',
             '→',
             'Trend Scraper (Haiku)',
             '→',

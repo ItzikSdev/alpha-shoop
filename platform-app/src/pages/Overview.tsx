@@ -1,11 +1,15 @@
-import type { Page } from '../types';
+import { useNavigate } from 'react-router-dom';
 
-interface Props {
-  onNavigate: (page: Page) => void;
-}
+const PAGE_PATHS: Record<string, string> = {
+  tools: '/tools',
+  agents: '/agents',
+  endpoints: '/endpoints',
+  architecture: '/architecture',
+  technologies: '/technologies',
+};
 
 const STATS = [
-  { label: 'AI Agents', value: '5', icon: '🤖', color: '#CC785C' },
+  { label: 'AI Agents', value: '7', icon: '🤖', color: '#CC785C' },
   { label: 'MCP Tools', value: '10', icon: '🔌', color: '#7C3AED' },
   { label: 'API Endpoints', value: '6', icon: '⚡', color: '#009688' },
   { label: 'Max Ad Spend/Day', value: '$500', icon: '🛡️', color: '#E92063' },
@@ -16,12 +20,13 @@ const FLOW = [
   { step: 1, title: 'Shopify Order / Manual Trigger', icon: '📥', desc: 'Webhook or POST /api/v1/run starts the graph' },
   { step: 2, title: 'FastAPI Gateway', icon: '⚡', desc: 'JWT auth, HMAC validation, rate limiting via slowapi' },
   { step: 3, title: 'Director Agent (Claude Opus)', icon: '🧠', desc: 'Routes to the right worker on every iteration' },
-  { step: 4, title: 'Trend Scraper → E-com → Marketing → Fulfillment', icon: '🔄', desc: 'Workers call MCP tools and loop back to Director' },
+  { step: 4, title: 'Store Setup → Design Agent → Trend Scraper → E-com → Marketing → Fulfillment', icon: '🔄', desc: 'Workers call MCP tools and loop back to Director' },
   { step: 5, title: 'Guardrails', icon: '🛡️', desc: 'Kill-switch checks on every ad spend and order' },
   { step: 6, title: 'PostgreSQL + Redis + ChromaDB', icon: '💾', desc: 'Checkpoints, cache, and product embeddings' },
 ];
 
-export function Overview({ onNavigate }: Props) {
+export function Overview() {
+  const navigate = useNavigate();
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
       {/* Hero */}
@@ -73,10 +78,10 @@ export function Overview({ onNavigate }: Props) {
 
       {/* Quick nav */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {([['tools', '🔌', 'MCP Tools', '10 tools across 5 groups'], ['agents', '🤖', 'AI Agents', '5 agents, 3 Claude models'], ['endpoints', '⚡', 'API Endpoints', '6 endpoints with live tests'], ['architecture', '🗺️', 'Architecture', 'Draw.io + Mermaid diagrams'], ['technologies', '🎨', 'Technologies', '18 tech badges with docs']] as const).map(([page, icon, title, desc]) => (
+        {([['tools', '🔌', 'MCP Tools', '10 tools across 5 groups'], ['agents', '🤖', 'AI Agents', '7 agents, 3 Claude models'], ['endpoints', '⚡', 'API Endpoints', '6 endpoints with live tests'], ['architecture', '🗺️', 'Architecture', 'Draw.io + Mermaid diagrams'], ['technologies', '🎨', 'Technologies', '18 tech badges with docs']] as const).map(([page, icon, title, desc]) => (
           <button
             key={page}
-            onClick={() => onNavigate(page)}
+            onClick={() => navigate(PAGE_PATHS[page])}
             className="bg-gray-900 border border-gray-700 rounded-xl p-4 text-left hover:border-indigo-700/60 hover:bg-indigo-900/10 transition-all group"
           >
             <div className="text-2xl mb-2">{icon}</div>

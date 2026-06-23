@@ -25,7 +25,7 @@ export function Architecture() {
       <div>
         <h1 className="text-2xl font-bold text-white">Architecture</h1>
         <p className="text-gray-400 text-sm mt-1">
-          Three views: MCP server, full LangGraph flow with store setup + niche-aware scraper, and Draw.io diagram. Use +/− or Ctrl+scroll to zoom.
+          Three views: MCP server, full LangGraph flow with store setup + design agent + niche-aware scraper, and Draw.io diagram. The full-system view also covers the storefront layer — the docs-app drives the host Storefront Runner (:8788), which uses the official Shopify CLI (`shopify theme pull · dev · push`) to run and deploy each store's Liquid theme from stores/shopify/*. Use +/− or Ctrl+scroll to zoom.
         </p>
       </div>
 
@@ -93,12 +93,13 @@ const SYSTEM_MERMAID = `graph TB
         direction LR
         DIR["Director\nClaude Opus 4.8"]
         SS["Store Setup\nSonnet 4.6\nruns once"]
+        DA["Design Agent\nSonnet 4.6\nUI/UX CSS"]
         TS["Trend Scraper\nHaiku 4.5\nniche-aware"]
         EM["E-com Manager\nSonnet 4.6"]
         MA["Marketing\nSonnet 4.6"]
         FA["Fulfillment\nHaiku 4.5"]
-        DIR --> SS & TS & EM & MA & FA
-        SS & TS & EM & MA & FA -.->|"report"| DIR
+        DIR --> SS & DA & TS & EM & MA & FA
+        SS & DA & TS & EM & MA & FA -.->|"report"| DIR
     end
 
     GW --> DIR
@@ -131,13 +132,33 @@ const SYSTEM_MERMAID = `graph TB
     T3 --> SHOP
     T4 --> GADS
 
+    subgraph SF ["Storefront — Shopify CLI Liquid themes"]
+        direction LR
+        DOCS["docs-app\nMy Stores"]
+        RUNNER["Storefront Runner\nhost :8788"]
+        THEMEDIR["Liquid themes\nstores/shopify/*"]
+        CLI["shopify theme\npull · dev · push"]
+        DOCS --> RUNNER
+        RUNNER --> CLI
+        CLI --> THEMEDIR
+    end
+
+    CREDS["FastAPI\n/stores/{id}/theme-creds"]
+    DOCS --> RUNNER
+    RUNNER --> CREDS
+    CREDS --> GW
+    CLI --> SHOP
+
     classDef agent fill:#4B0082,stroke:#6d28d9,color:#e2e8f0
     classDef mcp fill:#1e3a5f,stroke:#2563eb,color:#e2e8f0
     classDef ext fill:#450a0a,stroke:#dc2626,color:#fee2e2
     classDef theme fill:#065f46,stroke:#059669,color:#d1fae5
     classDef gw fill:#292524,stroke:#78716c,color:#d6d3d1
-    class DIR,SS,TS,EM,MA,FA agent
+    classDef store fill:#312e81,stroke:#6366f1,color:#e0e7ff
+    class DIR,SS,DA,TS,EM,MA,FA agent
     class T1,T2,T3,T4,T5 mcp
     class CJ,SERP,SHOP,GADS ext
     class THEME,HZ theme
-    class GW gw`;
+    class GW,CREDS gw
+    class RUNNER,CLI,THEMEDIR,DOCS store
+    class DOCS,RUNNER,HYD,SAPI,OXY store`;

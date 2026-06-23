@@ -1,10 +1,117 @@
 """MCP Tool Group 1: Sourcing — CJ Dropshipping & AliExpress."""
 from __future__ import annotations
 import asyncio
+import json
+import logging
+import re
 import httpx
 from src.config import get_settings
 
+logger = logging.getLogger(__name__)
+
 _BASE = "https://developers.cjdropshipping.com/api2.0/v1"
+
+# CJ enforces a hard QPS limit of 1 request/second per token. Firing detail
+# lookups in parallel (asyncio.gather) trips "Too Many Requests" and silently
+# drops most candidates. We serialise CJ calls behind a lock + min-interval and
+# retry on the QPS error so searches return a full batch instead of 1 survivor.
+_CJ_MIN_INTERVAL = 1.15  # seconds between CJ calls (slightly above their 1/sec)
+_CJ_LOCK = asyncio.Lock()
+_CJ_LAST_CALL = 0.0
+
+
+async def _cj_get(client: httpx.AsyncClient, path: str, params: dict, token: str, retries: int = 4) -> dict:
+    """Rate-limited CJ GET that retries on the 1-QPS 'Too Many Requests' error."""
+    global _CJ_LAST_CALL
+    import time
+    for _ in range(retries):
+        async with _CJ_LOCK:
+            wait = _CJ_MIN_INTERVAL - (time.monotonic() - _CJ_LAST_CALL)
+            if wait > 0:
+                await asyncio.sleep(wait)
+            resp = await client.get(f"{_BASE}/{path}", params=params, headers={"CJ-Access-Token": token})
+            _CJ_LAST_CALL = time.monotonic()
+        resp.raise_for_status()
+        body = resp.json()
+        if body.get("result"):
+            return body
+        msg = str(body.get("message", ""))
+        if "QPS" in msg or "Too Many" in msg:
+            await asyncio.sleep(_CJ_MIN_INTERVAL)
+            continue
+        return body  # genuine non-rate-limit failure — let caller handle
+    return body
+
+# CJ's categoryName query param is NOT a real filter — it's ignored and returns
+# the full 1.4M-product catalog. CJ requires the leaf categoryId (a UUID) from
+# its fixed taxonomy. We fetch+cache that taxonomy once, then ask an LLM to
+# pick the best-matching leaf category for the store's niche.
+_CATEGORY_CACHE: list[dict] | None = None
+
+
+async def _get_category_list() -> list[dict]:
+    """Fetch and flatten CJ's category tree into leaf categories. Cached in-memory."""
+    global _CATEGORY_CACHE
+    if _CATEGORY_CACHE is not None:
+        return _CATEGORY_CACHE
+
+    settings = get_settings()
+    token = settings.cj_mcp_key or settings.cj_api_key
+    leaves: list[dict] = []
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            resp = await client.get(f"{_BASE}/product/getCategory", headers={"CJ-Access-Token": token})
+            resp.raise_for_status()
+            body = resp.json()
+        for first in body.get("data", []):
+            for second in first.get("categoryFirstList", []):
+                for leaf in second.get("categorySecondList", []):
+                    leaves.append({
+                        "category_id": leaf.get("categoryId", ""),
+                        "category_name": leaf.get("categoryName", ""),
+                        "path": f"{first.get('categoryFirstName','')} > {second.get('categorySecondName','')} > {leaf.get('categoryName','')}",
+                    })
+    except Exception as exc:
+        logger.warning("Could not fetch CJ category tree: %s", exc)
+
+    _CATEGORY_CACHE = leaves
+    return leaves
+
+
+async def resolve_category(niche_text: str) -> dict | None:
+    """
+    Map a free-text niche/product description to a real CJ leaf category
+    (categoryId + categoryName), since CJ ignores free-text category filters.
+    Returns None if no category tree is available or no good match is found.
+    """
+    from src.llm import get_llm
+    from langchain_core.messages import HumanMessage, SystemMessage
+
+    categories = await _get_category_list()
+    if not categories:
+        return None
+
+    catalogue = "\n".join(f"{c['category_id']}::{c['path']}" for c in categories)
+    system = (
+        "You map a store's product niche to the single best-matching category from a fixed list.\n"
+        "Each line below is formatted as: category_id::category_path\n"
+        f"{catalogue}\n\n"
+        "Output ONLY valid JSON: {\"category_id\": \"<the exact id from the list>\"}"
+    )
+    llm = get_llm("scraper", temperature=0.0)
+    response = await llm.ainvoke([
+        SystemMessage(content=system),
+        HumanMessage(content=f"Store niche / product type: {niche_text}"),
+    ])
+    raw = str(response.content).strip()
+    raw = re.sub(r'^```(?:json)?\s*', '', raw)
+    raw = re.sub(r'\s*```\s*$', '', raw)
+    try:
+        picked_id = json.loads(raw.strip()).get("category_id", "")
+    except (json.JSONDecodeError, ValueError):
+        return None
+
+    return next((c for c in categories if c["category_id"] == picked_id), None)
 
 
 def _parse_price_range(price: str) -> float:
@@ -26,13 +133,7 @@ def _trend_score(listing_count: int) -> int:
 async def _fetch_detail(client: httpx.AsyncClient, token: str, pid: str) -> dict | None:
     """Fetch real supplier price, suggested retail price, and variant id for a product."""
     try:
-        resp = await client.get(
-            f"{_BASE}/product/query",
-            params={"pid": pid},
-            headers={"CJ-Access-Token": token},
-        )
-        resp.raise_for_status()
-        body = resp.json()
+        body = await _cj_get(client, "product/query", {"pid": pid}, token)
         if not body.get("result"):
             return None
         return body.get("data")
@@ -41,7 +142,8 @@ async def _fetch_detail(client: httpx.AsyncClient, token: str, pid: str) -> dict
 
 
 async def search_trending_products(
-    category: str,
+    category: str = "",
+    category_id: str = "",
     max_results: int = 20,
     min_margin: float = 0.30,
     max_price_usd: float = 0.0,
@@ -50,7 +152,10 @@ async def search_trending_products(
     Search CJ Dropshipping for trending products above a minimum margin.
 
     Args:
-        category: Product category (e.g. "electronics", "home-garden")
+        category: Free-text label, used only for the mock-data fallback and logging.
+        category_id: Real CJ leaf categoryId (UUID) from resolve_category() — this is
+            the only thing CJ actually filters on. categoryName/free text is ignored
+            by CJ's API and returns the entire 1.4M-product catalog unfiltered.
         max_results: Maximum number of products to return
         min_margin: Minimum profit margin (0.0–1.0)
 
@@ -61,18 +166,20 @@ async def search_trending_products(
     settings = get_settings()
     token = settings.cj_mcp_key or settings.cj_api_key
     params = {"pageNum": 1, "pageSize": max_results}
-    if category and category != "general":
-        params["categoryName"] = category
+    # CJ's product/list filters on `productNameEn` (a real keyword search) — this is
+    # FAR more relevant than categoryId, which the LLM resolver tends to collapse into
+    # one broad leaf (e.g. every "sunset lamp"/"galaxy projector" → "LED Spotlights",
+    # returning the same generic junk). Prefer the keyword; fall back to category only
+    # when no keyword text is available.
+    keyword = (category or "").strip()
+    if keyword:
+        params["productNameEn"] = keyword
+    elif category_id:
+        params["categoryId"] = category_id
 
     async with httpx.AsyncClient(timeout=30) as client:
         try:
-            resp = await client.get(
-                f"{_BASE}/product/list",
-                params=params,
-                headers={"CJ-Access-Token": token},
-            )
-            resp.raise_for_status()
-            body = resp.json()
+            body = await _cj_get(client, "product/list", params, token)
             if not body.get("result"):
                 raise RuntimeError(body.get("message", "CJ API error"))
             raw = body.get("data", {}).get("list", [])
@@ -80,8 +187,11 @@ async def search_trending_products(
             # Fall back to mock data only when the real API is unreachable.
             return _mock_products(category, max_results)
 
-        # Fetch real suggested retail price + variant id for each candidate.
-        details = await asyncio.gather(*[_fetch_detail(client, token, p["pid"]) for p in raw])
+        # Fetch real price + variant id per candidate. Detail lookups go through the
+        # rate-limited _cj_get (1 QPS), so run them sequentially — parallel gather would
+        # trip CJ's throttle and drop most candidates. Cap to keep latency bounded.
+        raw = raw[:12]
+        details = [await _fetch_detail(client, token, p["pid"]) for p in raw]
 
     products = []
     for p, detail in zip(raw, details):

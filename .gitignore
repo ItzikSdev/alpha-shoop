@@ -20,6 +20,12 @@ coverage.xml
 # Node
 docs-app/node_modules/
 docs-app/dist/
+docs-app/.vite/
+platform-app/node_modules/
+platform-app/dist/
+
+# Runtime data
+data/
 
 # macOS
 .DS_Store

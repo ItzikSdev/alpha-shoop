@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     litellm_proxy_url: str = "http://localhost:4000"
     litellm_master_key: str = "alpha-shoop-key"
 
+    # Embeddings — local Ollama (no external API key), persisted in ChromaDB
+    ollama_url: str = "http://localhost:11434"
+    ollama_embed_model: str = "nomic-embed-text"
+    chroma_path: str = "./data/chroma"
+
     # Guardrails
     max_ad_spend_daily_usd: float = 500.0
     max_order_value_usd: float = 200.0

@@ -18,6 +18,10 @@ class RunAgentRequest(BaseModel):
         None,
         description="Resume an existing LangGraph thread (leave blank to start new)",
     )
+    store_id: Optional[str] = Field(
+        None,
+        description="ID of the store to target. Leave blank to use the default store from env config.",
+    )
     max_budget_usd: float = Field(
         100.0,
         gt=0,

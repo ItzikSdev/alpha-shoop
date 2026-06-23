@@ -6,8 +6,9 @@ import re
 from langchain_core.messages import HumanMessage, SystemMessage
 from src.agents.state import AgentState
 from src.llm import get_llm
-from src.mcp_tools.shopify import _shopify_gql, _shopify_rest
+from src.mcp_tools.shopify import _shopify_gql, _shopify_rest, create_collection
 from src.mcp_tools.shopify_theme import full_store_setup, setup_navigation
+from src.mcp_tools.theme_installer import install_free_theme
 from src.tracing import agent_log
 from src.tracing.context import current_node
 
@@ -31,18 +32,24 @@ Tanaor's differentiator: "Every piece has all 929 Bible chapters engraved using 
 MVMT's differentiator: "Swiss movement watches for a fraction of the designer price."
 Yours must be just as specific and verifiable — NOT vague ("high quality", "unique design").
 
+CRITICAL RULE ON NICHE FOCUS:
+The store MUST sell ONE and ONLY ONE type of product. Not a general gift shop, not a multi-category store.
+Think Tanaor (only jewelry), Beardbrand (only beard products), MVMT (only watches).
+The "product_category" field is THE product type — every single item in the store must be this exact thing.
+
 Output ONLY a JSON object:
 {
   "store_name": "2-3 word memorable brand name. Avoid: Shop, Store, Best, Hub. Examples: Tanaor, Beardbrand, MVMT, Glossier",
   "tagline": "Under 7 words. Captures the brand promise and differentiator.",
   "niche": "One sentence: exactly who this serves and what concrete problem it solves.",
-  "differentiator": "ONE specific, tangible, verifiable claim that no generic dropshipping store can make. Must be something a customer can FEEL or SEE in the product. Examples: 'Each piece is hand-finished with a micro-engraving of the buyer's initials', 'Every item ships in FSC-certified packaging with a planted tree per order', 'All products are tested by 3 independent labs for safety before listing'.",
+  "product_category": "The ONE AND ONLY product type this store sells. Must be a specific, searchable CJ Dropshipping keyword. Examples: 'silver women rings', 'leather minimalist wallet', 'scented soy candles', 'yoga mat'. This is the strict product filter — nothing outside this category will ever be listed.",
+  "differentiator": "ONE specific, tangible, verifiable claim that no generic dropshipping store can make. Must be something a customer can FEEL or SEE in the product.",
   "tone": "One word: warm / bold / minimal / playful / trustworthy",
   "about_us": "3 short paragraphs. Para 1: why we exist (the founder story). Para 2: what makes us different (the differentiator in plain language). Para 3: the promise. First-person plural. Plain text, no HTML.",
-  "announcement_bar": "One line, pipe-separated trust signals for the top of the store. Include: free shipping threshold, return policy, and the differentiator summarized in 4 words. Example: 'Free Shipping on All Orders | 30-Day Returns | Hand-Finished in Israel'",
+  "announcement_bar": "One line, pipe-separated trust signals. Include: free shipping threshold, return policy, differentiator in 4 words. Example: 'Free Shipping on All Orders | 30-Day Returns | Hand-Finished in Israel'",
   "shipping_policy": "2 sentences. Specific timeframe and carrier.",
   "return_policy": "2 sentences. Customer-friendly. Specific timeframe.",
-  "collections": ["3-5 collection names that create a logical, browsable catalog. Named by outcome or style, not by product type. Example: 'Everyday Essentials', 'Gift Ideas Under $50', 'Best Sellers'"]
+  "collections": ["3-4 collection names within the same product category. Split by the axis that matters most for this niche: jewelry → 'Rings', 'Necklaces', 'Bracelets', 'Gift Sets'; CLOTHING (baby/kids/adult apparel) → split by audience first, e.g. 'Boys', 'Girls', 'Gift Sets' (never mix genders in one clothing collection); candles → 'Scented', 'Unscented', 'Gift Sets'."]
 }
 
 Output ONLY valid JSON.
@@ -57,14 +64,7 @@ mutation pageCreate($page: PageCreateInput!) {
 }
 """
 
-_GQL_SHOP_UPDATE = """
-mutation shopUpdate($input: ShopUpdateInput!) {
-  shopUpdate(input: $input) {
-    shop { name }
-    userErrors { field message }
-  }
-}
-"""
+_GQL_SHOP_UPDATE = ""  # shopUpdate removed from Shopify API — store name changed via admin only
 
 
 async def _write_brand_brief(task: str) -> dict:
@@ -80,35 +80,37 @@ async def _write_brand_brief(task: str) -> dict:
 
 
 async def _create_page(title: str, body_html: str) -> bool:
+    # Try GQL first (needs write_content scope)
     try:
         data = await _shopify_gql(
             _GQL_CREATE_PAGE,
-            {"page": {"title": title, "bodyHtml": body_html, "published": True}},
+            {"page": {"title": title, "body": body_html, "isPublished": True}},
         )
         errors = data.get("pageCreate", {}).get("userErrors", [])
-        return not errors
+        if not errors:
+            return True
+        if any("ACCESS_DENIED" in str(e) for e in errors):
+            raise PermissionError("write_content scope missing")
+    except PermissionError:
+        pass
     except Exception as exc:
-        logger.warning("Could not create page %s: %s", title, exc)
+        logger.warning("GQL pageCreate failed for %s: %s", title, exc)
+        return False
+    # REST fallback (also needs write_content, but different error path)
+    try:
+        result = await _shopify_rest("POST", "pages.json", {
+            "page": {"title": title, "body_html": body_html, "published": True}
+        })
+        return bool(result.get("page", {}).get("id"))
+    except Exception as exc:
+        logger.warning("REST pageCreate failed for %s: %s — add write_content scope to Custom App", title, exc)
         return False
 
 
 async def _update_store_name(name: str) -> bool:
-    """Update the Shopify store's display name."""
-    try:
-        # Try GraphQL first
-        data = await _shopify_gql(_GQL_SHOP_UPDATE, {"input": {"name": name}})
-        errors = data.get("shopUpdate", {}).get("userErrors", [])
-        if not errors:
-            return True
-    except Exception:
-        pass
-    # Fallback: REST API
-    try:
-        await _shopify_rest("PUT", "shop.json", {"shop": {"name": name}})
-        return True
-    except Exception as exc:
-        logger.warning("Could not update store name: %s", exc)
-        return False
+    """Store name is managed via Shopify admin — not available via API."""
+    logger.info("Store name '%s' set in brand brief (must be applied manually in Shopify admin → Settings → General)", name)
+    return False
 
 
 async def _create_navigation_menu(brand_name: str, collections: list[str]) -> bool:
@@ -212,7 +214,33 @@ async def store_setup_node(state: AgentState) -> dict:
         if ok:
             actions_done.append("Shipping & Returns page")
 
-    # 4. Full theme setup — colors, announcement bar, homepage, navigation
+    # 4. Install free Shopify theme that matches the store niche
+    store_niche = brief.get("niche", "") or brief.get("product_category", "")
+    store_slug = store_name.lower().replace(" ", "_")[:30] if store_name else "store"
+    agent_log(f"Selecting and installing free Shopify theme for '{store_niche}'...", "action")
+    theme_result = await install_free_theme(niche=store_niche, store_name=store_slug)
+    if theme_result.get("success"):
+        actions_done.append(f"Theme installed: {theme_result['display_name']} (saved to stores/{store_slug}/theme/)")
+        brief["installed_theme"] = theme_result["theme_key"]
+        agent_log(f"✓ Theme '{theme_result['display_name']}' active", "success")
+    else:
+        agent_log(f"Theme install skipped — keeping existing theme", "warning")
+
+    # 4.5 Create all brief collections upfront (empty) so navigation can link to
+    #     real, existing collections instead of producing broken 404 links.
+    #     ecommerce_manager fills these with products later.
+    collection_names = brief.get("collections", [])
+    if collection_names:
+        agent_log(f"Creating {len(collection_names)} collections: {', '.join(collection_names)}...", "action")
+        created_collections = 0
+        for coll_name in collection_names:
+            result = await create_collection(coll_name)
+            if result.get("collection_id"):
+                created_collections += 1
+        agent_log(f"✓ {created_collections}/{len(collection_names)} collections ready", "success")
+        actions_done.append(f"{created_collections} collections created")
+
+    # 5. Full theme setup — colors, announcement bar, homepage, navigation
     agent_log("Running full theme setup (colors → announcement → homepage → nav)...", "action")
     theme_results = await full_store_setup(brief)
     for key, label in [

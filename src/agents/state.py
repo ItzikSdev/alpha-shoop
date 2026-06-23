@@ -24,6 +24,13 @@ class AgentState(TypedDict):
     # Scraper results
     trending_products: list[dict]        # raw product candidates
 
+    # Sourcing loop: ecommerce_manager rejects off-niche candidates and asks
+    # trend_scraper to retry with adjusted search terms (max 3 attempts)
+    sourcing_attempts: int                # how many scrape→validate passes have run
+    sourcing_feedback: Optional[str]      # why the last batch was rejected, for the next search
+    search_category_used: Optional[str]   # the (possibly relaxed) term trend_scraper actually searched —
+                                           # ecommerce_manager validates against this, not the raw brief text
+
     # E-commerce results
     shopify_products_created: list[str]  # Shopify product IDs
 
@@ -34,8 +41,24 @@ class AgentState(TypedDict):
     # Fulfillment results
     fulfilled_orders: list[str]
 
+    # Multi-store: which store this run targets (None = use env config)
+    store_id: Optional[str]
+
     # Store branding (set once by store_setup node)
     store_brand: Optional[dict]
+
+    # Design loop
+    store_designed: bool           # True once design_agent approves the result
+    design_spec: Optional[dict]    # Quality checklist + CSS produced by design_agent Mode 1
+    design_iterations: int         # How many frontend_agent passes have run
+    design_approved: bool          # design_agent approved the implementation
+    frontend_report: Optional[str] # Summary of what frontend_agent last changed
+
+    # Store health: revenue + sales data fetched at run start (for director routing)
+    store_health: Optional[dict]
+
+    # Agentic RAG: store description knowledge relevant to this task, fetched once at run start
+    store_knowledge: Optional[list]
 
     # Guardrails
     budget_remaining_usd: float

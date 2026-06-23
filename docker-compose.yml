@@ -30,6 +30,21 @@ services:
       timeout: 5s
       retries: 10
 
+  # ── Ollama (local embeddings — nomic-embed-text) ─────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
   # ── LiteLLM Proxy ────────────────────────────────────────────────────────
   litellm:
     image: ghcr.io/berriai/litellm:main-stable
@@ -75,6 +90,8 @@ services:
       SHOPIFY_ACCESS_TOKEN: ${SHOPIFY_ACCESS_TOKEN:-}
       CJ_EMAIL: ${CJ_EMAIL:-}
       CJ_API_KEY: ${CJ_API_KEY:-}
+      OLLAMA_URL: http://ollama:11434
+      CHROMA_PATH: /app/data/chroma
     volumes:
       - traces_data:/app/data
     depends_on:
@@ -83,6 +100,8 @@ services:
       redis:
         condition: service_healthy
       litellm:
+        condition: service_healthy
+      ollama:
         condition: service_healthy
 
   # ── React Docs (production build, nginx) ─────────────────────────────────
@@ -98,3 +117,4 @@ services:
 volumes:
   postgres_data:
   traces_data:
+  ollama_data:

@@ -1,0 +1,46 @@
+name: Push Shopify Theme
+
+# Subfolder-aware theme deploy via the official Shopify CLI.
+# Triggers only when a store's theme under stores/shopify/** changes (or manually).
+# Uses `shopify theme push` — authenticated non-interactively with a store token in
+# the SHOPIFY_CLI_THEME_TOKEN secret (an Admin API token works for push, or a
+# Theme Access password). Set repo/environment secrets:
+#   SHOPIFY_CLI_THEME_TOKEN  — store token
+#   SHOPIFY_STORE_DOMAIN     — e.g. lumibud-dev.myshopify.com
+on:
+  push:
+    paths:
+      - 'stores/shopify/**'
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: 'Theme folder under stores/shopify/'
+        required: true
+        default: 'lumibud-dev'
+      publish:
+        description: 'Push to the LIVE theme (true) or a new unpublished theme (false)'
+        required: false
+        default: 'false'
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    env:
+      SHOPIFY_CLI_THEME_TOKEN: ${{ secrets.SHOPIFY_CLI_THEME_TOKEN }}
+      SHOPIFY_FLAG_STORE: ${{ secrets.SHOPIFY_STORE_DOMAIN }}
+      # TODO: parameterize per storefront via a matrix as more stores are added.
+      SLUG: ${{ github.event.inputs.slug || 'lumibud-dev' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Shopify CLI
+        run: npm install -g @shopify/cli
+      - name: Push theme
+        run: |
+          if [ "${{ github.event.inputs.publish }}" = "true" ]; then
+            shopify theme push --path "stores/shopify/$SLUG" --live --allow-live --json
+          else
+            shopify theme push --path "stores/shopify/$SLUG" --unpublished --theme "Alpha Shoop — $SLUG (CI ${{ github.run_number }})" --json
+          fi

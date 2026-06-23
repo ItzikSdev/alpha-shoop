@@ -1,0 +1,441 @@
+<mxfile host="65bd71144e">
+    <diagram id="architecture" name="Architecture">
+        <mxGraphModel dx="2080" dy="1966" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1600" background="ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="cj" value="CJ Dropshipping&#xa;(Supplier)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFD699;strokeColor=#CC9933;fontSize=12;fontStyle=bold;shape=mxgraph.flowchart.data" parent="1" vertex="1">
+                    <mxGeometry x="20" y="400" width="150" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="serper" value="🔍 Serper&#xa;(Search Trends)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCDDFF;strokeColor=#3366CC;fontSize=12;fontStyle=bold" parent="1" vertex="1">
+                    <mxGeometry x="20" y="550" width="150" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="clientsContainer" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#9673A6;strokeWidth=2;dashed=1" parent="1" vertex="1">
+                    <mxGeometry x="20" y="1050" width="180" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="clientsLabel" value="1000+ Clients" style="text=1;fontSize=13;fontStyle=bold;fillColor=none;strokeColor=none" parent="1" vertex="1">
+                    <mxGeometry x="35" y="1060" width="150" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="clientBox1" value="Client 1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5FF;strokeColor=#9673A6;fontSize=10" parent="1" vertex="1">
+                    <mxGeometry x="35" y="1100" width="70" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="clientBox2" value="Client 2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5FF;strokeColor=#9673A6;fontSize=10" parent="1" vertex="1">
+                    <mxGeometry x="115" y="1100" width="70" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="clientDots" value="..." style="text=1;fontSize=14;fontStyle=bold;fillColor=none;strokeColor=none" parent="1" vertex="1">
+                    <mxGeometry x="75" y="1135" width="30" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="clientBoxN" value="Client 1000+" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5FF;strokeColor=#9673A6;fontSize=10" parent="1" vertex="1">
+                    <mxGeometry x="75" y="1170" width="70" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="platformContainer" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FFB366;strokeWidth=3;dashed=0" parent="1" vertex="1">
+                    <mxGeometry x="300" y="50" width="550" height="1000" as="geometry"/>
+                </mxCell>
+                <mxCell id="platformLabel" value="Alpha Shoop Platform" style="text=1;fontSize=15;fontStyle=bold;fillColor=none;strokeColor=none" parent="1" vertex="1">
+                    <mxGeometry x="320" y="60" width="250" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="agent1" value="Director Agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D6B656;fontSize=11;fontStyle=bold" parent="1" vertex="1">
+                    <mxGeometry x="380" y="120" width="140" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="mission1" value="Route &amp; Orchestrate" style="text=1;fontSize=9;fillColor=none;strokeColor=none" parent="1" vertex="1">
+                    <mxGeometry x="380" y="168" width="140" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="agent2" value="Store Setup Agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor:#FFE6CC;strokeColor=#D6B656;fontSize=11;fontStyle=bold" parent="1" vertex="1">
+                    <mxGeometry x="380" y="210" width="140" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="mission2" value="Create stores on all&#xa;platforms (Shopify, eBay,&#xa;AliExpress, Facebook, etc)" style="text=1;fontSize=9;fillColor=none;strokeColor=none" parent="1" vertex="1">
+                    <mxGeometry x="380" y="258" width="140" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="agent3" value="Design Agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor:#FFE6CC;strokeColor:#D6B656;fontSize=11;fontStyle=bold" parent="1" vertex="1">
+                    <mxGeometry x="380" y="310" width="140" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="mission3" value="Design specs &amp; CSS&#xa;(with Frontend Agent)" style="text=1;fontSize=9;fillColor=none;strokeColor=none" parent="1" vertex="1">
+                    <mxGeometry x="380" y="358" width="140" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="agent4" value="Frontend Agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor:#FFE6CC;strokeColor:#D6B656;fontSize=11;fontStyle=bold" parent="1" vertex="1">
+                    <mxGeometry x="380" y="410" width="140" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="mission4" value="Implement UI/Theme&#xa;Perfect store locking" style="text=1;fontSize=9;fillColor=none;strokeColor=none" parent="1" vertex="1">
+                    <mxGeometry x="380" y="458" width="140" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="agent5" value="Trend Scraper Agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor:#FFE6CC;strokeColor:#D6B656;fontSize=11;fontStyle=bold" parent="1" vertex="1">
+                    <mxGeometry x="380" y="510" width="140" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="mission5" value="Find trending products&#xa;Markup 10-30%&#xa;Price: $99.90, $12.90 style&#xa;Videos, images, consistent" style="text=1;fontSize=9;fillColor=none;strokeColor=none" parent="1" vertex="1">
+                    <mxGeometry x="380" y="558" width="140" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="agent6" value="E-Commerce Agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor:#FFE6CC;strokeColor=#D6B656;fontSize=11;fontStyle=bold" parent="1" vertex="1">
+                    <mxGeometry x="380" y="570" width="140" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="mission6" value="Manage Products &amp; Orders" style="text=1;fontSize=9;fillColor=none;strokeColor=none" parent="1" vertex="1">
+                    <mxGeometry x="380" y="618" width="140" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="agent7" value="Marketing/Fulfillment" style="rounded=1;whiteSpace=wrap;html=1;fillColor:#FFE6CC;strokeColor=#D6B656;fontSize=11;fontStyle=bold" parent="1" vertex="1">
+                    <mxGeometry x="380" y="660" width="140" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="mission7" value="Marketing &amp; Shipping" style="text=1;fontSize=9;fillColor=none;strokeColor=none" parent="1" vertex="1">
+                    <mxGeometry x="380" y="708" width="140" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="litellm" value="⚡ LiteLLM Proxy" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#D4D4FF;strokeColor=#5555CC;fontSize=12;fontStyle=bold" parent="1" vertex="1">
+                    <mxGeometry x="360" y="790" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="anthropic" value="🤖 Anthropic&#xa;Claude API" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#FFD9D9;strokeColor=#CC3333;fontSize=12;fontStyle=bold" parent="1" vertex="1">
+                    <mxGeometry x="360" y="910" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="line1" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0" parent="1" source="agent1" target="agent2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="line2" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0" parent="1" source="agent2" target="agent3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="line3" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0" parent="1" source="agent3" target="agent4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="line4" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0" parent="1" source="agent4" target="agent5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="line5" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0" parent="1" source="agent5" target="agent6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="line6" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0" parent="1" source="agent6" target="agent7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="line7" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#5555CC;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0" parent="1" source="agent7" target="litellm" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="line8" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#CC3333;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0" parent="1" source="litellm" target="anthropic" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="shopifyContainer" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#6C8EBF;strokeWidth=2;dashed=1" parent="1" vertex="1">
+                    <mxGeometry x="1020" y="50" width="240" height="280" as="geometry"/>
+                </mxCell>
+                <mxCell id="shopifyLabel" value="Shopify Stores" style="text=1;fontSize=13;fontStyle=bold;fillColor=none;strokeColor=none" parent="1" vertex="1">
+                    <mxGeometry x="1030" y="60" width="200" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="shopifyStore1" value="🛍️ Shopify Store 1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCE5FF;strokeColor=#6C8EBF;fontSize=11" parent="1" vertex="1">
+                    <mxGeometry x="1035" y="100" width="190" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="shopifyStore2" value="🛍️ Shopify Store 2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCE5FF;strokeColor=#6C8EBF;fontSize=11" parent="1" vertex="1">
+                    <mxGeometry x="1035" y="170" width="190" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="shopifyDots" value="..." style="text=1;fontSize=14;fontStyle=bold;fillColor=none;strokeColor=none" parent="1" vertex="1">
+                    <mxGeometry x="1100" y="225" width="30" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="shopifyStoreN" value="Shopify Store N+" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCE5FF;strokeColor=#6C8EBF;fontSize=11" parent="1" vertex="1">
+                    <mxGeometry x="1035" y="260" width="190" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="ebay" value="🏪 eBay Stores" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEAA7;strokeColor=#E17055;fontSize=12;fontStyle=bold" parent="1" vertex="1">
+                    <mxGeometry x="1020" y="390" width="210" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="aliexpress" value="🚀 AliExpress Stores" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DFE6E9;strokeColor=#636E72;fontSize=12;fontStyle=bold" parent="1" vertex="1">
+                    <mxGeometry x="1020" y="540" width="210" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="facebook" value="📘 Facebook Shops" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#74B9FF;strokeColor=#0984E3;fontSize=12;fontStyle=bold" parent="1" vertex="1">
+                    <mxGeometry x="1020" y="690" width="210" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="woo" value="🔧 WooCommerce Stores" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D4FFD4;strokeColor=#4CAF50;fontSize=12;fontStyle=bold" parent="1" vertex="1">
+                    <mxGeometry x="1020" y="840" width="210" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="bigcommerce" value="🏬 BigCommerce Stores" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6D4;strokeColor=#FF9800;fontSize=12;fontStyle=bold" parent="1" vertex="1">
+                    <mxGeometry x="1020" y="990" width="210" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="dataLayerContainer" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;strokeWidth=2;dashed=1" vertex="1" parent="1">
+                    <mxGeometry x="300" y="1100" width="790" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="dataLayerLabel" value="Data Layer" style="text=1;fontSize=13;fontStyle=bold;fillColor=none;strokeColor=none" vertex="1" parent="1">
+                    <mxGeometry x="310" y="1100" width="100" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="postgres" value="🐘 PostgreSQL&#xa;(Stores, Products,&#xa;Orders, Customers)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#336791;strokeColor=#1a1a1a;fontSize=11;fontStyle=bold;fontColor=#FFFFFF" vertex="1" parent="1">
+                    <mxGeometry x="320" y="1120" width="150" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="embeddings" value="🧠 Vector Embeddings&#xa;(Product similarity,&#xa;Recommendations)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#9C27B0;strokeColor=#6A1B9A;fontSize=11;fontStyle=bold;fontColor=#FFFFFF" vertex="1" parent="1">
+                    <mxGeometry x="520" y="1120" width="150" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="redis" value="⚙️ Redis&#xa;(Cache, Sessions,&#xa;Queues)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#DC382D;strokeColor=#A01E27;fontSize=11;fontStyle=bold;fontColor=#FFFFFF" vertex="1" parent="1">
+                    <mxGeometry x="720" y="1120" width="150" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqlite" value="💾 SQLite&#xa;(Run Traces,&#xa;Audit Logs)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#0FA3B1;strokeColor=#0D7377;fontSize=11;fontStyle=bold;fontColor=#FFFFFF" vertex="1" parent="1">
+                    <mxGeometry x="920" y="1120" width="150" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="lineCJ" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#CC9933;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5" parent="1" source="cj" target="agent5" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="280" y="440"/>
+                            <mxPoint x="280" y="507"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="lineSerper" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#3366CC;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.7" parent="1" source="serper" target="agent5" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="260" y="590"/>
+                            <mxPoint x="260" y="517"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="lineC1" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#00AA00;strokeWidth=2;exitX=0.5;exitY=0;entryX=0;entryY=0.8" parent="1" source="clientsContainer" target="platformContainer" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="110" y="1000"/>
+                            <mxPoint x="110" y="860"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="lineS1" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF6B6B;strokeWidth=2;exitX=1;exitY=0.15;entryX=0;entryY=0.5" parent="1" source="platformContainer" target="shopifyContainer" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="920" y="200"/>
+                            <mxPoint x="1000" y="200"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="lineS2" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF6B6B;strokeWidth=2;exitX=1;exitY=0.35;entryX=0;entryY=0.5" parent="1" source="platformContainer" target="ebay" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="920" y="410"/>
+                            <mxPoint x="1000" y="430"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="lineS3" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF6B6B;strokeWidth=2;exitX=1;exitY=0.45;entryX=0;entryY=0.5" parent="1" source="platformContainer" target="aliexpress" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="920" y="530"/>
+                            <mxPoint x="1000" y="580"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="lineS4" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF6B6B;strokeWidth=2;exitX=1;exitY=0.55;entryX=0;entryY=0.5" parent="1" source="platformContainer" target="facebook" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="920" y="630"/>
+                            <mxPoint x="1000" y="730"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="lineS5" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF6B6B;strokeWidth=2;exitX=1;exitY=0.65;entryX=0;entryY=0.5" parent="1" source="platformContainer" target="woo" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="920" y="730"/>
+                            <mxPoint x="1000" y="880"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="lineS6" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF6B6B;strokeWidth=2;exitX=1;exitY=0.8;entryX=0;entryY=0.5" parent="1" source="platformContainer" target="bigcommerce" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="920" y="880"/>
+                            <mxPoint x="1000" y="1030"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="lineDB1" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#336791;strokeWidth=2;exitX=0.25;exitY=1;entryX=0.5;entryY=0" edge="1" parent="1" source="platformContainer" target="postgres">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="475" y="1070"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="lineDB2" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#9C27B0;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0" edge="1" parent="1" source="platformContainer" target="embeddings">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="575" y="1070"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="lineDB3" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#DC382D;strokeWidth=2;exitX=0.75;exitY=1;entryX=0.5;entryY=0" edge="1" parent="1" source="platformContainer" target="redis">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="775" y="1070"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="lineDB4" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#0FA3B1;strokeWidth=2;exitX=0.929;exitY=0.99;entryX=0.5;entryY=0;exitDx=0;exitDy=0;exitPerimeter=0;" edge="1" parent="1" source="platformContainer" target="sqlite">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="850" y="1070"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="process" name="New Store Process">
+        <mxGraphModel dx="1820" dy="1720" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="2000" background="ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="p0"/>
+                <mxCell id="p1" parent="p0"/>
+                <mxCell id="title" value="New Store Creation Process Flow" style="text=1;fontSize=18;fontStyle=bold;fillColor=none;strokeColor=none" parent="p1" vertex="1">
+                    <mxGeometry x="400" y="20" width="600" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="step1" value="👤 Client Requests&#xa;New Store" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#E1D5FF;strokeColor=#9673A6;fontSize=13;fontStyle=bold" parent="p1" vertex="1">
+                    <mxGeometry x="500" y="100" width="200" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow1" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=2" parent="p1" source="step1" target="step2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="step2" value="🎯 Director Agent&#xa;Receives Request" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D6B656;fontSize=13;fontStyle=bold" parent="p1" vertex="1">
+                    <mxGeometry x="500" y="240" width="200" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow2" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=2" parent="p1" source="step2" target="step3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="step3" value="🔀 Director Routes Task:&#xa;&#39;Create store on&#xa;[Shopify/eBay/etc]&#39;" style="shape=diamond;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D6B656;fontSize=12;fontStyle=bold" parent="p1" vertex="1">
+                    <mxGeometry x="480" y="380" width="240" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow3" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=2" parent="p1" source="step3" target="step4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="step4" value="🏪 Store Setup Agent&#xa;Creates Store on Platform&#xa;(Shopify/eBay/AliExpress/etc)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D6B656;fontSize=12;fontStyle=bold" parent="p1" vertex="1">
+                    <mxGeometry x="480" y="560" width="240" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow4" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=2" parent="p1" source="step4" target="step5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="step5" value="🎨 Design Agent&#xa;Creates Design Specs &amp; CSS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D6B656;fontSize=12;fontStyle=bold" parent="p1" vertex="1">
+                    <mxGeometry x="480" y="720" width="240" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow5" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=2" parent="p1" source="step5" target="step6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="step6" value="💻 Frontend Agent&#xa;Implements UI/Theme&#xa;Perfect Store Locking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D6B656;fontSize=12;fontStyle=bold" parent="p1" vertex="1">
+                    <mxGeometry x="480" y="880" width="240" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow6" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=2" parent="p1" source="step6" target="step7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="step7" value="🔍 Trend Scraper Agent&#xa;Find Trending Products&#xa;CJ Dropshipping + Serper&#xa;Price: 10-30% markup" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D6B656;fontSize=12;fontStyle=bold" parent="p1" vertex="1">
+                    <mxGeometry x="450" y="1050" width="300" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow7" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=2" parent="p1" source="step7" target="step8" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="step8" value="🛒 E-Commerce Agent&#xa;Lists Products on Store&#xa;Images + Videos&#xa;Consistent Styling" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D6B656;fontSize=12;fontStyle=bold" parent="p1" vertex="1">
+                    <mxGeometry x="480" y="1230" width="240" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow8" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=2" parent="p1" source="step8" target="step9" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="step9" value="📢 Marketing Agent&#xa;Launch Campaigns&#xa;Google Ads / Meta Ads" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D6B656;fontSize=12;fontStyle=bold" parent="p1" vertex="1">
+                    <mxGeometry x="480" y="1390" width="240" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow9" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=2" parent="p1" source="step9" target="step10" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="step10" value="✅ Store Live &amp; Ready&#xa;Monitor Orders" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#D4FFD4;strokeColor=#4CAF50;fontSize=13;fontStyle=bold" parent="p1" vertex="1">
+                    <mxGeometry x="500" y="1550" width="200" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="dataLabel" value="💾 Data Saved to:" style="text=1;fontSize=12;fontStyle=bold;fillColor=none;strokeColor=none" parent="p1" vertex="1">
+                    <mxGeometry x="100" y="300" width="150" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="postgresRef" value="🐘 PostgreSQL" style="shape=cylinder;rounded=1;whiteSpace=wrap;html=1;fillColor=#336791;strokeColor=#1a1a1a;fontSize=11;fontColor=#FFFFFF" parent="p1" vertex="1">
+                    <mxGeometry x="50" y="350" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="redisRef" value="⚙️ Redis Cache" style="shape=cylinder;rounded=1;whiteSpace=wrap;html=1;fillColor=#DC382D;strokeColor=#A01E27;fontSize=11;fontColor=#FFFFFF" parent="p1" vertex="1">
+                    <mxGeometry x="50" y="430" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="embeddingsRef" value="🧠 Embeddings" style="shape=cylinder;rounded=1;whiteSpace=wrap;html=1;fillColor=#9C27B0;strokeColor=#6A1B9A;fontSize=11;fontColor=#FFFFFF" parent="p1" vertex="1">
+                    <mxGeometry x="50" y="510" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="timeLabel" value="⏱️ Estimated Time:" style="text=1;fontSize=12;fontStyle=bold;fillColor=none;strokeColor=none" parent="p1" vertex="1">
+                    <mxGeometry x="1100" y="300" width="150" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="time1" value="Store Setup: 2-5 min" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=10" parent="p1" vertex="1">
+                    <mxGeometry x="1050" y="350" width="150" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="time2" value="Design + Frontend: 5-10 min" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=10" parent="p1" vertex="1">
+                    <mxGeometry x="1050" y="410" width="150" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="time3" value="Product Loading: 3-5 min" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=10" parent="p1" vertex="1">
+                    <mxGeometry x="1050" y="470" width="150" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="time4" value="Marketing Setup: 2-3 min" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=10" parent="p1" vertex="1">
+                    <mxGeometry x="1050" y="530" width="150" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="totalTime" value="Total: ~15-25 minutes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=11;fontStyle=bold" parent="p1" vertex="1">
+                    <mxGeometry x="1050" y="600" width="150" height="50" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="credentials" name="Credentials &amp; Permissions Flow">
+        <mxGraphModel dx="1120" dy="1058" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1400" background="ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="c0"/>
+                <mxCell id="c1" parent="c0"/>
+                <mxCell id="ctitle" value="Store Credentials &amp; Permission Flow" style="text=1;fontSize=18;fontStyle=bold;fillColor=none;strokeColor=none" parent="c1" vertex="1">
+                    <mxGeometry x="400" y="20" width="800" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_step1" value="1️⃣ Store Setup Agent&#xa;Creates Store on Shopify&#xa;(with master credentials)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D6B656;fontSize=12;fontStyle=bold" parent="c1" vertex="1">
+                    <mxGeometry x="100" y="120" width="240" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_step2" value="Shopify API Returns:&#xa;• store_id&#xa;• admin_token&#xa;• api_key&#xa;• shop_url" style="shape=document;whiteSpace=wrap;html=1;fillColor=#FFD9D9;strokeColor=#CC3333;fontSize=11;fontStyle=bold" parent="c1" vertex="1">
+                    <mxGeometry x="450" y="135" width="220" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_arrow1" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=2" parent="c1" source="c_step1" target="c_step2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_step3" value="2️⃣ Store Setup Saves&#xa;Credentials to PostgreSQL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D6B656;fontSize=12;fontStyle=bold" parent="c1" vertex="1">
+                    <mxGeometry x="100" y="300" width="240" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_db" value="📊 Stores Table:&#xa;├ store_id (PK)&#xa;├ platform&#xa;├ admin_token (encrypted)&#xa;├ api_key (encrypted)&#xa;├ shop_url&#xa;└ config (JSON)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#336791;strokeColor=#1a1a1a;fontSize=11;fontColor=#FFFFFF" parent="c1" vertex="1">
+                    <mxGeometry x="450" y="285" width="220" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_arrow2" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;strokeWidth=2" parent="c1" source="c_step3" target="c_db" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_design" value="3️⃣ Design Agent&#xa;Queries DB:&#xa;SELECT admin_token&#xa;FROM stores&#xa;WHERE store_id = ?" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D6B656;fontSize=11;fontStyle=bold" parent="c1" vertex="1">
+                    <mxGeometry x="50" y="520" width="180" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_frontend" value="3️⃣ Frontend Agent&#xa;Queries DB:&#xa;SELECT admin_token&#xa;FROM stores&#xa;WHERE store_id = ?" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D6B656;fontSize=11;fontStyle=bold" parent="c1" vertex="1">
+                    <mxGeometry x="300" y="520" width="180" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_ecommerce" value="3️⃣ E-Commerce Agent&#xa;Queries DB:&#xa;SELECT admin_token&#xa;FROM stores&#xa;WHERE store_id = ?" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D6B656;fontSize=11;fontStyle=bold" parent="c1" vertex="1">
+                    <mxGeometry x="550" y="520" width="180" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_arrow3a" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#336791;strokeWidth=2;dashed=1" parent="c1" source="c_db" target="c_design" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="200" y="450"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="c_arrow3b" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#336791;strokeWidth=2;dashed=1" parent="c1" source="c_db" target="c_frontend" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="390" y="450"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="c_arrow3c" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#336791;strokeWidth=2;dashed=1" parent="c1" source="c_db" target="c_ecommerce" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="640" y="450"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="c_use1" value="4️⃣ Use admin_token&#xa;to authenticate&#xa;with Shopify API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D4FFD4;strokeColor=#4CAF50;fontSize=11;fontStyle=bold" parent="c1" vertex="1">
+                    <mxGeometry x="50" y="720" width="180" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_use2" value="4️⃣ Use admin_token&#xa;to push theme&#xa;to Shopify" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D4FFD4;strokeColor=#4CAF50;fontSize=11;fontStyle=bold" parent="c1" vertex="1">
+                    <mxGeometry x="300" y="720" width="180" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_use3" value="4️⃣ Use admin_token&#xa;to create products&#xa;via GraphQL/REST" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D4FFD4;strokeColor=#4CAF50;fontSize=11;fontStyle=bold" parent="c1" vertex="1">
+                    <mxGeometry x="550" y="720" width="180" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_arrow4a" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#4CAF50;strokeWidth=2" parent="c1" source="c_design" target="c_use1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_arrow4b" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#4CAF50;strokeWidth=2" parent="c1" source="c_frontend" target="c_use2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_arrow4c" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#4CAF50;strokeWidth=2" parent="c1" source="c_ecommerce" target="c_use3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_security" value="🔒 Security Notes:&#xa;• Tokens encrypted in DB&#xa;• Agents have read-only to tokens&#xa;• Tokens rotated periodically&#xa;• Audit log all API calls&#xa;• Different scopes per platform" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=10" parent="c1" vertex="1">
+                    <mxGeometry x="850" y="300" width="220" height="140" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
