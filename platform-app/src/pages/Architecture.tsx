@@ -25,7 +25,7 @@ export function Architecture() {
       <div>
         <h1 className="text-2xl font-bold text-white">Architecture</h1>
         <p className="text-gray-400 text-sm mt-1">
-          Three views: MCP server, full LangGraph flow with store setup + design agent + niche-aware scraper, and Draw.io diagram. The full-system view also covers the storefront layer — the docs-app drives the host Storefront Runner (:8788), which uses the official Shopify CLI (`shopify theme pull · dev · push`) to run and deploy each store's Liquid theme from stores/shopify/*. Use +/− or Ctrl+scroll to zoom.
+          Three views: MCP server, full orchestrator pipeline (store setup → design/frontend loop → niche-aware scraper/e-commerce loop → marketing → fulfillment, sequenced by plain Python — no LLM router), and Draw.io diagram. The full-system view also covers the storefront layer — the platform-app drives the host Storefront Runner (:8788), which uses the official Shopify CLI (`shopify theme pull · dev · push`) to run and deploy each store's Liquid theme from stores/shopify/* — plus the separate price/stock monitor job. Use +/− or Ctrl+scroll to zoom.
         </p>
       </div>
 
@@ -84,25 +84,32 @@ const SYSTEM_MERMAID = `graph TB
         WH["Webhooks\nHMAC SHA-256"]
         RUN["POST /api/v1/run"]
         AT["POST /auth/token\nJWT Issuer"]
+        DAEMON["Daemon loop (main.py)\nfires [MONITOR] run per\nactive store on interval"]
     end
 
     GW["FastAPI :8000\nJWT · CORS · rate-limit"]
     IN --> GW
+    DAEMON --> GW
 
-    subgraph GRAPH ["LangGraph StateGraph"]
+    subgraph PIPE ["Orchestrator — run_pipeline() (plain Python control flow, no LLM router)"]
         direction LR
-        DIR["Director\nClaude Opus 4.8"]
+        ORC["Orchestrator"]
         SS["Store Setup\nSonnet 4.6\nruns once"]
         DA["Design Agent\nSonnet 4.6\nUI/UX CSS"]
+        FRA["Frontend Agent\nSonnet 4.6\nimplements UI, locks store"]
         TS["Trend Scraper\nHaiku 4.5\nniche-aware"]
         EM["E-com Manager\nSonnet 4.6"]
-        MA["Marketing\nSonnet 4.6"]
-        FA["Fulfillment\nHaiku 4.5"]
-        DIR --> SS & DA & TS & EM & MA & FA
-        SS & DA & TS & EM & MA & FA -.->|"report"| DIR
+        MA["Marketing\ndeterministic, no LLM"]
+        FA["Fulfillment\ndeterministic, no LLM"]
+        ORC --> SS
+        SS --> DA
+        DA <-.->|"design loop"| FRA
+        FRA --> TS
+        TS <-.->|"catalog-fill loop"| EM
+        EM --> MA --> FA
     end
 
-    GW --> DIR
+    GW --> ORC
 
     THEME["shopify_theme.py\ncolors · hero · marquee · story · nav"]
     HZ["Horizon Theme\nkgg8n0-k0.myshopify.com"]
@@ -134,7 +141,7 @@ const SYSTEM_MERMAID = `graph TB
 
     subgraph SF ["Storefront — Shopify CLI Liquid themes"]
         direction LR
-        DOCS["docs-app\nMy Stores"]
+        DOCS["platform-app\nMy Stores"]
         RUNNER["Storefront Runner\nhost :8788"]
         THEMEDIR["Liquid themes\nstores/shopify/*"]
         CLI["shopify theme\npull · dev · push"]
@@ -149,16 +156,24 @@ const SYSTEM_MERMAID = `graph TB
     CREDS --> GW
     CLI --> SHOP
 
+    subgraph MON ["Price/stock monitor — outside the pipeline"]
+        direction LR
+        MONJOB["check_store_prices()\nmonitoring.py — deterministic,\nno LLM, manually/cron-triggered"]
+    end
+    MONJOB --> CJ
+    MONJOB --> SHOP
+
     classDef agent fill:#4B0082,stroke:#6d28d9,color:#e2e8f0
+    classDef detagent fill:#1e293b,stroke:#475569,color:#cbd5e1
     classDef mcp fill:#1e3a5f,stroke:#2563eb,color:#e2e8f0
     classDef ext fill:#450a0a,stroke:#dc2626,color:#fee2e2
     classDef theme fill:#065f46,stroke:#059669,color:#d1fae5
     classDef gw fill:#292524,stroke:#78716c,color:#d6d3d1
     classDef store fill:#312e81,stroke:#6366f1,color:#e0e7ff
-    class DIR,SS,DA,TS,EM,MA,FA agent
+    class ORC,SS,DA,FRA,TS,EM agent
+    class MA,FA,MONJOB detagent
     class T1,T2,T3,T4,T5 mcp
     class CJ,SERP,SHOP,GADS ext
     class THEME,HZ theme
-    class GW,CREDS gw
-    class RUNNER,CLI,THEMEDIR,DOCS store
-    class DOCS,RUNNER,HYD,SAPI,OXY store`;
+    class GW,CREDS,DAEMON gw
+    class RUNNER,CLI,THEMEDIR,DOCS store`;

@@ -37,6 +37,14 @@ class ProductMapping(Base):
         comment="Shopify product GID, e.g. gid://shopify/Product/123",
     )
 
+    # ── Which store this belongs to (this system runs multiple stores) ────────
+    store_id: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment="Our internal store UUID — which Shopify store/credentials to use",
+    )
+
     # ── Supplier cross-reference ──────────────────────────────────────────────
     supplier_product_id: Mapped[str] = mapped_column(
         String(255),

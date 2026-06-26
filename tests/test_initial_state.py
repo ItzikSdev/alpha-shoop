@@ -19,12 +19,13 @@ SETUP_TASK = "[SETUP_ONLY] Rebuild the store brand and design CSS from scratch"
 REBUILD_TASK = "[REBUILD] Completely rebuild this store from scratch for baby products"
 
 
-def _mock_store(brand: dict | None = None):
+def _mock_store(brand: dict | None = None, designed: bool = False):
     store = MagicMock()
     store.store_id = "test-store-id"
     store.shopify_domain = "test.myshopify.com"
     store.shopify_access_token = "shpat_test"
     store.store_brand = brand or {}
+    store.store_designed = designed
     return store
 
 
@@ -35,15 +36,14 @@ async def test_setup_only_clears_cached_brand(client: AsyncClient, auth_headers:
     """[SETUP_ONLY] task must start with store_brand=None even if store has a cached brand."""
     captured_state = {}
 
-    async def fake_graph_stream(state, config):
+    async def fake_run_pipeline(state):
         captured_state.update(state)
         return
         yield  # make it a generator
 
     import asyncio
     with patch("src.api.routes.agents.get_store", return_value=_mock_store(CACHED_BRAND)), \
-         patch("src.api.routes.agents.graph") as mock_graph:
-        mock_graph.astream = fake_graph_stream
+         patch("src.api.routes.agents.run_pipeline", fake_run_pipeline):
         resp = await client.post(
             "/api/v1/run",
             json={"task": SETUP_TASK, "store_id": "test-store-id"},
@@ -63,14 +63,13 @@ async def test_rebuild_clears_cached_brand(client: AsyncClient, auth_headers: di
     import asyncio
     captured_state = {}
 
-    async def fake_graph_stream(state, config):
+    async def fake_run_pipeline(state):
         captured_state.update(state)
         return
         yield
 
     with patch("src.api.routes.agents.get_store", return_value=_mock_store(CACHED_BRAND)), \
-         patch("src.api.routes.agents.graph") as mock_graph:
-        mock_graph.astream = fake_graph_stream
+         patch("src.api.routes.agents.run_pipeline", fake_run_pipeline):
         resp = await client.post(
             "/api/v1/run",
             json={"task": REBUILD_TASK, "store_id": "test-store-id"},
@@ -85,18 +84,18 @@ async def test_rebuild_clears_cached_brand(client: AsyncClient, auth_headers: di
 
 @pytest.mark.asyncio
 async def test_normal_task_loads_cached_brand(client: AsyncClient, auth_headers: dict):
-    """A normal (non-rebuild) task should load the cached brand to skip store_setup."""
+    """A normal (non-rebuild) task should load the cached brand to skip store_setup,
+    and load store_designed as its own persisted fact (not derived from the brand)."""
     import asyncio
     captured_state = {}
 
-    async def fake_graph_stream(state, config):
+    async def fake_run_pipeline(state):
         captured_state.update(state)
         return
         yield
 
-    with patch("src.api.routes.agents.get_store", return_value=_mock_store(CACHED_BRAND)), \
-         patch("src.api.routes.agents.graph") as mock_graph:
-        mock_graph.astream = fake_graph_stream
+    with patch("src.api.routes.agents.get_store", return_value=_mock_store(CACHED_BRAND, designed=True)), \
+         patch("src.api.routes.agents.run_pipeline", fake_run_pipeline):
         resp = await client.post(
             "/api/v1/run",
             json={"task": LONG_TASK, "store_id": "test-store-id"},
@@ -109,20 +108,45 @@ async def test_normal_task_loads_cached_brand(client: AsyncClient, auth_headers:
     assert captured_state.get("store_designed") is True
 
 
+@pytest.mark.asyncio
+async def test_brand_without_design_still_runs_design_loop(client: AsyncClient, auth_headers: dict):
+    """Regression test: a store can have a cached brand (store_setup ran) while
+    its theme was never actually customized (design loop never completed).
+    store_designed must come from its own persisted column, not bool(cached_brand)
+    — otherwise the design loop silently never runs again for that store."""
+    import asyncio
+    captured_state = {}
+
+    async def fake_run_pipeline(state):
+        captured_state.update(state)
+        return
+        yield
+
+    with patch("src.api.routes.agents.get_store", return_value=_mock_store(CACHED_BRAND, designed=False)), \
+         patch("src.api.routes.agents.run_pipeline", fake_run_pipeline):
+        resp = await client.post(
+            "/api/v1/run",
+            json={"task": LONG_TASK, "store_id": "test-store-id"},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 202
+        await asyncio.sleep(0.15)
+
+    assert captured_state.get("store_brand") == CACHED_BRAND
+    assert captured_state.get("store_designed") is False
+
+
 # ── store_id routing ──────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_run_without_store_id_uses_default(client: AsyncClient, auth_headers: dict):
     """No store_id → credentials come from env config, no store lookup."""
+    async def empty_pipeline(state):
+        return
+        yield
+
     with patch("src.api.routes.agents.get_store") as mock_get_store, \
-         patch("src.api.routes.agents.graph") as mock_graph:
-        mock_graph.astream = AsyncMock(return_value=iter([]))
-
-        async def empty_stream(state, config):
-            return
-            yield
-
-        mock_graph.astream = empty_stream
+         patch("src.api.routes.agents.run_pipeline", empty_pipeline):
         resp = await client.post(
             "/api/v1/run",
             json={"task": LONG_TASK},

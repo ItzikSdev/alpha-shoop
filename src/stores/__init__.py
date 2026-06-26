@@ -22,6 +22,7 @@ class StoreConfig:
     platform: str = "shopify"  # future: "woocommerce" | "etsy" | ...
     niche: str = ""
     store_brand: dict = field(default_factory=dict)
+    store_designed: bool = False  # has the design loop genuinely completed for this store?
     active: bool = True
     created_at: str = ""
     payplus_api_key: str = ""   # PayPlus payment gateway — set after manual app install
@@ -59,7 +60,8 @@ def init_stores_table() -> None:
                 storefront_api_token TEXT DEFAULT '',
                 oxygen_deploy_token TEXT DEFAULT '',
                 storefront_slug TEXT DEFAULT '',
-                theme_access_password TEXT DEFAULT ''
+                theme_access_password TEXT DEFAULT '',
+                store_designed INTEGER DEFAULT 0
             )
         """)
         # Migrations: add columns added after initial schema
@@ -73,6 +75,7 @@ def init_stores_table() -> None:
             ("oxygen_deploy_token", "''"),
             ("storefront_slug", "''"),
             ("theme_access_password", "''"),
+            ("store_designed", "0"),
         ]:
             try:
                 con.execute(f"ALTER TABLE stores ADD COLUMN {col} TEXT DEFAULT {default}")
@@ -84,7 +87,7 @@ def init_stores_table() -> None:
 _SELECT_COLS = (
     "store_id, name, shopify_domain, shopify_access_token, platform, niche, "
     "store_brand, active, created_at, payplus_api_key, payplus_secret, installed_theme, description, "
-    "storefront_api_token, oxygen_deploy_token, storefront_slug, theme_access_password"
+    "storefront_api_token, oxygen_deploy_token, storefront_slug, theme_access_password, store_designed"
 )
 
 
@@ -98,6 +101,7 @@ def _row_to_store(r: tuple) -> StoreConfig:
         installed_theme=r[11] or "", description=r[12] or "",
         storefront_api_token=r[13] or "", oxygen_deploy_token=r[14] or "",
         storefront_slug=r[15] or "", theme_access_password=r[16] or "",
+        store_designed=bool(int(r[17] or 0)),
     )
 
 
@@ -124,15 +128,15 @@ def save_store(store: StoreConfig) -> None:
             """INSERT OR REPLACE INTO stores
                (store_id, name, shopify_domain, shopify_access_token, platform, niche,
                 store_brand, active, created_at, payplus_api_key, payplus_secret, installed_theme, description,
-                storefront_api_token, oxygen_deploy_token, storefront_slug, theme_access_password)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                storefront_api_token, oxygen_deploy_token, storefront_slug, theme_access_password, store_designed)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 store.store_id, store.name, store.shopify_domain,
                 store.shopify_access_token, store.platform, store.niche,
                 json.dumps(store.store_brand), int(store.active), store.created_at,
                 store.payplus_api_key, store.payplus_secret, store.installed_theme, store.description,
                 store.storefront_api_token, store.oxygen_deploy_token, store.storefront_slug,
-                store.theme_access_password,
+                store.theme_access_password, int(store.store_designed),
             ),
         )
         con.commit()
@@ -151,6 +155,21 @@ def update_store_brand(store_id: str, brand: dict) -> None:
         con.execute(
             "UPDATE stores SET store_brand = ?, niche = ? WHERE store_id = ?",
             (json.dumps(brand), brand.get("niche", ""), store_id),
+        )
+        con.commit()
+
+
+def update_store_designed(store_id: str, designed: bool) -> None:
+    """Persist whether the design loop has genuinely completed for this store.
+
+    Previously this was never persisted at all — every run derived it as
+    `bool(cached_brand)`, so any store with a saved brand brief was treated as
+    permanently "designed" and the design loop silently never ran again,
+    even on a store whose theme was never actually customized."""
+    with sqlite3.connect(_DB_PATH) as con:
+        con.execute(
+            "UPDATE stores SET store_designed = ? WHERE store_id = ?",
+            (int(designed), store_id),
         )
         con.commit()
 

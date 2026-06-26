@@ -6,7 +6,7 @@ import re
 from langchain_core.messages import HumanMessage, SystemMessage
 from src.agents.state import AgentState
 from src.llm import get_llm
-from src.mcp_tools.shopify import _shopify_gql, _shopify_rest, create_collection
+from src.mcp_tools.shopify import _shopify_gql, _shopify_rest, create_collection, create_welcome_discount
 from src.mcp_tools.shopify_theme import full_store_setup, setup_navigation
 from src.mcp_tools.theme_installer import install_free_theme
 from src.tracing import agent_log
@@ -21,6 +21,21 @@ def _parse_json(text: str) -> dict:
 
 
 logger = logging.getLogger(__name__)
+
+# Third-party Shopify apps require a human to click "Install" in the App
+# Store (OAuth + billing consent) — there's no Admin API that lets an agent
+# silently install another vendor's app, by deliberate Shopify design. So this
+# is a recommendation surfaced in the run summary, not something automated.
+_RECOMMENDED_APPS = """\
+Recommended apps to install manually (not automatable — each requires your \
+own App Store install + OAuth consent):
+- Reviews: Judge.me (unlimited reviews, free tier, SEO rich snippets)
+- Email/lifecycle: Klaviyo (welcome flows, abandoned cart, post-purchase)
+- Post-purchase upsell: ReConvert
+- Profit tracking once running ads: Lifetimely or Triple Whale
+- Page speed/SEO: TinyIMG or Avada
+Already done natively (no app needed): storewide welcome discount code, \
+theme/design, navigation, collections, pages."""
 
 _BRAND_BRIEF_SYSTEM = """\
 You are a senior brand strategist who has built stores like Tanaor, MVMT, and Glossier.
@@ -66,6 +81,15 @@ mutation pageCreate($page: PageCreateInput!) {
 
 _GQL_SHOP_UPDATE = ""  # shopUpdate removed from Shopify API — store name changed via admin only
 
+_GQL_SET_SHOP_POLICY = """
+mutation setPolicy($policy: ShopPolicyInput!) {
+  shopPolicyUpdate(shopPolicy: $policy) {
+    shopPolicy { type body }
+    userErrors { field message }
+  }
+}
+"""
+
 
 async def _write_brand_brief(task: str) -> dict:
     llm = get_llm("ecommerce", temperature=0.7)
@@ -79,7 +103,20 @@ async def _write_brand_brief(task: str) -> dict:
         return {}
 
 
+async def _page_exists(title: str) -> bool:
+    """Confirmed real bug: store_setup re-runs (retries, [REBUILD]) called
+    _create_page with no existence check, leaving 3 duplicate "About Us" /
+    "Shipping & Returns" pages live on a real store. Check first."""
+    try:
+        existing = await _shopify_rest("GET", "pages.json")
+        return any(p.get("title") == title for p in existing.get("pages", []))
+    except Exception:
+        return False
+
+
 async def _create_page(title: str, body_html: str) -> bool:
+    if await _page_exists(title):
+        return True
     # Try GQL first (needs write_content scope)
     try:
         data = await _shopify_gql(
@@ -104,6 +141,27 @@ async def _create_page(title: str, body_html: str) -> bool:
         return bool(result.get("page", {}).get("id"))
     except Exception as exc:
         logger.warning("REST pageCreate failed for %s: %s — add write_content scope to Custom App", title, exc)
+        return False
+
+
+async def _set_shop_policy(policy_type: str, body: str) -> bool:
+    """Write to Shopify's native legal Policy fields (Settings → Policies) —
+    separate from a regular Page. Confirmed real gap: the "Shipping & Returns"
+    Page below is a normal content page, but checkout footer links and the
+    Storefront MCP server's search_shop_policies_and_faqs tool both read from
+    these structured shop.shopPolicies fields instead, so without this call
+    AI shopping agents only ever see Shopify's generic shipping-zone default,
+    never the brand's actual policy text."""
+    if not body:
+        return False
+    try:
+        data = await _shopify_gql(_GQL_SET_SHOP_POLICY, {"policy": {"type": policy_type, "body": f"<p>{body}</p>"}})
+        errors = data.get("shopPolicyUpdate", {}).get("userErrors", [])
+        if errors:
+            logger.warning("shopPolicyUpdate failed for %s: %s", policy_type, errors)
+        return not errors
+    except Exception as exc:
+        logger.warning("shopPolicyUpdate failed for %s: %s", policy_type, exc)
         return False
 
 
@@ -214,6 +272,14 @@ async def store_setup_node(state: AgentState) -> dict:
         if ok:
             actions_done.append("Shipping & Returns page")
 
+        # Also write to Shopify's native Policy fields (checkout footer links +
+        # Storefront MCP's FAQ tool read these, not the page above — see
+        # _set_shop_policy's docstring).
+        if await _set_shop_policy("SHIPPING_POLICY", shipping):
+            actions_done.append("Native shipping policy set")
+        if await _set_shop_policy("REFUND_POLICY", returns):
+            actions_done.append("Native refund policy set")
+
     # 4. Install free Shopify theme that matches the store niche
     store_niche = brief.get("niche", "") or brief.get("product_category", "")
     store_slug = store_name.lower().replace(" ", "_")[:30] if store_name else "store"
@@ -256,11 +322,23 @@ async def store_setup_node(state: AgentState) -> dict:
         else:
             agent_log(f"✗ {label} failed", "warning")
 
+    # 6. Welcome discount — a real AOV booster achievable natively via the
+    # Discounts API, no third-party app (e.g. ReConvert) needed for this kind
+    # of offer specifically.
+    agent_log("Creating storewide welcome discount code...", "action")
+    discount_result = await create_welcome_discount("WELCOME10", 0.10)
+    if discount_result.get("success"):
+        actions_done.append("Welcome discount code WELCOME10 (10% off, storewide)")
+        agent_log("✓ Discount code WELCOME10 created", "success")
+    else:
+        agent_log(f"✗ Discount code creation failed: {discount_result.get('error')}", "warning")
+
     summary = (
         f"Store brand: {store_name} — \"{brief.get('tagline', '')}\"\n"
         f"Differentiator: {brief.get('differentiator', '')}\n"
         f"Niche: {brief.get('niche', '')}\n"
-        f"Done: {', '.join(actions_done) or 'none'}"
+        f"Done: {', '.join(actions_done) or 'none'}\n\n"
+        f"{_RECOMMENDED_APPS}"
     )
 
     return {

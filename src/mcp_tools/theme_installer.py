@@ -200,33 +200,65 @@ async def _active_theme_name() -> str:
 
 
 async def install_free_theme(niche: str, store_name: str) -> dict:
-    """Use the store's CURRENT Shopify theme — no gallery downloads.
+    """Pick a free Shopify theme matching the store's niche, install it on the
+    store via the Admin API, wait for processing, and publish it as the live theme.
 
-    DEPRECATED behaviour change: we no longer download free themes from the Shopify
-    theme gallery (GitHub ZIPs). Themes are now managed with the official **Shopify
-    CLI** (`shopify theme pull` / `dev` / `push`) via the host Storefront Runner, so
-    the store keeps all native theme features. This function simply reports the
-    store's live theme and performs no install.
+    Also downloads the installed theme's files to stores/{store_name}/theme/ so
+    the Shopify CLI flow (theme pull/dev/push) has a local copy to start from.
 
-    The download helpers (`_download_zip`, `_extract_theme_to_local`,
-    `_install_theme_on_shopify`) are retained only for backward compatibility and
-    are intentionally unused.
-
-    Returns: {success, theme_key, display_name, skipped, managed_by}
+    Returns: {success, theme_key, display_name, theme_id, skipped, managed_by}
     """
     from src.tracing import agent_log
 
-    active_name = await _active_theme_name()
+    theme_key = pick_theme_for_niche(niche)
+    theme_config = FREE_THEMES[theme_key]
     agent_log(
-        f"Theme: keeping the store's live theme '{active_name or 'current'}' — gallery "
-        f"downloads are disabled; manage the theme via the Shopify CLI (Run in localhost / "
-        f"Upload to Shopify in the dashboard).",
-        "info",
+        f"Installing free theme '{theme_config['display_name']}' for niche '{niche}'...",
+        "action",
+    )
+
+    theme_id = await _install_theme_on_shopify(theme_config)
+    if not theme_id:
+        active_name = await _active_theme_name()
+        agent_log(
+            f"Theme install failed — keeping the store's current theme '{active_name or 'unknown'}'.",
+            "warning",
+        )
+        return {
+            "success": False,
+            "theme_key": "live",
+            "display_name": active_name or "current theme",
+            "skipped": True,
+            "managed_by": "shopify-admin-api",
+        }
+
+    agent_log(f"Theme uploaded (id={theme_id}), waiting for Shopify to finish processing...", "info")
+    published = await _wait_for_theme_ready(theme_id)
+    if not published:
+        agent_log(
+            f"Theme '{theme_config['display_name']}' uploaded but did not finish processing in time — "
+            f"it's installed as unpublished; publish it manually from the Shopify admin.",
+            "warning",
+        )
+
+    clear_theme_id_cache()
+
+    try:
+        zip_bytes = await _download_zip(theme_config["github_zip"])
+        _extract_theme_to_local(zip_bytes, store_name, theme_key)
+    except Exception as exc:
+        logger.warning("Local theme copy failed (non-fatal): %s", exc)
+
+    agent_log(
+        f"✓ Theme '{theme_config['display_name']}' "
+        f"{'published live' if published else 'installed (unpublished)'}",
+        "success",
     )
     return {
         "success": True,
-        "theme_key": "live",
-        "display_name": active_name or "current theme",
-        "skipped": True,
-        "managed_by": "shopify-cli",
+        "theme_key": theme_key,
+        "display_name": theme_config["display_name"],
+        "theme_id": theme_id,
+        "skipped": False,
+        "managed_by": "shopify-admin-api",
     }

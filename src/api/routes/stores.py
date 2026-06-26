@@ -293,3 +293,19 @@ async def remove_store(store_id: str) -> dict:
         raise HTTPException(status_code=404, detail=f"Store {store_id!r} not found")
     delete_store_knowledge(store_id)
     return {"deleted": store_id}
+
+
+@router.post(
+    "/stores/{store_id}/check-prices",
+    summary="Re-check supplier prices/availability for every listed product",
+    description=(
+        "Re-checks every product_mappings row for this store against CJ's current "
+        "price. Reprices Shopify when the supplier cost moved >=5%, or sets the "
+        "product to DRAFT if CJ no longer returns the listing."
+    ),
+)
+async def check_store_prices(store_id: str) -> dict:
+    if not get_store(store_id):
+        raise HTTPException(status_code=404, detail=f"Store {store_id!r} not found")
+    from src.mcp_tools.monitoring import check_store_prices as _check
+    return await _check(store_id)

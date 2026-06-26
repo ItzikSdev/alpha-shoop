@@ -6,7 +6,7 @@ import logging
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
-from src.agents.graph import graph
+from src.agents.orchestrator import run_pipeline
 from src.agents.state import AgentState
 from src.models.requests import RunAgentRequest, KillSwitchRequest, TestToolRequest
 from src.models.responses import (
@@ -18,8 +18,8 @@ from src.models.responses import (
 )
 from src.api.deps import get_current_operator
 from src.guardrails.kill_switch import KillSwitch
-from src.stores import _current_store, get_store, update_store_brand
-from src.tracing import trace_store, TraceCallback, current_thread_id
+from src.stores import _current_store, get_store, update_store_brand, update_store_designed
+from src.tracing import trace_store, TraceCallback, current_thread_id, current_trace_callback
 from src.tracing.persist import save_all
 
 logger = logging.getLogger(__name__)
@@ -59,18 +59,32 @@ async def _execute_graph(
     # Activate per-store credentials so all Shopify tools use the right store
     store_cfg = None
     cached_brand: dict | None = None
+    cached_designed = False
     if store_id:
         store_cfg = get_store(store_id)
         if store_cfg:
             _current_store.set(store_cfg)
             if store_cfg.store_brand:
                 cached_brand = store_cfg.store_brand
+            # store_designed must be its own persisted fact, not derived from
+            # "has a brand brief" — confirmed real bug: a store can have a
+            # cached brand from store_setup while its theme was never actually
+            # customized (design loop never ran), and deriving store_designed
+            # as bool(cached_brand) made that permanent — design_agent/
+            # frontend_agent would silently never run again for that store.
+            cached_designed = store_cfg.store_designed
 
     # [SETUP_ONLY] and [REBUILD] always start fresh — ignore cached brand/design
     # so design_agent + store_setup are guaranteed to run
     force_rebuild = "[SETUP_ONLY]" in task or "[REBUILD]" in task
     if force_rebuild:
         cached_brand = None
+        cached_designed = False
+    elif "[REDESIGN]" in task:
+        # Re-run just the design loop against the existing brand brief — unlike
+        # [REBUILD]/[SETUP_ONLY] this keeps cached_brand so store_setup_node
+        # (and its brand-new brand brief) never runs again.
+        cached_designed = False
 
     state: AgentState = {
         "task": task,
@@ -78,8 +92,6 @@ async def _execute_graph(
         "operator": operator,
         "store_id": store_id,
         "messages": [],
-        "next_agent": None,
-        "director_reasoning": None,
         "trending_products": [],
         "sourcing_attempts": 0,
         "sourcing_feedback": None,
@@ -90,7 +102,7 @@ async def _execute_graph(
         "budget_remaining_usd": max_budget_usd,
         # Pre-load cached brand brief so agents don't rebuild from scratch
         "store_brand": cached_brand,
-        "store_designed": bool(cached_brand) and not force_rebuild,
+        "store_designed": cached_designed,
         "design_spec": None,
         "design_iterations": 0,
         "design_approved": False,
@@ -103,12 +115,13 @@ async def _execute_graph(
     }
     try:
         callback = TraceCallback()
-        async for step in graph.astream(
-            state,
-            config={"recursion_limit": 50, "callbacks": [callback]},
-        ):
-            for node_name, delta in step.items():
-                state.update(delta)
+        current_trace_callback.set(callback)
+        # run_pipeline mutates `state` in place as it goes (same object reference) —
+        # unlike the old graph.astream() loop, nothing here needs to re-apply deltas;
+        # doing so would actively re-clobber `messages` (appended internally, not
+        # overwritten) back down to just the latest delta.
+        async for step in run_pipeline(state):
+            for node_name, _delta in step.items():
                 run.current_node = node_name
                 run.products_found = len(state.get("trending_products", []))
                 run.orders_placed = len(state.get("shopify_products_created", []))
@@ -121,16 +134,20 @@ async def _execute_graph(
         trace_store.finish_run(thread_id, "completed")
         await asyncio.to_thread(save_all, trace_store)
 
-        # Persist brand brief back to store config so future runs reuse it
+        # Persist brand brief + design status back to store config so future
+        # runs reuse them correctly instead of re-deriving store_designed from
+        # "has a brand" (see cached_designed note above).
         if store_id and state.get("store_brand"):
             await asyncio.to_thread(update_store_brand, store_id, state["store_brand"])
+        if store_id and state.get("store_designed"):
+            await asyncio.to_thread(update_store_designed, store_id, True)
 
         run.result = {
             "trending_products": state.get("trending_products", []),
             "shopify_products_created": state.get("shopify_products_created", []),
             "campaign_ids": state.get("campaign_ids", []),
             "fulfilled_orders": state.get("fulfilled_orders", []),
-            "director_reasoning": state.get("director_reasoning", ""),
+            "summary": state.get("error") or "completed",
         }
     except Exception as exc:
         logger.exception("Agent run %s failed", thread_id)
@@ -143,7 +160,7 @@ async def _execute_graph(
             "shopify_products_created": state.get("shopify_products_created", []),
             "campaign_ids": state.get("campaign_ids", []),
             "fulfilled_orders": state.get("fulfilled_orders", []),
-            "director_reasoning": state.get("director_reasoning", ""),
+            "summary": state.get("error") or "completed",
         }
 
 

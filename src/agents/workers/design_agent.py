@@ -21,7 +21,6 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from src.agents.state import AgentState
 from src.llm import get_llm
 from src.mcp_tools.shopify_design import add_custom_css, read_full_theme_context
-from src.mcp_tools.shopify_theme import _TONE_PALETTES
 from src.mcp_tools.shopify import list_collections_with_counts
 from src.tracing import agent_log
 from src.tracing.context import current_node
@@ -33,21 +32,62 @@ MAX_DESIGN_ITERATIONS = 3
 # ── Mode 1: generate spec + CSS ───────────────────────────────────────────────
 
 _SPEC_SYSTEM = """\
-You are a senior UI/UX designer and Shopify theme expert building premium DTC brands
-(Tanaor, Glossier, MVMT, Byredo level).
+You are a senior UI/UX designer and Shopify theme expert building clean, minimal,
+premium storefronts (Lalo / Snuggle Hunny level — soft, modern, trustworthy).
 
-REAL REFERENCE — extracted directly from tanaorjewelry.co.il's live production CSS
-(theme.min.css), a genuinely successful premium Shopify store. Pattern-match against
-these actual values rather than inventing "premium-sounding" numbers from scratch:
-- Font: 'Assistant' (Google Font, used for both headings and body — clean, modern, RTL-friendly)
-- Buttons: border-radius 0 (sharp), letter-spacing 0.2em, text-transform uppercase,
-  font-weight bold, padding 15px (compact, not oversized)
-- Primary palette: near-black (#111111) on white, NOT pure #000 — slightly softer
-- Accent: warm gold/champagne tones (#d3b375, #eddabd, #e8cfaa) used sparingly for
-  highlights/drawers/newsletter sections, not as the dominant color
-- Sale/badge elements: pure black bg + white text, sharp corners
-- General letter-spacing range across the site: 0.04em to 0.25em depending on element
-  size (smaller text = wider tracking)
+REAL REFERENCE — colors/typography/buttons below are extracted directly from
+lalo.com's live production CSS (main theme bundle theme.scss.css, verified by
+fetching and grepping the actual stylesheet — not guessed). Structural layout
+guidance (header/hero/footer composition) is standard clean-minimal e-commerce
+practice, not claimed to be reverse-engineered from Lalo's markup.
+- Palette: pure white (#FFFFFF) as the dominant background, with neutral dark gray
+  #4F4F4F as the primary text/foreground color (used far more than pure black in
+  their real CSS — softer than pure black #000000, which appears only on a few
+  structural resets). The EXACT accent is muted lime-green #B8D151 (confirmed: 71
+  occurrences in their CSS, by far the most common non-neutral color), with a darker
+  hover/pressed shade #91A92D (confirmed real hover state on solid buttons). A light
+  neutral panel color #EDEDED (confirmed) is used for secondary section backgrounds
+  instead of a second bright color. Accent is for buttons, sale badges, link hover/
+  focus states, and small highlights only — never a large background area.
+- Typography: their real CSS is dominated (47 occurrences) by "Gill Sans, Gill Sans
+  MT, Calibri, sans-serif" — Gill Sans is a licensed Monotype font, not embeddable
+  the same way on an arbitrary Shopify theme, so substitute the free Google Fonts
+  "Inter" for body text and "Jost" for headings/nav (closest free geometric-humanist
+  match to Gill Sans's character for uppercase/display use).
+- Buttons: sharp corners (border-radius 0, confirmed real — no rounding on Lalo's
+  buttons). Solid/primary: accent (#B8D151) background + white text, uppercase,
+  font-weight 600, hover darkens to #91A92D (all confirmed real values; padding and
+  font-size below are scaled up from their literal tiny desktop-era values to a more
+  generous modern touch target, not a verified measurement). Outline/secondary:
+  transparent background, 2px solid border in #4F4F4F, text #4F4F4F, hover inverts
+  border/text color to the accent (confirmed real hover pattern).
+- Sale/badge elements: accent (#B8D151) background, uppercase white text, sharp
+  corners (confirmed real pattern on Lalo's product sale labels).
+- Active nav link: accent (#B8D151) underline (2px solid) or color change on
+  hover/focus — never a background fill.
+
+STRUCTURAL LAYOUT — standard clean-minimal e-commerce composition (not Lalo-specific):
+- Announcement bar: thin, light panel (#EDEDED) background, small uppercase
+  #4F4F4F text, ONE rotating message (shipping/returns/promo), centered, generous
+  letter-spacing. Keep it thin and quiet — minimal style means restraint, not a bold
+  black banner.
+- Header nav: regular-weight (not heavy/bold) uppercase or sentence-case links on
+  white, generous letter-spacing (0.04-0.08em), gaps of 24-32px between items, lots
+  of surrounding whitespace. Active/current nav link gets a 2px solid accent
+  underline — never a background fill or heavy weight change.
+- Hero / image banner: full-bleed soft lifestyle photography, generous negative
+  space, headline in #4F4F4F or white (depending on image contrast) with ONE
+  emphasized word/phrase in the accent color. Avoid bold black text-on-black blocks
+  — keep contrast soft, not high-drama.
+- Featured collection sections: a simple, left-aligned heading in #4F4F4F (not bold
+  black, not centered) above a clean grid with generous gaps (24px+) — image fills
+  the card top, minimal label below, no heavy borders or shadows. Prefer several
+  smaller per-collection sections over one oversized generic grid when the brief
+  lists multiple collections.
+- Footer: light panel (#EDEDED) or white background, #4F4F4F text, clear columns —
+  1-2 quick-link columns, a centered newsletter signup with a solid accent button,
+  small consent text beneath at reduced opacity, and a final divider row with
+  copyright text and payment icons at reduced size/opacity.
 
 Given a brand brief and palette, produce TWO things in a single JSON response:
 
@@ -63,16 +103,40 @@ Given a brand brief and palette, produce TWO things in a single JSON response:
    - "Button border-radius is 0 (sharp = luxury)"
    - "Body font-size is 16px and line-height 1.7 in CSS"
    - "Homepage has exactly 5 sections: hero, trust-bar, products, story, collections"
+   - "Active nav link has a 2px accent-color underline, not a background fill"
+   - "Featured collection heading is left-aligned and uppercase, not centered"
+   - "Footer newsletter signup has visible consent/legal text beneath it"
 
 CSS rules — apply ALL of these every time:
-- CSS custom properties in :root for brand palette (--brand-bg, --brand-fg, --brand-accent)
-- Typography: h1 clamp(2.2rem,5vw,3.5rem), body 16px/1.7, -webkit-font-smoothing antialiased
-- Breathing room: section padding min 80px desktop, card gap 24px
-- Buttons: sharp (border-radius 0), 14px 36px, 0.8rem 0.1em uppercase, transition on hover
-- Product cards: 4/5 aspect-ratio image, hover scale(1.05) 0.5s cubic-bezier
-- Header: sticky, glass blur on .scrolled class
-- Announcement bar: accent bg, 0.7rem uppercase letter-spacing
-- Footer: brand-fg bg, brand-bg text
+- CSS custom properties in :root: --brand-bg:#FFFFFF, --brand-fg:#4F4F4F, --brand-accent:#B8D151,
+  --brand-accent-dark:#91A92D (use these names — bg/accent/accent-dark are Lalo's verified
+  real values; --brand-fg is their verified real body/button text gray, not pure black)
+- Typography: font-family 'Jost', sans-serif for h1/h2/nav (free substitute for the licensed
+  Gill Sans), 'Inter', sans-serif for body; h1 clamp(2rem,4.5vw,3.2rem) normal-weight (not
+  heavy/bold), body 16px/1.7, -webkit-font-smoothing antialiased
+- Breathing room: section padding min 96px desktop (minimal style needs MORE whitespace than
+  a bold/loud theme), card gap 24px
+- Buttons: sharp (border-radius 0, confirmed real), 14px 32px, 0.75rem 0.05em uppercase,
+  font-weight 600, default accent (var(--brand-accent)) bg/white text, hover bg
+  var(--brand-accent-dark) (confirmed real hover shade); outline variant: transparent bg,
+  2px solid var(--brand-fg) border/text, hover border/text var(--brand-accent).
+  CONFIRMED REAL BUG, do not repeat: never select the bare `button` element — Dawn
+  uses plain <button> tags for non-CTA UI controls too (announcement-bar slider
+  prev/next arrows, etc.), and a `button { background: var(--brand-accent) }` rule
+  paints those nav arrows solid green, hiding their icon entirely. Scope every
+  button rule to `.button, a.button` (Dawn's actual CTA classes) only.
+- Product cards: 4/5 aspect-ratio image, hover scale(1.03) 0.4s ease (subtler than a bold
+  theme's hover — minimal style avoids flashy motion)
+- Header: white bg, var(--brand-fg) nav links (normal weight, not heavy), letter-spacing
+  0.04-0.08em; active nav link gets border-bottom: 2px solid var(--brand-accent)
+- Announcement bar: light panel bg (#EDEDED), var(--brand-fg) text, 0.7rem uppercase
+  letter-spacing, thin (not a bold full-height bar)
+- Hero/banner headline: var(--brand-fg) or white text (pick by image contrast) directly over
+  the image; wrap the one emphasized word/phrase in a span styled color: var(--brand-accent)
+- Featured collection heading: text-align left, var(--brand-fg), normal weight — never bold
+  black or centered
+- Footer: light panel bg (#EDEDED) or white, var(--brand-fg) text; newsletter button uses
+  var(--brand-accent); consent text at opacity 0.6, font-size 0.75rem
 - Mobile: 44px touch targets, 2-col product grid, full-width CTA
 
 Output ONLY valid JSON (no markdown fences):
@@ -224,7 +288,12 @@ async def design_node(state: AgentState) -> dict:
     agent_log("Generating design spec and premium CSS...", "action")
 
     tone = brief.get("tone", "warm")
-    pal = _TONE_PALETTES.get(tone.lower(), _TONE_PALETTES["warm"])
+    # House style is now fixed clean-minimal-modern (Lalo reference) regardless of
+    # brief.tone — _TONE_PALETTES' other entries (in shopify_theme.py, used for the
+    # native settings_data.json color scheme) are left intact for if/when a brand
+    # needs a genuinely different palette again, but _SPEC_SYSTEM's color rules are
+    # not tone-conditional, so don't let a stale tone-based palette contradict them here.
+    pal = {"bg": "#FFFFFF", "fg": "#4F4F4F", "accent": "#B8D151"}  # verified real lalo.com accent
     installed_theme = brief.get("installed_theme", "dawn")
 
     brand_prompt = (
@@ -241,19 +310,45 @@ async def design_node(state: AgentState) -> dict:
         f"\nGenerate CSS and quality checklist for this brand."
     )
 
-    llm = get_llm("ecommerce", temperature=0.2)
+    # Confirmed real bug: the full CSS + quality_checklist JSON payload routinely
+    # exceeds the "ecommerce" role's 4096-token default (a truncated real
+    # response measured 11740 chars / ~3000+ tokens and was STILL cut off
+    # mid-string) — causing "Unterminated string" JSON errors that used to fall
+    # back to writing the raw, still-JSON-shaped text into the .css asset.
+    llm = get_llm("ecommerce", temperature=0.2, max_tokens=8192)
     resp = await llm.ainvoke([
         SystemMessage(content=_SPEC_SYSTEM),
         HumanMessage(content=brand_prompt),
     ])
 
+    raw = _strip_fences(str(resp.content))
     try:
-        parsed = json.loads(_strip_fences(str(resp.content)))
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        # Confirmed real bug: a multi-line CSS payload this size routinely makes
+        # the LLM emit literal newlines inside the "css" string value instead of
+        # escaping them as \n — strict json.loads rejects that as invalid, and
+        # the old fallback then wrote the RAW JSON TEXT (the `{"css": "...` ...
+        # wrapper, both keys, brackets and all) directly into the .css asset,
+        # which a browser's CSS parser can't make sense of — the design looked
+        # "not implemented" even though the right values were technically in the
+        # file. strict=False is the documented fix: it allows unescaped control
+        # characters inside JSON strings, which is exactly this failure mode.
+        try:
+            parsed = json.loads(raw, strict=False)
+        except Exception:
+            parsed = None
+
+    if parsed is not None:
         css = parsed.get("css", "")
         checklist = parsed.get("quality_checklist", [])
-    except Exception:
-        agent_log("Spec parse failed — falling back to raw CSS", "warning")
-        css = _strip_fences(str(resp.content))
+    else:
+        # Truly unparseable — do NOT write the raw (still JSON-shaped) text into
+        # the CSS asset. Leave css empty so structural checklist items still
+        # surface as failing and frontend_agent's iterative loop has something
+        # concrete to react to, instead of silently corrupting the stylesheet.
+        agent_log("Spec parse failed — no CSS applied this pass", "warning")
+        css = ""
         checklist = ["CSS applied to theme", "Brand colors in :root variables"]
 
     # Structural blockers always apply, regardless of what the LLM came up with —
@@ -262,11 +357,16 @@ async def design_node(state: AgentState) -> dict:
 
     agent_log(f"Generated {len(css)} chars CSS, {len(checklist)} quality criteria", "info")
 
-    ok = await add_custom_css(css)
-    if ok:
-        agent_log("✓ CSS applied to theme", "success")
+    if css:
+        ok = await add_custom_css(css)
+        if ok:
+            agent_log("✓ CSS applied to theme", "success")
+        else:
+            agent_log("✗ CSS injection failed", "error")
     else:
-        agent_log("✗ CSS injection failed", "error")
+        # Don't overwrite an existing valid stylesheet with an empty one just
+        # because this pass's spec failed to parse.
+        ok = False
 
     spec = {
         "css_applied": ok,

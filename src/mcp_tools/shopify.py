@@ -13,7 +13,7 @@ mutation productCreate($product: ProductCreateInput!, $media: [CreateMediaInput!
   productCreate(product: $product, media: $media) {
     product {
       id title status
-      variants(first: 1) { nodes { id } }
+      variants(first: 1) { nodes { id inventoryItem { id } } }
       images(first: 10) { nodes { url } }
     }
     userErrors { field message }
@@ -26,6 +26,29 @@ mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsB
   productVariantsBulkUpdate(productId: $productId, variants: $variants) {
     productVariants { id price compareAtPrice }
     userErrors { field message }
+  }
+}
+"""
+
+_GQL_PRODUCT_OPTIONS_CREATE = """
+mutation productOptionsCreate($productId: ID!, $options: [OptionCreateInput!]!, $variantStrategy: ProductOptionCreateVariantStrategy) {
+  productOptionsCreate(productId: $productId, options: $options, variantStrategy: $variantStrategy) {
+    userErrors { field message }
+    product {
+      id
+      variants(first: 50) {
+        nodes { id selectedOptions { name value } inventoryItem { id } }
+      }
+    }
+  }
+}
+"""
+
+_GQL_CREATE_MEDIA = """
+mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+  productCreateMedia(productId: $productId, media: $media) {
+    media { mediaContentType }
+    mediaUserErrors { field message }
   }
 }
 """
@@ -86,6 +109,15 @@ mutation fileCreate($files: [FileCreateInput!]!) {
 
 _GQL_GET_FIRST_PRODUCT_IMAGE = """
 { products(first: 10) { nodes { images(first: 1) { nodes { url } } } } }
+"""
+
+_GQL_STAGED_UPLOADS_CREATE = """
+mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
+  stagedUploadsCreate(input: $input) {
+    stagedTargets { url resourceUrl parameters { name value } }
+    userErrors { field message }
+  }
+}
 """
 
 _GQL_LIST_PRODUCTS = """
@@ -176,9 +208,16 @@ async def create_shopify_product(
     compare_at_price: float,
     images: list[str],
     variants: list[dict],
+    video_url: str = "",
 ) -> dict:
     """
-    Create a product in Shopify and immediately set its price.
+    Create a product in Shopify and set pricing.
+
+    variants: optional size options, each {"label": str, "price": float,
+        "compare_at_price": float}. Empty list → single default variant priced
+        at `price`/`compare_at_price`. 2+ entries → adds a "Size" option, which
+        Shopify auto-generates one real variant per label for, each then priced
+        individually (so the storefront shows a Size selector + working Add to Cart).
 
     Returns:
         Dict with keys: product (dict), success (bool), error (str | None)
@@ -207,9 +246,50 @@ async def create_shopify_product(
     if errors or not product:
         return {"product": None, "success": False, "error": str(errors) or "no product returned"}
 
-    # Set price on the default variant
+    if len(variants) >= 2:
+        try:
+            opt_data = await _shopify_gql(_GQL_PRODUCT_OPTIONS_CREATE, {
+                "productId": product["id"],
+                "options": [{
+                    "name": "Size",
+                    "values": [{"name": v["label"]} for v in variants],
+                }],
+                "variantStrategy": "CREATE",
+            })
+            opt_errors = opt_data.get("productOptionsCreate", {}).get("userErrors", [])
+            new_nodes = opt_data.get("productOptionsCreate", {}).get("product", {}).get("variants", {}).get("nodes", [])
+            if opt_errors or not new_nodes:
+                logger.warning("productOptionsCreate failed for %s: %s", title, opt_errors)
+                variants = []  # fall through to single-variant pricing below
+            else:
+                bulk_input = []
+                for nv in new_nodes:
+                    label = next((o["value"] for o in nv.get("selectedOptions", []) if o["name"] == "Size"), "")
+                    match = next((v for v in variants if v["label"] == label), None)
+                    if match:
+                        bulk_input.append({
+                            "id": nv["id"],
+                            "price": f'{match["price"]:.2f}',
+                            "compareAtPrice": (
+                                f'{match["compare_at_price"]:.2f}'
+                                if match.get("compare_at_price", 0) > match["price"] else None
+                            ),
+                        })
+                if bulk_input:
+                    await _shopify_gql(_GQL_SET_PRICE, {"productId": product["id"], "variants": bulk_input})
+                product["variants"] = {"nodes": new_nodes}
+                variants = []  # signal: already priced above, skip default-variant pricing
+        except Exception as exc:
+            logger.warning("Size variant setup failed for %s, falling back to single variant: %s", title, exc)
+            variants = []
+
+    if not variants:
+        pass  # either no sizes requested, or already priced via bulk_input above
+
+    # Set price on the default variant (single-variant products only — multi-size
+    # products were already priced per-variant above)
     variant_nodes = product.get("variants", {}).get("nodes", [])
-    if variant_nodes and price > 0:
+    if len(variant_nodes) == 1 and price > 0:
         variant_id = variant_nodes[0]["id"]
         try:
             await _shopify_gql(
@@ -227,6 +307,20 @@ async def create_shopify_product(
             product["compare_at_price"] = compare_at_price
         except Exception:
             pass  # price update failure is non-fatal
+
+    # Attach supplier video, if any — separate call so an unexpected format
+    # never risks failing the product creation itself (video presence/format
+    # varies by supplier listing and hasn't been seen live yet to verify).
+    if video_url:
+        try:
+            vid_result = await _shopify_gql(_GQL_CREATE_MEDIA, {
+                "productId": product["id"],
+                "media": [{"originalSource": video_url, "mediaContentType": "VIDEO", "alt": title}],
+            })
+            if vid_result.get("productCreateMedia", {}).get("mediaUserErrors"):
+                logger.warning("Video attach failed for %s: %s", title, vid_result["productCreateMedia"]["mediaUserErrors"])
+        except Exception as exc:
+            logger.warning("Video attach failed for %s: %s", title, exc)
 
     # Publish to Online Store channel
     try:
@@ -251,8 +345,11 @@ async def create_collection(title: str) -> dict:
         if nodes:
             return {"collection_id": nodes[0]["id"], "created": False, "error": None}
 
-        # Create new collection (CollectionInput has no "published" field — collections
-        # are visible on the storefront by default once created)
+        # Create new collection. CollectionInput has no "published" field, and
+        # collections are NOT visible on the storefront by default — confirmed live:
+        # newly created collections had published_at=None and 404'd on the storefront
+        # despite having products. Publish explicitly via REST, same pattern as
+        # _publish_product().
         data = await _shopify_gql(
             _GQL_CREATE_COLLECTION,
             {"input": {"title": title}},
@@ -261,9 +358,61 @@ async def create_collection(title: str) -> dict:
         errors = data.get("collectionCreate", {}).get("userErrors", [])
         if errors or not coll:
             return {"collection_id": None, "created": False, "error": str(errors)}
+
+        numeric_id = _gid_to_id(coll["id"])
+        try:
+            await _shopify_rest(
+                "PUT", f"custom_collections/{numeric_id}.json",
+                {"custom_collection": {"id": numeric_id, "published": True}},
+            )
+        except Exception:
+            pass  # publish failure is non-fatal — collection still exists, just not live yet
+
         return {"collection_id": coll["id"], "created": True, "error": None}
     except Exception as exc:
         return {"collection_id": None, "created": False, "error": str(exc)}
+
+
+_GQL_CREATE_DISCOUNT_CODE = """
+mutation discountCodeBasicCreate($basicCodeDiscount: DiscountCodeBasicInput!) {
+  discountCodeBasicCreate(basicCodeDiscount: $basicCodeDiscount) {
+    codeDiscountNode { id }
+    userErrors { field message }
+  }
+}
+"""
+
+
+async def create_welcome_discount(code: str = "WELCOME10", percentage: float = 0.10) -> dict:
+    """
+    Create a storewide percentage-off discount code, active immediately, no
+    minimum order, once per customer — a real AOV-booster achievable natively
+    via the Discounts API (no third-party app like ReConvert needed for this
+    specific kind of offer).
+
+    Returns: {success, code, discount_id, error}
+    """
+    try:
+        result = await _shopify_gql(_GQL_CREATE_DISCOUNT_CODE, {
+            "basicCodeDiscount": {
+                "title": f"{code} — storewide welcome offer",
+                "code": code,
+                "startsAt": "2024-01-01T00:00:00Z",
+                "appliesOncePerCustomer": True,
+                "customerSelection": {"all": True},
+                "customerGets": {
+                    "value": {"percentage": percentage},
+                    "items": {"all": True},
+                },
+            }
+        })
+        node = result.get("discountCodeBasicCreate", {}).get("codeDiscountNode")
+        errors = result.get("discountCodeBasicCreate", {}).get("userErrors", [])
+        if errors or not node:
+            return {"success": False, "code": code, "discount_id": None, "error": str(errors)}
+        return {"success": True, "code": code, "discount_id": node["id"], "error": None}
+    except Exception as exc:
+        return {"success": False, "code": code, "discount_id": None, "error": str(exc)}
 
 
 async def list_collections_with_counts() -> list[dict]:
@@ -330,6 +479,73 @@ async def upload_hero_image_from_product() -> str:
         return ""
     except Exception as exc:
         logger.warning("upload_hero_image_from_product failed: %s", exc)
+        return ""
+
+
+async def upload_local_file_as_shopify_file(file_path: str, alt: str = "") -> str:
+    """
+    Upload a local image file (e.g. a logo provided by the operator) to Shopify
+    Files via the staged-upload flow, so it can be used as an image_picker value
+    (theme logo, section image, etc). Returns "shopify://shop_images/<filename>"
+    or "" on failure.
+    """
+    import mimetypes
+    from pathlib import Path
+
+    path = Path(file_path)
+    if not path.is_file():
+        logger.warning("upload_local_file_as_shopify_file: %s not found", file_path)
+        return ""
+
+    content = path.read_bytes()
+    mime_type = mimetypes.guess_type(path.name)[0] or "image/png"
+
+    try:
+        staged = await _shopify_gql(_GQL_STAGED_UPLOADS_CREATE, {
+            "input": [{
+                "resource": "FILE",
+                "filename": path.name,
+                "mimeType": mime_type,
+                "httpMethod": "POST",
+                "fileSize": str(len(content)),
+            }]
+        })
+        targets = staged.get("stagedUploadsCreate", {}).get("stagedTargets", [])
+        if not targets or staged.get("stagedUploadsCreate", {}).get("userErrors"):
+            logger.warning("stagedUploadsCreate failed: %s", staged)
+            return ""
+        target = targets[0]
+
+        form = {p["name"]: p["value"] for p in target["parameters"]}
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                target["url"],
+                data=form,
+                files={"file": (path.name, content, mime_type)},
+            )
+            resp.raise_for_status()
+
+        result = await _shopify_gql(_GQL_FILE_CREATE, {
+            "files": [{"originalSource": target["resourceUrl"], "contentType": "IMAGE", "alt": alt}]
+        })
+        files = result.get("fileCreate", {}).get("files", [])
+        if not files or result.get("fileCreate", {}).get("userErrors"):
+            logger.warning("fileCreate failed: %s", result)
+            return ""
+        file_id = files[0]["id"]
+
+        for _ in range(8):
+            await asyncio.sleep(2)
+            check = await _shopify_gql(
+                '{ node(id: "%s") { ... on MediaImage { image { url } } } }' % file_id, {}
+            )
+            url = (check.get("node") or {}).get("image", {}).get("url", "")
+            if url:
+                filename = url.split("/")[-1].split("?")[0]
+                return f"shopify://shop_images/{filename}"
+        return ""
+    except Exception as exc:
+        logger.warning("upload_local_file_as_shopify_file failed: %s", exc)
         return ""
 
 

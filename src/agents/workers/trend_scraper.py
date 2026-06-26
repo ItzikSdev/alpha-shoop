@@ -9,11 +9,16 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from src.agents.state import AgentState
 from src.config import get_settings
 from src.llm import get_llm
-from src.mcp_tools.sourcing import search_trending_products, get_shipping_cost, resolve_category
+from src.mcp_tools.sourcing import search_trending_products, get_shipping_cost, resolve_category, CJQuotaExceeded
+from src.mcp_tools.shopify import list_shopify_products
 from src.tracing import agent_log
 from src.tracing.context import current_node
 
 logger = logging.getLogger(__name__)
+
+# Must match ecommerce.py's _MAX_SOURCING_ATTEMPTS — both gate the same
+# sourcing_attempts counter (off-niche rejections there, zero-raw-results here).
+_MAX_SOURCING_ATTEMPTS = 3
 
 _CATEGORY_SYSTEM = """\
 You are helping source products for a dropshipping store.
@@ -26,10 +31,16 @@ Examples of good CJ category keywords:
 - "kitchen gadgets", "coffee accessories", "cooking tools"
 - "yoga mat", "resistance bands", "water bottle"
 - "phone stand", "desk organizer", "cable management"
+- For apparel/clothing niches, use the CONCRETE GARMENT TYPE, never a generic
+  category label: "baby onesie", "newborn romper", "knit cardigan", "baby sleep
+  sack" — NOT "baby clothing" / "toddler clothing" / "kids apparel". CJ's free-text
+  search matches literal product names, so generic category nouns pull in
+  unrelated junk (adult clothing, accessories, storage items) while a specific
+  garment type hits real matching listings.
 
 Rules:
 - 2–4 keywords only
-- Specific, not vague ("wall art" not "home products")
+- Specific, not vague ("wall art" not "home products"; "baby onesie" not "baby clothing")
 - Match the brand's niche and target audience
 - Return ONLY a JSON array of strings, no markdown
 
@@ -37,14 +48,27 @@ Example output: ["wall art", "decorative candles", "throw pillows"]
 """
 
 
-async def _get_niche_categories(store_brand: dict) -> list[str]:
-    """Ask the LLM to translate store brand niche into CJ search categories."""
+async def _get_niche_categories(store_brand: dict, store_knowledge: list[dict] | None = None) -> list[str]:
+    """Ask the LLM to translate store brand niche into CJ search categories.
+
+    store_knowledge: agentic-RAG matches over the owner's own store description
+    (see orchestrator.py) — the owner's ground truth about scope/assortment
+    (e.g. "should carry boys AND girls clothing separately"), folded in here
+    since this is the one place a "what should we actually search for" judgment
+    call already goes through an LLM.
+    """
     llm = get_llm("scraper", temperature=0.3)
+    knowledge_line = (
+        "\nStore knowledge (owner's own description — treat as ground truth about scope):\n"
+        + "\n".join(f"- {k['document'][:300]}" for k in store_knowledge)
+        if store_knowledge else ""
+    )
     brief = (
         f"Store name: {store_brand.get('store_name', '')}\n"
         f"Niche: {store_brand.get('niche', '')}\n"
         f"Collections: {', '.join(store_brand.get('collections', []))}\n"
         f"Tone: {store_brand.get('tone', '')}"
+        f"{knowledge_line}"
     )
     response = await llm.ainvoke([
         SystemMessage(content=_CATEGORY_SYSTEM),
@@ -69,9 +93,11 @@ The store's exact product category was searched but ecommerce review rejected ev
 result as off-niche. Generate 2-3 ALTERNATE search phrases that describe the same
 core product type but drop any modifier the wholesale catalogue won't have data for
 (e.g. "organic", "certified", "handmade", brand-specific claims) while keeping the
-literal product noun (e.g. "organic baby clothing" → "baby clothing", "baby rompers").
+literal product noun CONCRETE — never regress to a generic category label.
+Example: "organic cotton baby onesie" → "baby onesie", "cotton baby bodysuit"
+(NOT "baby clothing" — that's the generic label that just failed; stay specific).
 
-Output ONLY a JSON array of strings, no markdown. Example: ["baby clothing", "baby rompers"]
+Output ONLY a JSON array of strings, no markdown. Example: ["baby onesie", "cotton baby bodysuit"]
 """
 
 
@@ -118,7 +144,7 @@ async def trend_scraper_node(state: AgentState) -> dict:
         # mosquito lamps) the niche-gate then rejects. Concrete type keywords yield
         # real, varied, on-niche hits.
         agent_log(f"Store product category: '{product_category or store_brand.get('niche','')}'", "info")
-        categories = await _get_niche_categories(store_brand)
+        categories = await _get_niche_categories(store_brand, state.get("store_knowledge"))
         agent_log(f"Niche search keywords: {', '.join(categories)}", "action")
     else:
         categories = ["general"]
@@ -126,6 +152,19 @@ async def trend_scraper_node(state: AgentState) -> dict:
     # Search the single focused category — fetch more than needed so we have room to filter
     seen_ids: set[str] = set()
     all_products: list[dict] = []
+
+    # Advance CJ's result page as the catalog fills — repeated rounds against the
+    # same category would otherwise always hit page 1 again, which dedup then
+    # filters down to zero "new" candidates once that page is already mined.
+    # Use the store's REAL live product count, not already_created (which is only
+    # this run's new creations and resets to empty on every fresh run/task) —
+    # otherwise every fresh run keeps re-requesting page 1 forever regardless of
+    # how much inventory already exists.
+    try:
+        live_count = len(await list_shopify_products())
+    except Exception:
+        live_count = len(already_created)
+    page_num = (live_count // 15) + 1
 
     for cat in categories:
         agent_log(f"Resolving CJ category for '{cat}'...", "action")
@@ -136,13 +175,26 @@ async def trend_scraper_node(state: AgentState) -> dict:
             agent_log(f"No CJ category match for '{cat}' — search may return unrelated results", "warning")
 
         agent_log(f"Searching CJ: '{cat}' (focused, single-category)...", "action")
-        batch = await search_trending_products(
-            category=cat,
-            category_id=resolved["category_id"] if resolved else "",
-            max_results=20,  # fetch more — ecommerce_manager will filter & cap
-            min_margin=0.30,
-            max_price_usd=50.0,
-        )
+        try:
+            batch = await search_trending_products(
+                category=cat,
+                category_id=resolved["category_id"] if resolved else "",
+                max_results=20,  # fetch more — ecommerce_manager will filter & cap
+                min_margin=0.30,
+                max_price_usd=50.0,
+                page_num=page_num,
+            )
+        except CJQuotaExceeded as exc:
+            # Hard stop, not "0 candidates" — without this the director has no
+            # signal that retrying is pointless and will loop the identical query
+            # forever (confirmed: 15+ repeats, ~1.5M tokens, zero progress) until
+            # CJ's daily quota resets, instead of ending the run immediately.
+            agent_log(f"CJ daily quota exhausted — stopping sourcing: {exc}", "error")
+            return {
+                "trending_products": [],
+                "error": f"CJ Dropshipping daily API quota exhausted: {exc}",
+                "messages": [HumanMessage(content="Sourcing stopped — CJ daily quota exhausted")],
+            }
         for p in batch:
             pid = str(p.get("product_id", ""))
             if pid not in seen_ids and pid not in already_created:
@@ -163,6 +215,30 @@ async def trend_scraper_node(state: AgentState) -> dict:
             "shipping_cost_usd": shipping["cost_usd"],
             "shipping_days": shipping["estimated_days"],
         })
+
+    if not enriched:
+        # Circuit breaker: CJ returned literally zero raw results for every
+        # category this round (page exhausted, empty leaf, transient issue —
+        # whatever the cause). Route through the SAME sourcing_attempts cap
+        # ecommerce_manager uses for off-niche rejections, instead of returning
+        # an empty batch with no signal — director would otherwise just call
+        # trend_scraper again with identical inputs forever (confirmed: 15+
+        # repeats, ~1.5M tokens burned, zero progress, before this fix existed).
+        attempts = state.get("sourcing_attempts", 0) + 1
+        agent_log(f"Zero raw candidates this round (attempt {attempts}/{_MAX_SOURCING_ATTEMPTS})", "warning")
+        if attempts >= _MAX_SOURCING_ATTEMPTS:
+            return {
+                "trending_products": [],
+                "sourcing_attempts": attempts,
+                "error": "CJ returned zero candidates after multiple sourcing attempts",
+                "messages": [HumanMessage(content="No candidates found after retries — stopping")],
+            }
+        return {
+            "trending_products": [],
+            "sourcing_attempts": attempts,
+            "sourcing_feedback": f"Zero raw results for: {', '.join(categories)}",
+            "messages": [HumanMessage(content=f"No candidates found (attempt {attempts}) for: {', '.join(categories)}")],
+        }
 
     agent_log(f"✓ Found {len(enriched)} candidates for: {', '.join(categories)} (sorted by margin)", "success")
     return {

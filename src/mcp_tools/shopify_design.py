@@ -4,7 +4,7 @@ Writes to assets/custom-alpha.css and patches layout/theme.liquid to load it.
 """
 from __future__ import annotations
 import logging
-from .shopify_theme import _active_theme_id, _read_asset, _write_asset
+from .shopify_theme import _active_theme_id, _read_asset, _write_asset, _resolve_current_settings
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ async def read_theme_context(theme_id: str | None = None) -> dict:
     return {
         "theme_id": tid,
         "settings_summary": {
-            "current": (settings.get("current", {}) if isinstance(settings, dict) else {}),
+            "current": (_resolve_current_settings(settings) if isinstance(settings, dict) else {}),
         },
         "homepage_sections": list(index.get("order", [])) if isinstance(index, dict) else [],
     }
@@ -73,7 +73,7 @@ async def read_full_theme_context(theme_id: str | None = None) -> dict:
     return {
         "theme_id": tid,
         "settings_summary": {
-            "current": (settings.get("current", {}) if isinstance(settings, dict) else {}),
+            "current": (_resolve_current_settings(settings) if isinstance(settings, dict) else {}),
         },
         "homepage_sections": list(index.get("order", [])) if isinstance(index, dict) else [],
         "section_types": section_types,

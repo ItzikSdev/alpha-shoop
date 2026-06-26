@@ -64,7 +64,7 @@ export function DrawioViewer({ url, height = 600 }: Props) {
     return (
       <div className="p-4 bg-yellow-950/40 border border-yellow-800 rounded-xl">
         <p className="text-yellow-400 text-sm">Could not load {url}: {error}</p>
-        <p className="text-gray-500 text-xs mt-1">Make sure <code>make docs</code> copied the file to docs-app/public/</p>
+        <p className="text-gray-500 text-xs mt-1">Make sure <code>make docs</code> copied the file to platform-app/public/</p>
       </div>
     );
   }

@@ -4,6 +4,80 @@ Newest first. Each entry added by `/status` skill after completing a task.
 
 ---
 
+## [2026-06-24] — Replace 7-agent LLM-routed graph with one deterministic orchestrator; real-data fixes across sourcing/design/theme; second store on a real plan
+
+**Architecture**: `src/agents/director.py` and `src/agents/graph.py` deleted.
+director made an extra LLM call after every step just to decide what ran next, and
+its routing rules were almost entirely mechanical — confirmed as the direct cause of
+a real bug: trend_scraper returning 0 candidates got re-called with identical inputs
+15+ times, burning ~1.5M tokens with no termination. Replaced with
+`src/agents/orchestrator.py::run_pipeline()`, a single async generator that
+sequences the same 7 unmodified worker functions via plain Python control flow,
+reading the existing `[REBUILD]`/`[SETUP_ONLY]`/`[MARKETING]`/`[MONITOR]` task tags
+directly instead of through an LLM prompt. LLM-call tracing (platform-app's "LLM
+Calls" tab) re-attached via a new `current_trace_callback` contextvar in
+`src/llm/client.py::get_llm()`, since LangGraph no longer propagates
+`config={"callbacks": [...]}` automatically. `tests/test_orchestrator.py` replaces
+`tests/test_director.py` (12 tests, mocking workers directly instead of an LLM).
+
+**Real-data fixes (CJ Dropshipping sourcing)**:
+- `CJQuotaExceeded` now propagates as a hard error instead of being silently
+  swallowed into "0 candidates" — that swallow was the root enabler of the
+  infinite-loop bug above.
+- `search_trending_products` now prefers CJ's real `categoryId` over free-text
+  keyword search by default (verified: 9/10 genuine items via category vs mostly
+  junk via keyword, for baby apparel specifically — flipped from the opposite
+  priority that was right for a different, earlier niche).
+- CJ result pages now advance based on the store's real live product count
+  (`list_shopify_products()`), not `already_created` (which reset every run) —
+  previously every fresh run re-requested page 1 of an already-mined category.
+- Size labels (`sourcing.py::_build_supplier_variants`) now parse the supplier's own
+  stated age↔height text ("6m/59cm") instead of a hardcoded cm→age band table that
+  was confirmed wrong against real data.
+- `_fits_niche`'s prompt now ignores marketing adjectives ("premium", "organic") in
+  the category when judging fit — these were causing genuine on-niche products to
+  get rejected for not literally repeating the brand's own marketing language.
+- Real CJ product specs now ground AI-written copy (`ecommerce.py::_extract_real_specs`).
+
+**Theme/design fixes**:
+- `create_shopify_product`'s `variants` param now actually creates a real Shopify
+  Size option + per-variant pricing — previously silently ignored.
+- Every variant's `inventoryItem.id` is now stocked via `update_inventory` —
+  missing this meant Add to Cart never worked, independent of variants.
+- `create_collection` now explicitly publishes new collections — they do NOT
+  default to visible on the storefront (confirmed: `published_at: None`, 404 on the
+  storefront despite having products).
+- Design palette switched to black/white/yellow, pattern-matched from terminalx.com's
+  real production CSS (fetched and grepped directly — corrected an earlier guessed
+  accent color, `#FFE600`, to the verified real `#FEFA03`).
+- Found and fixed a real CSS-specificity bug: this theme loads Dawn's own
+  component stylesheets *after* `custom-alpha.css`, so equal-specificity overrides
+  were silently losing on source order — nav/banner/footer/featured-collection
+  rules now use `!important`.
+- `theme_installer.py`'s REST "install from remote ZIP" path confirmed permanently
+  broken (Shopify rejects the `src` field outright even with a verified-correct
+  payload) — the working path is cloning Dawn locally + `shopify theme push` via
+  the Storefront Runner.
+
+**New store**: `timeofbaby` set up on `kgg8n0-k0.myshopify.com` (a real Basic-plan
+store, not a Partner dev store) — confirmed Starter plan blocks collections, theme
+install, and theme editing entirely (verified via direct API calls, not assumed);
+upgrading to Basic unblocked all three. Got a working Admin token for this store via
+direct OAuth authorization-code exchange (no CLI, no installed app project) since
+this Shopify version's "Develop apps" flow only offers the new Dev Dashboard
+(OAuth-only), not the old static-token "Create custom app" flow.
+
+**New, natively-achievable "pro store" features** (`store_setup.py`): a storewide
+welcome discount code (`shopify.py::create_welcome_discount`, real Discounts API)
+created automatically; a recommended-apps checklist (Judge.me, Klaviyo,
+ReConvert/Pumper, Lifetimely/Triple Whale, TinyIMG/Avada) surfaced in the run
+summary — these require a human's own App Store install + OAuth consent, so they're
+recommended, not automated. (Checked and rejected a claim that Shopify exposes "MCP"
+servers for this — zero MCP-related fields in the real Admin GraphQL schema, and the
+specific claimed endpoint 404s.)
+
+---
+
 ## [2026-06-23 b] — Pivot storefronts to Shopify CLI Liquid themes (no gallery ZIPs, all native features)
 
 Per user direction ("agent must use theme from shopify to use all features" →

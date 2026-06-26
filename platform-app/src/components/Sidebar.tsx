@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 
 const NAV: { path: string; icon: string; label: string; highlight?: boolean }[] = [
   { path: '/', icon: '🏠', label: 'Overview' },
+  { path: '/company', icon: '🏢', label: 'The Company', highlight: true },
   { path: '/runs', icon: '📡', label: 'Live Runs', highlight: true },
   { path: '/stores', icon: '🏪', label: 'My Stores' },
   { path: '/tools', icon: '🔌', label: 'MCP Tools' },

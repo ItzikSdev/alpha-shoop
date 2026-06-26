@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 // ── Agent metadata ───────────────────────────────────────────────────────────
 
 const AGENT_META: Record<string, { name: string; color: string; icon: string; model: string }> = {
-  director:          { name: 'Director',       color: '#CC785C', icon: '🎯', model: 'Opus 4.8' },
+  director:          { name: 'Orchestrator',   color: '#82B366', icon: '⚙️', model: 'plain Python' },
   store_setup:       { name: 'Store Setup',    color: '#F59E0B', icon: '🏪', model: 'Sonnet 4.6' },
   design_agent:      { name: 'Design Agent',   color: '#EC4899', icon: '✦',  model: 'Sonnet 4.6' },
   trend_scraper:     { name: 'Trend Scraper',  color: '#E67E22', icon: '📦', model: 'Haiku 4.5' },
@@ -472,7 +472,7 @@ export function PipelineSimulator() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-700">
         <span className="text-sm font-semibold text-white">Pipeline Simulator</span>
-        <span className="text-gray-600 text-xs">LangGraph · Director→Worker loop</span>
+        <span className="text-gray-600 text-xs">orchestrator.py · fixed Python sequence</span>
 
         {status === 'running' && (
           <span className="flex items-center gap-1.5 text-xs text-yellow-400">

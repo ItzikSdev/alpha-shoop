@@ -62,9 +62,10 @@ interface DaemonConfig {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const NODE_META: Record<string, { label: string; color: string; icon: string }> = {
-  director:          { label: 'Director',       color: '#CC785C', icon: 'D' },
+  orchestrator:      { label: 'Orchestrator',   color: '#82B366', icon: 'O' },
   store_setup:       { label: 'Store Setup',    color: '#F59E0B', icon: 'S' },
   design_agent:      { label: 'Design Agent',   color: '#EC4899', icon: '✦' },
+  frontend_agent:    { label: 'Frontend Agent', color: '#06B6D4', icon: '✧' },
   trend_scraper:     { label: 'Trend Scraper',  color: '#E67E22', icon: 'T' },
   ecommerce_manager: { label: 'E-com Manager',  color: '#5E8E3E', icon: 'E' },
   marketing_agent:   { label: 'Marketing',      color: '#4285F4', icon: 'M' },
@@ -509,7 +510,7 @@ function KibanaLogPanel({ threadId, isRunning }: { threadId: string; isRunning: 
   const [levelFilter, setLevelFilter] = useState<string>('all');
   const [nodeFilter, setNodeFilter] = useState<Set<string>>(new Set());
   const [showLLM, setShowLLM] = useState(true);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
   const esRef = useRef<EventSource | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -558,19 +559,18 @@ function KibanaLogPanel({ threadId, isRunning }: { threadId: string; isRunning: 
     return () => { es.close(); esRef.current = null; };
   }, [threadId]);
 
-  // Auto-scroll
+  // Auto-scroll to top (newest entries render first)
   useEffect(() => {
-    if (follow) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (follow) topRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [events, follow]);
 
   // Detect manual scroll = disable follow
   const onScroll = () => {
     if (!containerRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-    setFollow(scrollHeight - scrollTop - clientHeight < 60);
+    setFollow(containerRef.current.scrollTop < 60);
   };
 
-  const filtered = useMemo(() => events.filter(ev => {
+  const filtered = useMemo(() => [...events].reverse().filter(ev => {
     if (ev.kind === 'llm' && !showLLM) return false;
     if (levelFilter !== 'all' && ev.level !== levelFilter) return false;
     if (nodeFilter.size > 0 && !nodeFilter.has(ev.node)) return false;
@@ -617,9 +617,9 @@ function KibanaLogPanel({ threadId, isRunning }: { threadId: string; isRunning: 
               className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${showLLM ? 'border-purple-700 text-purple-400 bg-purple-400/10' : 'border-gray-700 text-gray-600'}`}>
               ◈ LLM calls
             </button>
-            <button onClick={() => { setFollow(true); bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }}
+            <button onClick={() => { setFollow(true); topRef.current?.scrollIntoView({ behavior: 'smooth' }); }}
               className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${follow ? 'border-indigo-700 text-indigo-400 bg-indigo-400/10' : 'border-gray-700 text-gray-600'}`}>
-              ↓ Follow
+              ↑ Follow
             </button>
           </div>
         </div>
@@ -693,6 +693,17 @@ function KibanaLogPanel({ threadId, isRunning }: { threadId: string; isRunning: 
           </div>
         )}
 
+        <div ref={topRef} />
+
+        {/* Running typing indicator (newest-first, so it leads the list) */}
+        {(connected || isRunning) && events.length > 0 && (
+          <div className="flex gap-1.5 px-3 py-1 items-center">
+            <span className="w-1 h-3 rounded-sm bg-gray-700 animate-pulse" />
+            <span className="w-1 h-3 rounded-sm bg-gray-700 animate-pulse [animation-delay:150ms]" />
+            <span className="w-1 h-3 rounded-sm bg-gray-700 animate-pulse [animation-delay:300ms]" />
+          </div>
+        )}
+
         {filtered.map((ev, i) => {
           const meta = NODE_META[ev.node] ?? NODE_META.unknown;
           const isLLM = ev.kind === 'llm';
@@ -734,16 +745,6 @@ function KibanaLogPanel({ threadId, isRunning }: { threadId: string; isRunning: 
           );
         })}
 
-        {/* Running typing indicator */}
-        {(connected || isRunning) && events.length > 0 && (
-          <div className="flex gap-1.5 px-3 py-1 items-center">
-            <span className="w-1 h-3 rounded-sm bg-gray-700 animate-pulse" />
-            <span className="w-1 h-3 rounded-sm bg-gray-700 animate-pulse [animation-delay:150ms]" />
-            <span className="w-1 h-3 rounded-sm bg-gray-700 animate-pulse [animation-delay:300ms]" />
-          </div>
-        )}
-
-        <div ref={bottomRef} />
       </div>
     </div>
   );

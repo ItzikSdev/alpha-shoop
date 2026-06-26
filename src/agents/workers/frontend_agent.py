@@ -37,6 +37,29 @@ logger = logging.getLogger(__name__)
 _FRONTEND_SYSTEM = """\
 You are a senior Shopify frontend developer implementing a design spec.
 
+STRUCTURAL STYLE GOALS — when a checklist item touches the nav, hero/banner, featured
+collection, or footer, implement it toward the house style: clean minimal modern,
+white/neutral-gray with a muted lime-green accent (lalo.com reference, --brand-accent
+is the verified real #B8D151, --brand-fg is the verified real #4F4F4F, not a guess):
+- Nav: normal-weight (not heavy/bold) links, generous letter-spacing and whitespace;
+  active link = 2px solid border-bottom in var(--brand-accent), never a background fill.
+- Hero/banner: headline text directly over the image, one emphasized word/phrase
+  wrapped in a span colored var(--brand-accent). Favor soft contrast over high-drama.
+- Featured collection: heading left-aligned, var(--brand-fg), normal weight — never
+  bold black or centered.
+- Footer: newsletter consent/legal text present, small and at reduced opacity.
+
+CSS SPECIFICITY WARNING — verified live: this theme loads component-specific
+stylesheets (component-list-menu.css, section-image-banner.css, section-footer.css,
+etc.) AFTER assets/custom-alpha.css in <head>. Equal-specificity rules from those
+files beat ours on source order alone. Always add !important to nav/banner/
+featured-collection/footer override declarations (font-transform, letter-spacing,
+border-bottom, background-color, color) — without it, the rule is silently ignored
+even though the CSS file is correctly linked and served. Also verify selectors
+against REAL rendered class names, not assumed Dawn conventions — e.g. Dawn applies
+.header__menu-item directly to the <a>, not to a wrapping parent, so a selector like
+".header__menu-item > a" matches nothing.
+
 You will receive:
 1. The design quality checklist (what must be true)
 2. Specific feedback from the design reviewer (what's currently failing)
@@ -199,16 +222,35 @@ async def frontend_node(state: AgentState) -> dict:
     # 2. Apply settings updates
     settings_updates = result.get("settings_updates", {})
     if settings_updates:
-        agent_log(f"Applying {len(settings_updates)} theme setting updates...", "action")
         try:
             settings_data = await _read_asset(theme_id, "config/settings_data.json")
             if isinstance(settings_data, dict):
                 current = _resolve_current_settings(settings_data)
-                current.update(settings_updates)
-                ok = await _write_asset(theme_id, "config/settings_data.json", settings_data)
-                if ok:
-                    changes_made.append(f"Settings updated: {list(settings_updates.keys())}")
-                    agent_log(f"✓ Settings updated: {list(settings_updates.keys())}", "success")
+                # Confirmed real bug: despite the prompt's example showing only
+                # flat scalars (button_border_radius_primary, card_corner_radius),
+                # the LLM sometimes emits nested color_scheme-shaped dicts with
+                # hallucinated key names (colors_solid_button_labels, "button-label"
+                # with hyphens, etc.) that don't match this theme's real schema —
+                # Shopify rejects the whole write with a 422, silently no-opping
+                # every legit scalar change in the same batch. Brand colors are
+                # already handled deterministically by apply_brand_colors() with
+                # real key names, so this path only needs to accept scalars that
+                # already exist in `current` — anything introducing a new nested
+                # structure is almost certainly a hallucinated schema guess.
+                safe_updates = {
+                    k: v for k, v in settings_updates.items()
+                    if k in current and not isinstance(v, dict)
+                }
+                dropped = set(settings_updates) - set(safe_updates)
+                if dropped:
+                    agent_log(f"Dropped unsafe/unknown settings keys: {sorted(dropped)}", "warning")
+                if safe_updates:
+                    agent_log(f"Applying {len(safe_updates)} theme setting updates...", "action")
+                    current.update(safe_updates)
+                    ok = await _write_asset(theme_id, "config/settings_data.json", settings_data)
+                    if ok:
+                        changes_made.append(f"Settings updated: {list(safe_updates.keys())}")
+                        agent_log(f"✓ Settings updated: {list(safe_updates.keys())}", "success")
         except Exception as exc:
             logger.warning("Settings update failed: %s", exc)
 

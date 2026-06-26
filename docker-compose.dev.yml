@@ -18,10 +18,10 @@ services:
   docs:
     image: alpha-shoop-docs:dev
     build:
-      context: ./docs-app
+      context: ./platform-app
       dockerfile: Dockerfile.dev
     ports:
       - "5173:5173"
     volumes:
-      - ./docs-app/src:/app/src:ro
-      - ./docs-app/public:/app/public:ro
+      - ./platform-app/src:/app/src:ro
+      - ./platform-app/public:/app/public:ro

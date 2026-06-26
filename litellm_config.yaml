@@ -7,36 +7,27 @@
 # All agents call this proxy via the OpenAI-compatible API.
 # Model aliases decouple agent code from specific Claude model IDs.
 #
-# TEMPORARY: all three tiers run on the direct Anthropic API right now.
-# Vertex AI (GCP project alpha-shoop, region us-east5) is set up and Opus 4.1
-# is enabled there, but its per-minute token quota hasn't started enforcing
-# the displayed 1500/min limit yet (new GenAI quota propagation — can take a
-# while after first enabling a model). Once a Vertex call succeeds, migrate
-# alpha/director back to:
-#   model: vertex_ai/claude-opus-4-1@20250805
-#   vertex_project: alpha-shoop
-#   vertex_location: us-east5
+# TEMPORARY: both tiers run on the direct Anthropic API right now.
+# Vertex AI (GCP project alpha-shoop, region us-east5) is set up, but
 # alpha/worker-smart needs Claude Sonnet 4.5 enabled first at
 # https://console.cloud.google.com/vertex-ai/publishers/anthropic/model-garden?project=alpha-shoop
 # alpha/worker-fast stays on direct Anthropic permanently — Haiku isn't
 # available in this project's Vertex AI Model Garden at all (403, not just
 # un-enabled).
+#
+# alpha/director (Opus 4.8, "most capable" tier) was removed — it backed
+# src/agents/director.py's LLM-routing calls only, and that file was deleted
+# when the pipeline was consolidated into src/agents/orchestrator.py's plain
+# Python control flow. No code calls get_llm("director") anymore.
 
 model_list:
-
-  # ── Director: most capable ────────────────────────────────────────────────
-  - model_name: alpha/director
-    litellm_params:
-      model: anthropic/claude-opus-4-8
-      api_key: os.environ/ANTHROPIC_API_KEY
-      max_tokens: 4096
 
   # ── Worker smart: balanced cost/quality (E-com + Marketing + Store Setup) ─
   - model_name: alpha/worker-smart
     litellm_params:
       model: anthropic/claude-sonnet-4-6
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_tokens: 4096
+      max_tokens: 8192   # design_agent generates large CSS payloads (was 4096 — caused truncation/hangs)
 
   # ── Worker fast: cheapest, high volume (Scraper + Fulfillment) ───────────
   - model_name: alpha/worker-fast
@@ -44,6 +35,25 @@ model_list:
       model: anthropic/claude-haiku-4-5-20251001
       api_key: os.environ/ANTHROPIC_API_KEY
       max_tokens: 2048
+
+  # ── Local fast: FREE local model for the agent "company" layer ───────────
+  # Used by the org's frequent/cheap calls (standups, onboarding, training)
+  # via get_llm("standup"). Runs through Ollama on the host — no API cost.
+  # Setup: `brew install ollama` → `ollama serve` → `ollama pull qwen2.5:7b`.
+  # If Ollama isn't running, the org's meeting code degrades safely (0
+  # decisions), so this never crashes the autonomous loop.
+  - model_name: alpha/local-fast
+    litellm_params:
+      model: ollama_chat/qwen2.5:7b
+      api_base: http://ollama:11434   # 7B stays in docker (fast enough)
+      max_tokens: 2048
+
+  # ── Local CODER: stronger local model for the Developer agent (Grace) ────
+  - model_name: alpha/local-coder
+    litellm_params:
+      model: ollama_chat/qwen2.5-coder:14b
+      api_base: http://host.docker.internal:11434
+      max_tokens: 4096
 
 litellm_settings:
   drop_params: true          # ignore unsupported params (e.g. top_k) instead of erroring

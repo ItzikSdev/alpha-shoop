@@ -29,6 +29,36 @@ def _parse_json(text: str) -> dict:
     return json.loads(text.strip())
 
 
+async def _save_product_mapping(
+    store_id: str,
+    shopify_product_id: str,
+    supplier_product_id: str,
+    supplier_sku: str,
+    cost_price: float,
+    retail_price: float,
+) -> None:
+    """Record the Shopify↔CJ cross-reference so price/stock monitoring and
+    fulfillment can look this product back up later. Non-fatal on failure —
+    a DB hiccup shouldn't undo a product that's already live on Shopify."""
+    if not supplier_product_id:
+        return
+    try:
+        from src.db.engine import get_session
+        from src.db.models import ProductMapping
+
+        async with get_session() as session:
+            await session.merge(ProductMapping(
+                shopify_product_id=shopify_product_id,
+                store_id=store_id,
+                supplier_product_id=supplier_product_id,
+                supplier_sku=supplier_sku,
+                cost_price=cost_price,
+                retail_price=retail_price,
+            ))
+    except Exception as exc:
+        logger.warning("Failed to save product mapping for %s: %s", shopify_product_id, exc)
+
+
 # ── Brand identity ────────────────────────────────────────────────────────────
 
 _BRAND_SYSTEM = """\
@@ -51,7 +81,15 @@ _COPY_SYSTEM = """\
 You are a senior conversion copywriter for a premium Shopify brand — think MVMT, Beardbrand, Tanaor.
 You write product descriptions that make people stop scrolling and feel they found exactly what they needed.
 
-INPUT: brand_title, category, hook (emotional opener), audience
+INPUT: brand_title, category, hook (emotional opener), audience, real_specs (actual
+supplier spec sheet — fabric, fit, pattern options, set contents; may be empty)
+
+If real_specs is present, ground at least 1-2 bullets in those ACTUAL details
+(fabric name, closure style, number of pieces, etc.) instead of inventing generic
+ones — e.g. prefer "Soft cotton blend — gentle on sensitive newborn skin" over a
+made-up claim, when real_specs says the fabric is cotton. Never copy real_specs
+verbatim or mention supplier/sourcing language; translate it into customer-facing
+benefit language.
 
 OUTPUT: Valid HTML only — <p> and <ul><li> tags. NO markdown, NO wrapper divs.
 
@@ -106,14 +144,35 @@ async def _brand_product(title: str, category: str) -> dict:
         }
 
 
-async def _write_description(brand_title: str, category: str, hook: str, audience: str) -> str:
+def _extract_real_specs(supplier_description_html: str) -> str:
+    """
+    Pull the plain-text 'Product information' spec line out of CJ's raw HTML
+    description (fabric, fit, pattern, set contents) so the copy LLM can ground
+    claims in real supplier data instead of inventing generic ones. Returns ""
+    if the description doesn't have a recognizable spec section.
+    """
+    if not supplier_description_html:
+        return ""
+    match = re.search(
+        r'Product information:?\s*</b>?(.*?)(?:<b>Packing|<b>Product Image|$)',
+        supplier_description_html, re.IGNORECASE | re.DOTALL,
+    )
+    block = match.group(1) if match else supplier_description_html
+    text = re.sub(r'<br\s*/?>', '; ', block)
+    text = re.sub(r'<[^>]+>', '', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text[:600]
+
+
+async def _write_description(brand_title: str, category: str, hook: str, audience: str, real_specs: str = "") -> str:
     """Write premium product copy at TANAOR-level quality."""
     llm = get_llm("ecommerce", temperature=0.7)
     prompt = (
         f"brand_title: {brand_title}\n"
         f"category: {category}\n"
         f"hook: {hook}\n"
-        f"audience: {audience}"
+        f"audience: {audience}\n"
+        f"real_specs: {real_specs}"
     )
     response = await llm.ainvoke([
         SystemMessage(content=_COPY_SYSTEM),
@@ -152,7 +211,7 @@ def _psychological_price(price: float) -> float:
     return max(0.90, math.ceil(price) - 0.10)
 
 
-_MAX_STORE_PRODUCTS = 8  # Hard cap — TANAOR quality means curated, not crowded
+_MAX_STORE_PRODUCTS = 30  # Hard cap — curated catalog, not crowded
 _MAX_SOURCING_ATTEMPTS = 3  # retry trend_scraper with relaxed terms this many times before giving up
 
 _FIT_SYSTEM = """\
@@ -161,8 +220,16 @@ Given the store's product category and a supplier product title, answer ONE word
 YES = this product is exactly a {category} and belongs in this store.
 NO = this product is something different (different product type, accessory, or off-niche).
 
-Be strict. If the store sells women's silver rings, a necklace = NO. A gold men's ring = YES.
-If the store sells soy candles, a wax melt = YES. A diffuser = NO.
+IGNORE marketing/quality adjectives in the category when judging fit — words like
+"premium", "organic", "artisan", "luxury", "eco-friendly" describe how WE will brand
+and price the item, not a literal requirement the supplier's listing text must contain.
+A plain, unbranded supplier listing of the correct core product TYPE is still a YES —
+judge only whether the product TYPE matches, never whether the title repeats those
+adjectives. E.g. category "premium organic baby clothing" + title "Infant Cotton Romper"
+= YES (it's baby clothing; "premium organic" is our branding to add later, not theirs).
+
+Be strict on PRODUCT TYPE only. If the store sells women's silver rings, a necklace = NO.
+A gold men's ring = YES. If the store sells soy candles, a wax melt = YES. A diffuser = NO.
 Answer only YES or NO.
 """
 
@@ -245,6 +312,7 @@ async def ecommerce_node(state: AgentState) -> dict:
     """
     current_node.set("ecommerce_manager")
 
+    store_id = state.get("store_id", "")
     store_brand = state.get("store_brand") or {}
     product_category = store_brand.get("product_category", "")
     # On a sourcing retry, trend_scraper may have relaxed the search term (e.g. dropped
@@ -321,13 +389,25 @@ async def ecommerce_node(state: AgentState) -> dict:
                 "sourcing_feedback": feedback,
                 "messages": [HumanMessage(content=f"No matches (attempt {attempts}) — retrying sourcing: {feedback}")],
             }
-        agent_log(f"No niche-matching candidates after {attempts} attempts — giving up", "error")
-        return {
-            "shopify_products_created": list(already_created),
-            "sourcing_attempts": attempts,
-            "error": "no niche-matching products found after multiple sourcing attempts",
-            "messages": [HumanMessage(content="No niche-matching products to publish after retries")],
-        }
+        # Final attempt: rather than dead-end (which stalled MONITOR/BOOST), fall
+        # back to the best available candidates by margin. Listing related
+        # products beats failing the whole run; the niche filter still applied on
+        # earlier attempts.
+        if top_by_margin:
+            niche_validated = top_by_margin[:slots_remaining]
+            agent_log(
+                f"Niche filter rejected all after {attempts} attempts — listing top "
+                f"{len(niche_validated)} by margin instead of failing",
+                "warning",
+            )
+        else:
+            agent_log("No candidates at all from supplier — giving up", "error")
+            return {
+                "shopify_products_created": list(already_created),
+                "sourcing_attempts": attempts,
+                "error": "no products available from supplier after multiple attempts",
+                "messages": [HumanMessage(content="No supplier products to publish after retries")],
+            }
 
     agent_log(f"{len(niche_validated)} products passed niche filter → publishing...", "action")
 
@@ -367,9 +447,11 @@ async def ecommerce_node(state: AgentState) -> dict:
         existing_titles.add(brand_title.lower())
         agent_log(f"→ '{brand_title}'", "info")
 
-        # Write premium copy
+        # Write premium copy — grounded in the supplier's real spec sheet (fabric,
+        # fit, set contents) when available, instead of generic invented claims.
         agent_log(f"Writing copy for '{brand_title}'...", "action")
-        description = await _write_description(brand_title, collection_name, hook, audience)
+        real_specs = _extract_real_specs(product.get("description", ""))
+        description = await _write_description(brand_title, collection_name, hook, audience, real_specs)
 
         # Get/create collection
         if collection_name not in collection_cache:
@@ -381,7 +463,22 @@ async def ecommerce_node(state: AgentState) -> dict:
         # (store currency must be USD — Shopify has no API to change it, admin-only)
         price = _psychological_price(product.get("estimated_price_shopify_usd", 0.0) or 0.0)
         compare_price = _psychological_price(price * 1.35)
-        agent_log(f"Publishing '{brand_title}' @ ${price:.2f}...", "action")
+
+        # Size options (e.g. "0-3M (59cm)") when the supplier listing has more than
+        # one — gives the storefront a real Size selector + per-size Add to Cart.
+        size_variants = [
+            {
+                "label": sv["size_label"],
+                "price": _psychological_price(sv["price_retail_usd"]),
+                "compare_at_price": _psychological_price(sv["price_retail_usd"] * 1.35),
+            }
+            for sv in product.get("supplier_variants", [])
+        ]
+        agent_log(
+            f"Publishing '{brand_title}' @ ${price:.2f}"
+            + (f" ({len(size_variants)} sizes)" if size_variants else "") + "...",
+            "action",
+        )
 
         result = await create_shopify_product(
             title=brand_title,
@@ -389,7 +486,8 @@ async def ecommerce_node(state: AgentState) -> dict:
             price=price,
             compare_at_price=compare_price,
             images=product.get("images") or [product.get("image", "")],
-            variants=[],
+            variants=size_variants,
+            video_url=product.get("video", ""),
         )
 
         if result.get("success"):
@@ -401,15 +499,25 @@ async def ecommerce_node(state: AgentState) -> dict:
             if collection_name in collection_cache:
                 await add_product_to_collection(pid, collection_cache[collection_name])
 
-            inventory_item_id = (
-                result["product"]
-                .get("variants", {})
-                .get("nodes", [{}])[0]
-                .get("inventoryItem", {})
-                .get("id", "")
-            ) if result["product"].get("variants") else ""
-            if inventory_item_id:
-                await update_inventory(product_id=inventory_item_id, location_id="default", quantity=50)
+            # Stock every resulting variant (size selector creates one per size;
+            # no sizes = the single default variant) — without this, inventory
+            # tracking defaults to 0 and "Add to Cart" doesn't actually work.
+            variant_nodes = result["product"].get("variants", {}).get("nodes", [])
+            for vnode in variant_nodes:
+                inventory_item_id = vnode.get("inventoryItem", {}).get("id", "")
+                if inventory_item_id:
+                    await update_inventory(product_id=inventory_item_id, location_id="default", quantity=50)
+
+            # Record the supplier cross-reference so price/stock monitoring and
+            # fulfillment can look this product back up later.
+            await _save_product_mapping(
+                store_id=store_id,
+                shopify_product_id=str(pid),
+                supplier_product_id=str(product.get("product_id", "")),
+                supplier_sku=str(product.get("cj_vid", "")),
+                cost_price=product.get("price_supplier_usd", 0.0) or 0.0,
+                retail_price=price,
+            )
         else:
             last_error = result.get("error")
             agent_log(f"✗ Failed: '{brand_title}' — {last_error}", "error")

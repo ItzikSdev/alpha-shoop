@@ -114,7 +114,7 @@ jobs:
       - name: Build Docs image
         uses: docker/build-push-action@v5
         with:
-          context: ./docs-app
+          context: ./platform-app
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max

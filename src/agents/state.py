@@ -17,10 +17,6 @@ class AgentState(TypedDict):
     # LangGraph message accumulator (append-only via add_messages reducer)
     messages: Annotated[list, add_messages]
 
-    # Director routing
-    next_agent: Optional[str]            # which worker to call next
-    director_reasoning: Optional[str]    # chain-of-thought from director
-
     # Scraper results
     trending_products: list[dict]        # raw product candidates
 

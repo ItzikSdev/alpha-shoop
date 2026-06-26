@@ -17,10 +17,10 @@ const STATS = [
 ];
 
 const FLOW = [
-  { step: 1, title: 'Shopify Order / Manual Trigger', icon: '📥', desc: 'Webhook or POST /api/v1/run starts the graph' },
+  { step: 1, title: 'Shopify Order / Manual Trigger', icon: '📥', desc: 'Webhook or POST /api/v1/run starts the pipeline' },
   { step: 2, title: 'FastAPI Gateway', icon: '⚡', desc: 'JWT auth, HMAC validation, rate limiting via slowapi' },
-  { step: 3, title: 'Director Agent (Claude Opus)', icon: '🧠', desc: 'Routes to the right worker on every iteration' },
-  { step: 4, title: 'Store Setup → Design Agent → Trend Scraper → E-com → Marketing → Fulfillment', icon: '🔄', desc: 'Workers call MCP tools and loop back to Director' },
+  { step: 3, title: 'Orchestrator (plain Python)', icon: '⚙️', desc: 'Reads task tags, sequences workers — no per-step LLM routing' },
+  { step: 4, title: 'Store Setup → Design Agent → Frontend Agent → Trend Scraper → E-com → Marketing → Fulfillment', icon: '🔄', desc: 'Workers call MCP tools; orchestrator loops the design and catalog-fill steps until done' },
   { step: 5, title: 'Guardrails', icon: '🛡️', desc: 'Kill-switch checks on every ad spend and order' },
   { step: 6, title: 'PostgreSQL + Redis + ChromaDB', icon: '💾', desc: 'Checkpoints, cache, and product embeddings' },
 ];

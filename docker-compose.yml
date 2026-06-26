@@ -108,7 +108,7 @@ services:
   docs:
     image: alpha-shoop-docs:prod
     build:
-      context: ./docs-app
+      context: ./platform-app
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:

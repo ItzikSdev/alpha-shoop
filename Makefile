@@ -56,7 +56,7 @@ migrate:
 setup: venv
 	@echo "→ Installing Python + Node deps..."
 	$(PIP) install --prefer-binary -r requirements.txt -q
-	cd docs-app && npm install --silent
+	cd platform-app && npm install --silent
 	@echo "✓ Ready. Copy .env.example → .env and fill in keys."
 
 venv:
@@ -130,11 +130,11 @@ print(json.dumps(cfg, indent=2))"
 # ── React Docs ─────────────────────────────────────────────────────────────────
 
 docs:
-	cd docs-app && npm run dev
+	cd platform-app && npm run dev
 
 docs-build:
-	cd docs-app && npm run build
-	@echo "✓ docs-app/dist"
+	cd platform-app && npm run build
+	@echo "✓ platform-app/dist"
 
 open-api:
 	open http://localhost:8000/docs
@@ -157,7 +157,7 @@ secrets:
 # ── Cleanup ────────────────────────────────────────────────────────────────────
 
 clean:
-	rm -rf $(VENV) docs-app/node_modules docs-app/dist htmlcov .pytest_cache
+	rm -rf $(VENV) platform-app/node_modules platform-app/dist htmlcov .pytest_cache
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	docker compose down -v 2>/dev/null || true
 

@@ -74,6 +74,7 @@ class PullBody(BaseModel):
 class RunBody(BaseModel):
     slug: str
     force_pull: bool = False  # re-pull the live theme even if files already exist
+    store_password: str | None = None  # storefront password, required while password-protected (e.g. dev stores)
 
 
 class DeployBody(BaseModel):
@@ -284,6 +285,8 @@ async def run(store_id: str, body: RunBody) -> dict:
         "--path", str(d),
         "--port", str(port),
     ]
+    if body.store_password:
+        cmd += ["--store-password", body.store_password]
     _append_log(slug, f"$ {' '.join(cmd)}  (cwd={d})")
     log_fh = _log_path(slug).open("a", encoding="utf-8")
     popen_kwargs: dict = {

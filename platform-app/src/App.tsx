@@ -8,6 +8,7 @@ import { Architecture } from './pages/Architecture';
 import { Technologies } from './pages/Technologies';
 import { RunsPage } from './pages/RunsPage';
 import { StoresPage } from './pages/StoresPage';
+import { Company } from './pages/Company';
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <main className="flex-1 overflow-y-auto">
           <Routes>
             <Route path="/" element={<Overview />} />
+            <Route path="/company" element={<Company />} />
             <Route path="/runs" element={<RunsPage />} />
             <Route path="/stores" element={<StoresPage />} />
             <Route path="/tools" element={<MCPTools />} />
