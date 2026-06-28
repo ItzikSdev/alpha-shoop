@@ -212,6 +212,7 @@ def _psychological_price(price: float) -> float:
 
 
 _MAX_STORE_PRODUCTS = 30  # Hard cap — curated catalog, not crowded
+_MAX_BACKFILL_PER_CYCLE = 5  # Cap color-selector self-heals per cycle (bound live mutations)
 _MAX_SOURCING_ATTEMPTS = 3  # retry trend_scraper with relaxed terms this many times before giving up
 
 _FIT_SYSTEM = """\
@@ -464,19 +465,31 @@ async def ecommerce_node(state: AgentState) -> dict:
         price = _psychological_price(product.get("estimated_price_shopify_usd", 0.0) or 0.0)
         compare_price = _psychological_price(price * 1.35)
 
-        # Size options (e.g. "0-3M (59cm)") when the supplier listing has more than
-        # one — gives the storefront a real Size selector + per-size Add to Cart.
-        size_variants = [
+        # Per-(color, size) options from CJ — gives the storefront real Color +
+        # Size selectors with per-variant Add to Cart. Each carries its CJ vid as
+        # `sku` so the matching Shopify variant binds to the exact CJ SKU and the
+        # right color/size gets fulfilled.
+        supplier_variants = product.get("supplier_variants", [])
+        product_variants = [
             {
+                "color": sv.get("color", ""),
                 "label": sv["size_label"],
+                "sku": sv.get("vid", ""),
                 "price": _psychological_price(sv["price_retail_usd"]),
                 "compare_at_price": _psychological_price(sv["price_retail_usd"] * 1.35),
             }
-            for sv in product.get("supplier_variants", [])
+            for sv in supplier_variants
         ]
+        n_colors = len({sv.get("color", "") for sv in supplier_variants if sv.get("color")})
+        n_sizes = len({sv["size_label"] for sv in supplier_variants})
+        dims = ", ".join(
+            part for part in (
+                f"{n_colors} colors" if n_colors > 1 else "",
+                f"{n_sizes} sizes" if n_sizes > 1 else "",
+            ) if part
+        )
         agent_log(
-            f"Publishing '{brand_title}' @ ${price:.2f}"
-            + (f" ({len(size_variants)} sizes)" if size_variants else "") + "...",
+            f"Publishing '{brand_title}' @ ${price:.2f}" + (f" ({dims})" if dims else "") + "...",
             "action",
         )
 
@@ -486,7 +499,7 @@ async def ecommerce_node(state: AgentState) -> dict:
             price=price,
             compare_at_price=compare_price,
             images=product.get("images") or [product.get("image", "")],
-            variants=size_variants,
+            variants=product_variants,
             video_url=product.get("video", ""),
         )
 
@@ -499,11 +512,15 @@ async def ecommerce_node(state: AgentState) -> dict:
             if collection_name in collection_cache:
                 await add_product_to_collection(pid, collection_cache[collection_name])
 
-            # Stock every resulting variant (size selector creates one per size;
-            # no sizes = the single default variant) — without this, inventory
-            # tracking defaults to 0 and "Add to Cart" doesn't actually work.
+            # Stock every CJ-backed variant (the Color×Size selectors create one
+            # per combo; no options = the single default variant) — without this,
+            # inventory tracking defaults to 0 and "Add to Cart" doesn't work.
+            # Skip auto-generated combos CJ doesn't actually carry (matched_sku
+            # == "") so they show as sold out rather than orderable-but-unshippable.
             variant_nodes = result["product"].get("variants", {}).get("nodes", [])
             for vnode in variant_nodes:
+                if "matched_sku" in vnode and not vnode["matched_sku"]:
+                    continue
                 inventory_item_id = vnode.get("inventoryItem", {}).get("id", "")
                 if inventory_item_id:
                     await update_inventory(product_id=inventory_item_id, location_id="default", quantity=50)
@@ -533,6 +550,65 @@ async def ecommerce_node(state: AgentState) -> dict:
         nav_ok = await setup_navigation(store_brand.get("store_name", ""), brief_collections)
         if nav_ok:
             agent_log("✓ Navigation refreshed with live collection links", "success")
+
+    # Self-heal existing listings that predate the color-variant pipeline: add a
+    # Color selector + per-variant CJ SKUs to any mapped product still missing it,
+    # so the customer can pick a color and CJ ships the exact one. Idempotent
+    # (already-done products return cheaply) and bounded per cycle so we never fire
+    # a burst of live mutations. Runs BEFORE the CJ connect below so freshly
+    # backfilled variants get bound in the same cycle.
+    try:
+        from src.mcp_tools.variant_backfill import backfill_product_color
+        from src.db.engine import get_session
+        from src.db.models import ProductMapping
+        from sqlalchemy import select as _select
+        async with get_session() as _s:
+            _rows = await _s.execute(
+                _select(ProductMapping.shopify_product_id).where(ProductMapping.store_id == store_id)
+            )
+            _pids = [r[0] for r in _rows.all()]
+        healed = 0
+        for _pid in _pids:
+            if healed >= _MAX_BACKFILL_PER_CYCLE:
+                break
+            try:
+                r = await backfill_product_color(_pid, store_id, run_cj_connect=False)
+            except Exception as exc:
+                agent_log(f"color backfill error for {_pid}: {exc}", "warning")
+                continue
+            if r.get("status") == "backfilled":
+                healed += 1
+                agent_log(
+                    f"🎨 added Color selector to '{r.get('title','')}' "
+                    f"({len(r.get('colors', []))} colors, {r.get('variants_created', 0)} variants added)",
+                    "success",
+                )
+        if healed:
+            agent_log(f"Color self-heal: {healed} existing product(s) gained a Color selector this cycle", "success")
+    except Exception as exc:
+        agent_log(f"color self-heal skipped (non-fatal): {exc}", "warning")
+
+    # Connect every mapped product to its CJ product so the CJ app auto-fulfills
+    # paid orders (places the CJ order + pushes tracking). Idempotent and
+    # self-resolving (finds the store's CJ shop) — safe to run every cycle. CJ
+    # only exposes a product for binding once its app has synced it from Shopify,
+    # so freshly-published items may land in skipped_no_variant now and connect on
+    # a later cycle once CJ has synced them.
+    try:
+        from src.mcp_tools.cj_connect import connect_store_products
+        cj = await connect_store_products(store_id)
+        if cj.get("error"):
+            agent_log(f"CJ connect skipped: {cj['error']}", "warning")
+        else:
+            agent_log(
+                f"CJ auto-fulfill links: {len(cj.get('connected', []))} new, "
+                f"{len(cj.get('already_connected', []))} already, "
+                f"{len(cj.get('needs_review', []))} need manual review, "
+                f"{len(cj.get('skipped_no_variant', []))} awaiting CJ sync",
+                "success" if cj.get("connected") else "info",
+            )
+    except Exception as exc:  # never let fulfillment wiring break the publish flow
+        agent_log(f"CJ connect error (non-fatal): {exc}", "warning")
 
     return {
         "shopify_products_created": created_ids,

@@ -62,6 +62,14 @@ _FALSE_CLAIMS = (
     "lack access", "אין הרשאה", "אין הרשאות", "אין גישה", "חוסר הרשאה",
     "manual blocker", "human action required", "פעולה ידנית", "חסם אנושי",
     "pass/fail", "four gate", "ארבעת השער", "4 שער",
+    # Provably-false recurring doom (verified 2026-06-27): CJ product search works
+    # and returns products; the Shopify token has full scopes (180, incl.
+    # write_themes/products/discounts/price_rules). Drop these so they can't
+    # re-accumulate and hijack every meeting.
+    "cj product-search blocker", "product-search blocker", "cj search blocker",
+    "cj sourcing blocker", "cj blocker", "resolve the cj", "write_price_rules",
+    "write_discounts", "requires immediate human action",
+    "requires immediate action from the store owner", "printful is the preferred",
 )
 
 

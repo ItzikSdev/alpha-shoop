@@ -337,6 +337,37 @@ async def post_org_assign(body: dict) -> dict:
     return {"error": f"no active agent with role {role!r}"}
 
 
+@router.get("/org/shopify-reauth", summary="Get the one-click URL to re-authorize Shopify (fixes a 401 token)")
+async def get_shopify_reauth(shop: str = "") -> dict:
+    from src.mcp_tools.shopify_auth import build_authorize_url
+    return {"authorize_url": build_authorize_url(shop),
+            "note": "Open this URL, click Approve once. The token is then refreshed automatically."}
+
+
+@router.get("/shopify/callback", summary="Shopify OAuth callback — exchanges the code and persists a fresh token")
+async def shopify_oauth_callback(code: str = "", shop: str = "", state: str = "") -> dict:
+    from src.mcp_tools.shopify_auth import exchange_code_for_token, persist_shopify_token
+    if not (code and shop):
+        return {"error": "missing code or shop"}
+    try:
+        token = await exchange_code_for_token(shop, code)
+    except Exception as exc:
+        return {"error": f"token exchange failed: {exc}"}
+    if not token:
+        return {"error": "no access_token returned"}
+    result = persist_shopify_token(token, shop)
+    return {"ok": True, "shop": shop, "persisted": result,
+            "note": "Fresh Shopify token saved to .env + store record. Agents can edit the store now."}
+
+
+@router.post("/org/delegate", summary="Linus picks Grace's next concrete store task now (force-rotates)")
+async def post_org_delegate(body: dict | None = None) -> dict:
+    from src.org.delegation import linus_delegates
+    force = bool((body or {}).get("force", True))
+    result = await linus_delegates(force=force)
+    return result or {"note": "Grace is mid-task — pass {\"force\": true} to rotate her now."}
+
+
 @router.post("/org/respond", summary="Every agent replies in-persona to a message (posts to Slack)")
 async def post_org_respond(body: dict) -> dict:
     seed_founding_team()

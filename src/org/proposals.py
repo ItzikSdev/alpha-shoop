@@ -71,16 +71,56 @@ def set_proposal(pid: str, status: str, result: str = "") -> None:
 # ── Shopify executor (full access, runs ONLY after approval) ──────────────────
 
 async def execute_shopify(method: str, path: str, body: dict | None) -> dict:
-    """Run any Shopify Admin API call with the store's full-access token."""
+    """Run any Shopify Admin API call with the store's full-access token.
+
+    Self-heals on 401 (a rotated/stale token): retries once with the freshest
+    .env token, and if that also fails, escalates a one-click re-authorize link
+    to the channel so the fix surfaces itself instead of silently breaking."""
     import httpx
+    from src.config import get_settings
     from src.stores import list_stores
-    stores = list_stores()
-    if not stores:
+    try:
+        stores = list_stores()
+    except Exception:
+        stores = []
+    settings = get_settings()
+    domain = stores[0].shopify_domain if stores else settings.shopify_store_domain
+    if not domain:
         return {"error": "no store"}
-    s = stores[0]
-    url = f"https://{s.shopify_domain}/admin/api/2024-07/{path.lstrip('/')}"
+
+    # Try the store-row token first, then the .env token — whichever is valid.
+    candidates: list[str] = []
+    if stores and stores[0].shopify_access_token:
+        candidates.append(stores[0].shopify_access_token)
+    if settings.shopify_access_token and settings.shopify_access_token not in candidates:
+        candidates.append(settings.shopify_access_token)
+    if not candidates:
+        return {"error": "no shopify token configured"}
+
+    # Normalize whatever path the (local-model) agent produced into a clean
+    # relative path on the supported API version. Grace sometimes emits a full
+    # URL, a leading "/admin/api/<ver>/", or an unsupported version — all of which
+    # otherwise get double-prefixed and 404/406. Strip host + admin/api/<ver>.
+    import re
+    rel = re.sub(r"^https?://[^/]+/", "", path.strip())
+    rel = re.sub(r"^/?admin/api/[^/]+/", "", rel).lstrip("/")
+    url = f"https://{domain}/admin/api/2024-07/{rel}"
+    last = None
     async with httpx.AsyncClient(timeout=25) as c:
-        r = await c.request(method.upper(), url,
-                            headers={"X-Shopify-Access-Token": s.shopify_access_token},
-                            json=body or None)
-    return {"status": r.status_code, "ok": r.status_code < 400, "body": r.text[:1500]}
+        for token in candidates:
+            r = await c.request(method.upper(), url,
+                                headers={"X-Shopify-Access-Token": token},
+                                json=body or None)
+            last = r
+            if r.status_code != 401:
+                break
+    if last is not None and last.status_code == 401:
+        # Every available token is invalid → surface the one-click fix.
+        try:
+            from src.mcp_tools.shopify_auth import escalate_shopify_401
+            reauth_url = await escalate_shopify_401(domain)
+        except Exception:
+            reauth_url = ""
+        return {"status": 401, "ok": False, "error": "shopify token invalid (401)",
+                "reauth_url": reauth_url, "body": last.text[:500]}
+    return {"status": last.status_code, "ok": last.status_code < 400, "body": last.text[:1500]}

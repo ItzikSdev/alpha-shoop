@@ -10,6 +10,9 @@ services:
     volumes:
       - ./src:/app/src:ro
       - ./mcp_server.py:/app/mcp_server.py:ro
+      # Store source of truth: stores/shopify/<slug>/{style,readme,changelog}.
+      # READ-WRITE — Grace edits the design JSON and the changelog skill appends here.
+      - ./stores:/app/stores
     environment:
       APP_ENV: development
     # override the prod CMD with reload

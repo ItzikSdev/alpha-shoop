@@ -48,6 +48,19 @@ class Settings(BaseSettings):
     # Market Data
     serper_api_key: str = ""
 
+    # PayPal (REST API, Live) — agents read settlement/transactions. Secrets live
+    # in .env (gitignored), NEVER hardcoded here — config.py is tracked by git.
+    paypal_client_id: str = ""
+    paypal_secret: str = ""
+    paypal_live: bool = True  # False → sandbox base URL
+
+    # Cloudflare — DNS / domain management for the store's zone (token in .env)
+    cloudflare_api_token: str = ""
+    cloudflare_zone_id: str = ""
+
+    # GCP — path to a service-account JSON key (set the intended service before wiring)
+    google_application_credentials: str = ""
+
     # LiteLLM Proxy
     litellm_proxy_url: str = "http://localhost:4000"
     litellm_master_key: str = "alpha-shoop-key"

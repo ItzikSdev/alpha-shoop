@@ -37,7 +37,8 @@ _ROLE_MODEL: dict[str, str] = {
     "fulfillment": "alpha/worker-fast",   # claude-haiku-4-5-20251001
     "executive":   "alpha/worker-smart",  # claude-sonnet-4-6 — company strategy
     "standup":     "alpha/local-fast",    # local Ollama 7B — frequent, ~free
-    "developer":   "alpha/local-coder",   # local Ollama 14B coder — Grace
+    "developer":   "alpha/worker-fast",   # Haiku 4.5 — Grace (smarter+faster than local
+                                            # 14B). Falls back to local when over budget.
 }
 
 # ── Sensible defaults per role ────────────────────────────────────────────────
@@ -53,7 +54,9 @@ _ROLE_DEFAULTS: dict[str, dict] = {
 
 # Org roles that the ORG_LOCAL_LLM=1 toggle reroutes to the local model to save
 # tokens (at the cost of quality on strategy reasoning).
-_ORG_ROLES = {"executive", "standup"}
+# developer (Grace) is included so she runs on Haiku normally but drops to the FREE
+# local model once the monthly Claude budget cap is hit — protecting the $100 ceiling.
+_ORG_ROLES = {"executive", "standup", "developer"}
 _LOCAL_ALIAS = "alpha/local-fast"
 
 

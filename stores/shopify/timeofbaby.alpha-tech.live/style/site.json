@@ -1,0 +1,306 @@
+{
+  "page": "homepage",
+  "version": 3,
+  "meta": {
+    "store": "TIMEOF BABY",
+    "domain": "timeofbaby.alpha-tech.live",
+    "reference": "Premium baby store — TerminalX-level polish",
+    "renders_to": "sections/timeofbaby-home.liquid + templates/index.json (uses ONLY this section)",
+    "principle": "This JSON is the single source of truth. To change the homepage you edit VALUES here and run apply_site_design — never touch the .liquid by hand.",
+    "updated": "2026-06-27"
+  },
+
+  "design_tokens": {
+    "colors": {
+      "ink": "#161616",
+      "muted": "#8d8d8d",
+      "line": "#eeeeee",
+      "soft": "#f6f4f1",
+      "white": "#ffffff",
+      "accent_bg": "#161616",
+      "accent_text": "#ffffff",
+      "star": "#e0a93b",
+      "verified": "#3a9d5a",
+      "footer_bg": "#161616",
+      "footer_text": "#ffffff",
+      "footer_muted": "#bbbbbb"
+    },
+    "typography": {
+      "font_family": "-apple-system, 'Helvetica Neue', Inter, Arial, sans-serif",
+      "marquee_size": "1.4rem",
+      "hero_h1_size": "3.4rem",
+      "hero_sub_size": "1.25rem",
+      "section_heading_size": "2.5rem",
+      "card_title_size": "1.4rem",
+      "card_price_size": "1.5rem",
+      "pill_size": "0.95rem",
+      "tile_label_size": "2.1rem",
+      "testimonial_text_size": "1.05rem",
+      "footer_heading_size": "0.78rem",
+      "footer_link_size": "0.92rem",
+      "letter_spacing_uppercase": "0.12em"
+    },
+    "spacing": {
+      "page_max_width": "1240px",
+      "page_padding_x": "28px",
+      "section_gap_top": "74px",
+      "grid_gap": "34px 20px"
+    },
+    "animation": {
+      "marquee_scroll_seconds": 28,
+      "hero_carousel_interval_ms": 4000,
+      "hero_crossfade_seconds": 1.4,
+      "hero_zoom_seconds": 9,
+      "card_rise_seconds": 0.7,
+      "social_proof_interval_ms": 9000
+    },
+    "responsive": {
+      "breakpoint": "820px",
+      "grid_columns_desktop": 4,
+      "grid_columns_mobile": 2,
+      "tiles_columns_desktop": 3,
+      "tiles_columns_mobile": 1
+    }
+  },
+
+  "global": {
+    "font_family": "-apple-system, 'Helvetica Neue', Inter, Arial, sans-serif",
+    "text_color": "#161616",
+    "background": "#ffffff"
+  },
+
+  "sections": [
+    {
+      "id": "announcement_marquee",
+      "type": "marquee",
+      "enabled": true,
+      "description": "Dark scrolling announcement bar at the very top of the page content.",
+      "items": [
+        "FREE SHIPPING OVER $50",
+        "30-DAY RETURNS",
+        "ORGANIC COTTON",
+        "DESIGNED FOR LITTLE ONES"
+      ],
+      "style": {
+        "background": "#161616",
+        "text_color": "#ffffff",
+        "font_size": "1.4rem",
+        "font_weight": 700,
+        "uppercase": true,
+        "letter_spacing": "0.14em",
+        "scroll_seconds": 28
+      },
+      "behavior": "items are concatenated with ' · ' and scrolled right-to-left infinitely (CSS animation)."
+    },
+    {
+      "id": "hero",
+      "type": "hero",
+      "enabled": true,
+      "description": "Full-bleed hero with a 7-image crossfade carousel, headline, sub, CTA, and clickable nav dots.",
+      "headline": "Soft. Modern. Made for first moments.",
+      "sub": "Thoughtfully designed baby essentials in premium organic cotton.",
+      "cta_text": "Shop the collection",
+      "cta_link": "/collections/all",
+      "carousel_interval_ms": 4000,
+      "images_note": "Use ONLY baby/kids-relevant images, and do NOT reuse images shown elsewhere on the site. Swap any URL below to change a slide.",
+      "images": [
+        "https://images.unsplash.com/photo-1519689680058-324335c77eba?w=1800&q=80",
+        "https://images.unsplash.com/photo-1492725764893-90b379c2b6e7?w=1800&q=80",
+        "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=1800&q=80",
+        "https://images.unsplash.com/photo-1546015720-b8b30df5aa27?w=1800&q=80",
+        "https://images.unsplash.com/photo-1607453998774-d533f65dac99?w=1800&q=80",
+        "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/5ff4f422-de0a-4d82-bf14-cc3951ba4d71.jpg?v=1782417123",
+        "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/8bb3ef51-84f7-43e0-8039-1d2967c7e36d.jpg?v=1782417160"
+      ],
+      "style": {
+        "height": "620px",
+        "headline_size": "3.4rem",
+        "headline_weight": 600,
+        "sub_size": "1.25rem",
+        "text_color": "#ffffff",
+        "overlay": "linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.5))",
+        "cta_bg": "#ffffff",
+        "cta_text_color": "#161616",
+        "cta_hover_bg": "#161616",
+        "cta_hover_text": "#ffffff",
+        "zoom_seconds": 9,
+        "crossfade_seconds": 1.4
+      },
+      "behavior": "slides are <img> tags; JS toggles the 'active' class on a timer and on dot click; a dark gradient overlay keeps the white text readable."
+    },
+    {
+      "id": "trust_pills",
+      "type": "pills",
+      "enabled": true,
+      "description": "A 4-up uppercase trust bar directly under the hero.",
+      "items": [
+        "Organic Cotton",
+        "Gentle on Skin",
+        "Free & Easy Returns",
+        "Loved by 1,000+ Parents"
+      ],
+      "style": {
+        "font_size": "0.95rem",
+        "color": "#8d8d8d",
+        "uppercase": true,
+        "weight": 600,
+        "divider": "1px solid #eeeeee"
+      }
+    },
+    {
+      "id": "category_tiles",
+      "type": "category_tiles",
+      "enabled": true,
+      "description": "Large image tiles linking to the main collections, with a hover zoom.",
+      "heading": "Shop by category",
+      "tiles": [
+        { "label": "Boys", "link": "/collections/baby-boys", "image": "https://images.unsplash.com/photo-1522771930-78848d9293e8?w=800&q=80" },
+        { "label": "Girls", "link": "/collections/baby-girls", "image": "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=800&q=80" },
+        { "label": "Shop All", "link": "/collections/all", "image": "https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=80" }
+      ],
+      "style": {
+        "columns": 3,
+        "tile_height": "360px",
+        "label_size": "2.1rem",
+        "label_color": "#ffffff",
+        "overlay": "linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.45))",
+        "hover_zoom": 1.06
+      }
+    },
+    {
+      "id": "product_grid",
+      "type": "product_grid",
+      "enabled": true,
+      "description": "The main shop grid — pulls the store's REAL products (image, title, price), 3:4 cards with hover zoom and a rise-in animation.",
+      "heading": "Shop All",
+      "collection": "all",
+      "limit": 12,
+      "data_source": "collections['all'].products (live Shopify data)",
+      "style": {
+        "columns": 4,
+        "gap": "34px 20px",
+        "image_aspect_ratio": "3/4",
+        "image_background": "#f6f4f1",
+        "title_size": "1.4rem",
+        "price_size": "1.5rem",
+        "hover_zoom": 1.06,
+        "rise_animation_seconds": 0.7
+      }
+    },
+    {
+      "id": "testimonials",
+      "type": "testimonials",
+      "enabled": true,
+      "description": "Real-sounding customer reviews — social proof that people bought and are happy.",
+      "heading": "Loved by parents",
+      "show_count": 6,
+      "rotation": "The renderer shuffles this pool on every page load and shows `show_count` of them — so reviews rotate per visit. To MANAGE reviews, add/edit/remove items in this array (this is the review management).",
+      "reviews": [
+        { "name": "Maya R.", "location": "Tel Aviv", "rating": 5, "text": "The softest fabric we've found — my daughter lives in these. Washed a dozen times and still perfect." },
+        { "name": "Daniel K.", "location": "New York", "rating": 5, "text": "Ordered for my newborn and the quality blew me away for the price. Shipping was fast and free." },
+        { "name": "Sophie L.", "location": "London", "rating": 5, "text": "Beautiful, modern designs that actually fit. The snap closures make 3am changes so much easier." },
+        { "name": "Noa B.", "location": "Toronto", "rating": 5, "text": "Gift-wrapped feeling, gentle on my baby's skin. Already ordered three more." },
+        { "name": "Tom H.", "location": "Berlin", "rating": 5, "text": "Finally a baby brand that looks as good as it feels. Returns policy gave me total peace of mind." },
+        { "name": "Aria M.", "location": "Sydney", "rating": 5, "text": "Obsessed. Every piece photographs beautifully and holds up to a very active toddler." },
+        { "name": "Hila S.", "location": "Haifa", "rating": 5, "text": "Arrived in 8 days, beautifully packed. The cotton is genuinely premium — not what I expected at this price." },
+        { "name": "Emma W.", "location": "Manchester", "rating": 5, "text": "My go-to baby shower gift now. Everyone asks where it's from." },
+        { "name": "Liam P.", "location": "Dublin", "rating": 5, "text": "Sizes run true and the colors stay vivid after washing. Couldn't be happier." },
+        { "name": "Yael C.", "location": "Jerusalem", "rating": 5, "text": "Soft, breathable, and adorable. My little one is comfortable all day." },
+        { "name": "Chloe D.", "location": "Melbourne", "rating": 5, "text": "Customer service was lovely and the free returns made trying sizes stress-free." },
+        { "name": "Ben A.", "location": "Amsterdam", "rating": 5, "text": "Looks premium, feels premium, priced fairly. Already a repeat customer." }
+      ],
+      "style": {
+        "columns": 3,
+        "card_background": "#f6f4f1",
+        "star_color": "#e0a93b",
+        "text_size": "1.05rem",
+        "verified_label": "✔ verified buyer"
+      }
+    },
+    {
+      "id": "recently_viewed",
+      "type": "recently_viewed",
+      "enabled": true,
+      "description": "Shows the products THIS visitor looked at most (stored in browser localStorage as 'tob_recent'). Hidden when empty. Product pages should push the viewed product into localStorage.",
+      "heading": "Recently viewed",
+      "max_items": 4,
+      "data_source": "browser localStorage 'tob_recent' (set on each product page view)"
+    },
+    {
+      "id": "social_proof_popup",
+      "type": "_auto",
+      "enabled": true,
+      "description": "Floating popup (bottom-left) cycling real products as recent purchases — appended automatically by the renderer after all sections.",
+      "style": { "position": "bottom-left", "interval_ms": 9000, "show_seconds": 5.2 },
+      "content": "{city} just purchased {real product} · {n} minutes ago · ✔ verified"
+    },
+    {
+      "id": "footer",
+      "type": "footer",
+      "enabled": true,
+      "description": "Rich dark footer (TerminalX-style): brand + tagline + social, then link columns, then a copyright bar.",
+      "brand": "TIMEOF BABY",
+      "tagline": "Thoughtfully designed baby essentials in premium organic cotton. Made for the moments that matter.",
+      "social": [
+        { "name": "Instagram", "link": "#" },
+        { "name": "TikTok", "link": "#" },
+        { "name": "Facebook", "link": "#" },
+        { "name": "YouTube", "link": "#" }
+      ],
+      "columns": [
+        {
+          "title": "Shop",
+          "links": [
+            { "label": "Boys", "link": "/collections/baby-boys" },
+            { "label": "Girls", "link": "/collections/baby-girls" },
+            { "label": "Shop All", "link": "/collections/all" },
+            { "label": "New In", "link": "/collections/all" }
+          ]
+        },
+        {
+          "title": "Help",
+          "links": [
+            { "label": "Shipping", "link": "/policies/shipping-policy" },
+            { "label": "Returns", "link": "/policies/refund-policy" },
+            { "label": "Size Guide", "link": "#" },
+            { "label": "Contact", "link": "/pages/contact" }
+          ]
+        },
+        {
+          "title": "About",
+          "links": [
+            { "label": "Our Story", "link": "#" },
+            { "label": "Sustainability", "link": "#" },
+            { "label": "Reviews", "link": "#" },
+            { "label": "Privacy", "link": "/policies/privacy-policy" }
+          ]
+        }
+      ],
+      "copyright": "© 2026 TIMEOF BABY · Free shipping on all orders · 30-day returns",
+      "style": {
+        "background": "#161616",
+        "text_color": "#ffffff",
+        "muted_color": "#bbbbbb",
+        "heading_size": "0.78rem",
+        "link_size": "0.92rem",
+        "columns_layout": "1.6fr 1fr 1fr 1fr"
+      }
+    }
+  ],
+
+  "behaviors": {
+    "marquee": "CSS keyframe translateX(-50%) infinite over scroll_seconds",
+    "hero_carousel": "JS interval swaps the .active <img>; dots clickable; gradient overlay via .tob-hero::after",
+    "product_grid": "Liquid loop over collections[collection].products limit N",
+    "recently_viewed": "reads localStorage tob_recent (array of {n:name,i:image,pr:price,u:url}); hide if empty",
+    "social_proof": "JS cycles real product names + random cities as 'just purchased' toasts"
+  },
+
+  "open_issues": [
+    "Hero images must be verified baby/kids and must not duplicate product or tile images",
+    "Most products have only 1 image — source 3-5 real images each",
+    "Color option not yet sourced from CJ",
+    "Footer is currently homepage-only via this section; making it site-wide needs the theme footer-group",
+    "Recently-viewed requires the product page to write localStorage on view"
+  ]
+}

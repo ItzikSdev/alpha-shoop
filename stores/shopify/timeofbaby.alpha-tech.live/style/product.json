@@ -1,0 +1,201 @@
+{
+  "page": "product",
+  "version": 2,
+  "meta": {
+    "store": "TIMEOF BABY",
+    "reference": "TerminalX-style premium product page",
+    "renders_to": "sections/timeofbaby-product.liquid + templates/product.json",
+    "notes": "This JSON is the source-of-truth blueprint. Every visible element, its data source, styling and behavior is documented here so Grace/Linus (and the renderer) can rebuild the page deterministically."
+  },
+
+  "design_tokens": {
+    "colors": {
+      "ink": "#161616",
+      "muted": "#8d8d8d",
+      "line": "#e7e7e7",
+      "soft": "#f6f4f1",
+      "accent_bg": "#161616",
+      "accent_text": "#ffffff",
+      "discount_badge_bg": "#161616",
+      "discount_badge_text": "#ffffff"
+    },
+    "typography": {
+      "font_family": "-apple-system, 'Helvetica Neue', Inter, Arial, sans-serif",
+      "_note": "These sizes DRIVE the live page — apply_product_design injects them as CSS vars (--tobp-*) consumed by the section. Change a value here + re-apply to resize the real page.",
+      "badge_tag_size": "0.92rem",
+      "discount_badge_size": "1.05rem",
+      "brand_size": "1.1rem",
+      "title_size": "3rem",
+      "price_size": "2.6rem",
+      "compare_at_size": "1.6rem",
+      "option_label_size": "1.15rem",
+      "option_button_size": "1.25rem",
+      "badge_size": "1.1rem",
+      "description_size": "1.25rem",
+      "letter_spacing_uppercase": "0.12em"
+    },
+    "spacing": {
+      "page_max_width": "1240px",
+      "page_padding": "30px 28px",
+      "column_gap": "48px",
+      "thumb_gap": "10px"
+    }
+  },
+
+  "size_chart": {
+    "enabled": true,
+    "title": "Size guide",
+    "subtitle": "Baby & toddler sizing by height and weight",
+    "columns": ["Size", "Height", "Weight"],
+    "rows": [
+      { "size": "Newborn S", "height": "48 cm", "weight": "up to 2.5 kg" },
+      { "size": "Newborn", "height": "54 cm", "weight": "2.5–4 kg" },
+      { "size": "0-3M", "height": "60 cm", "weight": "4–5.5 kg" },
+      { "size": "3-6M", "height": "68 cm", "weight": "5.5–7.5 kg" },
+      { "size": "6-12M", "height": "74 cm", "weight": "8–10 kg" },
+      { "size": "12-18M", "height": "80 cm", "weight": "10–11 kg" },
+      { "size": "18-24M", "height": "86 cm", "weight": "11–12 kg" },
+      { "size": "2Y", "height": "86–92 cm", "weight": "13–14 kg" },
+      { "size": "3Y", "height": "92–98 cm", "weight": "14–15 kg" },
+      { "size": "4Y", "height": "98–104 cm", "weight": "15–17 kg" },
+      { "size": "5Y", "height": "104–110 cm", "weight": "17–19 kg" }
+    ],
+    "source": "SHILAV baby size standard (generic baby clothing sizing)",
+    "behavior": "the 'Size chart' link opens this as a centered popup modal; built from this JSON by apply_product_design"
+  },
+
+  "layout": {
+    "type": "two_column_grid",
+    "columns": [
+      { "name": "gallery", "width": "1.1fr" },
+      { "name": "info", "width": "0.9fr" }
+    ],
+    "responsive": {
+      "breakpoint": "820px",
+      "behavior": "stack to single column, thumbnails become a horizontal scroll row under the main image",
+      "mobile_overrides": {
+        "_note": "Fixes mobile product page: on phones the 4/5 portrait hero filled the whole viewport and the 3rem title / 2.6rem price were oversized, pushing the title+price+Add-to-cart below the fold and under the browser's floating bottom bar. These literal values intentionally override the --tobp-* CSS vars inside the @media(max-width:820px) block.",
+        "page_padding": "16px 16px 48px (extra bottom padding clears the mobile browser bar)",
+        "main_image": { "aspect_ratio": "1/1", "max_height": "60vh", "_why": "keep image from eating the whole screen so info is near the fold" },
+        "thumbnails": { "size": "54x70", "scroll": "horizontal overflow-x auto, hidden scrollbar" },
+        "typography": {
+          "title_size": "1.65rem",
+          "price_size": "1.85rem",
+          "compare_at_size": "1.15rem",
+          "discount_badge_size": "0.82rem",
+          "brand_size": "0.82rem",
+          "badge_tag_size": "0.7rem",
+          "option_label_size": "0.92rem",
+          "option_button_size": "1rem",
+          "badge_size": "0.82rem",
+          "description_size": "1rem"
+        },
+        "size_buttons": { "render": "flex 1 1 22% — buttons share the row evenly instead of min-width 74px overflowing" }
+      }
+    }
+  },
+
+  "sections": [
+    {
+      "id": "gallery",
+      "type": "media_gallery",
+      "position": "left column",
+      "data_source": "product.media",
+      "main_image": { "source": "product.featured_media", "width": 1200, "aspect_ratio": "4/5", "object_fit": "cover", "background": "soft" },
+      "thumbnails": { "source": "product.media (up to 6)", "width": 140, "size": "70x90", "border": "1px line", "active_border": "ink" },
+      "behavior": "clicking a thumbnail swaps the main image (data-full attribute); active thumb highlighted",
+      "improvement_todo": "most products have only 1 image — source 3-5 real images per product from CJ"
+    },
+    {
+      "id": "badge",
+      "type": "badge",
+      "position": "info column, top",
+      "items": [ { "label": "JUST LANDED", "condition": "product.tags contains 'new' or product.available", "style": "dark bg, white uppercase, 0.62rem" } ]
+    },
+    {
+      "id": "brand",
+      "type": "text",
+      "data_source": "product.vendor",
+      "fallback": "TIMEOF BABY",
+      "style": "uppercase, muted, 0.92rem, letter-spacing 0.12em, weight 600"
+    },
+    {
+      "id": "title",
+      "type": "heading",
+      "data_source": "product.title",
+      "style": "2.4rem, weight 500, letter-spacing -0.01em"
+    },
+    {
+      "id": "price",
+      "type": "price_block",
+      "current": { "source": "selected_variant.price", "style": "2.1rem bold, updates live on size change via JS" },
+      "compare_at": { "source": "product.compare_at_price", "show_when": "compare_at > price", "style": "1.3rem muted strike-through" },
+      "discount_badge": { "formula": "(compare_at - price) * 100 / compare_at, rounded", "label": "{n}% OFF", "style": "dark bg, white, 0.7rem bold" }
+    },
+    {
+      "id": "options",
+      "type": "variant_selector",
+      "options": [
+        {
+          "name": "Size",
+          "render": "button_grid",
+          "values": ["0-3M", "3-6M", "6-12M", "12-18M", "18-24M", "2-3Y"],
+          "values_source": "product 'Size' option",
+          "unavailable": "greyed + disabled when that variant is not available",
+          "active_style": "dark fill, white text",
+          "size_chart_link": true,
+          "hide_when": "option is the default single 'Title' option (no real variants)"
+        },
+        {
+          "name": "Color",
+          "render": "round_swatches",
+          "values_source": "product 'Color' option (when present)",
+          "status": "not yet sourced from CJ for most products"
+        }
+      ]
+    },
+    {
+      "id": "add_to_cart",
+      "type": "button",
+      "label": "Add to cart",
+      "sold_out_label": "Sold out",
+      "behavior": "Shopify product form posts the SELECTED variant id (#tobp-vid, updated by the size buttons) to /cart/add",
+      "style": "full-width, dark bg, white, uppercase, 19px padding, weight 700"
+    },
+    {
+      "id": "trust",
+      "type": "badges_row",
+      "items": ["✓ Free shipping on all orders", "✓ 30-day easy returns", "✓ Satisfaction guaranteed"],
+      "style": "0.98rem, muted, bordered top+bottom"
+    },
+    {
+      "id": "description",
+      "type": "rich_text",
+      "data_source": "product.description",
+      "rules": ["use the REAL CJ product content (materials, features) — never the generic template", "strip any markdown ``` fences", "render HTML lists/paragraphs"],
+      "style": "1.05rem, line-height 1.7"
+    }
+  ],
+
+  "variants": {
+    "option_name": "Size",
+    "values": ["0-3M", "3-6M", "6-12M", "12-18M", "18-24M", "2-3Y"],
+    "inventory_policy": "CONTINUE",
+    "all_variants_same_price": true,
+    "applied_to": "all active products via productSet (synchronous)"
+  },
+
+  "behaviors": {
+    "variant_selection": "JS reads product.variants JSON, matches the selected option values, updates #tobp-vid + price + availability",
+    "gallery_swap": "JS swaps main image src from the clicked thumbnail's data-full"
+  },
+
+  "css": { "root_class": ".tobp", "scoped": true, "lives_in": "the <style> block inside the section liquid" },
+
+  "open_issues": [
+    "Color option not sourced from CJ yet",
+    "Most products have only 1 image — need 3-5 real images each",
+    "Breadcrumbs not yet added (TerminalX has them)",
+    "Optional: animated brand marquee on product page for consistency with homepage"
+  ]
+}

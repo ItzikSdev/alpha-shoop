@@ -160,51 +160,93 @@ def _parse_height_age_map(description: str) -> dict[int, str]:
     return mapping
 
 
-def _extract_variant_size(variant: dict) -> int | None:
-    """Pull the height-in-cm size from a CJ variant's key/name, if present."""
-    text = f"{variant.get('variantKey', '')} {variant.get('variantNameEn', '')}"
-    match = re.search(r'(\d{2,3})\s*cm', text, re.IGNORECASE)
-    return int(match.group(1)) if match else None
+def _split_variant_key(variant: dict) -> tuple[str, str]:
+    """Split a CJ variant into (color, size_token).
+
+    CJ encodes both dimensions in `variantKey` as "{Color}-{Size}", e.g.
+    "Dark Green-0to3M", "Vine Purple-59cm", "Coffee-66cm". The color can contain
+    spaces, and the size is always the final '-'-delimited token, so we rsplit on
+    the last '-'. A single-token key (no '-') is treated as size-only, no color.
+    """
+    key = (variant.get("variantKey") or "").strip()
+    if "-" in key:
+        color, size = key.rsplit("-", 1)
+        return color.strip(), size.strip()
+    return "", key
+
+
+def _clean_color(color: str) -> str:
+    """Normalize a CJ color token to a customer-facing label.
+
+    Real color names ("Dark Green", "Vine Purple") pass through unchanged. Some
+    listings use opaque pattern codes ("1Picture", "2Picture") for the first
+    dimension instead of a color — surface those as "Style 1"/"Style 2" so the
+    customer can still pick the design they saw, rather than a meaningless token.
+    """
+    m = re.match(r'(\d+)\s*Picture$', color, re.IGNORECASE)
+    if m:
+        return f"Style {m.group(1)}"
+    return color
+
+
+def _normalize_size(token: str, age_map: dict[int, str]) -> tuple[str, int]:
+    """Turn a CJ size token into (label, sort_key).
+
+    Handles both schemes CJ uses: a height in cm ("59cm" → mapped to the
+    supplier's stated age band when known, e.g. "6M (59cm)"), and an explicit age
+    band ("0to3M", "6to12M", "2to3Y" → "0-3M", "6-12M", "2-3Y"). Unknown tokens
+    pass through verbatim and sort last so nothing is silently dropped.
+    """
+    m = re.search(r'(\d{2,3})\s*cm', token, re.IGNORECASE)
+    if m:
+        cm = int(m.group(1))
+        label = f"{age_map[cm]} ({cm}cm)" if cm in age_map else f"{cm}cm"
+        return label, cm
+    m = re.match(r'(\d{1,2})\s*to\s*(\d{1,2})\s*([a-zA-Z]*)', token)
+    if m:
+        unit = (m.group(3) or "M").upper()
+        return f"{m.group(1)}-{m.group(2)}{unit}", int(m.group(1))
+    return token, 9999
 
 
 def _build_supplier_variants(variants: list[dict], price_ratio: float, description: str = "") -> list[dict]:
     """
-    Translate CJ's raw per-variant data into {vid, size_label, size_cm,
-    price_supplier_usd, price_retail_usd} entries, deduped by size. Returns []
-    if no variant carries a recognizable size — caller then creates a
-    single-variant product.
+    Translate CJ's raw per-variant data into one entry per real CJ variant:
+    {vid, color, size_label, size_cm, price_supplier_usd, price_retail_usd},
+    deduped by (color, size). Returns [] when the listing has only a single
+    variant — caller then creates a single-variant product.
 
-    size_label uses the supplier's own stated age↔height correspondence (parsed
-    from `description`) when available — e.g. "6M (59cm)" — falling back to the
-    bare cm measurement ("59cm") when the description doesn't state one. Never
-    an invented/guessed age band.
+    Both dimensions come straight from CJ's `variantKey` ("{Color}-{Size}"):
+      - color  → a storefront Color selector (when the listing has 2+ colors).
+      - size   → uses the supplier's own stated age↔height correspondence (parsed
+                 from `description`) when available — e.g. "6M (59cm)" — falling
+                 back to the bare cm/age token. Never an invented age band.
 
-    Color is NOT extracted here — CJ's real per-SKU color names aren't exposed
-    in a usable structured field for these listings (checked: variantProperty is
-    "[]" even on products whose category lists color as a dimension). Variants
-    instead differ by an opaque numeric "style" code (e.g. "32154Style") that has
-    no text label — don't turn that into a fake "Color" without a real name.
+    Each entry keeps its own `vid` (CJ variant id) so the publisher can stamp it
+    onto the matching Shopify variant's SKU; cj_connect then binds every
+    (color, size) to the exact CJ SKU so the right one is fulfilled.
     """
     age_map = _parse_height_age_map(description)
-    seen_labels: set[str] = set()
+    seen: set[tuple[str, str]] = set()
     out: list[dict] = []
     for v in variants:
-        cm = _extract_variant_size(v)
-        if cm is None:
+        color_raw, size_token = _split_variant_key(v)
+        color = _clean_color(color_raw)
+        size_label, size_sort = _normalize_size(size_token, age_map)
+        key = (color, size_label)
+        if not size_label or key in seen:
             continue
-        label = f"{age_map[cm]} ({cm}cm)" if cm in age_map else f"{cm}cm"
-        if label in seen_labels:
-            continue
-        seen_labels.add(label)
+        seen.add(key)
         supplier_price = _parse_price_range(str(v.get("variantSellPrice", "0")))
         out.append({
             "vid": v.get("vid", ""),
-            "size_label": label,
-            "size_cm": cm,
+            "color": color,
+            "size_label": size_label,
+            "size_cm": size_sort,
             "price_supplier_usd": supplier_price,
             "price_retail_usd": round(supplier_price * price_ratio, 2),
         })
-    out.sort(key=lambda v: v["size_cm"])
+    out.sort(key=lambda e: (e["color"], e["size_cm"]))
     return out
 
 
@@ -330,8 +372,10 @@ async def search_trending_products(
             "images": [img for img in images if img],
             "video": detail.get("productVideo") or "",
             "category": p.get("categoryName", ""),
-            # Size variants (e.g. "6M (59cm)") when CJ's listing has more than
-            # one — empty list means single-variant product, no size selector needed.
+            # Per-(color, size) variants from CJ (e.g. color "Dark Green" + size
+            # "6M (59cm)"), each carrying its own CJ vid. More than one → the
+            # publisher builds Color/Size selectors; a single entry means a
+            # single-variant product (no selectors needed).
             "supplier_variants": supplier_variants if len(supplier_variants) > 1 else [],
         })
 

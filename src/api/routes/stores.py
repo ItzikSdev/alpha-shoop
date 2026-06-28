@@ -309,3 +309,41 @@ async def check_store_prices(store_id: str) -> dict:
         raise HTTPException(status_code=404, detail=f"Store {store_id!r} not found")
     from src.mcp_tools.monitoring import check_store_prices as _check
     return await _check(store_id)
+
+
+@router.get(
+    "/cj/shops",
+    summary="List the stores authorized inside CJ (the CJ app's connected shops)",
+    description=(
+        "Returns CJ's connected shops (id, name, type). Use a shop `id` as the "
+        "`shop_id` when connecting a store's products so CJ can auto-fulfill it."
+    ),
+)
+async def list_cj_shops() -> dict:
+    from src.mcp_tools.cj_connect import list_cj_shops as _shops
+    return {"shops": await _shops()}
+
+
+@router.post(
+    "/stores/{store_id}/cj-connect",
+    summary="Bind every listed product to its CJ product so the CJ app auto-fulfills",
+    description=(
+        "Pushes each product_mappings row for this store into CJ as a product "
+        "connection (Shopify product/variant → CJ pid/vid), automating the manual "
+        "'Product Connection' panel step. `shop_id` comes from GET /cj/shops. "
+        "Multi-variant products are reported under needs_review instead of being "
+        "bound to a single CJ variant."
+    ),
+)
+async def cj_connect_store(
+    store_id: str,
+    shop_id: str,
+    logistics: str = "CJPacket Ordinary",
+    target_country_code: str = "US",
+) -> dict:
+    if not get_store(store_id):
+        raise HTTPException(status_code=404, detail=f"Store {store_id!r} not found")
+    from src.mcp_tools.cj_connect import connect_store_products
+    return await connect_store_products(
+        store_id, shop_id, logistics=logistics, target_country_code=target_country_code,
+    )

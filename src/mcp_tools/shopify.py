@@ -213,15 +213,26 @@ async def create_shopify_product(
     """
     Create a product in Shopify and set pricing.
 
-    variants: optional size options, each {"label": str, "price": float,
-        "compare_at_price": float}. Empty list → single default variant priced
-        at `price`/`compare_at_price`. 2+ entries → adds a "Size" option, which
-        Shopify auto-generates one real variant per label for, each then priced
-        individually (so the storefront shows a Size selector + working Add to Cart).
+    variants: optional per-(color, size) options, each
+        {"color": str, "label": str (size), "sku": str (supplier vid),
+         "price": float, "compare_at_price": float}. Empty list → single default
+        variant priced at `price`/`compare_at_price`. Otherwise we create a
+        "Color" and/or "Size" option for whichever dimension has 2+ distinct
+        values (so the storefront shows the right selectors + working Add to
+        Cart), price each generated variant individually, and stamp its `sku`
+        (the CJ variant id) onto the Shopify variant so fulfillment binds the
+        exact color/size the customer picked. `color`/`sku` are optional for
+        backward compatibility — a size-only list still yields a Size selector.
 
     Returns:
-        Dict with keys: product (dict), success (bool), error (str | None)
+        Dict with keys: product (dict), success (bool), error (str | None).
+        Each node in product["variants"]["nodes"] carries "matched_sku" (the CJ
+        vid bound to it, or "" for an auto-generated combo CJ doesn't stock) so
+        the caller can skip stocking unfulfillable combos.
     """
+    # The CJ vid to stamp on a single-variant product's default variant (binds it
+    # to the right CJ SKU even when there are no Color/Size selectors).
+    default_sku = (variants[0].get("sku", "") if variants else "")
     media = [
         {"originalSource": url, "alt": title, "mediaContentType": "IMAGE"}
         for url in images if url
@@ -246,14 +257,43 @@ async def create_shopify_product(
     if errors or not product:
         return {"product": None, "success": False, "error": str(errors) or "no product returned"}
 
-    if len(variants) >= 2:
+    # Build a Color and/or Size selector from the supplier variants — only for a
+    # dimension that actually varies (2+ distinct values), so a single-color item
+    # doesn't get a pointless "Color" dropdown. CJ exposes both dimensions per SKU.
+    def _distinct(field: str) -> list[str]:
+        seen: list[str] = []
+        for v in variants:
+            val = (v.get(field) or "").strip()
+            if val and val not in seen:
+                seen.append(val)
+        return seen
+
+    colors = _distinct("color")
+    sizes = _distinct("label")
+    option_defs: list[tuple[str, list[str]]] = []
+    if len(colors) >= 2:
+        option_defs.append(("Color", colors))
+    if len(sizes) >= 2:
+        option_defs.append(("Size", sizes))
+
+    if option_defs and variants:
+        def _match_variant(node: dict) -> dict | None:
+            sel = {o["name"]: o["value"] for o in node.get("selectedOptions", [])}
+            for v in variants:
+                if "Color" in sel and (v.get("color", "").strip() != sel["Color"]):
+                    continue
+                if "Size" in sel and (v.get("label", "").strip() != sel["Size"]):
+                    continue
+                return v
+            return None
+
         try:
             opt_data = await _shopify_gql(_GQL_PRODUCT_OPTIONS_CREATE, {
                 "productId": product["id"],
-                "options": [{
-                    "name": "Size",
-                    "values": [{"name": v["label"]} for v in variants],
-                }],
+                "options": [
+                    {"name": name, "values": [{"name": val} for val in vals]}
+                    for name, vals in option_defs
+                ],
                 "variantStrategy": "CREATE",
             })
             opt_errors = opt_data.get("productOptionsCreate", {}).get("userErrors", [])
@@ -264,47 +304,56 @@ async def create_shopify_product(
             else:
                 bulk_input = []
                 for nv in new_nodes:
-                    label = next((o["value"] for o in nv.get("selectedOptions", []) if o["name"] == "Size"), "")
-                    match = next((v for v in variants if v["label"] == label), None)
-                    if match:
-                        bulk_input.append({
-                            "id": nv["id"],
-                            "price": f'{match["price"]:.2f}',
-                            "compareAtPrice": (
-                                f'{match["compare_at_price"]:.2f}'
-                                if match.get("compare_at_price", 0) > match["price"] else None
-                            ),
-                        })
+                    match = _match_variant(nv)
+                    # Tag every node so the caller stocks only CJ-backed combos —
+                    # the cartesian product may include combos CJ doesn't carry.
+                    nv["matched_sku"] = (match or {}).get("sku", "")
+                    if not match:
+                        continue
+                    entry = {
+                        "id": nv["id"],
+                        "price": f'{match["price"]:.2f}',
+                        "compareAtPrice": (
+                            f'{match["compare_at_price"]:.2f}'
+                            if match.get("compare_at_price", 0) > match["price"] else None
+                        ),
+                    }
+                    if match.get("sku"):
+                        # Stamp the CJ vid onto the Shopify variant SKU → cj_connect
+                        # binds this exact (color, size) to the right CJ SKU.
+                        entry["inventoryItem"] = {"sku": match["sku"]}
+                    bulk_input.append(entry)
                 if bulk_input:
                     await _shopify_gql(_GQL_SET_PRICE, {"productId": product["id"], "variants": bulk_input})
                 product["variants"] = {"nodes": new_nodes}
                 variants = []  # signal: already priced above, skip default-variant pricing
         except Exception as exc:
-            logger.warning("Size variant setup failed for %s, falling back to single variant: %s", title, exc)
+            logger.warning("Variant setup failed for %s, falling back to single variant: %s", title, exc)
             variants = []
 
     if not variants:
-        pass  # either no sizes requested, or already priced via bulk_input above
+        pass  # either no options requested, or already priced via bulk_input above
 
     # Set price on the default variant (single-variant products only — multi-size
     # products were already priced per-variant above)
     variant_nodes = product.get("variants", {}).get("nodes", [])
     if len(variant_nodes) == 1 and price > 0:
         variant_id = variant_nodes[0]["id"]
+        bulk = {
+            "id": variant_id,
+            "price": f"{price:.2f}",
+            "compareAtPrice": f"{compare_at_price:.2f}" if compare_at_price > price else None,
+        }
+        if default_sku:
+            bulk["inventoryItem"] = {"sku": default_sku}
         try:
             await _shopify_gql(
                 _GQL_SET_PRICE,
-                {
-                    "productId": product["id"],
-                    "variants": [{
-                        "id": variant_id,
-                        "price": f"{price:.2f}",
-                        "compareAtPrice": f"{compare_at_price:.2f}" if compare_at_price > price else None,
-                    }],
-                },
+                {"productId": product["id"], "variants": [bulk]},
             )
             product["price"] = price
             product["compare_at_price"] = compare_at_price
+            variant_nodes[0]["matched_sku"] = default_sku
         except Exception:
             pass  # price update failure is non-fatal
 
