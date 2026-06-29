@@ -39,6 +39,15 @@ _ROLE_MODEL: dict[str, str] = {
     "standup":     "alpha/local-fast",    # local Ollama 7B — frequent, ~free
     "developer":   "alpha/worker-fast",   # Haiku 4.5 — Grace (smarter+faster than local
                                             # 14B). Falls back to local when over budget.
+    # ── 5-role autonomous e-commerce flow (docs/prompt.md). Budget-aware tier:
+    #    CEO + Product Hunter reason/route/calc on Sonnet; the three downstream
+    #    executors run on Haiku. ALL drop to free local Ollama once over budget
+    #    (they're in _ORG_ROLES below), protecting the monthly cap.
+    "ceo":             "alpha/worker-smart",  # Sonnet — orchestration + routing
+    "product_hunter":  "alpha/worker-smart",  # Sonnet — RAG, competitor pricing, margins
+    "ux_content":      "alpha/worker-fast",   # Haiku — copy + design refinement
+    "shopify_dev":     "alpha/worker-fast",   # Haiku — GraphQL push, tags/SEO/variants
+    "growth_marketer": "alpha/worker-fast",   # Haiku — ad copy, hooks, targeting
 }
 
 # ── Sensible defaults per role ────────────────────────────────────────────────
@@ -50,13 +59,21 @@ _ROLE_DEFAULTS: dict[str, dict] = {
     "executive":   {"temperature": 0.5, "max_tokens": 3072},
     "standup":     {"temperature": 0.5, "max_tokens": 2048},
     "developer":   {"temperature": 0.3, "max_tokens": 4096},
+    "ceo":             {"temperature": 0.4, "max_tokens": 3072},
+    "product_hunter":  {"temperature": 0.2, "max_tokens": 4096},
+    "ux_content":      {"temperature": 0.4, "max_tokens": 4096},
+    "shopify_dev":     {"temperature": 0.1, "max_tokens": 4096},
+    "growth_marketer": {"temperature": 0.5, "max_tokens": 3072},
 }
 
 # Org roles that the ORG_LOCAL_LLM=1 toggle reroutes to the local model to save
 # tokens (at the cost of quality on strategy reasoning).
 # developer (Grace) is included so she runs on Haiku normally but drops to the FREE
 # local model once the monthly Claude budget cap is hit — protecting the $100 ceiling.
-_ORG_ROLES = {"executive", "standup", "developer"}
+_ORG_ROLES = {
+    "executive", "standup", "developer",
+    "ceo", "product_hunter", "ux_content", "shopify_dev", "growth_marketer",
+}
 _LOCAL_ALIAS = "alpha/local-fast"
 
 
@@ -64,6 +81,7 @@ def get_llm(
     role: str,
     temperature: float | None = None,
     max_tokens: int | None = None,
+    timeout: int | None = None,
 ) -> ChatOpenAI:
     """
     Return a LangChain ChatOpenAI client routed through the LiteLLM proxy.
@@ -104,9 +122,11 @@ def get_llm(
         api_key=settings.litellm_master_key,
         temperature=temperature if temperature is not None else defaults.get("temperature", 0.2),
         max_tokens=max_tokens or defaults.get("max_tokens", 4096),
-        # Never let a single call hang forever (a large design CSS generation
-        # used to stall indefinitely with no timeout, freezing the whole run).
-        timeout=180,
+        # Never let a single call hang forever. Default 180s; callers making a
+        # large generation (e.g. the design_agent's full CSS + checklist payload,
+        # which timed out at 180s and failed the whole build) pass a longer
+        # timeout explicitly.
+        timeout=timeout or 180,
         max_retries=1,
         callbacks=[callback] if callback else None,
     )

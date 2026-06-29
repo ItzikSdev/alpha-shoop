@@ -9,7 +9,7 @@ const PAGE_PATHS: Record<string, string> = {
 };
 
 const STATS = [
-  { label: 'AI Agents', value: '7', icon: '🤖', color: '#CC785C' },
+  { label: 'Agent Roles', value: '5', icon: '🤖', color: '#CC785C' },
   { label: 'MCP Tools', value: '10', icon: '🔌', color: '#7C3AED' },
   { label: 'API Endpoints', value: '6', icon: '⚡', color: '#009688' },
   { label: 'Max Ad Spend/Day', value: '$500', icon: '🛡️', color: '#E92063' },
@@ -17,12 +17,12 @@ const STATS = [
 ];
 
 const FLOW = [
-  { step: 1, title: 'Shopify Order / Manual Trigger', icon: '📥', desc: 'Webhook or POST /api/v1/run starts the pipeline' },
-  { step: 2, title: 'FastAPI Gateway', icon: '⚡', desc: 'JWT auth, HMAC validation, rate limiting via slowapi' },
-  { step: 3, title: 'Orchestrator (plain Python)', icon: '⚙️', desc: 'Reads task tags, sequences workers — no per-step LLM routing' },
-  { step: 4, title: 'Store Setup → Design Agent → Frontend Agent → Trend Scraper → E-com → Marketing → Fulfillment', icon: '🔄', desc: 'Workers call MCP tools; orchestrator loops the design and catalog-fill steps until done' },
-  { step: 5, title: 'Guardrails', icon: '🛡️', desc: 'Kill-switch checks on every ad spend and order' },
-  { step: 6, title: 'PostgreSQL + Redis + ChromaDB', icon: '💾', desc: 'Checkpoints, cache, and product embeddings' },
+  { step: 1, title: 'CEO (Ava) picks the next run', icon: '👑', desc: 'Orchestrator/router — reads live store state + Claude budget, fires a build / boost / monitor run and Slack alerts at critical stages' },
+  { step: 2, title: 'Product Hunter (Hunter)', icon: '🔍', desc: 'Sources CJ products by rating, shipping & inventory; pulls competitor prices; computes NET margin (after 18% VAT + payment fees)' },
+  { step: 3, title: 'Evaluator (self-correction)', icon: '⚖️', desc: 'Approves batches above the net-margin target; below it, loops back to the Hunter with feedback — hard cap 3 loops, then escalates to Slack' },
+  { step: 4, title: 'UX & Content (Remy) → Shopify Developer (Devon) → Growth Marketer (Max)', icon: '🔄', desc: 'Copy + brand design → push to Shopify via GraphQL (tags/SEO/variants) → Facebook & Instagram ad blueprint' },
+  { step: 5, title: 'Guardrails + HITL gates', icon: '🛡️', desc: 'Kill-switch on every ad spend/order, budget auto-fallback to local Ollama, and Slack notify-gates before going live / before ad spend' },
+  { step: 6, title: 'Single SQLite (traces.db) + Redis + ChromaDB', icon: '💾', desc: 'One shared DB for org, stores & traces; Redis cache; product embeddings' },
 ];
 
 export function Overview() {
@@ -78,7 +78,7 @@ export function Overview() {
 
       {/* Quick nav */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {([['tools', '🔌', 'MCP Tools', '10 tools across 5 groups'], ['agents', '🤖', 'AI Agents', '7 agents, 3 Claude models'], ['endpoints', '⚡', 'API Endpoints', '6 endpoints with live tests'], ['architecture', '🗺️', 'Architecture', 'Draw.io + Mermaid diagrams'], ['technologies', '🎨', 'Technologies', '18 tech badges with docs']] as const).map(([page, icon, title, desc]) => (
+        {([['tools', '🔌', 'MCP Tools', '10 tools across 5 groups'], ['agents', '🤖', 'AI Agents', '5-role team — Claude + local Ollama'], ['endpoints', '⚡', 'API Endpoints', '6 endpoints with live tests'], ['architecture', '🗺️', 'Architecture', 'Draw.io + Mermaid diagrams'], ['technologies', '🎨', 'Technologies', '18 tech badges with docs']] as const).map(([page, icon, title, desc]) => (
           <button
             key={page}
             onClick={() => navigate(PAGE_PATHS[page])}

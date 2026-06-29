@@ -92,15 +92,24 @@ def _store_dir(store_slug: str) -> Path:
 
 
 def read_store_docs(store_slug: str = "timeofbaby", changelog_chars: int = 1600) -> dict:
-    """Return the store's README + the most recent CHANGELOG tail, for the agents to
-    READ before they change anything. Empty strings if the files don't exist yet."""
+    """Return the store's CLAUDE.md (build guide) + README + OWNER + the most recent
+    CHANGELOG tail, for the agents to READ before they change anything. Empty strings
+    if a file doesn't exist yet.
+
+    CLAUDE.md is the authoritative "how to build this store like the template" guide —
+    it's loaded first so every agent uses the template + the read/build/log rules."""
     d = _store_dir(store_slug)
+    claude = (d / "CLAUDE.md")
     readme = (d / "readme" / "README.md")
     changelog = (d / "changelog" / "CHANGELOG.md")
+    owner = (d / "readme" / "OWNER.md")
+    cl = claude.read_text(encoding="utf-8", errors="ignore") if claude.exists() else ""
     rt = readme.read_text(encoding="utf-8", errors="ignore") if readme.exists() else ""
     ct = changelog.read_text(encoding="utf-8", errors="ignore") if changelog.exists() else ""
+    ot = owner.read_text(encoding="utf-8", errors="ignore") if owner.exists() else ""
     # CHANGELOG is newest-on-top, so the HEAD is the recent history.
-    return {"readme": rt, "changelog_recent": ct[:changelog_chars], "dir": str(d)}
+    return {"claude": cl, "readme": rt, "changelog_recent": ct[:changelog_chars],
+            "owner": ot, "dir": str(d)}
 
 
 def append_changelog(

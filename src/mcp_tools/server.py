@@ -1,7 +1,7 @@
 """MCP server registry — maps tool names to their Python implementations."""
 from __future__ import annotations
 from typing import Any
-from src.mcp_tools import sourcing, market, shopify, ads, fulfillment, cj_connect, paypal, cloudflare, shopify_design, store_scan, design_files, variant_backfill
+from src.mcp_tools import sourcing, market, shopify, ads, fulfillment, cj_connect, paypal, cloudflare, shopify_design, store_scan, design_files, variant_backfill, finance
 
 _TOOLS: dict[str, Any] = {
     "search_trending_products": sourcing.search_trending_products,
@@ -24,6 +24,9 @@ _TOOLS: dict[str, Any] = {
     # PayPal — read-only money signals (real revenue / balance)
     "get_paypal_transactions": paypal.get_paypal_transactions,
     "get_paypal_balance": paypal.get_paypal_balance,
+    # Finance ledger — revenue vs cost (incl. per-agent LLM spend) history
+    "finance_snapshot": finance.finance_snapshot,
+    "log_finance_snapshot": finance.log_finance_snapshot,
     # Cloudflare — point a store subdomain at Shopify
     "point_subdomain_to_shopify": cloudflare.point_subdomain_to_shopify,
     "ensure_dns_cname": cloudflare.ensure_dns_cname,

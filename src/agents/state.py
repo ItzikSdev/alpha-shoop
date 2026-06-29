@@ -27,6 +27,14 @@ class AgentState(TypedDict):
     search_category_used: Optional[str]   # the (possibly relaxed) term trend_scraper actually searched —
                                            # ecommerce_manager validates against this, not the raw brief text
 
+    # Evaluator self-correction loop (docs/prompt.md §2): the Evaluator node scores
+    # each candidate's NET margin (after 18% VAT + payment fees, via src/agents/pricing.py)
+    # and, if the best batch is below target, increments loop_counter and routes back to
+    # the Product Hunter (trend_scraper). Hard cap max_loops=3 → workflow_status="failed".
+    loop_counter: int                     # how many Evaluator → Hunter self-correction loops have run
+    pricing_calc: Optional[dict]          # last Evaluator verdict: best/threshold/approved candidates
+    workflow_status: Optional[str]        # running | approved | failed
+
     # E-commerce results
     shopify_products_created: list[str]  # Shopify product IDs
 

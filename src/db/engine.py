@@ -20,19 +20,24 @@ from sqlalchemy.ext.asyncio import (
 
 from src.db.models import Base
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://postgres:postgres@localhost:5432/alphashoop",
-)
+# Single shared database: everything (org agents, stores, traces AND product
+# mappings) lives in ONE SQLite file — the same traces.db the rest of the system
+# uses — so Linus, Grace and the dashboard all read/write the same place. Override
+# with DATABASE_URL to point elsewhere (e.g. Postgres) if ever needed.
+_TRACES_DB = os.getenv("TRACES_DB_PATH", "/app/data/traces.db")
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{_TRACES_DB}")
 
-# Pool config: keep small for the MCP server (single-process, low concurrency)
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=False,        # set True during debugging to see SQL
-    pool_size=5,
-    max_overflow=2,
-    pool_pre_ping=True,  # drop stale connections before use
-)
+if DATABASE_URL.startswith("sqlite"):
+    # SQLite has no connection pool to size; allow cross-thread use (FastAPI + the
+    # background heartbeat share the engine).
+    engine = create_async_engine(
+        DATABASE_URL, echo=False, connect_args={"check_same_thread": False},
+    )
+else:
+    # Pool config for a real server DB (Postgres) — small, single-process.
+    engine = create_async_engine(
+        DATABASE_URL, echo=False, pool_size=5, max_overflow=2, pool_pre_ping=True,
+    )
 
 _session_factory = async_sessionmaker(
     engine,

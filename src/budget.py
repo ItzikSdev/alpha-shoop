@@ -56,6 +56,33 @@ def _cost_since(predicate) -> float:
     return round(total, 4)
 
 
+def claude_cost_by_node(predicate) -> dict[str, dict]:
+    """Per-`node` Claude spend for runs matching `predicate(started_at)`.
+
+    Returns {node: {"cost_usd", "calls", "tokens"}}. `node` is the tracing node
+    that made the call — for the org agents it's "agent:<role>" (e.g.
+    "agent:Developer" = Grace, "agent:CTO" = Linus), so the finance ledger can
+    attribute LLM cost to each employee. Local-model calls price at $0."""
+    out: dict[str, dict] = {}
+    for r in trace_store.list_runs():
+        try:
+            d = datetime.fromisoformat(r.started_at)
+        except Exception:
+            continue
+        if not predicate(d):
+            continue
+        for c in r.llm_calls:
+            pin, pout = _price_for(c.model)
+            cost = c.input_tokens / 1e6 * pin + c.output_tokens / 1e6 * pout
+            e = out.setdefault(c.node or "unknown", {"cost_usd": 0.0, "calls": 0, "tokens": 0})
+            e["cost_usd"] += cost
+            e["calls"] += 1
+            e["tokens"] += (c.input_tokens or 0) + (c.output_tokens or 0)
+    for e in out.values():
+        e["cost_usd"] = round(e["cost_usd"], 4)
+    return out
+
+
 def monthly_claude_cost() -> float:
     """USD spent on Claude tokens so far this calendar month (UTC)."""
     now = datetime.now(timezone.utc)

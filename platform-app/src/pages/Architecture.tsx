@@ -25,7 +25,7 @@ export function Architecture() {
       <div>
         <h1 className="text-2xl font-bold text-white">Architecture</h1>
         <p className="text-gray-400 text-sm mt-1">
-          Three views: MCP server, full orchestrator pipeline (store setup → design/frontend loop → niche-aware scraper/e-commerce loop → marketing → fulfillment, sequenced by plain Python — no LLM router), and Draw.io diagram. The full-system view also covers the storefront layer — the platform-app drives the host Storefront Runner (:8788), which uses the official Shopify CLI (`shopify theme pull · dev · push`) to run and deploy each store's Liquid theme from stores/shopify/* — plus the separate price/stock monitor job. Use +/− or Ctrl+scroll to zoom.
+          Three views: MCP server, full orchestrator pipeline (the 5-role autonomous flow — CEO orchestrates: store setup → UX &amp; Content design/frontend loop → Product Hunter sourcing → Evaluator net-margin self-correction loop (18% VAT + fees, max 3 loops) → Shopify Developer GraphQL push → Growth Marketer ads → fulfillment, sequenced by plain Python — no LLM router), and Draw.io diagram. The full-system view also covers the storefront layer — the platform-app drives the host Storefront Runner (:8788), which uses the official Shopify CLI (`shopify theme pull · dev · push`) to run and deploy each store's Liquid theme from stores/shopify/* — plus the separate price/stock monitor job. Use +/− or Ctrl+scroll to zoom.
         </p>
       </div>
 
@@ -93,19 +93,22 @@ const SYSTEM_MERMAID = `graph TB
 
     subgraph PIPE ["Orchestrator — run_pipeline() (plain Python control flow, no LLM router)"]
         direction LR
-        ORC["Orchestrator"]
+        ORC["CEO · Ava\nOrchestrator / router"]
         SS["Store Setup\nSonnet 4.6\nruns once"]
-        DA["Design Agent\nSonnet 4.6\nUI/UX CSS"]
-        FRA["Frontend Agent\nSonnet 4.6\nimplements UI, locks store"]
-        TS["Trend Scraper\nHaiku 4.5\nniche-aware"]
-        EM["E-com Manager\nSonnet 4.6"]
-        MA["Marketing\ndeterministic, no LLM"]
+        DA["UX & Content · Remy\nDesign Agent · Sonnet 4.6"]
+        FRA["UX & Content · Remy\nFrontend Agent · implements UI"]
+        TS["Product Hunter · Hunter\nTrend Scraper · CJ sourcing"]
+        EV["Evaluator\nnet margin: 18% VAT + fees\nmax_loops=3"]
+        EM["Shopify Developer · Devon\nE-com Manager · GraphQL push"]
+        MA["Growth Marketer · Max\nFB/IG ad blueprint"]
         FA["Fulfillment\ndeterministic, no LLM"]
         ORC --> SS
         SS --> DA
         DA <-.->|"design loop"| FRA
         FRA --> TS
-        TS <-.->|"catalog-fill loop"| EM
+        TS --> EV
+        EV -.->|"reject: self-correct (≤3)"| TS
+        EV -->|"approve"| EM
         EM --> MA --> FA
     end
 
@@ -171,7 +174,7 @@ const SYSTEM_MERMAID = `graph TB
     classDef gw fill:#292524,stroke:#78716c,color:#d6d3d1
     classDef store fill:#312e81,stroke:#6366f1,color:#e0e7ff
     class ORC,SS,DA,FRA,TS,EM agent
-    class MA,FA,MONJOB detagent
+    class MA,FA,MONJOB,EV detagent
     class T1,T2,T3,T4,T5 mcp
     class CJ,SERP,SHOP,GADS ext
     class THEME,HZ theme

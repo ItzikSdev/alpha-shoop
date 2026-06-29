@@ -1,16 +1,16 @@
 """
-Continuous Linus → Grace delegation.
+Continuous CTO → Developer delegation. **LEGACY / DORMANT (2026-06-29).**
 
-Grace (Developer) executes whatever sits in her `assigned_task` on every heartbeat
-tick — but nothing kept that field full, so she idled. This module is the missing
-loop: Linus (CTO) looks at the REAL store state and hands Grace the single most
-valuable concrete improvement, refreshing it when she has none or has spent enough
-turns on the current one. Together with the existing heartbeat (which runs Grace
-continuously on the free local model), this makes Grace always work on the right
-thing without the owner assigning tasks by hand.
-
-`linus_delegates()` is cheap-by-default: if Grace already has a fresh task it
-no-ops, so it's safe to call before every one of Grace's turns.
+This was the loop that kept a local-model Developer (Grace) busy: a CTO (Linus)
+looked at REAL store state and handed her the single most valuable theme change to
+work on each heartbeat tick. The 5-role autonomous flow (docs/prompt.md) retired
+the standing Developer — store design/build now happens INSIDE pipeline runs
+(design_node / frontend_node / ecommerce_node), and the CEO (Ava) picks the next
+run directly via the heartbeat's business-agent path. So `linus_delegates()` finds
+no active "Developer" and returns None (a cheap, graceful no-op) — it's kept only
+so the /org/delegate route stays importable. `load_store_design()` is still used by
+the heartbeat's dev path for any future local Developer. Safe to delete in a later
+cleanup pass.
 """
 from __future__ import annotations
 
@@ -178,17 +178,42 @@ async def _linus_pick_task(linus: Agent | None, grace: Agent, company: Company) 
     system = _PICK_SYS.format(
         name=linus.name if linus else "Linus", language=company_language(),
     )
+    # Money reality: revenue vs cost (incl. what Grace/Linus cost in LLM tokens) so
+    # Linus steers toward profit — not endless design loops. Best-effort; honest
+    # about data pipes that aren't connected yet (e.g. PayPal re-auth pending).
+    finance_block = ""
+    try:
+        from src.mcp_tools.finance import finance_snapshot, _summary_line
+        snap = await finance_snapshot(30)
+        finance_block = (
+            f"\n\n=== MONEY (last 30d) — steer toward NET profit ===\n{_summary_line(snap)}\n"
+            + (f"(data pipes not connected yet: {', '.join(snap['pending_data'])})\n" if snap.get("pending_data") else "")
+        )
+    except Exception:
+        pass
     design_block = (
         f"\n\n=== THE STORE MUST MATCH THIS DESIGN — prioritize closing the gap ===\n{design_brief}\n"
         if design_brief else ""
     )
+    # Who the owner is + what he actually wants — so Linus assigns tasks that match
+    # Itzik's real priorities and reads his intent correctly (not generic guesses).
+    owner_block = ""
+    try:
+        from src.mcp_tools.design_files import read_store_docs
+        owner = read_store_docs("timeofbaby").get("owner", "")
+        if owner:
+            owner_block = f"\n\n=== WHO YOU WORK FOR — Itzik's priorities & style (honor these) ===\n{owner[:1800]}\n"
+    except Exception:
+        pass
     user = (
+        f"{owner_block}"
         f"LIVE STORE STATE:\n{json.dumps(snapshot, indent=2)}\n\n"
         f"STORES (niche + owner's description):\n{_store_context()}\n"
         f"{feedback}\n"
         f"{design_block}\n"
         f"COMPANY GOALS: {company.goals}\n"
-        f"LESSONS: {company.lessons[-5:]}\n\n"
+        f"LESSONS: {company.lessons[-5:]}\n"
+        f"{finance_block}\n"
         f"GRACE'S CURRENT TASK (may be empty): {grace.memory.get('assigned_task','') or '(none)'}\n"
         f"TASKS GRACE ALREADY DID RECENTLY (do NOT repeat these):\n"
         + ("\n".join(f"- {t}" for t in history[:8]) or "(none yet)")
@@ -214,6 +239,14 @@ async def linus_delegates(force: bool = False) -> dict | None:
     grace = _active("Developer")
     if not grace:
         return None
+
+    # Append a daily money snapshot to the finance ledger (once/day, idempotent) so
+    # the store accrues a real revenue-vs-cost history alongside the changelog.
+    try:
+        from src.mcp_tools.finance import log_finance_snapshot
+        await log_finance_snapshot(30)
+    except Exception:
+        logger.debug("finance snapshot skipped", exc_info=True)
 
     current = (grace.memory.get("assigned_task") or "").strip()
     turns = int(grace.memory.get("turns_on_task", 0))

@@ -296,6 +296,26 @@ async def design_node(state: AgentState) -> dict:
     pal = {"bg": "#FFFFFF", "fg": "#4F4F4F", "accent": "#B8D151"}  # verified real lalo.com accent
     installed_theme = brief.get("installed_theme", "dawn")
 
+    # Ground the build in the store TEMPLATE: read the store's CLAUDE.md build guide +
+    # README so the design matches the approved look (design.html / site.json) and the
+    # team follows the read/build/log rules, instead of improvising a new design.
+    template_block = ""
+    try:
+        from src.mcp_tools.design_files import read_store_docs
+        # _store_dir resolves the store folder; "timeofbaby" is the single live store +
+        # template (store_id is a UUID, not the folder slug).
+        docs = read_store_docs("timeofbaby")
+        guide = (docs.get("claude") or docs.get("readme") or "")
+        if guide:
+            template_block = (
+                "\n\n=== BUILD TO THE STORE TEMPLATE (read + match, don't improvise) ===\n"
+                "stores/shopify/<store>/ is the source of truth + template. Match the approved\n"
+                "look (design.html / site.json design_tokens + sections) and follow these rules:\n"
+                f"{guide[:1800]}\n"
+            )
+    except Exception:
+        pass
+
     brand_prompt = (
         f"Store: {brief.get('store_name', '')}\n"
         f"Tagline: {brief.get('tagline', '')}\n"
@@ -307,6 +327,7 @@ async def design_node(state: AgentState) -> dict:
         f"  Background: {pal['bg']}\n"
         f"  Foreground: {pal['fg']}\n"
         f"  Accent:     {pal['accent']}\n"
+        f"{template_block}"
         f"\nGenerate CSS and quality checklist for this brand."
     )
 
@@ -315,7 +336,10 @@ async def design_node(state: AgentState) -> dict:
     # response measured 11740 chars / ~3000+ tokens and was STILL cut off
     # mid-string) — causing "Unterminated string" JSON errors that used to fall
     # back to writing the raw, still-JSON-shaped text into the .css asset.
-    llm = get_llm("ecommerce", temperature=0.2, max_tokens=8192)
+    # This is the heaviest single generation in the pipeline (full CSS +
+    # quality_checklist JSON). At the default 180s it timed out and FAILED the
+    # whole build — give it a longer timeout so the build completes.
+    llm = get_llm("ecommerce", temperature=0.2, max_tokens=8192, timeout=420)
     resp = await llm.ainvoke([
         SystemMessage(content=_SPEC_SYSTEM),
         HumanMessage(content=brand_prompt),

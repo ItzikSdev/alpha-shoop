@@ -201,6 +201,21 @@ async def _publish_product(product_gid: str) -> None:
     await _shopify_rest("PUT", f"products/{numeric_id}.json", {"product": {"published": True}})
 
 
+async def get_sales_channels() -> list[str]:
+    """Names of the store's installed sales channels (Shopify publications).
+
+    Used to verify, against the REAL store, whether a channel like
+    'Facebook & Instagram' is actually installed — instead of trusting a flag.
+    Best-effort: returns [] if the publications scope is missing or the call
+    fails, so callers degrade gracefully."""
+    q = "{ publications(first: 50) { edges { node { name } } } }"
+    try:
+        data = await _shopify_gql(q, {})
+        return [e["node"]["name"] for e in data.get("publications", {}).get("edges", [])]
+    except Exception:
+        return []
+
+
 async def create_shopify_product(
     title: str,
     description: str,
@@ -457,9 +472,17 @@ async def create_welcome_discount(code: str = "WELCOME10", percentage: float = 0
         })
         node = result.get("discountCodeBasicCreate", {}).get("codeDiscountNode")
         errors = result.get("discountCodeBasicCreate", {}).get("userErrors", [])
-        if errors or not node:
-            return {"success": False, "code": code, "discount_id": None, "error": str(errors)}
-        return {"success": True, "code": code, "discount_id": node["id"], "error": None}
+        if node and not errors:
+            return {"success": True, "code": code, "discount_id": node["id"], "error": None}
+        # Idempotent: a duplicate code means the welcome discount ALREADY exists —
+        # which is the desired end-state, not a failure. Shopify reports this as
+        # "Code must be unique" on the code field. Treat it as success (reuse it)
+        # so build_store doesn't fail/loop on a re-run of an already-set-up store.
+        emsg = str(errors)
+        if "must be unique" in emsg.lower() or "already" in emsg.lower() or "taken" in emsg.lower():
+            return {"success": True, "code": code, "discount_id": None,
+                    "error": None, "already_existed": True}
+        return {"success": False, "code": code, "discount_id": None, "error": emsg}
     except Exception as exc:
         return {"success": False, "code": code, "discount_id": None, "error": str(exc)}
 

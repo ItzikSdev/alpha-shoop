@@ -70,6 +70,21 @@ _last_ts: dict[str, str] = {}
 _responding = asyncio.Lock()
 
 
+async def _recent_transcript(exclude_msg: str = "", limit: int = 12) -> str:
+    """Recent channel conversation as a labelled transcript (oldest first), so any
+    reply path can feed the agent its memory of what was said. '' on failure."""
+    try:
+        from src.org.slack import fetch_channel_history
+        hist = await fetch_channel_history(limit)
+        if hist and exclude_msg and hist[-1]["text"].strip() == exclude_msg.strip():
+            hist = hist[:-1]  # drop a trailing echo of the message we're answering
+        # Cap each line so a giant JSON dump (e.g. an applied site.json) can't
+        # dominate the context window.
+        return "\n".join(f"{h['author']}: {h['text'][:300]}" for h in hist[-limit:])
+    except Exception:
+        return ""
+
+
 async def _agent_reply(agent: Agent, message: str, author: str, company,
                        images: list[str] | None = None) -> str:
     system = (
@@ -79,13 +94,22 @@ async def _agent_reply(agent: Agent, message: str, author: str, company,
         f"Write in {company_language()} by default; only switch if the message is "
         "clearly in another language, then match it.\n"
         "If image(s) are attached, look at them and respond to what they show.\n"
+        "You CAN see the recent channel conversation (quoted in the user message) — "
+        "you DO remember what was said; use it for context and never claim each "
+        "conversation starts from scratch.\n"
         f"Your job (skill): {agent.skill}\n"
         f"Company values: {company.culture.get('values', []) if company else []}\n"
         f"Company goals: {company.goals if company else []}\n"
         f"Recent lessons you've learned: {agent.memory.get('lessons', [])[-2:]}"
     )
     caption = message or "(no caption — see the attached image)"
-    user = f"{author} wrote in the team channel:\n\"{caption}\"\n\nReply as {agent.name}."
+    transcript = await _recent_transcript(message)
+    user = (
+        (f"Recent conversation in the team channel (oldest first) — this is your "
+         f"memory of what was said:\n{transcript}\n\n" if transcript else "")
+        + f"{author} just wrote:\n\"{caption}\"\n\nReply as {agent.name}, using the "
+        "conversation above as context."
+    )
     try:
         # Images need the vision-capable model — use the smart tier when present.
         role = "executive" if images else (agent.model_role or "standup")
@@ -155,16 +179,20 @@ async def _agent_act_shopify(agent: Agent, message: str, company) -> str:
     system = (
         f"You are {agent.name} ({agent.role}) at Alpha. You have FULL DIRECT "
         "Shopify Admin API access — NO approval needed, you act yourself.\n"
-        f"Answer in {company_language()}. If the request needs a Shopify call, "
-        "include it. Output ONLY JSON:\n"
+        f"Answer in {company_language()}. You can see the recent channel conversation "
+        "in the user message — you DO remember it; use it for context. If the request "
+        "needs a Shopify call, include it. Output ONLY JSON:\n"
         '{"reply":"<short first-person reply>","shopify_request":null OR '
         '{"method":"GET|POST|PUT|DELETE","path":"<e.g. products/count.json>","body":<obj or null>}}'
     )
+    transcript = await _recent_transcript(message)
+    human = (f"Recent conversation (oldest first), your memory of the chat:\n{transcript}\n\n"
+             if transcript else "") + author_q(message)
     try:
         role = "developer" if agent.role == "Developer" else "executive"
         llm = get_llm(role, temperature=0.3, max_tokens=900)
         resp = await llm.ainvoke([SystemMessage(content=system),
-                                  HumanMessage(content=f"{author_q(message)}")])
+                                  HumanMessage(content=human)])
         parsed = _parse_json(str(resp.content))
         reply = str(parsed.get("reply", "")).strip()
         req = parsed.get("shopify_request")
@@ -195,7 +223,11 @@ async def route_and_respond(message: str, author: str = "You",
     )
     caption = message or "(no caption)"
     img_note = f"\n[{len(images)} image(s) attached — look at them]" if images else ""
+    transcript = await _recent_transcript(message)
+    hist_block = (f"RECENT CONVERSATION (oldest first) — the team remembers this, "
+                  f"answer in its context:\n{transcript}\n\n" if transcript else "")
     user = (
+        f"{hist_block}"
         f"ROSTER:\n{roster}\n\n"
         f"{author} wrote:\n\"{caption}\"{img_note}\n\n"
         "Who answers, and what do they say?"

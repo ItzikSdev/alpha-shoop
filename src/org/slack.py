@@ -19,13 +19,50 @@ the channel and the agents act on it — that needs a public bot endpoint + OAut
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import re
+from datetime import datetime, timezone
+from pathlib import Path
 
 import httpx
 
 logger = logging.getLogger(__name__)
+
+# Local persistent log of every agent message (separate from Slack, which is
+# best-effort and external). This is what the dashboard reads to show the agents
+# talking to each other outside the chat. Append-only JSONL under data/ (a mounted
+# volume, so it survives restarts).
+_MSG_LOG = Path(__file__).resolve().parents[2] / "data" / "agent_messages.jsonl"
+
+
+def _log_message(name: str, role: str, text: str) -> None:
+    """Best-effort append of one agent message to the local feed."""
+    try:
+        _MSG_LOG.parent.mkdir(parents=True, exist_ok=True)
+        rec = {"ts": datetime.now(timezone.utc).isoformat(), "name": name, "role": role, "text": text}
+        with _MSG_LOG.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception:
+        pass  # never let logging break the post
+
+
+def read_agent_messages(limit: int = 200) -> list[dict]:
+    """Most-recent `limit` agent messages (oldest→newest) for the dashboard feed."""
+    if not _MSG_LOG.exists():
+        return []
+    try:
+        lines = _MSG_LOG.read_text(encoding="utf-8", errors="ignore").splitlines()
+    except Exception:
+        return []
+    out = []
+    for ln in lines[-limit:]:
+        try:
+            out.append(json.loads(ln))
+        except Exception:
+            continue
+    return out
 
 
 def _webhook_url() -> str:
@@ -37,6 +74,51 @@ def _channel_id() -> str:
     raw = os.environ.get("SLACK_CHANNEL", "").strip()
     m = re.search(r"(C[A-Z0-9]{8,})", raw)
     return m.group(1) if m else raw
+
+
+def _clean_slack_text(text: str) -> str:
+    """Strip Slack markup so the LLM reads clean prose: <url|label>→label,
+    <url>→url, :emoji:→removed, &amp;→&."""
+    t = text or ""
+    t = re.sub(r"<([^|>]+)\|([^>]+)>", r"\2", t)   # <url|label> → label
+    t = re.sub(r"<([^>]+)>", r"\1", t)              # <url> → url
+    t = re.sub(r":[a-z0-9_+\-]+:", "", t)           # :emoji:
+    t = t.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+    return t.strip()
+
+
+async def fetch_channel_history(limit: int = 12) -> list[dict]:
+    """Recent channel messages, OLDEST→NEWEST, so agents reply WITH context instead
+    of to a single message in isolation. Returns [{author, text, is_bot}]; [] on any
+    failure (caller then behaves as before). Needs channels:history on the bot."""
+    ch = _channel_id()
+    tok = os.environ.get("SLACK_BOT_TOKEN", "").strip()
+    if not (ch and tok):
+        return []
+    try:
+        async with httpx.AsyncClient(timeout=12) as client:
+            r = await client.get(
+                "https://slack.com/api/conversations.history",
+                headers={"Authorization": f"Bearer {tok}"},
+                params={"channel": ch, "limit": max(1, min(limit, 50))},
+            )
+        d = r.json()
+        if not d.get("ok"):
+            logger.warning("conversations.history failed: %s", d.get("error"))
+            return []
+    except Exception as exc:
+        logger.warning("conversations.history error: %s", exc)
+        return []
+    out: list[dict] = []
+    for m in reversed(d.get("messages", []) or []):   # Slack returns newest-first
+        if m.get("subtype") in ("channel_join", "channel_leave"):
+            continue
+        is_bot = bool(m.get("bot_id") or m.get("username"))
+        author = m.get("username") or ("Itzik" if not is_bot else "system")
+        text = _clean_slack_text(m.get("text", ""))
+        if text:
+            out.append({"author": author, "text": text, "is_bot": is_bot})
+    return out
 
 
 def _agent_token(name: str) -> str:
@@ -57,6 +139,11 @@ _ROLE_ICON = {
     "HR": ":office_worker:",
     "marketer": ":mega:",
     "store_builder": ":hammer_and_wrench:",
+    # 5-role autonomous e-commerce flow (docs/prompt.md).
+    "Product Hunter": ":mag:",
+    "UX & Content": ":art:",
+    "Shopify Developer": ":hammer_and_wrench:",
+    "Growth Marketer": ":mega:",
 }
 
 
@@ -93,6 +180,7 @@ async def post_as(name: str, role: str, text: str) -> bool:
     agent's OWN bot app — a genuinely separate identity in the member list.
     Falls back to the incoming webhook if no bot token is configured.
     """
+    _log_message(name, role, text)  # local feed first — independent of Slack delivery
     icon = _ROLE_ICON.get(role, ":robot_face:")
     username = f"{name} · {role}"
     token = _agent_token(name)
@@ -116,6 +204,28 @@ async def post_as(name: str, role: str, text: str) -> bool:
             logger.warning("chat.postMessage error: %s — falling back to webhook", exc)
 
     return await _post_payload({"text": text, "username": username, "icon_emoji": icon})
+
+
+async def post_as_role(role: str, text: str) -> bool:
+    """Post a message AS whichever active agent currently holds `role`.
+
+    The pipeline workers (Product Hunter / Shopify Developer / Growth Marketer …)
+    don't know their own agent name — they know their role. This looks up the
+    active holder of that role from the roster so the message reads as that
+    person, and falls back to the bare role label if no one holds it. Best-effort
+    like the rest of this module (silent no-op without a webhook/token)."""
+    name = role
+    try:
+        from src.org.models import list_agents
+        holder = next(
+            (a for a in list_agents(active_only=True) if a.role.lower() == role.lower()),
+            None,
+        )
+        if holder:
+            name = holder.name
+    except Exception:
+        pass
+    return await post_as(name, role, text)
 
 
 def _fmt_decision(d: dict) -> str:

@@ -1,22 +1,8 @@
 services:
 
-  # ── PostgreSQL 15 ─────────────────────────────────────────────────────────
-  postgres:
-    image: postgres:15-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: alphashoop
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d alphashoop"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+  # NOTE: PostgreSQL removed — the whole system now uses ONE shared SQLite DB
+  # (data/traces.db): org agents, stores, traces AND product mappings live there,
+  # so Linus, Grace and the dashboard all read/write the same place.
 
   # ── Redis 7 ───────────────────────────────────────────────────────────────
   redis:
@@ -81,7 +67,7 @@ services:
       - path: .env
         required: false   # optional in CI where secrets come from GCP
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/alphashoop
+      DATABASE_URL: sqlite+aiosqlite:////app/data/traces.db
       REDIS_URL: redis://redis:6379/0
       LITELLM_PROXY_URL: http://litellm:4000
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-alpha-shoop-local}
@@ -95,8 +81,6 @@ services:
     volumes:
       - traces_data:/app/data
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
       litellm:
@@ -115,6 +99,5 @@ services:
       - "3000:80"
 
 volumes:
-  postgres_data:
   traces_data:
   ollama_data:

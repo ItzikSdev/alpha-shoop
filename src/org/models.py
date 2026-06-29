@@ -66,6 +66,8 @@ class Agent:
             "hired_by": self.hired_by,
             "lessons": self.memory.get("lessons", []),
             "training": self.memory.get("training", ""),
+            "task": self.memory.get("assigned_task", ""),       # what they're working on now
+            "last_result": self.memory.get("last_result", {}),  # outcome of their last action
             "perf": self.perf,
         }
 

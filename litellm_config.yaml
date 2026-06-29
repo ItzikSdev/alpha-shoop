@@ -44,8 +44,14 @@ model_list:
   # decisions), so this never crashes the autonomous loop.
   - model_name: alpha/local-fast
     litellm_params:
-      model: ollama_chat/qwen2.5:7b
-      api_base: http://ollama:11434   # 7B stays in docker (fast enough)
+      # Reaches Ollama on the HOST (same as local-coder below). The old
+      # api_base http://ollama:11434 was a docker-service name that doesn't
+      # resolve when Ollama runs natively on the host → every standup meeting +
+      # the over-budget fallback failed with "Cannot connect to host ollama".
+      # Model = qwen2.5-coder:14b (the one actually pulled). For a lighter 7B:
+      # `ollama pull qwen2.5:7b` then set model back to ollama_chat/qwen2.5:7b.
+      model: ollama_chat/qwen2.5-coder:14b
+      api_base: http://host.docker.internal:11434
       max_tokens: 2048
 
   # ── Local CODER: stronger local model for the Developer agent (Grace) ────

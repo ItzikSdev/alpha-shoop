@@ -12,6 +12,7 @@ from fastapi.responses import RedirectResponse
 from src.api.routes import health, agents as agents_router, webhooks, auth
 from src.api.routes import stores as stores_router
 from src.api.routes import org as org_router
+from src.api.routes import finance as finance_router
 from src.api.routes.agents import _daemon, _spawn_run
 from src.db.engine import create_tables
 from src.org.daemon import org_tick
@@ -170,6 +171,10 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:8000"],
+    # Also allow the dashboard served from a LAN IP (so a phone on the same Wi-Fi
+    # can reach the API at http://<mac-lan-ip>:8000). Covers the common private
+    # ranges on the dev ports; tighten/remove for production.
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+):(5173|3000|8000)",
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -179,6 +184,7 @@ app.include_router(health.router, prefix="/api/v1", tags=["Health"])
 app.include_router(agents_router.router, prefix="/api/v1", tags=["Agents"])
 app.include_router(stores_router.router, prefix="/api/v1", tags=["Stores"])
 app.include_router(org_router.router, prefix="/api/v1", tags=["Organization"])
+app.include_router(finance_router.router, prefix="/api/v1", tags=["Finance"])
 app.include_router(webhooks.router, prefix="/webhook", tags=["Webhooks"])
 
 

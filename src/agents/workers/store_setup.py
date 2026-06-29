@@ -328,8 +328,11 @@ async def store_setup_node(state: AgentState) -> dict:
     agent_log("Creating storewide welcome discount code...", "action")
     discount_result = await create_welcome_discount("WELCOME10", 0.10)
     if discount_result.get("success"):
-        actions_done.append("Welcome discount code WELCOME10 (10% off, storewide)")
-        agent_log("✓ Discount code WELCOME10 created", "success")
+        if discount_result.get("already_existed"):
+            agent_log("✓ Welcome discount WELCOME10 already exists — reusing it", "success")
+        else:
+            actions_done.append("Welcome discount code WELCOME10 (10% off, storewide)")
+            agent_log("✓ Discount code WELCOME10 created", "success")
     else:
         agent_log(f"✗ Discount code creation failed: {discount_result.get('error')}", "warning")
 

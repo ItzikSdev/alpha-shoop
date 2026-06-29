@@ -4,7 +4,9 @@
  * then injects it as Authorization: Bearer <token> on every request.
  */
 
-const BASE = 'http://localhost:8000/api/v1';
+// Follow whatever host the dashboard is served from, so it works on localhost AND
+// from a phone on the same Wi-Fi (http://<mac-lan-ip>:5173 → API at <mac-lan-ip>:8000).
+const BASE = `${window.location.protocol}//${window.location.hostname}:8000/api/v1`;
 const TOKEN_KEY = 'alpha_shoop_token';
 const TOKEN_EXP_KEY = 'alpha_shoop_token_exp';
 

@@ -44,6 +44,15 @@ from src.tracing.context import current_node
 
 logger = logging.getLogger(__name__)
 
+# Roles that DRIVE the autonomous heartbeat. In the 5-role flow (docs/prompt.md)
+# only the CEO (Ava) takes proactive heartbeat turns — she's the orchestrator that
+# picks the next pipeline run (build_store / boost_store / [MONITOR]). The four
+# worker personas (Product Hunter / UX & Content / Shopify Developer / Growth
+# Marketer) act INSIDE pipeline runs and narrate there, so they don't each take an
+# independent turn (which would have four agents racing to spawn builds + burning
+# tokens). Falls back to the whole roster if no operator is active.
+_OPERATOR_ROLES = {"CEO", "CTO"}
+
 _TURN_SYS = """\
 You are {name}, the {role} of Alpha — an autonomous e-commerce company of AI
 agents that builds real Shopify stores to earn real money. It's YOUR turn to act
@@ -209,14 +218,21 @@ async def _dev_turn(agent: Agent, company: Company) -> dict:
     try:
         from src.mcp_tools.design_files import read_store_docs
         docs = read_store_docs("timeofbaby")
-        if docs.get("readme") or docs.get("changelog_recent"):
+        if docs.get("owner"):
             design += (
-                "\n=== STORE SOURCE OF TRUTH — READ THIS BEFORE CHANGING ANYTHING ===\n"
-                "stores/shopify/timeofbaby.alpha-tech.live/ is the source of truth. Don't revert the "
-                "approved design; if the live store doesn't match, re-apply, don't "
-                "redesign. Every change is logged to CHANGELOG.md automatically.\n"
-                f"--- README ---\n{docs.get('readme','')[:1400]}\n"
-                f"--- CHANGELOG (recent, newest first) ---\n{docs.get('changelog_recent','')[:1200]}\n"
+                "\n=== WHO YOU WORK FOR — UNDERSTAND ITZIK BEFORE YOU ACT ===\n"
+                f"{docs['owner'][:1800]}\n"
+            )
+        if docs.get("claude") or docs.get("readme") or docs.get("changelog_recent"):
+            design += (
+                "\n=== STORE SOURCE OF TRUTH + BUILD GUIDE — READ BEFORE CHANGING ANYTHING ===\n"
+                "stores/shopify/timeofbaby.alpha-tech.live/ is the source of truth + template. "
+                "Build to match the approved design (design.html / site.json); don't revert it; "
+                "if the live store doesn't match, re-apply, don't redesign. Every change is logged "
+                "to CHANGELOG.md automatically.\n"
+                f"--- CLAUDE.md (build guide) ---\n{docs.get('claude','')[:1500]}\n"
+                f"--- README ---\n{docs.get('readme','')[:1000]}\n"
+                f"--- CHANGELOG (recent, newest first) ---\n{docs.get('changelog_recent','')[:1000]}\n"
             )
     except Exception:
         pass
@@ -439,27 +455,20 @@ async def agent_heartbeat() -> dict | None:
     if not agents:
         return None
 
-    idx = int(company.daemon.get("hb_idx", 0)) % len(agents)
-    agent = agents[idx]
-    company.daemon["hb_idx"] = (idx + 1) % len(agents)
+    # Only operator roles (the CEO) drive the proactive tick — the pipeline worker
+    # personas act inside runs, not as solo heartbeat turns. Fall back to the whole
+    # roster if no operator is active, so the loop is never dead.
+    operators = [a for a in agents if a.role in _OPERATOR_ROLES] or agents
+
+    idx = int(company.daemon.get("hb_idx", 0)) % len(operators)
+    agent = operators[idx]
+    company.daemon["hb_idx"] = (idx + 1) % len(operators)
     save_company(company)
 
-    # Continuous Linus→Grace delegation: before Grace acts, make sure Linus has
-    # handed her the most valuable current task (no-op if she's mid-task). Then
-    # reload so her turn sees the freshly-assigned task. Best-effort — a delegation
-    # hiccup must never block her from working.
-    if agent.role == "Developer" or agent.team == "engineering":
-        try:
-            from src.org.delegation import linus_delegates
-            await linus_delegates()
-            agent = get_agent(agent.agent_id) or agent
-        except Exception:
-            logger.exception("Linus delegation failed (Grace will use her last task)")
-
-    # ── Event-driven gate (Claude agents only) ───────────────────────────────
-    # Business/Claude agents (Ada/Linus/Maya) act only when the world changed —
-    # this stops the doom-loop + token burn. The Developer (Grace) runs on the
-    # FREE local model, so she works CONTINUOUSLY (no gate) on her assigned task.
+    # ── Event-driven gate ─────────────────────────────────────────────────────
+    # The operator (CEO) acts only when the world changed — this stops the
+    # doom-loop + token burn. A legacy local-model Developer (none in the current
+    # roster) would run continuously without this gate.
     if agent.role != "Developer":
         from datetime import datetime, timezone
         snap = await gather_snapshot()

@@ -43,7 +43,10 @@ interface Meeting {
 }
 
 const ROLE_ICON: Record<string, string> = {
-  CEO: '👑', CTO: '🧠', HR: '🧑‍💼', store_builder: '🏗️', marketer: '📣',
+  CEO: '👑', 'Product Hunter': '🔍', 'UX & Content': '🎨',
+  'Shopify Developer': '🛠️', 'Growth Marketer': '📣',
+  // legacy roles (departed agents)
+  CTO: '🧠', HR: '🧑‍💼', store_builder: '🏗️', marketer: '📣', Developer: '👩‍💻',
 };
 
 const KIND_COLOR: Record<string, string> = {

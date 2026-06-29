@@ -23,8 +23,13 @@ stores/shopify/timeofbaby.alpha-tech.live/
 ├── style/        ← the design files (edit these): site.json, product.json,
 │                   product.liquid, home.liquid, design.html
 ├── readme/       ← this README.md (the rules)
-└── changelog/    ← CHANGELOG.md (every change, newest on top)
+├── changelog/    ← CHANGELOG.md (every change, newest on top)
+└── finance/      ← LEDGER.md (money history: revenue vs cost, auto-snapshotted)
 ```
+
+`changelog/` records what CHANGED; `finance/` records what it EARNED vs COST
+(including what Grace/Linus cost in LLM tokens). Both are auto-appended — read them
+to know the store's history.
 
 The design files all live under **`style/`**. The render tools resolve this folder
 automatically — reference files by name (e.g. `site.json`) or by the relative path
