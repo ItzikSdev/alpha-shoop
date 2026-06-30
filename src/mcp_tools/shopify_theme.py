@@ -152,7 +152,13 @@ async def set_announcement_bar(messages: list[str], theme_id: str, bg_color: str
     """
     header_group = await _read_asset(theme_id, "sections/header-group.json")
     if not isinstance(header_group, dict):
-        return False
+        # No stock header-group → this is a JSON-driven store whose announcement bar
+        # is the site.json marquee (rendered by apply_site_design), not a stock theme
+        # section. Nothing to do at the stock-theme level — that's expected, NOT a
+        # failure. (This is the "announcement bar bug" the agents kept flagging: the
+        # stock path can't apply here, so it returned False on every build_store.)
+        logger.info("No stock header-group — announcement bar is JSON-driven (site.json marquee); skipping stock step.")
+        return True
 
     sections = header_group.get("sections", {})
     ann_key = next(
@@ -160,7 +166,8 @@ async def set_announcement_bar(messages: list[str], theme_id: str, bg_color: str
         None
     )
     if not ann_key:
-        return False
+        logger.info("No stock announcement section — announcement bar is JSON-driven (site.json marquee); skipping stock step.")
+        return True
 
     ann = sections[ann_key]
     is_dawn = ann.get("type") == "announcement-bar"

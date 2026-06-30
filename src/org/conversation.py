@@ -34,6 +34,59 @@ logger = logging.getLogger(__name__)
 
 _ROLE_EMOJI = {"CEO": ":crown:", "CTO": ":brain:", "HR": ":office_worker:"}
 
+from pathlib import Path as _Path
+
+_STORES_ROOT = _Path(__file__).resolve().parents[2] / "stores" / "shopify"
+
+
+def _store_context(store_slug: str = "timeofbaby") -> str:
+    """The REAL store folder tree + the CLAUDE.md build guide, injected into the
+    agents' prompts so they can answer 'list the folders' / 'read the style files'
+    THEMSELVES — instead of confabulating that they lack access and asking the
+    owner to paste it. The agents DO have full repo access; this proves it."""
+    try:
+        store_dir = next((d for d in _STORES_ROOT.iterdir()
+                          if d.is_dir() and store_slug in d.name), None)
+    except Exception:
+        store_dir = None
+    if not store_dir:
+        return ""
+    # Real recursive listing (so "list all folders" is answered with truth).
+    lines: list[str] = [f"{store_dir.relative_to(_STORES_ROOT.parent.parent)}/"]
+    try:
+        for p in sorted(store_dir.rglob("*")):
+            if any(part.startswith(".") for part in p.relative_to(store_dir).parts):
+                continue
+            rel = p.relative_to(store_dir)
+            depth = len(rel.parts) - 1
+            lines.append("  " * (depth + 1) + (f"{p.name}/" if p.is_dir() else p.name))
+    except Exception:
+        pass
+    tree = "\n".join(lines[:60])
+    guide = ""
+    try:
+        from src.mcp_tools.design_files import read_store_docs
+        guide = (read_store_docs(store_slug).get("claude") or "")[:1600]
+    except Exception:
+        pass
+    return (
+        "\n\n=== YOU HAVE FULL REPO + STORE ACCESS — read these yourself, never ask the owner to paste them ===\n"
+        f"Live folder tree of the store template (real listing):\n{tree}\n"
+        + (f"\n--- CLAUDE.md (the build guide; build the store to match style/site.json + design.html) ---\n{guide}\n" if guide else "")
+    )
+
+
+def _budget_line_safe() -> str:
+    """The live org-credit line for the agents' prompts, so they know how many $ are
+    left this month and stay economical (hard $100/mo cap). Best-effort — never break
+    a reply if the budget read fails."""
+    try:
+        from src.budget import budget_line
+        return ("ORG CREDITS (hard $100/mo cap — be economical with tokens; when the "
+                "cap is hit the team auto-switches to the free local model): " + budget_line())
+    except Exception:
+        return ""
+
 
 def company_language() -> str:
     """The default language agents speak in the channel (ORG_LANGUAGE, default
@@ -100,7 +153,12 @@ async def _agent_reply(agent: Agent, message: str, author: str, company,
         f"Your job (skill): {agent.skill}\n"
         f"Company values: {company.culture.get('values', []) if company else []}\n"
         f"Company goals: {company.goals if company else []}\n"
-        f"Recent lessons you've learned: {agent.memory.get('lessons', [])[-2:]}"
+        f"Recent lessons you've learned: {agent.memory.get('lessons', [])[-2:]}\n"
+        f"{_budget_line_safe()}\n"
+        "You have FULL access to the repo, the store files, and the Shopify Admin "
+        "API — NEVER say you lack access or ask the owner to paste files/confirm "
+        "permission. The store folder tree + build guide are below; read them and act."
+        + _store_context()
     )
     caption = message or "(no caption — see the attached image)"
     transcript = await _recent_transcript(message)
@@ -158,11 +216,23 @@ the roster, decide WHO should answer — usually ONE teammate (the single most
 relevant person), occasionally two, and ALL of them only if the message is
 clearly addressed to everyone (e.g. a group greeting).
 
-Pick by fit: coding / Shopify API / design / technical "do this on the store"
-tasks → Developer (Grace); everything else — store strategy, product, build,
-ideas, vision, money, direction, or an ambiguous greeting → CTO (Linus, the
-owner's assistant who runs operations). The team is just these two.
-If the message NAMES a person (e.g. "Grace, ..."), THAT person answers.
+The team is 5 agents — ALWAYS pick the SPECIALIST whose domain the message is
+about; do NOT funnel everything to the CEO. Use the EXACT role string:
+- "Product Hunter" (Hunter)  → ANY mention of CJ / sourcing / finding products /
+  prices / margins / "get products" / "add products" / "push products to the store".
+  Hunter actually runs the CJ search himself.
+- "UX & Content" (Remy)      → the store's LOOK, design, theme, announcement bar,
+  colors, fonts, hero, copy, branding. Remy actually edits the design himself.
+- "Shopify Developer" (Devon) → low-level Shopify API ops: variants, SEO metadata,
+  collections, theme/liquid plumbing, reading store files, listing folders.
+- "Growth Marketer" (Max)    → ads, Facebook/Instagram, traffic, campaigns.
+- "CEO" (Ava)                → ONLY strategy/direction/money/vision, a build-or-
+  launch decision, or a genuinely ambiguous greeting. NOT the default dumping ground.
+If the message NAMES a person (e.g. "Devon, ..."), THAT person answers. When in
+doubt between the CEO and a specialist, pick the specialist.
+
+EVERY agent has FULL repo + Shopify access — never route to "ask the owner for
+permission". The chosen person reads/does it themselves.
 
 Write each chosen person's reply in FIRST PERSON, 1-3 sentences, in the SAME
 LANGUAGE as the message (Hebrew → natural Hebrew). Output ONLY JSON:
@@ -170,20 +240,23 @@ LANGUAGE as the message (Hebrew → natural Hebrew). Output ONLY JSON:
 
 
 # Agents allowed to execute Shopify directly (full freedom, no approval gate).
-_SHOPIFY_DOERS = {"Developer", "CTO"}
+# The new roster: Devon owns the Shopify API; Ava (CEO) orchestrates + can act.
+_SHOPIFY_DOERS = {"Shopify Developer", "CEO", "Developer", "CTO"}
 
 
 async def _agent_act_shopify(agent: Agent, message: str, company) -> str:
-    """Let Grace/Linus actually RUN a Shopify call in chat (no approval) and
-    report the result, instead of only talking about it."""
+    """Let a Shopify doer (Devon/Ava) actually RUN a Shopify call in chat (no
+    approval) and report the result, instead of only talking about it."""
     system = (
         f"You are {agent.name} ({agent.role}) at Alpha. You have FULL DIRECT "
-        "Shopify Admin API access — NO approval needed, you act yourself.\n"
+        "Shopify Admin API + repo/store-file access — NO approval needed, you act "
+        "yourself. NEVER ask the owner for permission or to paste files.\n"
         f"Answer in {company_language()}. You can see the recent channel conversation "
         "in the user message — you DO remember it; use it for context. If the request "
         "needs a Shopify call, include it. Output ONLY JSON:\n"
         '{"reply":"<short first-person reply>","shopify_request":null OR '
         '{"method":"GET|POST|PUT|DELETE","path":"<e.g. products/count.json>","body":<obj or null>}}'
+        + _store_context()
     )
     transcript = await _recent_transcript(message)
     human = (f"Recent conversation (oldest first), your memory of the chat:\n{transcript}\n\n"
@@ -207,6 +280,251 @@ async def _agent_act_shopify(agent: Agent, message: str, company) -> str:
 
 def author_q(message: str) -> str:
     return f'User asked: "{message}"'
+
+
+_OPS_SYS = """\
+You are the operations dispatcher for the Alpha store agents. The owner wrote a
+message in chat. Decide if it maps to ONE store-maintenance OPERATION the agent can
+RUN right now, or "none" (then the agent just answers / does a normal action).
+
+Operations you can run:
+- "dedupe":       remove DUPLICATE products (same item listed more than once).
+- "cleanup":      remove products with NO image or a foreign-language / invalid title.
+- "apply_design": push the store template LIVE — re-render the homepage (site.json)
+                  and product page (product.json) so design/JSON edits take effect.
+
+Pick "none" unless the message clearly asks for one of these (in any language).
+Output ONLY JSON: {"op":"dedupe|cleanup|apply_design|none","reply":"<short first-person line in %s>"}"""
+
+
+async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
+    """Run a REAL store-maintenance operation the owner asked for (dedupe / cleanup /
+    apply-design) and report the actual result — so when you tell Devon/Remy 'remove
+    the duplicates' they DO it, not just talk. Returns the reply string when an op ran,
+    or None to signal the caller to fall back to its normal action."""
+    transcript = await _recent_transcript(message)
+    human = (f"Recent conversation:\n{transcript}\n\n" if transcript else "") + author_q(message)
+    try:
+        llm = get_llm("executive", temperature=0.0, max_tokens=300)
+        resp = await llm.ainvoke([
+            SystemMessage(content=_OPS_SYS % company_language()),
+            HumanMessage(content=human),
+        ])
+        parsed = _parse_json(str(resp.content))
+        op = str(parsed.get("op", "none")).strip()
+        reply = str(parsed.get("reply", "")).strip()
+    except Exception:
+        return None
+    if op not in {"dedupe", "cleanup", "apply_design"}:
+        return None
+    # Make sure the Shopify calls target the store (falls back to env creds anyway).
+    try:
+        from src.stores import list_stores, _current_store
+        store = next(iter(list_stores()), None)
+        if store:
+            _current_store.set(store)
+    except Exception:
+        store = None
+    slug = "timeofbaby"
+    try:
+        if op == "dedupe":
+            from src.mcp_tools.shopify import dedupe_products
+            res = await dedupe_products(dry_run=False)
+            note = f"הסרתי {res['deleted']} כפילויות (מתוך {res['duplicate_count']} שזוהו)."
+        elif op == "cleanup":
+            from src.mcp_tools.shopify import cleanup_bad_products
+            res = await cleanup_bad_products(dry_run=False)
+            note = f"ניקיתי {res['deleted']} מוצרים פגומים (בלי תמונה / טקסט לא תקין) מתוך {res['scanned']}."
+        else:  # apply_design
+            from src.mcp_tools.shopify_design import apply_site_design, apply_product_design
+            r1 = await apply_site_design(slug)
+            r2 = await apply_product_design(slug)
+            note = f"החלתי את התבנית לייב — דף הבית {'✓' if r1.get('ok') else '✗'}, דף מוצר {'✓' if r2.get('ok') else '✗'}."
+    except Exception as exc:
+        return (reply + "\n" if reply else "") + f"⚠️ הפעולה נכשלה: {exc}"
+    # Log it to the store changelog so nothing is invisible.
+    try:
+        from src.mcp_tools.design_files import append_changelog
+        append_changelog(title=f"{agent.name}: {op} (from chat)", changed=note,
+                         by=agent.name, context=f"Owner asked in chat: {message[:120]}")
+    except Exception:
+        pass
+    return (reply + "\n" if reply else "") + "✅ " + note
+
+
+async def _agent_act_sourcing(agent: Agent, message: str, company) -> str:
+    """Hunter ACTS in chat: runs a REAL CJ Dropshipping search and reports the
+    candidates with live margins — and, when the owner wants them on the store,
+    triggers a real catalog-fill run that lists CJ products to the live Shopify
+    store (Devon's pipeline). Not just talk."""
+    system = (
+        f"You are {agent.name} ({agent.role}) at Alpha — the Product Hunter. You have "
+        "FULL DIRECT access to the CJ Dropshipping API and source products yourself; "
+        "NEVER say you lack access.\n"
+        f"Answer in {company_language()}. From the owner's message decide ONE concrete "
+        "CJ search keyword (a specific garment/product type, e.g. 'baby onesie', not a "
+        "generic category) and whether he wants the products LISTED to the live store.\n"
+        "Output ONLY JSON:\n"
+        '{"reply":"<short first-person line>","category":"<concrete CJ search keyword>",'
+        '"push_to_store":true|false}'
+    )
+    transcript = await _recent_transcript(message)
+    human = (f"Recent conversation (oldest first):\n{transcript}\n\n" if transcript else "") + author_q(message)
+    try:
+        llm = get_llm("executive", temperature=0.3, max_tokens=500)
+        resp = await llm.ainvoke([SystemMessage(content=system), HumanMessage(content=human)])
+        parsed = _parse_json(str(resp.content))
+        reply = str(parsed.get("reply", "")).strip()
+        category = str(parsed.get("category", "")).strip()
+        push = bool(parsed.get("push_to_store"))
+    except Exception:
+        return await _agent_reply(agent, message, "You", company)
+    if not category:
+        return reply or "On it — searching CJ now."
+    try:
+        from src.mcp_tools.sourcing import (
+            search_trending_products, resolve_category, CJQuotaExceeded,
+        )
+        resolved = await resolve_category(category)
+        products = await search_trending_products(
+            category=category,
+            category_id=resolved["category_id"] if resolved else "",
+            max_results=6, min_margin=0.30, max_price_usd=50.0,
+        )
+    except CJQuotaExceeded as exc:
+        return (reply + "\n" if reply else "") + f"⚠️ CJ daily quota exhausted — {exc}"
+    except Exception as exc:
+        return (reply + "\n" if reply else "") + f"⚠️ CJ search failed: {exc}"
+    if not products:
+        return (reply + "\n" if reply else "") + f"No CJ matches for '{category}' right now."
+    lines = [
+        f"• {p.get('title','')[:48]} — cost ${p.get('price_supplier_usd')} → "
+        f"${p.get('estimated_price_shopify_usd')} ({int(p.get('margin_pct', 0) * 100)}% margin)"
+        for p in products[:6]
+    ]
+    out = (reply + "\n" if reply else "") + f"Found {len(products)} CJ products for '{category}':\n" + "\n".join(lines)
+    if push:
+        try:
+            from src.stores import list_stores
+            from src.api.routes.agents import _spawn_run
+            import uuid
+            store = next(iter(list_stores()), None)
+            if store:
+                tid = f"chat-source-{uuid.uuid4().hex[:8]}"
+                _spawn_run(
+                    tid,
+                    "[MONITOR] Source CJ products and list the approved ones to the store",
+                    agent.name, 5.0, store.store_id,
+                )
+                out += "\n\n🚀 Kicked off a run to list the approved products to the store (Devon will publish them)."
+            else:
+                out += "\n\n(No active store to publish to yet.)"
+        except Exception as exc:
+            out += f"\n\n(Couldn't start the publish run: {exc})"
+    return out
+
+
+def _apply_site_changes(changes: list[dict]) -> tuple[bool, list[str]]:
+    """Apply Remy's targeted edits to the store's style/site.json (the homepage
+    source of truth). Each change is {key, value} where `key` is either a section
+    id in the sections list (e.g. 'announcement_marquee', 'hero') or a top-level
+    site.json key (e.g. 'design_tokens'); `value` is the COMPLETE new object/array
+    for it. Writes through the sandboxed, JSON-validating design-file writer.
+    Returns (ok, applied_labels)."""
+    from src.mcp_tools.shopify_design import load_site_json
+    from src.mcp_tools.design_files import write_design_file, read_store_docs
+    site = load_site_json("timeofbaby")
+    if not site:
+        return False, []
+    sections = site.get("sections", [])
+    sec_idx = {s.get("id"): i for i, s in enumerate(sections) if isinstance(s, dict)}
+    applied: list[str] = []
+    for ch in changes or []:
+        key = str(ch.get("key", "")).strip()
+        if not key or "value" not in ch:
+            continue
+        if key in sec_idx:
+            sections[sec_idx[key]] = ch["value"]
+            applied.append(f"section '{key}'")
+        elif key in site:
+            site[key] = ch["value"]
+            applied.append(key)
+    if not applied:
+        return False, []
+    site_path = str(_Path(read_store_docs("timeofbaby").get("dir", "")) / "style" / "site.json")
+    res = write_design_file(site_path, json.dumps(site, ensure_ascii=False, indent=2))
+    return bool(res.get("ok")), applied
+
+
+async def _agent_act_design(agent: Agent, message: str, company) -> str:
+    """Remy ACTS in chat: edits the store's JSON source of truth (style/site.json)
+    and applies it live — the CORRECT path for 'change the announcement bar', hero
+    copy, colors, etc. Never touches the live .liquid by hand. Falls back to a plain
+    reply if there's no concrete edit to make."""
+    site = {}
+    try:
+        from src.mcp_tools.shopify_design import load_site_json
+        site = load_site_json("timeofbaby")
+    except Exception:
+        pass
+    sections_digest = json.dumps(
+        [{"id": s.get("id"), "type": s.get("type")} for s in site.get("sections", []) if isinstance(s, dict)],
+        ensure_ascii=False,
+    )[:600]
+    ann = next((s for s in site.get("sections", []) if "announcement" in str(s.get("id", "")).lower()), {})
+    system = (
+        f"You are {agent.name} ({agent.role}) at Alpha — UX & Content; you OWN the "
+        "store look + copy. The store is JSON-driven: style/site.json is the SOURCE OF "
+        "TRUTH for the homepage. You edit it and re-apply; NEVER touch the live .liquid "
+        "by hand.\n"
+        f"Answer in {company_language()}. From the owner's message make the SINGLE most "
+        "relevant edit. The announcement bar is the section whose id contains "
+        "'announcement' — its scrolling messages live in its `items` array.\n"
+        f"Existing sections: {sections_digest}\n"
+        f"Current announcement section: {json.dumps(ann, ensure_ascii=False)[:500]}\n"
+        "Output ONLY JSON:\n"
+        '{"reply":"<short first-person line>","changes":[{"key":"<section id OR '
+        'top-level site.json key>","value":<COMPLETE new object/array for it>}],'
+        '"changelog":"<one line: what changed, old → new>"}\n'
+        "Use changes:[] (empty) if no concrete edit is needed — then just reply."
+    )
+    transcript = await _recent_transcript(message)
+    human = (f"Recent conversation (oldest first):\n{transcript}\n\n" if transcript else "") + author_q(message)
+    try:
+        llm = get_llm("executive", temperature=0.4, max_tokens=1200)
+        resp = await llm.ainvoke([SystemMessage(content=system), HumanMessage(content=human)])
+        parsed = _parse_json(str(resp.content))
+        reply = str(parsed.get("reply", "")).strip()
+        changes = parsed.get("changes") or []
+        changelog = str(parsed.get("changelog", "")).strip()
+    except Exception:
+        return await _agent_reply(agent, message, "You", company)
+    if not changes:
+        return reply or "Noted — no design change needed."
+    try:
+        ok, applied = _apply_site_changes(changes)
+    except Exception as exc:
+        return (reply + "\n" if reply else "") + f"⚠️ Couldn't write site.json: {exc}"
+    if not ok:
+        return (reply + "\n" if reply else "") + "⚠️ No matching site.json section/key to edit — nothing changed."
+    # Render it live, then log the change (the store's changelog discipline).
+    live_note = ""
+    try:
+        from src.mcp_tools.shopify_design import apply_site_design
+        res = await apply_site_design("timeofbaby")
+        live_note = " and applied it live" if res.get("ok") else " (saved; live apply pending)"
+    except Exception:
+        live_note = " (saved; live apply pending)"
+    try:
+        from src.mcp_tools.design_files import append_changelog
+        append_changelog(
+            title=f"{agent.name}: store design edit (chat)",
+            changed=changelog or ", ".join(applied),
+            by=agent.name, context=f"Owner asked in chat: {message[:140]}",
+        )
+    except Exception:
+        pass
+    return (reply + "\n" if reply else "") + f"✏️ Updated {', '.join(applied)} in site.json{live_note}."
 
 
 async def route_and_respond(message: str, author: str = "You",
@@ -261,11 +579,26 @@ async def route_and_respond(message: str, author: str = "You",
         if ceo:
             items.append((ceo, await _agent_reply(ceo, message, author, company, images)))
 
-    # Grace/Linus actually EXECUTE Shopify (full freedom) rather than just talk.
+    # Each specialist actually EXECUTES in their domain (full freedom) — not just
+    # talk. Devon/Ava → Shopify; Hunter → CJ sourcing; Remy → store design edits.
+    # (Skipped when images are attached — then they react to the picture.)
     final: list[tuple[Agent, str]] = []
     for agent, reply in items:
-        if agent.role in _SHOPIFY_DOERS and not images:
-            reply = await _agent_act_shopify(agent, message, company)
+        if not images:
+            # First try a real maintenance OP (dedupe/cleanup/apply-design) — so a
+            # "remove the duplicates" actually RUNS. Falls through to the role's
+            # normal action when the message isn't an op.
+            if agent.role in _SHOPIFY_DOERS or agent.role == "UX & Content":
+                ran = await _agent_act_ops(agent, message, company)
+                if ran is not None:
+                    final.append((agent, ran))
+                    continue
+            if agent.role in _SHOPIFY_DOERS:
+                reply = await _agent_act_shopify(agent, message, company)
+            elif agent.role == "Product Hunter":
+                reply = await _agent_act_sourcing(agent, message, company)
+            elif agent.role == "UX & Content":
+                reply = await _agent_act_design(agent, message, company)
         final.append((agent, reply))
     return await _post_replies(final)
 

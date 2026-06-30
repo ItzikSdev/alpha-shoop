@@ -19,7 +19,7 @@
 
     <div class="tobp-price">
       <span id="tobp-price">{{ v0.price | money }}</span>
-      {%- if product.compare_at_price > product.price -%}
+      {%- if product.compare_at_price > product.price and product.price > 0 -%}
         <s id="tobp-cmp">{{ product.compare_at_price | money }}</s>
         <span class="tobp-disc">{{ product.compare_at_price | minus: product.price | times: 100 | divided_by: product.compare_at_price }}% OFF</span>
       {%- endif -%}
@@ -131,7 +131,7 @@ localStorage.setItem("tob_recent_v2",JSON.stringify(r.slice(0,8)));}catch(e){}})
   .tobp-val{min-width:74px;padding:15px 20px;border:1px solid var(--line);background:#fff;font-size:var(--tobp-optbtn,1.25rem);font-weight:600;cursor:pointer;transition:.15s}
   .tobp-val:hover{border-color:var(--ink)}
   .tobp-val.active{background:#161616;color:#fff;border-color:#161616}
-  .tobp-atc{width:100%;background:#161616;color:#fff;border:none;padding:19px;font-size:.92rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;transition:.2s;margin-top:6px}
+  .tobp-atc{width:100%;background:#161616;color:#fff;border:none;padding:19px;font-size:var(--tobp-optbtn,1.5rem);font-weight:700;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;transition:.2s;margin-top:6px}
   .tobp-atc:hover{opacity:.88}
   .tobp-atc:disabled{background:var(--muted);cursor:not-allowed}
   .tobp-badges{margin:22px 0;font-size:var(--tobp-badge,1.1rem);color:#555;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:16px 0}

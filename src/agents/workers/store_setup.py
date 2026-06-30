@@ -91,10 +91,59 @@ mutation setPolicy($policy: ShopPolicyInput!) {
 """
 
 
-async def _write_brand_brief(task: str) -> dict:
+def _load_store_template(store_slug: str = "timeofbaby") -> str:
+    """The store folder IS the template + source of truth (see the store's CLAUDE.md).
+    Pull the README rules + CLAUDE build guide + OWNER + the existing brand identity
+    from style/site.json so Devon BUILDS TO THE TEMPLATE instead of inventing a new
+    brand every run. Empty string if there's no template on disk yet."""
+    blocks: list[str] = []
+    try:
+        from src.mcp_tools.design_files import read_store_docs
+        docs = read_store_docs(store_slug)
+        if docs.get("claude"):
+            blocks.append("--- CLAUDE.md (how to build this store) ---\n" + docs["claude"][:2200])
+        if docs.get("readme"):
+            blocks.append("--- readme/README.md (source-of-truth rules) ---\n" + docs["readme"][:1600])
+        if docs.get("owner"):
+            blocks.append("--- readme/OWNER.md (who the owner is) ---\n" + docs["owner"][:1000])
+    except Exception:
+        pass
+    # The existing brand identity already encoded in the design spec — name, colors,
+    # announcement bar — so the brief adopts it rather than reinventing it.
+    try:
+        from src.mcp_tools.shopify_design import load_site_json
+        site = load_site_json(store_slug)
+        if site:
+            ident = {
+                "store_name": site.get("brand") or site.get("store_name"),
+                "design_tokens.colors": (site.get("design_tokens") or {}).get("colors"),
+                "announcement_marquee": next(
+                    (s.get("settings") for s in site.get("sections", [])
+                     if "announcement" in str(s.get("id", "")).lower()), None),
+            }
+            blocks.append("--- style/site.json — the EXISTING brand identity (adopt it) ---\n"
+                          + json.dumps(ident, ensure_ascii=False)[:1200])
+    except Exception:
+        pass
+    return "\n\n".join(blocks)
+
+
+async def _write_brand_brief(task: str, template: str = "") -> dict:
     llm = get_llm("ecommerce", temperature=0.7)
+    if template:
+        system = (
+            _BRAND_BRIEF_SYSTEM
+            + "\n\n=== STORE TEMPLATE — THIS IS THE SOURCE OF TRUTH ===\n"
+            "A template folder for this store exists below. You MUST build the brief to "
+            "MATCH it — adopt its exact brand name, colors, niche/product_category, voice, "
+            "and announcement-bar trust signals. Do NOT invent a new brand or a different "
+            "look. Only fill in any field the template leaves unspecified, and keep it "
+            "consistent with the template.\n\n" + template
+        )
+    else:
+        system = _BRAND_BRIEF_SYSTEM
     response = await llm.ainvoke([
-        SystemMessage(content=_BRAND_BRIEF_SYSTEM),
+        SystemMessage(content=system),
         HumanMessage(content=f"Store task: {task}"),
     ])
     try:
@@ -231,8 +280,13 @@ async def store_setup_node(state: AgentState) -> dict:
     if state.get("store_brand"):
         return {}
 
+    # READ the store template/folder FIRST (the store's CLAUDE.md rule: read before
+    # you act, build to match the template) so Devon builds THIS store, not a new one.
+    template = _load_store_template("timeofbaby")
+    if template:
+        agent_log("Read the store template (README + CLAUDE + site.json) — building to match it", "info")
     agent_log("Generating brand brief...", "info")
-    brief = await _write_brand_brief(state.get("task", ""))
+    brief = await _write_brand_brief(state.get("task", ""), template)
     if not brief:
         agent_log("Brand brief generation failed", "error")
         return {"messages": [HumanMessage(content="Store setup skipped (brief generation failed)")]}
@@ -321,6 +375,23 @@ async def store_setup_node(state: AgentState) -> dict:
             agent_log(f"✓ {label}", "success")
         else:
             agent_log(f"✗ {label} failed", "warning")
+
+    # 5.5 Render the store TEMPLATE's homepage from style/site.json (the JSON-driven
+    #     marquee/announcement bar + hero + sections). full_store_setup above targets
+    #     stock Dawn/Horizon section types, which this JSON-driven store doesn't have —
+    #     so the real announcement bar lives in site.json and is applied here. Best-
+    #     effort: never block the build if there's no site.json / theme yet.
+    if template:
+        try:
+            from src.mcp_tools.shopify_design import apply_site_design
+            res = await apply_site_design("timeofbaby")
+            if res.get("ok"):
+                actions_done.append("Template homepage applied from site.json (announcement marquee + sections)")
+                agent_log("✓ Template homepage rendered from site.json", "success")
+            else:
+                agent_log(f"site.json homepage apply skipped: {res.get('error')}", "warning")
+        except Exception as exc:
+            logger.warning("apply_site_design failed: %s", exc)
 
     # 6. Welcome discount — a real AOV booster achievable natively via the
     # Discounts API, no third-party app (e.g. ReConvert) needed for this kind

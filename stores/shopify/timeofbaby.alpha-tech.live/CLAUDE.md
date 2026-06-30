@@ -69,8 +69,31 @@ Build/restore the store so the live Shopify theme matches it — don't invent a 
 - **Product page (from `product.json`):** gallery, **Color + Size selectors** (each variant
   bound to its exact CJ SKU), size chart, trust badges, add-to-cart. Typography tokens drive
   the live font sizes.
+- **PRODUCT IMAGES — vet before listing (owner rule):** every product photo must be a
+  clean, *sellable, styled/lifestyle* shot. **Reject** plain white/studio-background-only
+  images, ANY image with visible text / watermark / foreign language (e.g. Chinese),
+  collages, and low-quality shots. The pipeline vision-vets CJ images automatically
+  (`_vet_images` in `ecommerce.py`, Haiku vision); a product with **no** good image is
+  **not listed**. Products that are already live with no image or a foreign-language
+  (CJK) title get **removed** — run `cleanup_bad_products(dry_run=False)`.
+- **FONT RULE (template rule):** minimum font-size is **1.8rem EVERYWHERE** on the
+  storefront. EXCEPTIONS: **logo = 2rem**, **buttons (add-to-cart + option buttons) = 1.5rem**,
+  and **product-page description = 1.5rem** (`product.json → typography.description_size` /
+  `option_button_size`). The homepage floor + logo/button exceptions live in the renderer's
+  `_TOB_CSS` (`OWNER FONT RULE` block); product-page sizes in `product.json`. Never set
+  any other storefront text below 1.8rem.
+- **NO DUPLICATE PRODUCTS:** never list the same item twice. The pipeline skips
+  candidates whose image already exists live; run `dedupe_products(dry_run=False)`
+  (shopify.py) to remove existing duplicates (same title or same main image).
+- **THE HOMEPAGE CSS IS IN THE TEMPLATE:** `site.json → "css"` (array of CSS lines) is
+  now the source of truth for the homepage design — layout AND styling. Edit it (or the
+  `sections` / `design_tokens`) and run `apply_site_design`; you no longer need to touch
+  Python to restyle the store. SAFETY: you may edit/add, but **never delete a section or
+  the css wholesale without logging it in CHANGELOG.md first** — every change is recorded
+  with a timestamp via `append_changelog`, so nothing is silently lost.
 - **Already live — do NOT redo:** Color+Size variants (auto from CJ), 7-image hero, free
-  shipping, social-proof, real CJ descriptions, JSON-driven font sizes.
+  shipping, social-proof, real CJ descriptions, JSON-driven font sizes, sticky header nav
+  (from `site.json → site_header`).
 
 **To build a NEW store from this template** (per the owner: copy this folder under
 `stores/shopify/<new-domain>/`): copy the whole structure, then in the new copy adapt

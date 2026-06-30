@@ -662,6 +662,151 @@ async def delete_shopify_product(product_gid: str) -> bool:
         return False
 
 
+import re as _re
+
+# CJK / Chinese (and Japanese/Korean) characters — a product whose title still has
+# these never went through proper SEO/branding and shouldn't be live.
+_CJK = _re.compile("[　-〿㐀-鿿가-힯＀-￯]")
+
+_GQL_PRODUCTS_AUDIT = """
+query($cursor: String) {
+  products(first: 100, after: $cursor) {
+    pageInfo { hasNextPage endCursor }
+    nodes { id title images(first: 1) { nodes { url } } }
+  }
+}
+"""
+
+
+async def cleanup_bad_products(dry_run: bool = True) -> dict:
+    """Remove storefront products that aren't fit to sell: ones with NO image, or whose
+    title still contains raw foreign-language text (Chinese/CJK) — i.e. they never got
+    proper images or SEO/branding. Returns a report; with dry_run=False it deletes them.
+    This is the owner's 'remove products with no images or invalid text' rule, made
+    reusable so the agents can run it any time."""
+    bad: list[dict] = []
+    cursor = None
+    scanned = 0
+    while True:
+        data = await _shopify_gql(_GQL_PRODUCTS_AUDIT, {"cursor": cursor})
+        conn = data.get("products", {})
+        for n in conn.get("nodes", []):
+            scanned += 1
+            title = (n.get("title") or "").strip()
+            n_imgs = len(n.get("images", {}).get("nodes", []))
+            reason = ""
+            if n_imgs == 0:
+                reason = "no image"
+            elif not title:
+                reason = "empty title"
+            elif _CJK.search(title):
+                reason = "foreign-language (CJK) title"
+            if reason:
+                bad.append({"id": n["id"], "title": title[:60], "reason": reason})
+        if conn.get("pageInfo", {}).get("hasNextPage"):
+            cursor = conn["pageInfo"]["endCursor"]
+        else:
+            break
+    deleted = 0
+    if not dry_run:
+        for b in bad:
+            if await delete_shopify_product(b["id"]):
+                deleted += 1
+    return {"scanned": scanned, "bad_count": len(bad), "deleted": deleted,
+            "dry_run": dry_run, "bad": bad[:50]}
+
+
+def _norm_title(t: str) -> str:
+    return _re.sub(r"\s+", " ", (t or "").strip().lower())
+
+
+def _img_filename(url: str) -> str:
+    """The image filename without query string — CJ keeps the same filename across
+    re-scrapes/CDN paths, so it's a stable identity key for the same product photo."""
+    base = (url or "").split("?")[0].rstrip("/")
+    return base.rsplit("/", 1)[-1].lower()
+
+
+async def dedupe_products(dry_run: bool = True) -> dict:
+    """Remove DUPLICATE products. The RELIABLE key is the CJ product id in
+    product_mappings — the same supplier item gets re-branded with a new title and
+    Shopify re-hosts its images with new filenames, so title/image alone MISS cross-run
+    dupes. So we dedupe by CJ pid first (keep the earliest-created listing), then fall
+    back to same-title / same-image for anything without a mapping. dry_run=True only
+    reports. This is the owner's 'no duplicate products' rule, runnable by the agents."""
+    import os as _os
+    import sqlite3 as _sql
+    from src.stores import _current_store
+    store = _current_store.get()
+    store_id = store.store_id if store else ""
+
+    dup_ids: dict[str, str] = {}  # shopify_gid -> reason
+
+    # 0) Fetch the LIVE products first — we only ever dedupe among products that
+    #    actually exist now (product_mappings keeps stale rows for deleted products,
+    #    which otherwise show up as phantom "duplicates" that can't be deleted).
+    cursor = None
+    items: list[dict] = []
+    while True:
+        data = await _shopify_gql(_GQL_PRODUCTS_AUDIT, {"cursor": cursor})
+        conn = data.get("products", {})
+        for n in conn.get("nodes", []):
+            imgs = n.get("images", {}).get("nodes", [])
+            items.append({"id": n["id"], "title": n.get("title") or "",
+                          "img": _img_filename(imgs[0]["url"]) if imgs else ""})
+        if conn.get("pageInfo", {}).get("hasNextPage"):
+            cursor = conn["pageInfo"]["endCursor"]
+        else:
+            break
+    live_gids = {it["id"] for it in items}
+    title_by_id = {it["id"]: it["title"] for it in items}
+
+    # 1) CJ-pid dedup via product_mappings — keep the oldest LIVE listing per CJ product.
+    try:
+        con = _sql.connect(_os.environ.get("TRACES_DB_PATH", "./data/traces.db"))
+        rows = con.execute(
+            "SELECT supplier_product_id, shopify_product_id, created_at FROM product_mappings"
+            + (" WHERE store_id=?" if store_id else ""),
+            ((store_id,) if store_id else ()),
+        ).fetchall()
+        con.close()
+        by_pid: dict[str, list] = {}
+        for pid, gid, created in rows:
+            if pid and gid and str(gid) in live_gids:  # ignore stale mappings
+                by_pid.setdefault(str(pid), []).append((created or "", str(gid)))
+        for pid, lst in by_pid.items():
+            lst.sort()  # oldest created_at first → that one survives
+            for _, gid in lst[1:]:
+                dup_ids[gid] = f"same CJ product {pid}"
+    except Exception as exc:
+        logger.warning("CJ-pid dedup read failed: %s", exc)
+
+    # 2) Title / image fallback over the live products (catches dupes with no mapping).
+    seen_title: set[str] = set()
+    seen_img: set[str] = set()
+    for it in items:
+        if it["id"] in dup_ids:
+            continue  # already a CJ-pid dupe; don't let it seed/steal the survivor
+        tkey, ikey = _norm_title(it["title"]), it["img"]
+        if (tkey and tkey in seen_title) or (ikey and ikey in seen_img):
+            dup_ids[it["id"]] = "same title/image"
+        else:
+            if tkey:
+                seen_title.add(tkey)
+            if ikey:
+                seen_img.add(ikey)
+
+    dupes = [{"id": gid, "title": (title_by_id.get(gid, "") or "")[:60], "reason": reason}
+             for gid, reason in dup_ids.items()]
+    deleted = 0
+    if not dry_run:
+        for d in dupes:
+            if await delete_shopify_product(d["id"]):
+                deleted += 1
+    return {"total": len(items), "duplicate_count": len(dupes), "deleted": deleted,
+            "dry_run": dry_run, "duplicates": dupes[:50]}
+
+
 async def update_inventory(
     product_id: str,
     location_id: str,

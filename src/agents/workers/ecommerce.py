@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import os
 import re
 from langchain_core.messages import HumanMessage, SystemMessage
 from src.agents.state import AgentState
@@ -57,6 +58,25 @@ async def _save_product_mapping(
             ))
     except Exception as exc:
         logger.warning("Failed to save product mapping for %s: %s", shopify_product_id, exc)
+
+
+async def _existing_supplier_ids(store_id: str) -> set[str]:
+    """CJ product ids already listed for this store (from product_mappings). The
+    RELIABLE cross-run dedup key: after re-branding renames the title and Shopify
+    renames the images, only the CJ product id still matches — so this is what stops
+    the same supplier item being listed twice across separate runs."""
+    try:
+        from sqlalchemy import select as _sel
+        from src.db.engine import get_session
+        from src.db.models import ProductMapping
+        async with get_session() as session:
+            rows = await session.execute(
+                _sel(ProductMapping.supplier_product_id).where(ProductMapping.store_id == store_id)
+            )
+            return {str(r[0]) for r in rows.all() if r[0]}
+    except Exception as exc:
+        logger.warning("Could not load existing supplier ids: %s", exc)
+        return set()
 
 
 # ── Brand identity ────────────────────────────────────────────────────────────
@@ -211,7 +231,62 @@ def _psychological_price(price: float) -> float:
     return max(0.90, math.ceil(price) - 0.10)
 
 
-_MAX_STORE_PRODUCTS = 30  # Hard cap — curated catalog, not crowded
+# Catalog target. The owner wants a full store (min 100 SKUs), so the default is
+# 100; override with ORG_MAX_STORE_PRODUCTS. (Was a hard 30 "curated" cap before.)
+_MAX_STORE_PRODUCTS = int(os.environ.get("ORG_MAX_STORE_PRODUCTS", "100"))
+
+# How many candidate images to vision-vet per product (keeps cost bounded).
+_VET_MAX_IMAGES = int(os.environ.get("IMAGE_VET_MAX", "5"))
+
+_IMAGE_VET_SYS = (
+    "You are an e-commerce visual merchandiser deciding if a supplier photo is good "
+    "enough to SELL with on a premium baby store. Look at the image and KEEP it ONLY "
+    "if it's an attractive, styled/lifestyle product photo. REJECT if ANY of these are "
+    "true: plain white/grey studio background with no styling; ANY visible text, "
+    "watermark, label, sticker or foreign language (e.g. Chinese characters) in the "
+    "image; a collage / multiple panels stitched together; blurry or low quality; or it "
+    "doesn't clearly show this product. When unsure, REJECT. "
+    'Reply ONLY JSON: {"keep": true|false, "reason": "<max 6 words>"}'
+)
+
+
+async def _vet_images(urls: list[str], product_title: str) -> tuple[list[str], str]:
+    """Vision-vet supplier (CJ) images and return (kept_urls, note). Keeps only clean,
+    sellable lifestyle shots — rejects white-background-only, any text/foreign language
+    (Chinese), collages, and low quality (the owner's image rules). Uses the cheap Haiku
+    vision tier. Budget-aware: when the monthly/daily cap is hit the team runs on the
+    local model (no vision), so we KEEP the images rather than blindly dropping them and
+    say so — never silently strip a product's only photos because we couldn't look."""
+    from src.budget import over_budget
+    urls = [u for u in urls if u]
+    if not urls:
+        return [], "no images on candidate"
+    if over_budget():
+        return urls, "vetting skipped (budget cap → local model has no vision)"
+    kept: list[str] = []
+    checked = 0
+    for u in urls[:_VET_MAX_IMAGES]:
+        checked += 1
+        try:
+            llm = get_llm("scraper", temperature=0.0, max_tokens=120)  # Haiku, vision-capable
+            resp = await llm.ainvoke([
+                SystemMessage(content=_IMAGE_VET_SYS),
+                HumanMessage(content=[
+                    {"type": "text", "text": f"Product: {product_title}. Keep this image for the store?"},
+                    {"type": "image_url", "image_url": {"url": u}},
+                ]),
+            ])
+            txt = str(resp.content)
+            m = re.search(r"\{.*\}", txt, re.DOTALL)
+            verdict = json.loads(m.group(0)) if m else {}
+            if verdict.get("keep") is True:
+                kept.append(u)
+        except Exception:
+            # Couldn't vet this one (vision unavailable / transient) — don't drop it.
+            kept.append(u)
+    if not kept:
+        return [], f"all {checked} image(s) rejected (white-bg / text / low quality)"
+    return kept, f"kept {len(kept)}/{checked} vetted image(s)"
 _MAX_BACKFILL_PER_CYCLE = 5  # Cap color-selector self-heals per cycle (bound live mutations)
 _MAX_SOURCING_ATTEMPTS = 3  # retry trend_scraper with relaxed terms this many times before giving up
 
@@ -348,9 +423,11 @@ async def ecommerce_node(state: AgentState) -> dict:
     # separate runs (already_created only tracks *this* run's batch), so two listings
     # for the literal same physical product can otherwise slip through with different names.
     existing_image_keys = {_image_key(p) for p in existing_after if _image_key(p)}
+    existing_supplier_ids = await _existing_supplier_ids(store_id)
     candidates = [
         p for p in products
         if str(p.get("product_id", "")) not in already_created
+        and str(p.get("product_id", "")) not in existing_supplier_ids  # already listed (reliable CJ-pid dedup)
         and _image_key(p) not in existing_image_keys
     ]
     skipped_dupes = len(products) - len(candidates) - sum(1 for p in products if str(p.get("product_id", "")) in already_created)
@@ -488,6 +565,17 @@ async def ecommerce_node(state: AgentState) -> dict:
                 f"{n_sizes} sizes" if n_sizes > 1 else "",
             ) if part
         )
+        # Vision-vet the supplier images — keep only clean, sellable lifestyle shots
+        # (no white-bg-only, no text/Chinese, no collages). Skip the product entirely
+        # if none of its images are good enough — we never list an image-less product.
+        good_images, vet_note = await _vet_images(
+            product.get("images") or [product.get("image", "")], brand_title
+        )
+        if not good_images:
+            agent_log(f"⊘ Skip (no sellable image): '{brand_title}' — {vet_note}", "warning")
+            continue
+        agent_log(f"🖼️ {brand_title}: {vet_note}", "info")
+
         agent_log(
             f"Publishing '{brand_title}' @ ${price:.2f}" + (f" ({dims})" if dims else "") + "...",
             "action",
@@ -498,7 +586,7 @@ async def ecommerce_node(state: AgentState) -> dict:
             description=description,
             price=price,
             compare_at_price=compare_price,
-            images=product.get("images") or [product.get("image", "")],
+            images=good_images,
             variants=product_variants,
             video_url=product.get("video", ""),
         )

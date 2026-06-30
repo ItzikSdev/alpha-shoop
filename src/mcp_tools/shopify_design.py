@@ -118,6 +118,41 @@ _TOB_CSS = """
 .tob .tob-wrap{max-width:1240px;margin:0 auto;padding:0 28px}
 .tob a{color:inherit;text-decoration:none}
 .tob .tob-ann{background:#161616;color:#fff;overflow:hidden;white-space:nowrap}
+.tob .tob-header{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--line)}
+.tob .tob-hrow{display:flex;align-items:center;justify-content:space-between;gap:24px;height:66px}
+.tob .tob-hlogo{font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:1.05rem;color:var(--ink)}
+.tob .tob-hnav{display:flex;gap:26px;flex-wrap:wrap;justify-content:center}
+.tob .tob-hnav a{font-size:.9rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink)}
+.tob .tob-hnav a:hover{opacity:.55}
+.tob .tob-hcart{font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+@media(max-width:820px){.tob .tob-hrow{height:auto;padding-top:10px;padding-bottom:10px;flex-wrap:wrap;justify-content:center}.tob .tob-hnav{gap:14px}.tob .tob-hnav a{font-size:.76rem}}
+/* The store's nav now renders from site.json — hide the theme's own header on this page so there's one clean nav. */
+.shopify-section-group-header-group{display:none!important}
+/* ── Editorial split hero (design_handoff_hero) ── */
+.tob .tob-eh{position:relative;display:grid;grid-template-columns:1.05fr 1fr;min-height:760px;background:#f3efe9;overflow:hidden}
+.tob .tob-eh-copy{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:center;padding:88px clamp(48px,6vw,110px);background:#f3efe9}
+.tob .tob-eh-eyebrow{display:inline-flex;align-items:center;gap:10px;margin-bottom:34px;font-size:1.8rem;letter-spacing:.22em;text-transform:uppercase;color:#9a7a6a;font-weight:600}
+.tob .tob-eh-rule{width:26px;height:1px;background:#b98e7a;display:inline-block}
+.tob .tob-eh-title{margin:0;font-family:"Newsreader",Georgia,serif;font-weight:400;font-size:clamp(44px,5vw,76px);line-height:1.02;letter-spacing:-.015em;color:#2e2722}
+.tob .tob-eh-title em{font-style:italic;color:#b07a5f}
+.tob .tob-eh-sub{margin:30px 0 0;max-width:34ch;font-size:1.8rem;line-height:1.6;color:#6b5f56}
+.tob .tob-eh-actions{display:flex;align-items:center;gap:26px;margin-top:44px;flex-wrap:wrap}
+.tob .tob-eh-btn{display:inline-flex;align-items:center;gap:12px;padding:17px 34px;background:#2e2722;color:#f3efe9;font-size:1.5rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;border-radius:2px;transition:transform .25s ease,background .25s ease}
+.tob .tob-eh-btn:hover{background:#b07a5f;transform:translateY(-2px)}
+.tob .tob-eh-link{font-size:1.5rem;font-weight:600;letter-spacing:.08em;color:#2e2722;border-bottom:1px solid #c9b8a8;padding-bottom:3px}
+.tob .tob-eh-link:hover{border-bottom-color:#2e2722}
+.tob .tob-eh-stats{display:flex;gap:40px;margin-top:64px;align-items:stretch}
+.tob .tob-eh-statnum{font-family:"Newsreader",Georgia,serif;font-size:2.6rem;color:#2e2722}
+.tob .tob-eh-statlabel{font-size:1.8rem;letter-spacing:.04em;color:#9a8d82;margin-top:2px}
+.tob .tob-eh-statdiv{width:1px;background:#ddd2c6}
+.tob .tob-eh-media{position:relative;background:#a9c4c2;overflow:hidden;min-height:760px}
+.tob .tob-eh-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.4s ease}
+.tob .tob-eh-slide.active{opacity:1}
+.tob .tob-eh-fade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(243,239,233,.55) 0%,rgba(243,239,233,0) 22%)}
+.tob .tob-eh-dots{position:absolute;bottom:30px;right:clamp(28px,4vw,60px);z-index:3;display:flex;gap:10px}
+.tob .tob-eh-dot{width:8px;height:3px;border-radius:2px;background:rgba(46,39,34,.3);border:none;padding:0;cursor:pointer}
+.tob .tob-eh-dot.active{width:22px;background:#2e2722}
+@media(max-width:860px){.tob .tob-eh{grid-template-columns:1fr}.tob .tob-eh-media{min-height:380px}.tob .tob-eh-copy{padding:64px 32px}.tob .tob-eh-title{font-size:clamp(38px,9vw,52px)}}
 .tob .tob-ann span{display:inline-block;padding:13px 0;font-size:1.4rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;animation:tobmarq 28s linear infinite}
 @keyframes tobmarq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .tob .tob-hero{position:relative;height:620px;display:flex;align-items:center;color:#fff;overflow:hidden}
@@ -185,6 +220,17 @@ _TOB_CSS = """
 .tob-sp.show{transform:translateY(0);opacity:1}
 .tob-sp img{width:54px;height:66px;object-fit:cover;background:#f6f4f1}
 .tob-sp b{font-size:.86rem}
+/* ── OWNER FONT RULE (template rule, 2026-06-30): minimum 1.8rem everywhere.
+   EXCEPTIONS: logo = 2rem; buttons = 1.5rem; product-page description = 1.5rem
+   (product.json → typography.description_size). Edit here to change — keep the floor. ── */
+.tob{font-size:1.8rem;line-height:1.55}
+.tob .tob-hnav a,.tob .tob-hcart,.tob .tob-ann span,.tob .tob-hero p,
+.tob .tob-pills div,.tob .tob-sec-head a,.tob .tob-card h3,.tob .tob-price,
+.tob .tob-tcard p,.tob .tob-tname,.tob .tob-verified,.tob .tob-trev-prod span,
+.tob .tob-fbrand p,.tob .tob-fcol b,.tob .tob-fcol a,.tob .tob-fbottom,
+.tob .tob-stars,.tob .tob-sp b{font-size:1.8rem}
+.tob .tob-hlogo,.tob .tob-flogo{font-size:2rem}   /* logo exception */
+.tob .tob-btn{font-size:1.5rem}                    /* button exception */
 .tob-sp a{font-size:.82rem;color:#161616;text-decoration:none;display:block;font-weight:600}
 .tob-sp span{display:block;font-size:.68rem;color:#8d8d8d;margin-top:3px}
 @media(max-width:820px){.tob .tob-grid{grid-template-columns:repeat(2,1fr)}.tob .tob-hero h1{font-size:2.2rem}.tob .tob-hero{height:440px}.tob .tob-pills div{flex:1 1 50%}.tob-sp{left:10px;right:10px;bottom:10px;max-width:none}}
@@ -205,6 +251,67 @@ def render_site_design(site: dict) -> str:
         if t == "marquee":
             run = "&nbsp;·&nbsp;".join(_esc(i) for i in sec.get("items", []))
             parts.append(f'<div class="tob-ann"><span>{run}&nbsp;·&nbsp;{run}&nbsp;·&nbsp;</span></div>')
+        elif t == "header":
+            # Agent-editable sticky header + nav (the Shopify menu API is scope-locked,
+            # so the store's navigation lives here in site.json instead).
+            links = "".join(
+                f'<a href="{m.get("link","/")}">{_esc(m.get("label",""))}</a>'
+                for m in sec.get("menu", [])
+            )
+            cart = ('<a class="tob-hcart" href="/cart" aria-label="Cart">Cart</a>'
+                    if sec.get("show_cart", True) else "")
+            parts.append(
+                f'<header class="tob-header"><div class="tob-wrap tob-hrow">'
+                f'<a class="tob-hlogo" href="{sec.get("logo_link","/")}">{_esc(sec.get("logo_text","TIMEOF BABY"))}</a>'
+                f'<nav class="tob-hnav">{links}</nav>{cart}'
+                f'</div></header>'
+            )
+        elif t == "hero" and sec.get("layout") == "editorial_split":
+            # Editorial SPLIT hero (design_handoff_hero): copy panel left, image
+            # carousel right, stats, soft seam. Source: style/hero_handoff/.
+            imgs = sec.get("images") or ([sec["image"]] if sec.get("image") else [])
+            interval = int(sec.get("carousel_interval_ms", 4000))
+            slides = "".join(
+                f'<img class="tob-eh-slide{" active" if i==0 else ""}" src="{u}" alt="" loading="{"eager" if i==0 else "lazy"}">'
+                for i, u in enumerate(imgs)
+            )
+            dots = "".join(
+                f'<button class="tob-eh-dot{" active" if i==0 else ""}" data-k="{i}" aria-label="slide {i+1}"></button>'
+                for i in range(len(imgs))
+            )
+            stats_list = sec.get("stats", [])
+            stats = "".join(
+                f'<div class="tob-eh-stat"><div class="tob-eh-statnum">{_esc(s.get("num",""))}</div>'
+                f'<div class="tob-eh-statlabel">{_esc(s.get("label",""))}</div></div>'
+                + ('<div class="tob-eh-statdiv"></div>' if i < len(stats_list) - 1 else "")
+                for i, s in enumerate(stats_list)
+            )
+            secondary = (
+                f'<a href="{sec.get("secondary_link","#")}" class="tob-eh-link">{_esc(sec.get("secondary_text",""))}</a>'
+                if sec.get("secondary_text") else ""
+            )
+            em = f' <em>{_esc(sec.get("headline_em",""))}</em>' if sec.get("headline_em") else ""
+            js = (
+                "<script>(function(){var s=document.querySelectorAll('.tob-eh-slide');"
+                "var d=document.querySelectorAll('.tob-eh-dot');if(s.length<2)return;var k=0,t;"
+                "function go(n){s[k].classList.remove('active');if(d[k])d[k].classList.remove('active');"
+                "k=(n+s.length)%s.length;s[k].classList.add('active');if(d[k])d[k].classList.add('active');}"
+                f"function nx(){{go(k+1);}}t=setInterval(nx,{interval});"
+                "d.forEach(function(b){b.addEventListener('click',function(){clearInterval(t);go(+b.dataset.k);"
+                f"t=setInterval(nx,{interval});}});}});}})();</script>"
+            )
+            parts.append(
+                '<section class="tob-eh"><div class="tob-eh-copy">'
+                f'<div class="tob-eh-eyebrow"><span class="tob-eh-rule"></span><span>{_esc(sec.get("eyebrow",""))}</span></div>'
+                f'<h1 class="tob-eh-title">{_esc(sec.get("headline",""))}{em}</h1>'
+                f'<p class="tob-eh-sub">{_esc(sec.get("sub",""))}</p>'
+                '<div class="tob-eh-actions">'
+                f'<a href="{sec.get("cta_link","/collections/all")}" class="tob-eh-btn">{_esc(sec.get("cta_text","Shop"))} <span aria-hidden="true">&rarr;</span></a>'
+                f'{secondary}</div>'
+                f'<div class="tob-eh-stats">{stats}</div></div>'
+                f'<div class="tob-eh-media">{slides}<div class="tob-eh-fade"></div>'
+                f'<div class="tob-eh-dots">{dots}</div></div>{js}</section>'
+            )
         elif t == "hero":
             imgs = sec.get("images") or ([sec["image"]] if sec.get("image") else [])
             interval = int(sec.get("carousel_interval_ms", 4000))
@@ -328,8 +435,20 @@ def render_site_design(site: dict) -> str:
         "setTimeout(tobShow,3500);setInterval(tobShow,9000);\n</script>"
     )
     body = "\n".join(parts)
+    fonts = (
+        '<link rel="preconnect" href="https://fonts.googleapis.com">'
+        '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+        '<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Archivo:wght@400;500;600&display=swap" rel="stylesheet">'
+    )
+    # The homepage CSS now lives in the TEMPLATE (site.json "css") so the agents can
+    # edit the FULL design — layout + CSS — from the sandbox, not just values. Falls
+    # back to the built-in _TOB_CSS default for any store that hasn't inlined it yet.
+    css = site.get("css")
+    if isinstance(css, list):          # template may store CSS as an array of lines
+        css = "\n".join(css)
+    css = css or _TOB_CSS
     schema = '{"name":"TimeOf Site (JSON)","settings":[],"presets":[{"name":"TimeOf Site (JSON)"}]}'
-    return f"{body}\n<style>{_TOB_CSS}</style>\n{{% schema %}}\n{schema}\n{{% endschema %}}"
+    return f"{fonts}\n{body}\n<style>{css}</style>\n{{% schema %}}\n{schema}\n{{% endschema %}}"
 
 
 def load_site_json(store_slug: str = "") -> dict:

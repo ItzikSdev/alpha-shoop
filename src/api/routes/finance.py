@@ -25,6 +25,36 @@ from src.org.slack import read_agent_messages
 router = APIRouter()
 
 
+@router.get("/finance/budget", summary="Live Claude/org token budget — how many $ are left this month (the $100 cap)")
+async def finance_budget() -> dict:
+    """The agents' remaining org credits, live. No auth so the dashboard can poll it
+    freely. `over` means the cap is hit → the team auto-falls back to the free local
+    model (no overspend possible). `spent_by_agent` attributes month-to-date Claude
+    cost to each role so you can see who's burning tokens."""
+    from datetime import datetime, timezone
+    from src.budget import (
+        budget_status, today_claude_cost, claude_cost_by_node,
+        DAILY_CAP_USD, MONTHLY_CAP_USD,
+    )
+    now = datetime.now(timezone.utc)
+    status = budget_status()
+    by_node = claude_cost_by_node(lambda d: d.year == now.year and d.month == now.month)
+    # Collapse "agent:<role>" / node names to a clean {name: cost} map, biggest first.
+    spent_by_agent = {
+        (k.split(":", 1)[1] if k.startswith("agent:") else k): v["cost_usd"]
+        for k, v in sorted(by_node.items(), key=lambda kv: kv[1]["cost_usd"], reverse=True)
+    }
+    return {
+        **status,                                  # spent_usd, cap_usd, remaining_usd, near, over
+        "monthly_cap_usd": MONTHLY_CAP_USD,
+        "today_spent_usd": round(today_claude_cost(), 2),
+        "daily_cap_usd": DAILY_CAP_USD,
+        "spent_by_agent": spent_by_agent,
+        "month": now.strftime("%Y-%m"),
+        "at": now.isoformat(),
+    }
+
+
 @router.get("/finance/summary", summary="Costs (fixed + dynamic) vs revenue → net")
 async def finance_summary(days: int = 30, _op: str = Depends(get_current_operator)) -> dict:
     snap = await finance_snapshot(days)

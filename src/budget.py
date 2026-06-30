@@ -119,13 +119,20 @@ def over_budget() -> bool:
 
 
 def budget_line() -> str:
-    """One-line, agent-readable budget status for prompts."""
+    """One-line, agent-readable budget status for prompts.
+
+    Leads with the REMAINING monthly budget (the real number the agents should
+    quote) so nobody mistakes the small daily throttle for the whole budget — the
+    cause of agents wrongly reporting "$3.33 budget" when ~$95 was actually left.
+    The $X/day figure is only a soft pacing throttle (cap ÷ 30), NOT the budget."""
     s = budget_status()
     today = today_claude_cost()
     flag = ""
-    if s["over"] or today >= DAILY_CAP_USD:
-        flag = " — CAP REACHED, only free/local actions now"
-    elif s["near"] or today >= DAILY_CAP_USD * 0.9:
-        flag = " — running low, conserve Claude calls"
-    return (f"Claude budget: today ${today:.2f}/${DAILY_CAP_USD:.2f} daily · "
-            f"month ${s['spent_usd']}/${s['cap_usd']:.0f}{flag}.")
+    if s["over"]:
+        flag = " — MONTHLY CAP REACHED, only free/local actions now"
+    elif today >= DAILY_CAP_USD:
+        flag = " — today's pacing throttle hit (budget remains; resets tomorrow)"
+    elif s["near"]:
+        flag = " — running low on the monthly budget, conserve Claude calls"
+    return (f"Claude budget: ${s['remaining_usd']:.2f} REMAINING of ${s['cap_usd']:.0f} this month "
+            f"(spent ${s['spent_usd']:.2f}; today ${today:.2f}, soft daily pace ${DAILY_CAP_USD:.2f}){flag}.")

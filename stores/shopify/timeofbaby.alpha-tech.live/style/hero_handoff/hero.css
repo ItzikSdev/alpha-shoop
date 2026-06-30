@@ -1,0 +1,205 @@
+/* ============================================================
+   TIMEOF BABY — Hero section
+   Plain HTML + CSS. No build step, no framework required.
+   Fonts: Newsreader (serif display) + Archivo (sans).
+   ============================================================ */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+}
+
+/* ---- Layout ---- */
+.hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  min-height: 760px;
+  background: #f3efe9;
+  font-family: "Archivo", system-ui, sans-serif;
+  overflow: hidden;
+}
+
+/* ---- Left copy panel ---- */
+.hero__copy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 88px clamp(48px, 6vw, 110px);
+  background: #f3efe9;
+}
+
+.hero__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 34px;
+  font-size: 12.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #9a7a6a;
+  font-weight: 600;
+}
+.hero__eyebrow-rule {
+  width: 26px;
+  height: 1px;
+  background: #b98e7a;
+}
+
+.hero__title {
+  margin: 0;
+  font-family: "Newsreader", Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(44px, 5vw, 76px);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  color: #2e2722;
+  text-wrap: balance;
+}
+.hero__title em {
+  font-style: italic;
+  color: #b07a5f;
+}
+
+.hero__subtitle {
+  margin: 30px 0 0;
+  max-width: 30ch;
+  font-size: clamp(16px, 1.25vw, 19px);
+  line-height: 1.6;
+  color: #6b5f56;
+}
+
+/* ---- Actions ---- */
+.hero__actions {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  margin-top: 44px;
+  flex-wrap: wrap;
+}
+
+.hero__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 17px 34px;
+  background: #2e2722;
+  color: #f3efe9;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 2px;
+  transition: transform 0.25s ease, background 0.25s ease;
+}
+.hero__btn:hover {
+  background: #b07a5f;
+  transform: translateY(-2px);
+}
+.hero__btn span { font-size: 16px; line-height: 1; }
+
+.hero__link {
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #2e2722;
+  text-decoration: none;
+  border-bottom: 1px solid #c9b8a8;
+  padding-bottom: 3px;
+  transition: border-color 0.2s ease;
+}
+.hero__link:hover { border-bottom-color: #2e2722; }
+
+/* ---- Stats ---- */
+.hero__stats {
+  display: flex;
+  gap: 40px;
+  margin-top: 64px;
+}
+.hero__stat-num {
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 26px;
+  color: #2e2722;
+}
+.hero__stat-label {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #9a8d82;
+  margin-top: 2px;
+}
+.hero__stat-divider {
+  width: 1px;
+  background: #ddd2c6;
+}
+
+/* ---- Right media ----
+   To use your real photo, delete .hero__media-placeholder and set:
+   .hero__media { background: url("/your-photo.jpg") center/cover no-repeat; }
+*/
+.hero__media {
+  position: relative;
+  background: #a9c4c2;
+  overflow: hidden;
+}
+.hero__media-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: repeating-linear-gradient(
+    135deg, #9bb8b6 0 2px, #a9c4c2 2px 22px
+  );
+}
+.hero__media-placeholder span {
+  font-family: "Archivo", monospace;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: #5e7a78;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 8px 14px;
+  border-radius: 2px;
+}
+/* soft seam fade so the split reads intentional */
+.hero__media-fade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg, rgba(243, 239, 233, 0.55) 0%, rgba(243, 239, 233, 0) 22%
+  );
+}
+
+/* ---- Carousel dots ---- */
+.hero__dots {
+  position: absolute;
+  bottom: 30px;
+  right: clamp(28px, 4vw, 60px);
+  z-index: 3;
+  display: flex;
+  gap: 10px;
+}
+.hero__dots span {
+  width: 8px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(46, 39, 34, 0.3);
+}
+.hero__dots span.is-active {
+  width: 22px;
+  background: #2e2722;
+}
+
+/* ---- Responsive: stack on small screens ---- */
+@media (max-width: 860px) {
+  .hero {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+  .hero__media { min-height: 380px; }
+  .hero__copy { padding: 64px 32px; }
+}

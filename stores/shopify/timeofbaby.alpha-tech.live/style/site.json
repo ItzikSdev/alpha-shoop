@@ -7,9 +7,9 @@
     "reference": "Premium baby store — TerminalX-level polish",
     "renders_to": "sections/timeofbaby-home.liquid + templates/index.json (uses ONLY this section)",
     "principle": "This JSON is the single source of truth. To change the homepage you edit VALUES here and run apply_site_design — never touch the .liquid by hand.",
-    "updated": "2026-06-27"
+    "updated": "2026-06-27",
+    "css_note": "Homepage CSS lives HERE now (array of lines) — edit it to restyle the store, then apply_site_design. The Python renderer only uses this if present."
   },
-
   "design_tokens": {
     "colors": {
       "ink": "#161616",
@@ -23,21 +23,30 @@
       "verified": "#3a9d5a",
       "footer_bg": "#161616",
       "footer_text": "#ffffff",
-      "footer_muted": "#bbbbbb"
+      "footer_muted": "#bbbbbb",
+      "hero_bg": "#f3efe9",
+      "hero_ink": "#2e2722",
+      "hero_accent": "#b07a5f",
+      "hero_eyebrow": "#9a7a6a"
     },
     "typography": {
+      "font_rule": "TEMPLATE RULE: minimum font-size is 1.8rem EVERYWHERE on the site. EXCEPTIONS: logo = 2rem; buttons (CTA + product option/add-to-cart) = 1.5rem; product-page description = 1.5rem (product.json). Never set any other storefront text below 1.8rem.",
+      "serif_display_font": "'Newsreader', Georgia, serif (used for the editorial hero headline + stat numbers)",
+      "sans_font": "'Archivo', system-ui, sans-serif (hero copy)",
       "font_family": "-apple-system, 'Helvetica Neue', Inter, Arial, sans-serif",
-      "marquee_size": "1.4rem",
+      "logo_size": "2rem",
+      "button_size": "1.5rem",
+      "marquee_size": "1.8rem",
       "hero_h1_size": "3.4rem",
-      "hero_sub_size": "1.25rem",
+      "hero_sub_size": "1.8rem",
       "section_heading_size": "2.5rem",
-      "card_title_size": "1.4rem",
-      "card_price_size": "1.5rem",
-      "pill_size": "0.95rem",
+      "card_title_size": "1.8rem",
+      "card_price_size": "1.8rem",
+      "pill_size": "1.8rem",
       "tile_label_size": "2.1rem",
-      "testimonial_text_size": "1.05rem",
-      "footer_heading_size": "0.78rem",
-      "footer_link_size": "0.92rem",
+      "testimonial_text_size": "1.8rem",
+      "footer_heading_size": "1.8rem",
+      "footer_link_size": "1.8rem",
       "letter_spacing_uppercase": "0.12em"
     },
     "spacing": {
@@ -62,13 +71,11 @@
       "tiles_columns_mobile": 1
     }
   },
-
   "global": {
     "font_family": "-apple-system, 'Helvetica Neue', Inter, Arial, sans-serif",
     "text_color": "#161616",
     "background": "#ffffff"
   },
-
   "sections": [
     {
       "id": "announcement_marquee",
@@ -79,7 +86,8 @@
         "FREE SHIPPING OVER $50",
         "30-DAY RETURNS",
         "ORGANIC COTTON",
-        "DESIGNED FOR LITTLE ONES"
+        "DESIGNED FOR LITTLE ONES",
+        "CUSTOMER SUPPORT — suppot.timeofbaby@alpha-tech.live"
       ],
       "style": {
         "background": "#161616",
@@ -90,17 +98,45 @@
         "letter_spacing": "0.14em",
         "scroll_seconds": 28
       },
-      "behavior": "items are concatenated with ' · ' and scrolled right-to-left infinitely (CSS animation)."
+      "behavior": "loop"
+    },
+    {
+      "id": "site_header",
+      "type": "header",
+      "enabled": true,
+      "icons": {
+        "cart": true,
+        "login": true
+      },
+      "mobile": {
+        "font_size": "1rem",
+        "padding": "0.6rem 1rem"
+      }
     },
     {
       "id": "hero",
       "type": "hero",
       "enabled": true,
-      "description": "Full-bleed hero with a 7-image crossfade carousel, headline, sub, CTA, and clickable nav dots.",
-      "headline": "Soft. Modern. Made for first moments.",
-      "sub": "Thoughtfully designed baby essentials in premium organic cotton.",
+      "description": "Editorial SPLIT hero (design_handoff_hero, 2026-06-30): left copy panel (eyebrow, serif italic headline, sub, CTA + 'Our story' link, stats); right = image carousel with dots. Reference: style/hero_handoff/.",
+      "layout": "editorial_split",
+      "eyebrow": "Organic cotton essentials",
+      "headline": "Soft. Modern.",
+      "headline_em": "Made for first moments.",
+      "sub": "Thoughtfully designed baby essentials in premium organic cotton — gentle on the smallest skin, made to last.",
       "cta_text": "Shop the collection",
       "cta_link": "/collections/all",
+      "secondary_text": "Our story",
+      "secondary_link": "/pages/about-us",
+      "stats": [
+        {
+          "num": "100%",
+          "label": "GOTS organic"
+        },
+        {
+          "num": "1,000+",
+          "label": "Happy parents"
+        }
+      ],
       "carousel_interval_ms": 4000,
       "images_note": "Use ONLY baby/kids-relevant images, and do NOT reuse images shown elsewhere on the site. Swap any URL below to change a slide.",
       "images": [
@@ -154,9 +190,21 @@
       "description": "Large image tiles linking to the main collections, with a hover zoom.",
       "heading": "Shop by category",
       "tiles": [
-        { "label": "Boys", "link": "/collections/baby-boys", "image": "https://images.unsplash.com/photo-1522771930-78848d9293e8?w=800&q=80" },
-        { "label": "Girls", "link": "/collections/baby-girls", "image": "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=800&q=80" },
-        { "label": "Shop All", "link": "/collections/all", "image": "https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=80" }
+        {
+          "label": "Boys",
+          "link": "/collections/baby-boys",
+          "image": "https://images.unsplash.com/photo-1522771930-78848d9293e8?w=800&q=80"
+        },
+        {
+          "label": "Girls",
+          "link": "/collections/baby-girls",
+          "image": "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=800&q=80"
+        },
+        {
+          "label": "Shop All",
+          "link": "/collections/all",
+          "image": "https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=80"
+        }
       ],
       "style": {
         "columns": 3,
@@ -196,18 +244,78 @@
       "show_count": 6,
       "rotation": "The renderer shuffles this pool on every page load and shows `show_count` of them — so reviews rotate per visit. To MANAGE reviews, add/edit/remove items in this array (this is the review management).",
       "reviews": [
-        { "name": "Maya R.", "location": "Tel Aviv", "rating": 5, "text": "The softest fabric we've found — my daughter lives in these. Washed a dozen times and still perfect." },
-        { "name": "Daniel K.", "location": "New York", "rating": 5, "text": "Ordered for my newborn and the quality blew me away for the price. Shipping was fast and free." },
-        { "name": "Sophie L.", "location": "London", "rating": 5, "text": "Beautiful, modern designs that actually fit. The snap closures make 3am changes so much easier." },
-        { "name": "Noa B.", "location": "Toronto", "rating": 5, "text": "Gift-wrapped feeling, gentle on my baby's skin. Already ordered three more." },
-        { "name": "Tom H.", "location": "Berlin", "rating": 5, "text": "Finally a baby brand that looks as good as it feels. Returns policy gave me total peace of mind." },
-        { "name": "Aria M.", "location": "Sydney", "rating": 5, "text": "Obsessed. Every piece photographs beautifully and holds up to a very active toddler." },
-        { "name": "Hila S.", "location": "Haifa", "rating": 5, "text": "Arrived in 8 days, beautifully packed. The cotton is genuinely premium — not what I expected at this price." },
-        { "name": "Emma W.", "location": "Manchester", "rating": 5, "text": "My go-to baby shower gift now. Everyone asks where it's from." },
-        { "name": "Liam P.", "location": "Dublin", "rating": 5, "text": "Sizes run true and the colors stay vivid after washing. Couldn't be happier." },
-        { "name": "Yael C.", "location": "Jerusalem", "rating": 5, "text": "Soft, breathable, and adorable. My little one is comfortable all day." },
-        { "name": "Chloe D.", "location": "Melbourne", "rating": 5, "text": "Customer service was lovely and the free returns made trying sizes stress-free." },
-        { "name": "Ben A.", "location": "Amsterdam", "rating": 5, "text": "Looks premium, feels premium, priced fairly. Already a repeat customer." }
+        {
+          "name": "Maya R.",
+          "location": "Tel Aviv",
+          "rating": 5,
+          "text": "The softest fabric we've found — my daughter lives in these. Washed a dozen times and still perfect."
+        },
+        {
+          "name": "Daniel K.",
+          "location": "New York",
+          "rating": 5,
+          "text": "Ordered for my newborn and the quality blew me away for the price. Shipping was fast and free."
+        },
+        {
+          "name": "Sophie L.",
+          "location": "London",
+          "rating": 5,
+          "text": "Beautiful, modern designs that actually fit. The snap closures make 3am changes so much easier."
+        },
+        {
+          "name": "Noa B.",
+          "location": "Toronto",
+          "rating": 5,
+          "text": "Gift-wrapped feeling, gentle on my baby's skin. Already ordered three more."
+        },
+        {
+          "name": "Tom H.",
+          "location": "Berlin",
+          "rating": 5,
+          "text": "Finally a baby brand that looks as good as it feels. Returns policy gave me total peace of mind."
+        },
+        {
+          "name": "Aria M.",
+          "location": "Sydney",
+          "rating": 5,
+          "text": "Obsessed. Every piece photographs beautifully and holds up to a very active toddler."
+        },
+        {
+          "name": "Hila S.",
+          "location": "Haifa",
+          "rating": 5,
+          "text": "Arrived in 8 days, beautifully packed. The cotton is genuinely premium — not what I expected at this price."
+        },
+        {
+          "name": "Emma W.",
+          "location": "Manchester",
+          "rating": 5,
+          "text": "My go-to baby shower gift now. Everyone asks where it's from."
+        },
+        {
+          "name": "Liam P.",
+          "location": "Dublin",
+          "rating": 5,
+          "text": "Sizes run true and the colors stay vivid after washing. Couldn't be happier."
+        },
+        {
+          "name": "Yael C.",
+          "location": "Jerusalem",
+          "rating": 5,
+          "text": "Soft, breathable, and adorable. My little one is comfortable all day."
+        },
+        {
+          "name": "Chloe D.",
+          "location": "Melbourne",
+          "rating": 5,
+          "text": "Customer service was lovely and the free returns made trying sizes stress-free."
+        },
+        {
+          "name": "Ben A.",
+          "location": "Amsterdam",
+          "rating": 5,
+          "text": "Looks premium, feels premium, priced fairly. Already a repeat customer."
+        }
       ],
       "style": {
         "columns": 3,
@@ -231,7 +339,11 @@
       "type": "_auto",
       "enabled": true,
       "description": "Floating popup (bottom-left) cycling real products as recent purchases — appended automatically by the renderer after all sections.",
-      "style": { "position": "bottom-left", "interval_ms": 9000, "show_seconds": 5.2 },
+      "style": {
+        "position": "bottom-left",
+        "interval_ms": 9000,
+        "show_seconds": 5.2
+      },
       "content": "{city} just purchased {real product} · {n} minutes ago · ✔ verified"
     },
     {
@@ -242,37 +354,85 @@
       "brand": "TIMEOF BABY",
       "tagline": "Thoughtfully designed baby essentials in premium organic cotton. Made for the moments that matter.",
       "social": [
-        { "name": "Instagram", "link": "#" },
-        { "name": "TikTok", "link": "#" },
-        { "name": "Facebook", "link": "#" },
-        { "name": "YouTube", "link": "#" }
+        {
+          "name": "Instagram",
+          "link": "#"
+        },
+        {
+          "name": "TikTok",
+          "link": "#"
+        },
+        {
+          "name": "Facebook",
+          "link": "#"
+        },
+        {
+          "name": "YouTube",
+          "link": "#"
+        }
       ],
       "columns": [
         {
           "title": "Shop",
           "links": [
-            { "label": "Boys", "link": "/collections/baby-boys" },
-            { "label": "Girls", "link": "/collections/baby-girls" },
-            { "label": "Shop All", "link": "/collections/all" },
-            { "label": "New In", "link": "/collections/all" }
+            {
+              "label": "Boys",
+              "link": "/collections/baby-boys"
+            },
+            {
+              "label": "Girls",
+              "link": "/collections/baby-girls"
+            },
+            {
+              "label": "Shop All",
+              "link": "/collections/all"
+            },
+            {
+              "label": "New In",
+              "link": "/collections/all"
+            }
           ]
         },
         {
           "title": "Help",
           "links": [
-            { "label": "Shipping", "link": "/policies/shipping-policy" },
-            { "label": "Returns", "link": "/policies/refund-policy" },
-            { "label": "Size Guide", "link": "#" },
-            { "label": "Contact", "link": "/pages/contact" }
+            {
+              "label": "Shipping",
+              "link": "/policies/shipping-policy"
+            },
+            {
+              "label": "Returns",
+              "link": "/policies/refund-policy"
+            },
+            {
+              "label": "Size Guide",
+              "link": "#"
+            },
+            {
+              "label": "Contact",
+              "link": "/pages/contact"
+            }
           ]
         },
         {
           "title": "About",
           "links": [
-            { "label": "Our Story", "link": "#" },
-            { "label": "Sustainability", "link": "#" },
-            { "label": "Reviews", "link": "#" },
-            { "label": "Privacy", "link": "/policies/privacy-policy" }
+            {
+              "label": "Our Story",
+              "link": "#"
+            },
+            {
+              "label": "Sustainability",
+              "link": "#"
+            },
+            {
+              "label": "Reviews",
+              "link": "#"
+            },
+            {
+              "label": "Privacy",
+              "link": "/policies/privacy-policy"
+            }
           ]
         }
       ],
@@ -287,7 +447,6 @@
       }
     }
   ],
-
   "behaviors": {
     "marquee": "CSS keyframe translateX(-50%) infinite over scroll_seconds",
     "hero_carousel": "JS interval swaps the .active <img>; dots clickable; gradient overlay via .tob-hero::after",
@@ -295,12 +454,134 @@
     "recently_viewed": "reads localStorage tob_recent (array of {n:name,i:image,pr:price,u:url}); hide if empty",
     "social_proof": "JS cycles real product names + random cities as 'just purchased' toasts"
   },
-
   "open_issues": [
     "Hero images must be verified baby/kids and must not duplicate product or tile images",
     "Most products have only 1 image — source 3-5 real images each",
     "Color option not yet sourced from CJ",
     "Footer is currently homepage-only via this section; making it site-wide needs the theme footer-group",
     "Recently-viewed requires the product page to write localStorage on view"
+  ],
+  "css": [
+    ".tob{--ink:#161616;--muted:#8d8d8d;--line:#eee;--soft:#f6f4f1;font-family:-apple-system,\"Helvetica Neue\",Inter,Arial,sans-serif;color:var(--ink);line-height:1.5}",
+    ".tob *{box-sizing:border-box}",
+    ".tob .tob-wrap{max-width:1240px;margin:0 auto;padding:0 28px}",
+    ".tob a{color:inherit;text-decoration:none}",
+    ".tob .tob-ann{background:#161616;color:#fff;overflow:hidden;white-space:nowrap}",
+    ".tob .tob-header{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--line)}",
+    ".tob .tob-hrow{display:flex;align-items:center;justify-content:space-between;gap:24px;height:66px}",
+    ".tob .tob-hlogo{font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:1.05rem;color:var(--ink)}",
+    ".tob .tob-hnav{display:flex;gap:26px;flex-wrap:wrap;justify-content:center}",
+    ".tob .tob-hnav a{font-size:.9rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink)}",
+    ".tob .tob-hnav a:hover{opacity:.55}",
+    ".tob .tob-hcart{font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}",
+    "@media(max-width:820px){.tob .tob-hrow{height:auto;padding-top:10px;padding-bottom:10px;flex-wrap:wrap;justify-content:center}.tob .tob-hnav{gap:14px}.tob .tob-hnav a{font-size:.76rem}}",
+    "/* The store's nav now renders from site.json — hide the theme's own header on this page so there's one clean nav. */",
+    ".shopify-section-group-header-group{display:none!important}",
+    "/* ── Editorial split hero (design_handoff_hero) ── */",
+    ".tob .tob-eh{position:relative;display:grid;grid-template-columns:1.05fr 1fr;min-height:760px;background:#f3efe9;overflow:hidden}",
+    ".tob .tob-eh-copy{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:center;padding:88px clamp(48px,6vw,110px);background:#f3efe9}",
+    ".tob .tob-eh-eyebrow{display:inline-flex;align-items:center;gap:10px;margin-bottom:34px;font-size:1.8rem;letter-spacing:.22em;text-transform:uppercase;color:#9a7a6a;font-weight:600}",
+    ".tob .tob-eh-rule{width:26px;height:1px;background:#b98e7a;display:inline-block}",
+    ".tob .tob-eh-title{margin:0;font-family:\"Newsreader\",Georgia,serif;font-weight:400;font-size:clamp(44px,5vw,76px);line-height:1.02;letter-spacing:-.015em;color:#2e2722}",
+    ".tob .tob-eh-title em{font-style:italic;color:#b07a5f}",
+    ".tob .tob-eh-sub{margin:30px 0 0;max-width:34ch;font-size:1.8rem;line-height:1.6;color:#6b5f56}",
+    ".tob .tob-eh-actions{display:flex;align-items:center;gap:26px;margin-top:44px;flex-wrap:wrap}",
+    ".tob .tob-eh-btn{display:inline-flex;align-items:center;gap:12px;padding:17px 34px;background:#2e2722;color:#f3efe9;font-size:1.5rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;border-radius:2px;transition:transform .25s ease,background .25s ease}",
+    ".tob .tob-eh-btn:hover{background:#b07a5f;transform:translateY(-2px)}",
+    ".tob .tob-eh-link{font-size:1.5rem;font-weight:600;letter-spacing:.08em;color:#2e2722;border-bottom:1px solid #c9b8a8;padding-bottom:3px}",
+    ".tob .tob-eh-link:hover{border-bottom-color:#2e2722}",
+    ".tob .tob-eh-stats{display:flex;gap:40px;margin-top:64px;align-items:stretch}",
+    ".tob .tob-eh-statnum{font-family:\"Newsreader\",Georgia,serif;font-size:2.6rem;color:#2e2722}",
+    ".tob .tob-eh-statlabel{font-size:1.8rem;letter-spacing:.04em;color:#9a8d82;margin-top:2px}",
+    ".tob .tob-eh-statdiv{width:1px;background:#ddd2c6}",
+    ".tob .tob-eh-media{position:relative;background:#a9c4c2;overflow:hidden;min-height:760px}",
+    ".tob .tob-eh-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.4s ease}",
+    ".tob .tob-eh-slide.active{opacity:1}",
+    ".tob .tob-eh-fade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(243,239,233,.55) 0%,rgba(243,239,233,0) 22%)}",
+    ".tob .tob-eh-dots{position:absolute;bottom:30px;right:clamp(28px,4vw,60px);z-index:3;display:flex;gap:10px}",
+    ".tob .tob-eh-dot{width:8px;height:3px;border-radius:2px;background:rgba(46,39,34,.3);border:none;padding:0;cursor:pointer}",
+    ".tob .tob-eh-dot.active{width:22px;background:#2e2722}",
+    "@media(max-width:860px){.tob .tob-eh{grid-template-columns:1fr}.tob .tob-eh-media{min-height:380px}.tob .tob-eh-copy{padding:64px 32px}.tob .tob-eh-title{font-size:clamp(38px,9vw,52px)}}",
+    ".tob .tob-ann span{display:inline-block;padding:13px 0;font-size:1.4rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;animation:tobmarq 28s linear infinite}",
+    "@keyframes tobmarq{from{transform:translateX(0)}to{transform:translateX(-50%)}}",
+    ".tob .tob-hero{position:relative;height:620px;display:flex;align-items:center;color:#fff;overflow:hidden}",
+    ".tob .tob-hero-slides{position:absolute;inset:0;z-index:0}",
+    ".tob .tob-hero-slide{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.4s ease;animation:tobzoom 9s ease-in-out infinite alternate}",
+    ".tob .tob-hero-slide.active{opacity:1}",
+    "@keyframes tobzoom{from{transform:scale(1)}to{transform:scale(1.08)}}",
+    ".tob .tob-hero::after{content:\"\";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.5))}",
+    ".tob .tob-hero .tob-wrap{position:relative;width:100%;z-index:2}",
+    ".tob .tob-dots{position:absolute;bottom:22px;left:0;right:0;z-index:3;display:flex;justify-content:center;gap:10px}",
+    ".tob .tob-dot{width:11px;height:11px;border-radius:50%;border:2px solid #fff;background:transparent;cursor:pointer;padding:0;transition:.2s}",
+    ".tob .tob-dot.active{background:#fff}",
+    ".tob .tob-hero h1{font-size:3.4rem;font-weight:600;letter-spacing:-.03em;max-width:560px;line-height:1.05;animation:tobup .9s ease both}",
+    ".tob .tob-hero p{margin:18px 0 30px;max-width:440px;opacity:.92;font-size:1.05rem;animation:tobup .9s .15s ease both}",
+    "@keyframes tobup{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}",
+    ".tob .tob-btn{display:inline-block;background:#fff;color:#161616;padding:15px 40px;text-transform:uppercase;letter-spacing:.1em;font-size:.78rem;font-weight:700;transition:.2s;animation:tobup .9s .3s ease both}",
+    ".tob .tob-btn:hover{background:#161616;color:#fff;transform:translateY(-2px)}",
+    ".tob .tob-pills{display:flex;border-bottom:1px solid var(--line);text-align:center}",
+    ".tob .tob-pills div{flex:1;padding:22px;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;border-right:1px solid var(--line)}",
+    ".tob .tob-pills div:last-child{border:none}",
+    ".tob .tob-sec-head{display:flex;align-items:flex-end;justify-content:space-between;margin:64px 0 26px}",
+    ".tob .tob-sec-head h2{font-size:2.5rem;font-weight:600}",
+    ".tob .tob-sec-head a{font-size:.9rem;text-transform:uppercase;letter-spacing:.1em;font-weight:600;border-bottom:1px solid var(--ink);padding-bottom:2px}",
+    ".tob .tob-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:34px 20px}",
+    ".tob .tob-card{opacity:0;transform:translateY(24px);animation:tobrise .7s ease forwards}",
+    "@keyframes tobrise{to{opacity:1;transform:none}}",
+    ".tob .tob-imgwrap{overflow:hidden;background:var(--soft);aspect-ratio:3/4}",
+    ".tob .tob-imgwrap img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease}",
+    ".tob .tob-card:hover img{transform:scale(1.06)}",
+    ".tob .tob-card h3{font-size:1.4rem;font-weight:500;margin:14px 2px 4px}",
+    ".tob .tob-price{font-weight:700;font-size:1.5rem;color:#161616}",
+    ".tob .tob-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:30px 0}",
+    ".tob .tob-tile{position:relative;height:360px;overflow:hidden;display:flex;align-items:flex-end;padding:26px}",
+    ".tob .tob-tile::before{content:\"\";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.45)),var(--tile-img) center/cover;transition:transform .6s ease}",
+    ".tob .tob-tile:hover::before{transform:scale(1.06)}",
+    ".tob .tob-tile span{position:relative;color:#fff;font-size:2.1rem;font-weight:600;letter-spacing:-.01em;text-shadow:0 1px 8px rgba(0,0,0,.3)}",
+    ".tob .tob-testimonials{margin-top:74px;padding:20px 0}",
+    ".tob .tob-tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:26px}",
+    ".tob .tob-tcard{background:var(--soft);padding:30px 26px}",
+    ".tob .tob-stars{color:#e0a93b;font-size:1.1rem;letter-spacing:2px;margin-bottom:12px}",
+    ".tob .tob-tcard p{font-size:1.05rem;line-height:1.6;color:#333;margin-bottom:16px}",
+    ".tob .tob-tname{font-size:.85rem;color:var(--muted);font-weight:600}",
+    ".tob .tob-verified{color:#3a9d5a;font-weight:600}",
+    ".tob .tob-trev-prod{display:flex;align-items:center;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid #e7e0d8;text-decoration:none}",
+    ".tob .tob-trev-prod img{width:44px;height:54px;object-fit:cover;background:#fff}",
+    ".tob .tob-trev-prod span{font-size:.82rem;color:#161616;font-weight:600;line-height:1.3}",
+    ".tob .tob-trev-prod:hover span{text-decoration:underline}",
+    ".tob .tob-footer{background:#161616;color:#fff;margin-top:80px;padding:64px 0 34px}",
+    ".tob .tob-fcols{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:30px}",
+    ".tob .tob-flogo{font-weight:800;letter-spacing:.05em;font-size:1.4rem;margin-bottom:12px}",
+    ".tob .tob-fbrand p{color:#aaa;font-size:.9rem;max-width:260px;line-height:1.6}",
+    ".tob .tob-fsocial{display:flex;gap:10px;margin-top:18px}",
+    ".tob .tob-fsocial a{width:36px;height:36px;border:1px solid #444;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#fff;border-radius:50%;text-transform:uppercase}",
+    ".tob .tob-fsocial a:hover{background:#fff;color:#161616}",
+    ".tob .tob-fcol b{display:block;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px}",
+    ".tob .tob-fcol a{display:block;color:#bbb;font-size:.92rem;margin-bottom:11px;transition:color .2s}",
+    ".tob .tob-fcol a:hover{color:#fff}",
+    ".tob .tob-fbottom{border-top:1px solid #333;margin-top:44px;padding-top:24px;color:#888;font-size:.82rem}",
+    "@media(max-width:820px){.tob .tob-tgrid{grid-template-columns:1fr}.tob .tob-fcols{grid-template-columns:1fr 1fr}}",
+    ".tob .tob-story{background:var(--soft);margin-top:74px;padding:80px 0;text-align:center}",
+    "@media(max-width:820px){.tob .tob-tiles{grid-template-columns:1fr}.tob .tob-tile{height:240px}}",
+    ".tob .tob-story h2{font-size:2.8rem;font-weight:600;margin-bottom:14px}",
+    ".tob .tob-story p{max-width:600px;margin:0 auto;color:#555;font-size:1.15rem}",
+    ".tob-sp{position:fixed;left:20px;bottom:20px;z-index:50;background:#fff;border:1px solid #e7e7e7;box-shadow:0 8px 30px rgba(0,0,0,.12);display:flex;align-items:center;gap:12px;padding:12px 16px 12px 12px;max-width:330px;transform:translateY(140%);opacity:0;transition:transform .5s ease,opacity .5s ease;font-family:-apple-system,\"Helvetica Neue\",Inter,Arial,sans-serif}",
+    ".tob-sp.show{transform:translateY(0);opacity:1}",
+    ".tob-sp img{width:54px;height:66px;object-fit:cover;background:#f6f4f1}",
+    ".tob-sp b{font-size:.86rem}",
+    "/* ── OWNER FONT RULE (template rule, 2026-06-30): minimum 1.8rem everywhere.",
+    "   EXCEPTIONS: logo = 2rem; buttons = 1.5rem; product-page description = 1.5rem",
+    "   (product.json → typography.description_size). Edit here to change — keep the floor. ── */",
+    ".tob{font-size:1.8rem;line-height:1.55}",
+    ".tob .tob-hnav a,.tob .tob-hcart,.tob .tob-ann span,.tob .tob-hero p,",
+    ".tob .tob-pills div,.tob .tob-sec-head a,.tob .tob-card h3,.tob .tob-price,",
+    ".tob .tob-tcard p,.tob .tob-tname,.tob .tob-verified,.tob .tob-trev-prod span,",
+    ".tob .tob-fbrand p,.tob .tob-fcol b,.tob .tob-fcol a,.tob .tob-fbottom,",
+    ".tob .tob-stars,.tob .tob-sp b{font-size:1.8rem}",
+    ".tob .tob-hlogo,.tob .tob-flogo{font-size:2rem}   /* logo exception */",
+    ".tob .tob-btn{font-size:1.5rem}                    /* button exception */",
+    ".tob-sp a{font-size:.82rem;color:#161616;text-decoration:none;display:block;font-weight:600}",
+    ".tob-sp span{display:block;font-size:.68rem;color:#8d8d8d;margin-top:3px}",
+    "@media(max-width:820px){.tob .tob-grid{grid-template-columns:repeat(2,1fr)}.tob .tob-hero h1{font-size:2.2rem}.tob .tob-hero{height:440px}.tob .tob-pills div{flex:1 1 50%}.tob-sp{left:10px;right:10px;bottom:10px;max-width:none}}"
   ]
 }

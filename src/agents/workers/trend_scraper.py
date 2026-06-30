@@ -1,6 +1,7 @@
 """Trend Scraper worker — finds niche-relevant products via CJ Dropshipping."""
 from __future__ import annotations
 import json
+import os
 import re
 import logging
 
@@ -205,9 +206,13 @@ async def trend_scraper_node(state: AgentState) -> dict:
     candidates = sorted(all_products, key=lambda p: p.get("margin_pct", 0), reverse=True)[:15]
     enriched = []
     for p in candidates:
+        # The store sells GLOBALLY, not to one local market. We quote shipping to the
+        # primary global market (default US — the largest English-speaking market and
+        # a good proxy for "ships worldwide at a reasonable rate"). Override with
+        # SHIP_DESTINATION_COUNTRY (ISO-2) if you want margins quoted for another market.
         shipping = await get_shipping_cost(
             product_id=p.get("cj_vid", p["product_id"]),
-            destination_country="US",
+            destination_country=os.environ.get("SHIP_DESTINATION_COUNTRY", "US"),
             shipping_method="standard",
         )
         enriched.append({

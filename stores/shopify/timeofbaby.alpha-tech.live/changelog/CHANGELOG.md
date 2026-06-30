@@ -5,6 +5,85 @@ see [README.md](./README.md). Times are Asia/Jerusalem.
 
 ---
 
+## 2026-06-30 21:15 (Asia/Jerusalem) — Homepage CSS moved into the JSON template (agent-editable design)
+**By:** Devon
+**Context:** Owner: agents should be able to edit the store code + push it live, like Claude does.
+**Changed:** Moved the full homepage CSS (_TOB_CSS, 121 lines) out of the Python renderer into site.json 'css' (array of lines). render_site_design now reads CSS from the template (falls back to the built-in default). The agents (Remy) can now change the WHOLE homepage design — layout + CSS, not just values — from site.json in the sandbox, then apply_site_design. Render verified byte-identical.
+
+## 2026-06-30 20:43 (Asia/Jerusalem) — Devon: cleanup (from chat)
+**By:** Devon
+**Context:** Owner asked in chat: עדיין יש מוצרים 0$ 
+**Changed:** ניקיתי 0 מוצרים פגומים (בלי תמונה / טקסט לא תקין) מתוך 22.
+
+## 2026-06-30 20:37 (Asia/Jerusalem) — Devon: cleanup (from chat)
+**By:** Devon
+**Context:** Owner asked in chat: יש מוצרים שהם רשומים 0$ 
+לא תקין אם הפריט לא עולה כסף תוציא אותו מהרימת מוצרים 
+
+בנוסף יש תמונות כפולות לאותו מוצר 
+**Changed:** ניקיתי 0 מוצרים פגומים (בלי תמונה / טקסט לא תקין) מתוך 22.
+
+## 2026-06-30 20:35 (Asia/Jerusalem) — Remy: apply_design (from chat)
+**By:** Remy
+**Context:** Owner asked in chat: נו אני לא רואה שהורדת 
+Remy 
+**Changed:** החלתי את התבנית לייב — דף הבית ✓, דף מוצר ✓.
+
+## 2026-06-30 20:31 (Asia/Jerusalem) — Devon: dedupe (from chat)
+**By:** Devon
+**Context:** Owner asked in chat: Devon, תוריד בבקשה את כל המוצרים הכפולים מהחנות
+**Changed:** הסרתי 0 כפילויות (מתוך 6 שזוהו).
+
+## 2026-06-30 20:31 (Asia/Jerusalem) — Remy: apply_design (from chat)
+**By:** Remy
+**Context:** Owner asked in chat: נו אני לא רואה שהורדת 
+Remy 
+**Changed:** החלתי את התבנית לייב — דף הבית ✓, דף מוצר ✓.
+
+## 2026-06-30 20:19 (Asia/Jerusalem) — Remy: store design edit (chat)
+**By:** Remy
+**Context:** Owner asked in chat: נו אני לא רואה שהורדת 
+Remy 
+**Changed:** הוסר 'Loved by 1000+ parents' מרשימת ה-items של announcement_marquee — הפריט לא היה קיים בפועל ב-JSON, אז אישרתי שהרשימה נקייה ממנו ועדכנתי מחדש.
+
+## 2026-06-30 20:15 (Asia/Jerusalem) — Remy: store design edit (chat)
+**By:** Remy
+**Context:** Owner asked in chat: לא זה בגלל שיש 
+Loved by 1000+ parents 
+**Changed:** הוסר הפריט 'Loved by 1000+ parents' מה-announcement bar — לא היה קיים שם, אך אם הופיע בסקשן אחר (testimonials/trust_pills) יש לאתרו ולהסיר/לעדכן בנפרד.
+
+## 2026-06-30 20:13 (Asia/Jerusalem) — About Us page (/pages/about-us) + template sync
+**By:** Devon
+**Context:** Owner: add the about-us page + put all changes into the JSON template.
+**Changed:** Renamed the About page handle about-us-2 → about-us (title 'Our Story') with a real brand story, so the hero 'Our story' link resolves. Folded all recent changes into the JSON template: site.json design_tokens now carries the editorial-hero palette (hero_bg #f3efe9, hero_ink #2e2722, hero_accent #b07a5f), the Newsreader/Archivo fonts, and the full font rule (min 1.8rem; logo 2rem; buttons 1.5rem; product description 1.5rem).
+
+## 2026-06-30 20:07 (Asia/Jerusalem) — New editorial split hero (design_handoff_hero)
+**By:** Devon
+**Context:** Owner handed a new hero design (design_handoff_hero) to add to the store.
+**Changed:** Replaced the full-bleed hero with the editorial SPLIT layout: left copy panel (eyebrow, serif italic headline 'Made for first moments', sub, Shop CTA + 'Our story' link, stats 100% GOTS / 1,000+ parents), right image carousel with dots. Added Newsreader+Archivo fonts, warm #f3efe9 / terracotta #b07a5f palette. site.json hero.layout=editorial_split + renderer .tob-eh + style/hero_handoff/ saved.
+
+## 2026-06-30 18:27 (Asia/Jerusalem) — Remy: store design edit (chat)
+**By:** Remy
+**Context:** Owner asked in chat: Remy תוסיף icon cart :shopping_trolley: &amp; login 
+**Changed:** site_header — הוספת icons.cart ו-icons.login (cart & login) → שניהם true
+
+## 2026-06-30 16:32 (Asia/Jerusalem) — Remy: store design edit (chat)
+**By:** Remy
+**Context:** Owner asked in chat: אסור שהיה עיברית בכלל בחנות בבקשה להוריד
+״שירות לקוחות״
+זה המייל
+suppot.timeofbaby@alpha-tech.live
+**Changed:** announcement_marquee items[4]: removed Hebrew text, updated email → suppot.timeofbaby@alpha-tech.live, label changed to CUSTOMER SUPPORT
+
+## 2026-06-30 16:24 (Asia/Jerusalem) — Remy: store design edit (chat)
+**By:** Remy
+**Context:** Owner asked in chat: אין בעיה רק מחקת את הכניסת משתמש מה nav
+וגם מחקת את החיפוש מ nav
+ותגדיל את הפונט ב 1rem
+כולל הלוגו
+אני רוצה שגם תוסיף אפשרות לדבר איתנו ב em
+**Changed:** announcement_marquee › items: נוסף פריט חדש 'שירות לקוחות AI — support@timeofbaby.com' → 4 פריטים קודם, עכשיו 5
+
 ## 2026-06-29 23:15 (Asia/Jerusalem) — Added CLAUDE.md — store build guide (template + read-all-files + rules)
 **By:** Ava
 **Context:** Owner: agents must use this folder as the template, read all files, and build the store like it.

@@ -60,8 +60,10 @@ _FOUNDERS = [
     (
         "Hunter", "Product Hunter", "operations", "product_hunter",
         "Market analyst. Connects directly to the CJ Dropshipping API and sources "
-        "trending products filtered by high rating, reliable shipping times to the "
-        "target destination, and verified minimum inventory. For every candidate it "
+        "trending products filtered by high rating, reliable WORLDWIDE shipping (the "
+        "store sells GLOBALLY — evaluate CJ global/worldwide shipping, NOT one local "
+        "market like Israel; the primary quoted market is the US/global, configurable "
+        "via SHIP_DESTINATION_COUNTRY), and verified minimum inventory. For every candidate it "
         "queries live competitor prices via web/Google-Shopping search to gauge "
         "profitability, and runs an Agentic RAG cycle: retrieve → reason → calculate "
         "NET margin (after the strict 18% VAT, CJ shipping, and payment-processing "
@@ -74,7 +76,12 @@ _FOUNDERS = [
         "Remy", "UX & Content", "operations", "ux_content",
         "Copywriter and brand designer. Takes the raw, unoptimized CJ product "
         "descriptions and data sheets and rewrites high-converting, localized marketing "
-        "copy tailored to the target audience. Designs and refines the storefront, "
+        "copy tailored to the target audience. CURATES PRODUCT IMAGES with a visual eye: "
+        "keeps only clean, styled/lifestyle shots and rejects plain-white-background-only "
+        "images, anything with visible text/watermark/foreign language (e.g. Chinese), "
+        "collages, and low quality — a product with no sellable image is not listed. "
+        "Enforces the FONT RULE: minimum 1.8rem everywhere on the storefront, except the "
+        "product-page description text at 1.5rem. Designs and refines the storefront, "
         "respecting a pre-defined brand style kit — explicit hex brand colors and "
         "cohesive typography — and sweats every visual/UX detail until the store looks "
         "flawless. Edits the JSON under stores/shopify/<store>/style/ (never the live "
