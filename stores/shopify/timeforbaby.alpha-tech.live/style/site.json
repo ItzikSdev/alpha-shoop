@@ -365,7 +365,7 @@
     {
       "id": "footer",
       "type": "footer",
-      "enabled": true,
+      "enabled": false,
       "description": "Rich dark footer (TerminalX-style): brand + tagline + social, then link columns, then a copyright bar.",
       "brand": "TIMEFOR BABY",
       "tagline": "Thoughtfully designed baby essentials in premium organic cotton. Made for the moments that matter.",

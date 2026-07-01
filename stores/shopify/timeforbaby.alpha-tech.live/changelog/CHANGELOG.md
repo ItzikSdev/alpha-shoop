@@ -5,6 +5,21 @@ see [README.md](./README.md). Times are Asia/Jerusalem.
 
 ---
 
+## 2026-07-01 16:55 (Asia/Jerusalem) — Global dark footer on all pages; hide theme's light footer
+**By:** Remy
+**Context:** Owner: keep only the black footer, remove the light part below it.
+**Changed:** Injected the dark footer (brand + Shop nav + Support email + copyright) into theme.liquid for every page; hid the theme's default footer group (Subscribe/PayPal/policies). Disabled the homepage section footer to avoid duplication.
+
+## 2026-07-01 16:53 (Asia/Jerusalem) — Restore global header (was wiped by a theme reset)
+**By:** Devon
+**Context:** Owner: the top header disappeared; restore it.
+**Changed:** Re-injected the global header into theme.liquid: marquee (no email) + TIMEFOR BABY serif wordmark + Baby Boys/Girls/Unisex nav + search/account/cart icons; hid theme default header; kept the uniform 125% product-image ratio.
+
+## 2026-07-01 16:50 (Asia/Jerusalem) — Restore store from template files
+**By:** Devon
+**Context:** Owner: restore the store to what the files define.
+**Changed:** Re-applied site.json (homepage) + product.json (product page) live to restore the store exactly to the template files.
+
 ## 2026-07-01 16:46 (Asia/Jerusalem) — Remy: apply_design (from chat)
 **By:** Remy
 **Context:** Owner asked in chat: אתם התעסקתם עם החנות ועכשיו החלק העליון וגם הלינקים ב nav השתנו
