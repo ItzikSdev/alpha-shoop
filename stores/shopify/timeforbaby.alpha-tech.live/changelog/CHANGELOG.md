@@ -5,6 +5,14 @@ see [README.md](./README.md). Times are Asia/Jerusalem.
 
 ---
 
+## 2026-07-01 16:46 (Asia/Jerusalem) — Remy: apply_design (from chat)
+**By:** Remy
+**Context:** Owner asked in chat: אתם התעסקתם עם החנות ועכשיו החלק העליון וגם הלינקים ב nav השתנו
+אתם יכולים להחזיר למה שהיה
+יש הכל כאן
+/Users/itziksavaia
+**Changed:** החלתי את התבנית לייב — דף הבית ✓, דף מוצר ✓.
+
 ## 2026-07-01 10:40 (Asia/Jerusalem) — Support email moved from marquee to footer
 **By:** Remy
 **Context:** Owner: remove support email from the black line, put it in the footer.

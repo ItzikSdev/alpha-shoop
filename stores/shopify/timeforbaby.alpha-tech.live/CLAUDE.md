@@ -12,6 +12,9 @@ represented here, it isn't real and the next render overwrites it.
 
 **The rule for every agent: READ before you act, BUILD to match the template, LOG every change.**
 
+> **STORE FOLDER:** the ONLY store folder is `stores/shopify/timeforbaby.alpha-tech.live`. NEVER create `stores/<name>/` — a builds theme-install may drop a stray `stores/<slug>/theme/`; ignore/delete it, it is NOT the store.
+> **META ADS:** the team has a Meta ad account — `META_ACCESS_TOKEN` + `META_AD_ACCOUNT_ID=act_1587251408528238` in .env. Max can launch Facebook/Instagram ads.
+
 ---
 
 ## 0. Who reads this — the team (2026-06-29 roster)
