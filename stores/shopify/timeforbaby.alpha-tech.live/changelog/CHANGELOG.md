@@ -5,6 +5,11 @@ see [README.md](./README.md). Times are Asia/Jerusalem.
 
 ---
 
+## 2026-07-01 17:12 (Asia/Jerusalem) — Fix double footer — hide section footer, keep only global
+**By:** Remy
+**Context:** Owner: footer still looks bad; fix + save in json.
+**Changed:** The homepage rendered both the section footer and the global footer (overlap). Hid .tob-footer via CSS so only the single global dark footer shows on every page. Re-saved style/global-layout.liquid.
+
 ## 2026-07-01 16:59 (Asia/Jerusalem) — Footer spacing (margin) + saved global header/footer to store folder
 **By:** Remy
 **Context:** Owner: add footer margin; save all changes in the store folder.
