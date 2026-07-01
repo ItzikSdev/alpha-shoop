@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+</helmet>
+<div style="min-height:100vh;background:#111113;color:#e8e8ea;font-family:Inter,sans-serif;display:flex;flex-direction:column;align-items:center;gap:56px;padding:72px 24px 96px">
+
+  <div style="text-align:center;display:flex;flex-direction:column;gap:8px">
+    <div style="font-family:JetBrains Mono,monospace;font-size:12px;letter-spacing:0.24em;color:#8a8a90;text-transform:uppercase">TF Monogram · Circular Icon</div>
+    <div style="font-size:26px;font-weight:700;letter-spacing:-0.01em">Favicon &amp; App Icon</div>
+  </div>
+
+  <div style="display:flex;gap:28px;flex-wrap:wrap;justify-content:center;align-items:flex-end">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+      <img src="icon-512.png" width="200" height="200" style="display:block"/>
+      <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:#8a8a90">512 × 512 · master</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+      <img src="apple-touch-icon-180.png" width="120" height="120" style="display:block"/>
+      <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:#8a8a90">180 · apple-touch</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+      <img src="favicon-32.png" width="64" height="64" style="display:block;image-rendering:auto"/>
+      <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:#8a8a90">32 · favicon</div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:40px;flex-wrap:wrap;justify-content:center;align-items:center;background:#f4f4f5;border-radius:18px;padding:34px 48px">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+      <img src="favicon-32.png" width="32" height="32" style="display:block"/>
+      <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:#6a6a70">on light</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #dcdce0;border-radius:9px 9px 0 0;padding:9px 16px 9px 12px;box-shadow:0 1px 0 #dcdce0">
+      <img src="favicon-32.png" width="16" height="16" style="display:block"/>
+      <span style="font-size:13px;color:#3a3a40;font-weight:600">TF Studio</span>
+      <span style="color:#b0b0b6;font-size:15px;margin-left:6px">×</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;width:100%;max-width:560px">
+    <div style="font-family:JetBrains Mono,monospace;font-size:11px;letter-spacing:0.18em;color:#8a8a90;text-transform:uppercase">Files</div>
+    <sc-for list="{{ files }}" as="f" hint-placeholder-count="4">
+      <div style="display:flex;align-items:center;justify-content:space-between;background:#1b1b1e;border:1px solid #2a2a2e;border-radius:10px;padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-family:JetBrains Mono,monospace;font-size:10px;font-weight:600;color:#0a0a0a;background:#c9c9cd;border-radius:4px;padding:3px 7px">{{ f.type }}</span>
+          <span style="font-family:JetBrains Mono,monospace;font-size:13px;color:#e8e8ea">{{ f.name }}</span>
+        </div>
+        <span style="font-family:JetBrains Mono,monospace;font-size:11px;color:#7a7a80">{{ f.note }}</span>
+      </div>
+    </sc-for>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      files: [
+        { type: "SVG", name: "favicon.svg", note: "scalable · vector" },
+        { type: "PNG", name: "icon-512.png", note: "512 × 512" },
+        { type: "PNG", name: "apple-touch-icon-180.png", note: "180 × 180" },
+        { type: "PNG", name: "favicon-32.png", note: "32 × 32" },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

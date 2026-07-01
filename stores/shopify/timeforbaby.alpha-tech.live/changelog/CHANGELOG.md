@@ -5,6 +5,11 @@ see [README.md](./README.md). Times are Asia/Jerusalem.
 
 ---
 
+## 2026-07-01 10:15 (Asia/Jerusalem) — New TF logo + favicon (owner-provided)
+**By:** Remy
+**Context:** Owner created a new logo+favicon; update the store.
+**Changed:** Copied owner's Favicon_and_Logo_TIMEFOR images into style/ (favicon.svg, favicon-32.png, apple-touch-icon-180.png, icon-512.png). Set the theme favicon via settings.favicon (icon-512.png uploaded as a shop file) — the reliable path. Swapped the global header logo to the new favicon.svg. Removed the old manual favicon <link>.
+
 ## 2026-07-01 09:29 (Asia/Jerusalem) — Uniform product-card images (collection/grid)
 **By:** Remy
 **Context:** Owner: product images need to be the same size.
