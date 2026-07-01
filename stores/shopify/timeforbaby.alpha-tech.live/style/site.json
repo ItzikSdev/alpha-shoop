@@ -548,5 +548,78 @@
     "@media(max-width:820px){.tob .tob-pills{flex-wrap:wrap}.tob .tob-pills div{flex:0 0 50%}.tob .tob-pills div:nth-child(2n){border-right:none}.tob .tob-pills div:nth-child(-n+2){border-bottom:1px solid var(--line)}}",
     ".tob .tob-hlogo svg{height:38px;width:38px;display:block}"
   ],
-  "css_note": ""
+  "css_note": "",
+  "global_layout": {
+    "note": "Header + footer render GLOBALLY on every page from layout/theme.liquid. Ready markup: style/global-layout.liquid. Auto-heals via ensure_global_layout() at the end of apply_site_design if a theme reset wipes it. Edit here + re-save global-layout.liquid.",
+    "header": {
+      "logo_text": "TIMEFOR BABY",
+      "logo_font": "Newsreader serif",
+      "nav": [
+        {
+          "label": "Baby Boys",
+          "link": "/collections/baby-boys"
+        },
+        {
+          "label": "Baby Girls",
+          "link": "/collections/baby-girls"
+        },
+        {
+          "label": "Unisex",
+          "link": "/collections/unisex"
+        }
+      ],
+      "icons": [
+        "search",
+        "account",
+        "cart"
+      ],
+      "marquee": [
+        "FREE SHIPPING OVER $50",
+        "30-DAY RETURNS",
+        "ORGANIC COTTON",
+        "DESIGNED FOR LITTLE ONES"
+      ]
+    },
+    "footer": {
+      "brand": "TIMEFOR BABY",
+      "logo_font": "Newsreader serif",
+      "tagline": "Thoughtfully designed baby essentials in premium organic cotton. Made for the moments that matter.",
+      "columns": [
+        {
+          "title": "Shop",
+          "links": [
+            {
+              "label": "Baby Boys",
+              "link": "/collections/baby-boys"
+            },
+            {
+              "label": "Baby Girls",
+              "link": "/collections/baby-girls"
+            },
+            {
+              "label": "Unisex",
+              "link": "/collections/unisex"
+            }
+          ]
+        },
+        {
+          "title": "Support",
+          "links": [
+            {
+              "label": "suppot.timeforbaby@alpha-tech.live",
+              "link": "mailto:suppot.timeforbaby@alpha-tech.live"
+            }
+          ]
+        }
+      ],
+      "copyright": "© 2026 TIMEFOR BABY · Free shipping on all orders · 30-day returns",
+      "layout": "flexbox, single container, copyright block below (no overlap)",
+      "hides": [
+        "shopify header group",
+        "shopify footer group",
+        ".tob-footer",
+        ".tob-sp (social popup)"
+      ]
+    }
+  }
 }

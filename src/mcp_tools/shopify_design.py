@@ -467,9 +467,46 @@ def load_site_json(store_slug: str = "") -> dict:
         return {}
 
 
+_GLOBAL_FONTS_LINK = '<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">'
+
+
+async def ensure_global_layout(store_slug: str = "", theme_id: str | None = None) -> bool:
+    """AUTO-HEAL the global header + footer. They live in layout/theme.liquid (so they
+    show on EVERY page), but a theme reset wipes the layout. This re-injects them from
+    the store's saved `style/global-layout.liquid` (the source of truth, driven by
+    site.json's `global_layout`) whenever they're missing — so we never lose the
+    header/footer again. Called at the end of apply_site_design. Best-effort."""
+    import re as _re
+    tid = theme_id or await _active_theme_id()
+    if not tid:
+        return False
+    slug = _design_folder(store_slug)
+    gl = (_style_dir(slug) / "global-layout.liquid") if slug else None
+    if not gl or not gl.exists():
+        return False
+    src = gl.read_text(encoding="utf-8", errors="ignore")
+    hdr = _re.search(r"<!--TFG-->.*?<!--/TFG-->", src, _re.DOTALL)
+    ftr = _re.search(r"<!--TFGFT-->.*?<!--/TFGFT-->", src, _re.DOTALL)
+    t = await _read_asset(tid, "layout/theme.liquid") or ""
+    if not t:
+        return False
+    changed = False
+    if "</head>" in t and "family=Newsreader" not in t.split("</head>")[0]:
+        t = t.replace("</head>", _GLOBAL_FONTS_LINK + "\n</head>", 1); changed = True
+    if hdr and "<!--TFG-->" not in t:
+        m = _re.search(r"<body[^>]*>", t)
+        if m:
+            t = t[:m.end()] + "\n" + hdr.group(0) + "\n" + t[m.end():]; changed = True
+    if ftr and "<!--TFGFT-->" not in t:
+        t = t.replace("</body>", ftr.group(0) + "\n</body>", 1); changed = True
+    if changed:
+        await _write_asset(tid, "layout/theme.liquid", t)
+    return changed
+
+
 async def apply_site_design(store_slug: str = "", theme_id: str | None = None) -> dict:
-    """Render site.json → live homepage section + index.json. Returns {ok, site}
-    where `site` is the spec dict so the caller can POST it to the channel for review."""
+    """Render site.json → live homepage section + index.json. Also auto-heals the global
+    header/footer. Returns {ok, site} where `site` is the spec dict for channel review."""
     site = load_site_json(store_slug)
     if not site:
         return {"ok": False, "error": "no site.json"}
@@ -481,6 +518,10 @@ async def apply_site_design(store_slug: str = "", theme_id: str | None = None) -
     ok1 = await _write_asset(tid, f"sections/{section_type}.liquid", liquid)
     ok2 = await _write_asset(tid, "templates/index.json",
                              '{"sections":{"main":{"type":"%s","settings":{}}},"order":["main"]}' % section_type)
+    try:
+        await ensure_global_layout(store_slug, tid)  # re-inject global header/footer if wiped
+    except Exception:
+        pass
     return {"ok": bool(ok1 and ok2), "theme_id": tid, "site": site}
 
 
