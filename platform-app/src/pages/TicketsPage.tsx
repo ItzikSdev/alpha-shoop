@@ -9,14 +9,18 @@ interface Ticket {
 
 const COLUMNS = ['todo', 'doing', 'blocked', 'done'];
 const COL_LABEL: Record<string, string> = { todo: 'Todo', doing: 'Doing', blocked: 'Blocked', done: 'Done' };
-const PRIO_COLOR: Record<string, string> = { critical: '#e5484d', high: '#f76808', medium: '#0091ff', low: '#8f8f8f' };
 const NEXT: Record<string, string> = { todo: 'doing', doing: 'done', blocked: 'doing', done: 'todo' };
 const AGENT_EMOJI: Record<string, string> = { Ava: '👑', Hunter: '🎯', Remy: '🎨', Devon: '🛠️', Max: '📣' };
+const PRIO_CLS: Record<string, string> = {
+  critical: 'bg-red-900/40 text-red-400 border-red-800',
+  high: 'bg-orange-900/40 text-orange-400 border-orange-800',
+  medium: 'bg-blue-900/40 text-blue-400 border-blue-800',
+  low: 'bg-gray-800 text-gray-500 border-gray-700',
+};
 
 function fmtDue(iso: string): string {
   if (!iso) return '';
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export function TicketsPage() {
@@ -33,73 +37,71 @@ export function TicketsPage() {
 
   useEffect(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t); }, [load]);
 
-  const move = async (id: string, status: string) => {
-    await apiPatch(`/org/tickets/${id}`, { status: NEXT[status] });
-    load();
-  };
-  const scan = async () => {
-    setScanning(true);
-    await apiPost('/org/tickets/scan', {}).catch(() => {});
-    setScanning(false); load();
-  };
+  const move = async (id: string, status: string) => { await apiPatch(`/org/tickets/${id}`, { status: NEXT[status] }); load(); };
+  const scan = async () => { setScanning(true); await apiPost('/org/tickets/scan', {}).catch(() => {}); setScanning(false); load(); };
 
   const open = tickets.filter((t) => t.status !== 'done').length;
   const overdue = tickets.filter((t) => t.overdue).length;
 
   return (
-    <div style={{ padding: 24, background: '#f3efe9', minHeight: '100vh' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+    <div className="p-6 max-w-6xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 style={{ margin: 0 }}>🎫 Tickets</h1>
-          <div style={{ color: '#8f8f8f', fontSize: 14, marginTop: 4 }}>
+          <h1 className="text-2xl font-bold text-white">🎫 Tickets</h1>
+          <p className="text-gray-400 text-sm mt-1">
             Agents open tickets from problems; Ava assigns owner, priority &amp; deadline.
-            &nbsp;·&nbsp; {open} open &nbsp;·&nbsp; <span style={{ color: overdue ? '#e5484d' : '#8f8f8f' }}>{overdue} overdue</span>
-          </div>
+            &nbsp;·&nbsp; {open} open &nbsp;·&nbsp;
+            <span className={overdue ? 'text-red-400' : 'text-gray-500'}> {overdue} overdue</span>
+          </p>
         </div>
         <button onClick={scan} disabled={scanning}
-          style={{ padding: '10px 18px', borderRadius: 8, border: 'none', background: '#161616', color: '#fff', cursor: 'pointer' }}>
+          className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium transition-colors">
           {scanning ? 'Scanning…' : '🔍 Run quality scan'}
         </button>
       </div>
 
-      {loading ? <div style={{ color: '#8f8f8f' }}>Loading…</div> : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, alignItems: 'start' }}>
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Loading tickets…</div>
+      ) : (
+        <div className="grid grid-cols-4 gap-4 items-start">
           {COLUMNS.map((col) => {
             const items = tickets.filter((t) => t.status === col);
             return (
-              <div key={col} style={{ background: '#f6f6f6', borderRadius: 12, padding: 12, minHeight: 120 }}>
-                <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 13, textTransform: 'uppercase', letterSpacing: '.05em', color: '#555' }}>
-                  {COL_LABEL[col]} <span style={{ color: '#aaa' }}>({items.length})</span>
+              <div key={col} className="rounded-xl bg-gray-950/40 border border-gray-800 p-3 min-h-[120px]">
+                <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3 px-1">
+                  {COL_LABEL[col]} <span className="text-gray-600">({items.length})</span>
                 </div>
-                {items.map((t) => (
-                  <div key={t.id} style={{ background: '#fff', borderRadius: 10, padding: 12, marginBottom: 10, boxShadow: '0 1px 3px rgba(0,0,0,.08)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: PRIO_COLOR[t.priority] || '#888', padding: '2px 8px', borderRadius: 6, textTransform: 'uppercase' }}>{t.priority}</span>
-                      <span title={t.assignee} style={{ fontSize: 13 }}>{AGENT_EMOJI[t.assignee] || '👤'} {t.assignee}</span>
+                <div className="space-y-3">
+                  {items.map((t) => (
+                    <div key={t.id} className="p-4 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700 transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`px-2 py-0.5 rounded text-xs border font-medium uppercase ${PRIO_CLS[t.priority] || PRIO_CLS.low}`}>{t.priority}</span>
+                        <span className="text-xs text-gray-300">{AGENT_EMOJI[t.assignee] || '👤'} {t.assignee}</span>
+                      </div>
+                      <div className="text-sm font-semibold text-white leading-snug">{t.title}</div>
+                      {t.description && <div className="text-xs text-gray-500 mt-1">{t.description}</div>}
+                      <div className="flex items-center justify-between mt-3">
+                        <span className={`text-xs ${t.overdue ? 'text-red-400' : 'text-gray-500'}`}>
+                          {t.overdue ? '⚠️ ' : '⏰ '}{fmtDue(t.due_at)}
+                        </span>
+                        <button onClick={() => move(t.id, t.status)}
+                          className="text-xs px-2.5 py-1 rounded-md border border-gray-700 text-gray-300 hover:border-gray-500 hover:text-white transition-colors">
+                          → {COL_LABEL[NEXT[t.status]]}
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-[10px] text-gray-600">{t.source} · by {t.created_by}</span>
+                        {t.store_url && (
+                          <a href={t.store_url} target="_blank" rel="noreferrer"
+                            className="text-xs text-teal-400 hover:text-teal-300 font-medium">
+                            🏪 {t.store_name} ↗
+                          </a>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3 }}>{t.title}</div>
-                    {t.description && <div style={{ color: '#888', fontSize: 12, marginTop: 4 }}>{t.description}</div>}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-                      <span style={{ fontSize: 12, color: t.overdue ? '#e5484d' : '#8f8f8f' }}>
-                        {t.overdue ? '⚠️ ' : '⏰ '}{fmtDue(t.due_at)}
-                      </span>
-                      <button onClick={() => move(t.id, t.status)}
-                        style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, border: '1px solid #ddd', background: '#fafafa', cursor: 'pointer' }}>
-                        → {COL_LABEL[NEXT[t.status]]}
-                      </button>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-                      <span style={{ fontSize: 10, color: '#bbb' }}>{t.source} · by {t.created_by}</span>
-                      {t.store_url && (
-                        <a href={t.store_url} target="_blank" rel="noreferrer"
-                          style={{ fontSize: 11, color: '#b07a5f', textDecoration: 'none', fontWeight: 600 }}>
-                          🏪 {t.store_name} ↗
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {items.length === 0 && <div style={{ color: '#bbb', fontSize: 12, padding: 8 }}>—</div>}
+                  ))}
+                  {items.length === 0 && <div className="text-gray-600 text-xs px-1 py-2">—</div>}
+                </div>
               </div>
             );
           })}
