@@ -247,6 +247,8 @@ def render_site_design(site: dict) -> str:
     the JSON is the source of truth the team reviews; this turns it into the live page."""
     parts: list[str] = ['<div class="tob">']
     for sec in site.get("sections", []):
+        if sec.get("enabled") is False:
+            continue  # section moved elsewhere (e.g. header/marquee now global in theme layout)
         t = sec.get("type")
         if t == "marquee":
             run = "&nbsp;·&nbsp;".join(_esc(i) for i in sec.get("items", []))
@@ -260,9 +262,10 @@ def render_site_design(site: dict) -> str:
             )
             cart = ('<a class="tob-hcart" href="/cart" aria-label="Cart">Cart</a>'
                     if sec.get("show_cart", True) else "")
+            logo = sec.get("logo_svg") or _esc(sec.get("logo_text", "TIMEFOR BABY"))
             parts.append(
                 f'<header class="tob-header"><div class="tob-wrap tob-hrow">'
-                f'<a class="tob-hlogo" href="{sec.get("logo_link","/")}">{_esc(sec.get("logo_text","TIMEFOR BABY"))}</a>'
+                f'<a class="tob-hlogo" href="{sec.get("logo_link","/")}">{logo}</a>'
                 f'<nav class="tob-hnav">{links}</nav>{cart}'
                 f'</div></header>'
             )

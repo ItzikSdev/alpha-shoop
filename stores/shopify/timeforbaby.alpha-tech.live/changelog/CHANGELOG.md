@@ -5,6 +5,16 @@ see [README.md](./README.md). Times are Asia/Jerusalem.
 
 ---
 
+## 2026-07-01 09:22 (Asia/Jerusalem) — Global header on all pages + Shopify-style icons (search/account/cart)
+**By:** Remy
+**Context:** Owner: all pages like home; Shopify icons + cart icon instead of the word CART.
+**Changed:** Moved marquee + header (TF logo, Baby Boys/Girls/Unisex) into theme.liquid so every page matches home; hid theme default header globally; replaced CART text with search/account/cart icons (+ live cart count); disabled the homepage section's own marquee+header to avoid duplication.
+
+## 2026-07-01 09:12 (Asia/Jerusalem) — TF icon → favicon + header logo (SVG)
+**By:** Remy
+**Context:** Owner: use the TF icon for favicon + header logo (generated SVG).
+**Changed:** Added silver 'TF' monogram SVG (style/tf-icon.svg). Set as favicon (data-URI <link rel=icon> in theme.liquid) and as the header logo (site.json site_header.logo_svg; renderer now supports an SVG logo). Applied live.
+
 ## 2026-07-01 08:40 (Asia/Jerusalem) — Nav: only Baby Boys / Baby Girls / Unisex everywhere
 **By:** Remy
 **Context:** Owner: change Shop All→Unisex, add the 3 collection links to other pages, delete all other links.

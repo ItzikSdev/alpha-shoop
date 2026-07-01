@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="tfSilver" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.48" stop-color="#cfcfcf"/>
+      <stop offset="0.52" stop-color="#8c8c8c"/>
+      <stop offset="1" stop-color="#efefef"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="20" fill="#0b0b0b"/>
+  <text x="50" y="54" text-anchor="middle" dominant-baseline="central"
+        font-family="'Arial Black','Arial',sans-serif" font-weight="900"
+        font-size="54" letter-spacing="-5" fill="url(#tfSilver)">TF</text>
+</svg>
