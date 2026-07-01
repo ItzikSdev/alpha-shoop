@@ -294,11 +294,12 @@ Operations you can run:
                   and product page (product.json) so design/JSON edits take effect.
 - "fix_prices":   fix products priced $0 — re-price each $0 variant from its mapped
                   retail price (or remove it if there's no price). Use for "$0 in store".
-- "ticket":       close or update a TICKET the owner refers to (mark it done/doing/blocked).
-                  Use for "close the ticket ..." / "סגור את הטיקט ..." / "mark X done".
+- "ticket":       CREATE, ADVANCE, or CLOSE a ticket. Create a NEW ticket for a problem/task
+                  ("open a ticket to ...", "תפתח טיקט ל..."); or advance/close an EXISTING one
+                  ("close the ticket ...", "סגור את הטיקט", "קדם את", "mark X done/doing/blocked").
 
 Pick "none" unless the message clearly asks for one of these (in any language).
-Output ONLY JSON: {"op":"dedupe|cleanup|apply_design|fix_prices|ticket|none","reply":"<short first-person line in %s>","ticket_query":"<words identifying the ticket, only when op=ticket>","ticket_status":"done|doing|blocked|todo"}"""
+Output ONLY JSON: {"op":"dedupe|cleanup|apply_design|fix_prices|ticket|none","reply":"<short first-person line in %s>","ticket_action":"create|update","ticket_title":"<title, when creating>","ticket_query":"<words identifying an existing ticket, when updating>","ticket_status":"todo|doing|blocked|done"}"""
 
 
 async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
@@ -317,23 +318,30 @@ async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
         parsed = _parse_json(str(resp.content))
         op = str(parsed.get("op", "none")).strip()
         reply = str(parsed.get("reply", "")).strip()
+        ticket_action = str(parsed.get("ticket_action", "update")).strip()
+        ticket_title = str(parsed.get("ticket_title", "")).strip()
         ticket_query = str(parsed.get("ticket_query", "")).strip()
         ticket_status = str(parsed.get("ticket_status", "done")).strip()
     except Exception:
         return None
     if op not in {"dedupe", "cleanup", "apply_design", "fix_prices", "ticket"}:
         return None
-    # Ticket ops don't need the Shopify store context — handle + return early.
+    # Ticket ops — ANY agent can create / advance / close. No Shopify context needed.
     if op == "ticket":
-        from src.org.tickets import list_tickets, update_ticket
+        from src.org.tickets import list_tickets, update_ticket, open_ticket
+        if ticket_action == "create":
+            title = ticket_title or ticket_query or message[:80]
+            t = open_ticket(title, source="chat", created_by=agent.name)
+            if not t:
+                return (reply + "\n" if reply else "") + "⚠️ טיקט דומה כבר פתוח."
+            return (reply + "\n" if reply else "") + f"✅ פתחתי טיקט '{t.title}' — אחראי {t.assignee}, {t.priority}, deadline {t.due_at[:16]}."
         q = ticket_query.lower()
         cand = [t for t in list_tickets() if t["status"] != "done"
                 and (q in t["title"].lower() or q in t["id"].lower() or not q)]
         if not cand:
             return (reply + "\n" if reply else "") + f"⚠️ לא מצאתי טיקט פתוח שתואם ל־'{ticket_query}'."
-        done = [t for t in cand if update_ticket(t["id"], status=ticket_status or "done")]
-        titles = ", ".join(t["title"][:40] for t in done)
-        return (reply + "\n" if reply else "") + f"✅ עדכנתי {len(done)} טיקט ל־{ticket_status or 'done'}: {titles}"
+        upd = [t for t in cand if update_ticket(t["id"], status=ticket_status or "done")]
+        return (reply + "\n" if reply else "") + f"✅ עדכנתי {len(upd)} טיקט ל־{ticket_status or 'done'}: " + ", ".join(t["title"][:40] for t in upd)
     # Make sure the Shopify calls target the store (falls back to env creds anyway).
     try:
         from src.stores import list_stores, _current_store
@@ -606,14 +614,14 @@ async def route_and_respond(message: str, author: str = "You",
     final: list[tuple[Agent, str]] = []
     for agent, reply in items:
         if not images:
-            # First try a real maintenance OP (dedupe/cleanup/apply-design) — so a
-            # "remove the duplicates" actually RUNS. Falls through to the role's
-            # normal action when the message isn't an op.
-            if agent.role in _SHOPIFY_DOERS or agent.role == "UX & Content":
-                ran = await _agent_act_ops(agent, message, company)
-                if ran is not None:
-                    final.append((agent, ran))
-                    continue
+            # First try a real OP — ticket create/advance/close (ANY agent) or a store
+            # maintenance op (dedupe/cleanup/fix-prices/apply-design). So "open a ticket"
+            # / "close the ticket" / "remove the duplicates" actually RUN. Falls through
+            # to the role's normal action when the message isn't an op.
+            ran = await _agent_act_ops(agent, message, company)
+            if ran is not None:
+                final.append((agent, ran))
+                continue
             if agent.role in _SHOPIFY_DOERS:
                 reply = await _agent_act_shopify(agent, message, company)
             elif agent.role == "Product Hunter":
