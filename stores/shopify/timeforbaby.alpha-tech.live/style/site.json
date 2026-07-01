@@ -111,7 +111,22 @@
       "mobile": {
         "font_size": "1rem",
         "padding": "0.6rem 1rem"
-      }
+      },
+      "menu": [
+        {
+          "label": "Baby Boys",
+          "link": "/collections/baby-boys"
+        },
+        {
+          "label": "Baby Girls",
+          "link": "/collections/baby-girls"
+        },
+        {
+          "label": "Unisex",
+          "link": "/collections/unisex"
+        }
+      ],
+      "show_cart": true
     },
     {
       "id": "hero",
@@ -191,18 +206,18 @@
       "heading": "Shop by category",
       "tiles": [
         {
-          "label": "Boys",
+          "label": "Baby Boys",
           "link": "/collections/baby-boys",
           "image": "https://images.unsplash.com/photo-1522771930-78848d9293e8?w=800&q=80"
         },
         {
-          "label": "Girls",
+          "label": "Baby Girls",
           "link": "/collections/baby-girls",
           "image": "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=800&q=80"
         },
         {
-          "label": "Shop All",
-          "link": "/collections/all",
+          "label": "Unisex",
+          "link": "/collections/unisex",
           "image": "https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=80"
         }
       ],
@@ -353,85 +368,22 @@
       "description": "Rich dark footer (TerminalX-style): brand + tagline + social, then link columns, then a copyright bar.",
       "brand": "TIMEFOR BABY",
       "tagline": "Thoughtfully designed baby essentials in premium organic cotton. Made for the moments that matter.",
-      "social": [
-        {
-          "name": "Instagram",
-          "link": "#"
-        },
-        {
-          "name": "TikTok",
-          "link": "#"
-        },
-        {
-          "name": "Facebook",
-          "link": "#"
-        },
-        {
-          "name": "YouTube",
-          "link": "#"
-        }
-      ],
+      "social": [],
       "columns": [
         {
           "title": "Shop",
           "links": [
             {
-              "label": "Boys",
+              "label": "Baby Boys",
               "link": "/collections/baby-boys"
             },
             {
-              "label": "Girls",
+              "label": "Baby Girls",
               "link": "/collections/baby-girls"
             },
             {
-              "label": "Shop All",
-              "link": "/collections/all"
-            },
-            {
-              "label": "New In",
-              "link": "/collections/all"
-            }
-          ]
-        },
-        {
-          "title": "Help",
-          "links": [
-            {
-              "label": "Shipping",
-              "link": "/policies/shipping-policy"
-            },
-            {
-              "label": "Returns",
-              "link": "/policies/refund-policy"
-            },
-            {
-              "label": "Size Guide",
-              "link": "#"
-            },
-            {
-              "label": "Contact",
-              "link": "/pages/contact"
-            }
-          ]
-        },
-        {
-          "title": "About",
-          "links": [
-            {
-              "label": "Our Story",
-              "link": "#"
-            },
-            {
-              "label": "Sustainability",
-              "link": "#"
-            },
-            {
-              "label": "Reviews",
-              "link": "#"
-            },
-            {
-              "label": "Privacy",
-              "link": "/policies/privacy-policy"
+              "label": "Unisex",
+              "link": "/collections/unisex"
             }
           ]
         }
@@ -584,5 +536,6 @@
     ".tob-sp span{display:block;font-size:.68rem;color:#8d8d8d;margin-top:3px}",
     "@media(max-width:820px){.tob .tob-grid{grid-template-columns:repeat(2,1fr)}.tob .tob-hero h1{font-size:2.2rem}.tob .tob-hero{height:440px}.tob .tob-pills div{flex:1 1 50%}.tob-sp{left:10px;right:10px;bottom:10px;max-width:none}}",
     "@media(max-width:820px){.tob .tob-pills{flex-wrap:wrap}.tob .tob-pills div{flex:0 0 50%}.tob .tob-pills div:nth-child(2n){border-right:none}.tob .tob-pills div:nth-child(-n+2){border-bottom:1px solid var(--line)}}"
-  ]
+  ],
+  "css_note": ""
 }

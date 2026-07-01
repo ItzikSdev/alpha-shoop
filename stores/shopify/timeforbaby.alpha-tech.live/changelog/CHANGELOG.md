@@ -5,6 +5,11 @@ see [README.md](./README.md). Times are Asia/Jerusalem.
 
 ---
 
+## 2026-07-01 08:40 (Asia/Jerusalem) — Nav: only Baby Boys / Baby Girls / Unisex everywhere
+**By:** Remy
+**Context:** Owner: change Shop All→Unisex, add the 3 collection links to other pages, delete all other links.
+**Changed:** Header menu, category tiles, and footer now link ONLY to Baby Boys, Baby Girls, Unisex (Shop All → Unisex). Removed all other footer links + social links from every page.
+
 ## 2026-07-01 08:33 (Asia/Jerusalem) — Fix $0-priced products + mobile trust-pills break
 **By:** Devon
 **Context:** Owner: fix $0 in store + mobile pills breaking.

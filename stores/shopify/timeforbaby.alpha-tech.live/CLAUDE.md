@@ -91,9 +91,26 @@ Build/restore the store so the live Shopify theme matches it — don't invent a 
   Python to restyle the store. SAFETY: you may edit/add, but **never delete a section or
   the css wholesale without logging it in CHANGELOG.md first** — every change is recorded
   with a timestamp via `append_changelog`, so nothing is silently lost.
-- **Already live — do NOT redo:** Color+Size variants (auto from CJ), 7-image hero, free
-  shipping, social-proof, real CJ descriptions, JSON-driven font sizes, sticky header nav
-  (from `site.json → site_header`).
+- **NAV RULE (owner):** the ONLY links anywhere on the store — header, category tiles,
+  footer — are **Baby Boys** (`/collections/baby-boys`), **Baby Girls** (`/collections/baby-girls`),
+  **Unisex** (`/collections/unisex`). "Shop All" = **Unisex**. NO other links in nav/footer
+  (no policies/pages/social link lists). Every new product goes into exactly one of these 3.
+- **NO DUPLICATE PHOTOS on a product:** never repeat the same image within a product —
+  dedup by image CONTENT (not filename; Shopify re-hosts with new names). Keep one per shot.
+- **NO $0 PRODUCTS:** every variant must be priced. Run `fix_zero_prices(dry_run=False)`
+  (re-prices $0 variants from the mapped retail; removes ones with no price on file).
+- **SEO LIKE A PRO (every product):** a unique, human, keyword-rich **title** (baby + garment
+  type + key feature; NO supplier codes/jargon); a unique **meta description** (~150–160 chars,
+  benefit-led); **descriptive alt text** on every image; a clean **handle**; **never** reuse
+  copy across products (unique descriptions only). Lead with the organic-cotton angle + the
+  target audience (new parents / gift-givers).
+- **AGENTS RUN OPS FROM CHAT (don't just talk):** `dedupe_products`, `cleanup_bad_products`,
+  `fix_zero_prices`, `apply_site_design`/`apply_product_design` — Devon/Remy execute these
+  when asked, then log to CHANGELOG.md with a timestamp.
+- **Already live — do NOT redo:** Color+Size variants (auto from CJ), editorial split hero
+  (`design_handoff_hero`), free shipping, social-proof, real CJ descriptions, JSON-driven
+  fonts (min 1.8rem; logo 2rem; buttons 1.5rem), sticky header nav (`site.json → site_header`),
+  homepage CSS in `site.json → "css"` (edit there, not Python).
 
 **To build a NEW store from this template** (per the owner: copy this folder under
 `stores/shopify/<new-domain>/`): copy the whole structure, then in the new copy adapt
