@@ -4,7 +4,7 @@ import { apiGet, apiPost, apiPatch } from '../api/client';
 interface Ticket {
   id: string; title: string; description: string; created_by: string;
   assignee: string; status: string; priority: string; source: string;
-  due_at: string; overdue?: boolean;
+  due_at: string; overdue?: boolean; store_name?: string; store_url?: string;
 }
 
 const COLUMNS = ['todo', 'doing', 'blocked', 'done'];
@@ -47,7 +47,7 @@ export function TicketsPage() {
   const overdue = tickets.filter((t) => t.overdue).length;
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 24, background: '#f3efe9', minHeight: '100vh' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
           <h1 style={{ margin: 0 }}>🎫 Tickets</h1>
@@ -88,7 +88,15 @@ export function TicketsPage() {
                         → {COL_LABEL[NEXT[t.status]]}
                       </button>
                     </div>
-                    <div style={{ fontSize: 10, color: '#bbb', marginTop: 6 }}>{t.source} · by {t.created_by}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+                      <span style={{ fontSize: 10, color: '#bbb' }}>{t.source} · by {t.created_by}</span>
+                      {t.store_url && (
+                        <a href={t.store_url} target="_blank" rel="noreferrer"
+                          style={{ fontSize: 11, color: '#b07a5f', textDecoration: 'none', fontWeight: 600 }}>
+                          🏪 {t.store_name} ↗
+                        </a>
+                      )}
+                    </div>
                   </div>
                 ))}
                 {items.length === 0 && <div style={{ color: '#bbb', fontSize: 12, padding: 8 }}>—</div>}

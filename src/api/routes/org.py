@@ -433,7 +433,15 @@ from src.org.tickets import (
 
 @router.get("/org/tickets", summary="Agent ticket board — all tickets (Ava-assigned, with deadlines)")
 async def get_tickets(status: str | None = None) -> dict:
-    return {"tickets": _list_tickets(status)}
+    from src.stores import list_stores
+    stores = {s.store_id: s for s in list_stores()}
+    ts = _list_tickets(status)
+    for t in ts:
+        s = stores.get(t.get("store_id"))
+        slug = (s.storefront_slug or s.store_id) if s else ""
+        t["store_name"] = s.name if s else (t.get("store_id") or "")
+        t["store_url"] = f"https://{slug}.alpha-tech.live" if slug else ""
+    return {"tickets": ts}
 
 
 @router.post("/org/tickets", summary="Open a ticket (Ava auto-assigns owner + priority + deadline)")
