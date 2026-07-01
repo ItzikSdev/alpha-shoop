@@ -12,6 +12,7 @@ const NAV: { path: string; icon: string; label: string; highlight?: boolean }[] 
   { path: '/integrations', icon: '🔌', label: 'Integrations' },
   { path: '/agent-logs', icon: '💬', label: 'Agent Logs' },
   { path: '/stores', icon: '🏪', label: 'My Stores' },
+  { path: '/tickets', icon: '🎫', label: 'Tickets', highlight: true },
   { path: '/tools', icon: '🧩', label: 'MCP Tools' },
   { path: '/agents', icon: '🤖', label: 'AI Agents' },
   { path: '/endpoints', icon: '⚡', label: 'API Endpoints' },

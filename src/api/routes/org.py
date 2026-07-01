@@ -421,3 +421,35 @@ async def post_org_hire(body: dict, operator: str = Depends(get_current_operator
     company.headcount += 1
     save_company(company)
     return agent.to_public()
+
+
+# ── Agent ticket board (Jira-style) ──────────────────────────────────────────
+from dataclasses import asdict as _asdict
+from src.org.tickets import (
+    list_tickets as _list_tickets, open_ticket as _open_ticket,
+    update_ticket as _update_ticket, scan_and_open_tickets as _scan_tickets,
+)
+
+
+@router.get("/org/tickets", summary="Agent ticket board — all tickets (Ava-assigned, with deadlines)")
+async def get_tickets(status: str | None = None) -> dict:
+    return {"tickets": _list_tickets(status)}
+
+
+@router.post("/org/tickets", summary="Open a ticket (Ava auto-assigns owner + priority + deadline)")
+async def create_ticket(body: dict) -> dict:
+    t = _open_ticket(
+        title=body.get("title", ""), description=body.get("description", ""),
+        source=body.get("source", "chat"), created_by=body.get("created_by", "Itzik"),
+    )
+    return {"ticket": _asdict(t) if t else None}
+
+
+@router.patch("/org/tickets/{ticket_id}", summary="Update a ticket (status/assignee/priority/due)")
+async def patch_ticket(ticket_id: str, body: dict) -> dict:
+    return {"ok": _update_ticket(ticket_id, **body)}
+
+
+@router.post("/org/tickets/scan", summary="Run a quality scan → agents open tickets for real problems")
+async def scan_tickets() -> dict:
+    return {"opened": await _scan_tickets()}

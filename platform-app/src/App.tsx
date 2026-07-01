@@ -11,6 +11,7 @@ import { FinancePage } from './pages/FinancePage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
 import { AgentLogsPage } from './pages/AgentLogsPage';
 import { StoresPage } from './pages/StoresPage';
+import { TicketsPage } from './pages/TicketsPage';
 import { Company } from './pages/Company';
 
 export default function App() {
@@ -49,6 +50,7 @@ export default function App() {
             <Route path="/integrations" element={<IntegrationsPage />} />
             <Route path="/agent-logs" element={<AgentLogsPage />} />
             <Route path="/stores" element={<StoresPage />} />
+            <Route path="/tickets" element={<TicketsPage />} />
             <Route path="/tools" element={<MCPTools />} />
             <Route path="/agents" element={<Agents />} />
             <Route path="/endpoints" element={<Endpoints />} />
