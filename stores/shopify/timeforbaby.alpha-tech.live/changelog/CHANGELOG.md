@@ -5,6 +5,11 @@ see [README.md](./README.md). Times are Asia/Jerusalem.
 
 ---
 
+## 2026-07-01 17:15 (Asia/Jerusalem) — Footer rebuilt with flex layout (fix text overlap)
+**By:** Remy
+**Context:** Owner: footer text overlapping, fix it.
+**Changed:** Rebuilt the global footer with a single-container flexbox layout + explicit resets (box-sizing, block copyright, clear) so the copyright line no longer overlaps the columns. Section footer + social popup hidden.
+
 ## 2026-07-01 17:12 (Asia/Jerusalem) — Fix double footer — hide section footer, keep only global
 **By:** Remy
 **Context:** Owner: footer still looks bad; fix + save in json.
