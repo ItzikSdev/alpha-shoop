@@ -61,6 +61,10 @@ FIXED_COSTS = [
      "period": "one_time", "note": "One-time account opening fee."},
     {"name": "PayPlus — transaction fees", "category": "Payments", "amount": 0.0, "currency": "ILS",
      "period": "variable", "note": "Per-transaction; scales with sales volume (see PayPlus quote)."},
+    {"name": "עוסק פטור — annual business fee", "category": "Business / Legal", "amount": 1800.0, "currency": "ILS",
+     "period": "yearly", "note": "Israel exempt-dealer (עוסק פטור) yearly cost (~₪150/mo)."},
+    {"name": "Meta Ads — budget cap", "category": "Marketing", "amount": 50.0, "currency": "ILS",
+     "period": "monthly", "note": "Ad-spend CEILING: 15 ₪ already in the Meta account + up to 50 ₪ from PayPal. HARD CAP — never spend more than 50 ₪ on ads right now."},
 ]
 
 
