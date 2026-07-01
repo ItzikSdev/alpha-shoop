@@ -6,7 +6,7 @@
 > `site.json`/`product.json`). כל שינוי נרשם ב-`CHANGELOG.md`. עונים לאיציק בעברית,
 > קצר וישר.
 
-This folder **is** the TIMEOF BABY storefront *and* the **template** every Shopify
+This folder **is** the TIMEFOR BABY storefront *and* the **template** every Shopify
 store is built from. The live store is *rendered from* these files — if it isn't
 represented here, it isn't real and the next render overwrites it.
 
@@ -32,7 +32,7 @@ The autonomous flow is 5 agents (orchestrated by the CEO). Wherever older docs s
 ## 1. READ ALL OF THESE FIRST (every time, before any change)
 
 ```text
-stores/shopify/timeofbaby.alpha-tech.live/
+stores/shopify/timeforbaby.alpha-tech.live/
 ├── CLAUDE.md           ← THIS guide (how to build + the rules)
 ├── readme/
 │   ├── README.md       ← the source-of-truth rules (the only correct way to change the store)
@@ -47,7 +47,7 @@ stores/shopify/timeofbaby.alpha-tech.live/
     └── home.liquid     ← hand-written homepage section (reference/fallback; site.json is primary)
 ```
 
-Programmatically, load them with **`read_store_docs("timeofbaby")`** (returns
+Programmatically, load them with **`read_store_docs("timeforbaby")`** (returns
 `claude` + `readme` + `owner` + `changelog_recent`) and read each `style/` file
 with the design-file read tool. **Do not change the store before you've read them.**
 
@@ -106,7 +106,7 @@ new brand.
 ## 3. THE ONLY CORRECT WAY TO CHANGE THE STORE
 
 ```text
-1. read_store_docs("timeofbaby")  +  read each style/ file       (READ)
+1. read_store_docs("timeforbaby")  +  read each style/ file       (READ)
 2. Edit the JSON value(s) in style/site.json / style/product.json (EDIT — JSON, never live .liquid)
 3. Apply it live:
      homepage      → apply_site_design()       (renders site.json)

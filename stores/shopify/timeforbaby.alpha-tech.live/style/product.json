@@ -2,9 +2,9 @@
   "page": "product",
   "version": 2,
   "meta": {
-    "store": "TIMEOF BABY",
+    "store": "TIMEFOR BABY",
     "reference": "TerminalX-style premium product page",
-    "renders_to": "sections/timeofbaby-product.liquid + templates/product.json",
+    "renders_to": "sections/timeforbaby-product.liquid + templates/product.json",
     "notes": "This JSON is the source-of-truth blueprint. Every visible element, its data source, styling and behavior is documented here so Grace/Linus (and the renderer) can rebuild the page deterministically."
   },
 
@@ -117,7 +117,7 @@
       "id": "brand",
       "type": "text",
       "data_source": "product.vendor",
-      "fallback": "TIMEOF BABY",
+      "fallback": "TIMEFOR BABY",
       "style": "uppercase, muted, 0.92rem, letter-spacing 0.12em, weight 600"
     },
     {

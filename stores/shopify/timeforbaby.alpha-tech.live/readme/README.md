@@ -1,11 +1,11 @@
-# TIMEOF BABY — Store Source of Truth
+# TIMEFOR BABY — Store Source of Truth
 
-> **קצר בעברית:** התיקייה הזאת היא **מקור-האמת** של חנות TIMEOF BABY. כל מה
+> **קצר בעברית:** התיקייה הזאת היא **מקור-האמת** של חנות TIMEFOR BABY. כל מה
 > שרואים בחנות החיה נבנה מהקבצים כאן. **אסור** לשנות את החנות בלי לערוך את הקבצים
 > כאן, ו**חובה** לרשום כל שינוי ב-`CHANGELOG.md`. לפני שמשנים — קוראים את הקובץ
 > הזה ואת ה-CHANGELOG.
 
-This folder **is** the TIMEOF BABY storefront. The live Shopify store is *rendered
+This folder **is** the TIMEFOR BABY storefront. The live Shopify store is *rendered
 from* these files — they are the single source of truth. If it isn't represented
 here, it isn't real, and it will be overwritten on the next render.
 
@@ -19,7 +19,7 @@ record — never again.
 ## Folder layout
 
 ```text
-stores/shopify/timeofbaby.alpha-tech.live/
+stores/shopify/timeforbaby.alpha-tech.live/
 ├── style/        ← the design files (edit these): site.json, product.json,
 │                   product.liquid, home.liquid, design.html
 ├── readme/       ← this README.md (the rules)
@@ -33,7 +33,7 @@ to know the store's history.
 
 The design files all live under **`style/`**. The render tools resolve this folder
 automatically — reference files by name (e.g. `site.json`) or by the relative path
-`shopify/timeofbaby.alpha-tech.live/style/site.json`.
+`shopify/timeforbaby.alpha-tech.live/style/site.json`.
 
 ---
 
@@ -41,10 +41,10 @@ automatically — reference files by name (e.g. `site.json`) or by the relative 
 
 | File | What it is | Renders to (live Shopify) |
 |------|------------|---------------------------|
-| `site.json` | **Homepage spec** — the single source of truth for the homepage. Sections: dark scrolling marquee, 7-image hero carousel, category tiles, product grid, social-proof. | `sections/timeofbaby-home.liquid` + `templates/index.json`, via `apply_site_design`. |
-| `product.json` | **Product-page spec** — typography tokens (drive the live font sizes), size-chart rows, badges. | injected into `sections/timeofbaby-product.liquid` via `apply_product_design`. |
-| `product.liquid` | The product-page section markup (gallery, **Color + Size** selectors, add-to-cart). Edit `product.json` to restyle; only touch this for structural markup. | `sections/timeofbaby-product.liquid`. |
-| `home.liquid` | Hand-written full homepage section (reference/fallback). The live homepage normally comes from `site.json`, not this. | `sections/timeofbaby-home.liquid` (only via `apply_store_homepage`). |
+| `site.json` | **Homepage spec** — the single source of truth for the homepage. Sections: dark scrolling marquee, 7-image hero carousel, category tiles, product grid, social-proof. | `sections/timeforbaby-home.liquid` + `templates/index.json`, via `apply_site_design`. |
+| `product.json` | **Product-page spec** — typography tokens (drive the live font sizes), size-chart rows, badges. | injected into `sections/timeforbaby-product.liquid` via `apply_product_design`. |
+| `product.liquid` | The product-page section markup (gallery, **Color + Size** selectors, add-to-cart). Edit `product.json` to restyle; only touch this for structural markup. | `sections/timeforbaby-product.liquid`. |
+| `home.liquid` | Hand-written full homepage section (reference/fallback). The live homepage normally comes from `site.json`, not this. | `sections/timeforbaby-home.liquid` (only via `apply_store_homepage`). |
 | `design.html` | The approved visual mockup — the target look the live theme must match. | nothing (reference only). |
 | `CHANGELOG.md` | **Append one entry for every change.** Newest on top. | nothing (the record). |
 

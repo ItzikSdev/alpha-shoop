@@ -1,4 +1,4 @@
-# TIMEOF BABY — Finance Ledger
+# TIMEFOR BABY — Finance Ledger
 
 Revenue vs cost over time, newest on top. Auto-snapshotted. Sources not yet connected are marked honestly (never faked). See ../readme/README.md.
 

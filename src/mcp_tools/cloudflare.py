@@ -1,6 +1,6 @@
 """
 Cloudflare DNS — point a store's subdomain at Shopify so the store gets a real
-branded domain (e.g. timeofbaby.alpha-tech.live → Shopify).
+branded domain (e.g. timeforbaby.alpha-tech.live → Shopify).
 
 The owner's domain `alpha-tech.live` lives in Cloudflare. For a Shopify custom
 subdomain you create a CNAME `<sub>` → `shops.myshopify.com`, DNS-only (NOT
@@ -29,7 +29,7 @@ def _headers() -> dict:
 async def ensure_dns_cname(name: str, target: str = SHOPIFY_CNAME_TARGET, proxied: bool = False) -> dict:
     """Create or update a CNAME `name` → `target` in the configured zone (idempotent).
 
-    `name` is the full hostname (e.g. "timeofbaby.alpha-tech.live"). Returns
+    `name` is the full hostname (e.g. "timeforbaby.alpha-tech.live"). Returns
     {"ok": bool, "action": "created"|"updated", "record_id": str, "name": str} or
     {"error": ...}. proxied=False (DNS-only) is correct for Shopify custom domains.
     """
@@ -65,6 +65,6 @@ async def ensure_dns_cname(name: str, target: str = SHOPIFY_CNAME_TARGET, proxie
 
 async def point_subdomain_to_shopify(subdomain: str, root: str = "alpha-tech.live") -> dict:
     """Convenience: CNAME `<subdomain>.<root>` → Shopify (DNS-only). e.g.
-    point_subdomain_to_shopify("timeofbaby") → timeofbaby.alpha-tech.live."""
+    point_subdomain_to_shopify("timeforbaby") → timeforbaby.alpha-tech.live."""
     name = subdomain if "." in subdomain else f"{subdomain}.{root}"
     return await ensure_dns_cname(name, SHOPIFY_CNAME_TARGET, proxied=False)

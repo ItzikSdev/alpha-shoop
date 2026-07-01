@@ -69,7 +69,7 @@ async def post_org_unblock() -> dict:
         "MISSION: maximise real profit from this store, then reinvest it into "
         "opening MORE stores and hiring MORE agents. Growth is gated on real "
         "revenue — spend only what you've earned.",
-        "FOCUS NOW: (1) make timeofbaby convert better and look great — clean "
+        "FOCUS NOW: (1) make timeforbaby convert better and look great — clean "
         "design, strong product pages/copy, enough quality products, trust/reviews; "
         "(2) grow sales consistently toward the next orders.",
         "RULE: every order needs the customer's phone + zip (collected at "

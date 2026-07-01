@@ -1,7 +1,7 @@
-# Handoff: TIMEOF BABY — Homepage Hero
+# Handoff: TIMEFOR BABY — Homepage Hero
 
 ## Overview
-A premium, editorial hero section for the TIMEOF BABY storefront (organic-cotton baby
+A premium, editorial hero section for the TIMEFOR BABY storefront (organic-cotton baby
 essentials). Headline: **"Soft. Modern. Made for first moments."** It replaces the previous
 version where the copy sat on a translucent dark box over the photo (illegible/broken-looking).
 This version puts the copy on its own calm cream panel beside the photo, so it's always readable.

@@ -302,9 +302,9 @@ async def design_node(state: AgentState) -> dict:
     template_block = ""
     try:
         from src.mcp_tools.design_files import read_store_docs
-        # _store_dir resolves the store folder; "timeofbaby" is the single live store +
+        # _store_dir resolves the store folder; "timeforbaby" is the single live store +
         # template (store_id is a UUID, not the folder slug).
-        docs = read_store_docs("timeofbaby")
+        docs = read_store_docs("timeforbaby")
         guide = (docs.get("claude") or docs.get("readme") or "")
         if guide:
             template_block = (

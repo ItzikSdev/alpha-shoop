@@ -39,7 +39,7 @@ from pathlib import Path as _Path
 _STORES_ROOT = _Path(__file__).resolve().parents[2] / "stores" / "shopify"
 
 
-def _store_context(store_slug: str = "timeofbaby") -> str:
+def _store_context(store_slug: str = "timeforbaby") -> str:
     """The REAL store folder tree + the CLAUDE.md build guide, injected into the
     agents' prompts so they can answer 'list the folders' / 'read the style files'
     THEMSELVES — instead of confabulating that they lack access and asking the
@@ -292,9 +292,11 @@ Operations you can run:
 - "cleanup":      remove products with NO image or a foreign-language / invalid title.
 - "apply_design": push the store template LIVE — re-render the homepage (site.json)
                   and product page (product.json) so design/JSON edits take effect.
+- "fix_prices":   fix products priced $0 — re-price each $0 variant from its mapped
+                  retail price (or remove it if there's no price). Use for "$0 in store".
 
 Pick "none" unless the message clearly asks for one of these (in any language).
-Output ONLY JSON: {"op":"dedupe|cleanup|apply_design|none","reply":"<short first-person line in %s>"}"""
+Output ONLY JSON: {"op":"dedupe|cleanup|apply_design|fix_prices|none","reply":"<short first-person line in %s>"}"""
 
 
 async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
@@ -315,7 +317,7 @@ async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
         reply = str(parsed.get("reply", "")).strip()
     except Exception:
         return None
-    if op not in {"dedupe", "cleanup", "apply_design"}:
+    if op not in {"dedupe", "cleanup", "apply_design", "fix_prices"}:
         return None
     # Make sure the Shopify calls target the store (falls back to env creds anyway).
     try:
@@ -325,7 +327,7 @@ async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
             _current_store.set(store)
     except Exception:
         store = None
-    slug = "timeofbaby"
+    slug = "timeforbaby"
     try:
         if op == "dedupe":
             from src.mcp_tools.shopify import dedupe_products
@@ -335,6 +337,10 @@ async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
             from src.mcp_tools.shopify import cleanup_bad_products
             res = await cleanup_bad_products(dry_run=False)
             note = f"ניקיתי {res['deleted']} מוצרים פגומים (בלי תמונה / טקסט לא תקין) מתוך {res['scanned']}."
+        elif op == "fix_prices":
+            from src.mcp_tools.shopify import fix_zero_prices
+            res = await fix_zero_prices(dry_run=False)
+            note = f"תיקנתי מחירי $0: תמחרתי מחדש {res['repriced']} מוצרים, הסרתי {res['deleted']} ללא מחיר."
         else:  # apply_design
             from src.mcp_tools.shopify_design import apply_site_design, apply_product_design
             r1 = await apply_site_design(slug)
@@ -433,7 +439,7 @@ def _apply_site_changes(changes: list[dict]) -> tuple[bool, list[str]]:
     Returns (ok, applied_labels)."""
     from src.mcp_tools.shopify_design import load_site_json
     from src.mcp_tools.design_files import write_design_file, read_store_docs
-    site = load_site_json("timeofbaby")
+    site = load_site_json("timeforbaby")
     if not site:
         return False, []
     sections = site.get("sections", [])
@@ -451,7 +457,7 @@ def _apply_site_changes(changes: list[dict]) -> tuple[bool, list[str]]:
             applied.append(key)
     if not applied:
         return False, []
-    site_path = str(_Path(read_store_docs("timeofbaby").get("dir", "")) / "style" / "site.json")
+    site_path = str(_Path(read_store_docs("timeforbaby").get("dir", "")) / "style" / "site.json")
     res = write_design_file(site_path, json.dumps(site, ensure_ascii=False, indent=2))
     return bool(res.get("ok")), applied
 
@@ -464,7 +470,7 @@ async def _agent_act_design(agent: Agent, message: str, company) -> str:
     site = {}
     try:
         from src.mcp_tools.shopify_design import load_site_json
-        site = load_site_json("timeofbaby")
+        site = load_site_json("timeforbaby")
     except Exception:
         pass
     sections_digest = json.dumps(
@@ -511,7 +517,7 @@ async def _agent_act_design(agent: Agent, message: str, company) -> str:
     live_note = ""
     try:
         from src.mcp_tools.shopify_design import apply_site_design
-        res = await apply_site_design("timeofbaby")
+        res = await apply_site_design("timeforbaby")
         live_note = " and applied it live" if res.get("ok") else " (saved; live apply pending)"
     except Exception:
         live_note = " (saved; live apply pending)"

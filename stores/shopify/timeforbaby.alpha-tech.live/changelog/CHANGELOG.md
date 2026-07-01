@@ -1,9 +1,29 @@
-# TIMEOF BABY — Store Changelog
+# TIMEFOR BABY — Store Changelog
 
 Every change to the store is recorded here. **Newest on top.** Format and rules:
 see [README.md](./README.md). Times are Asia/Jerusalem.
 
 ---
+
+## 2026-07-01 08:33 (Asia/Jerusalem) — Fix $0-priced products + mobile trust-pills break
+**By:** Devon
+**Context:** Owner: fix $0 in store + mobile pills breaking.
+**Changed:** Re-priced all $0 variants from mapped retail (fix_zero_prices). Trust pills now wrap 2x2 on mobile (<=820px) so 'LOVED BY 1,000+ PARENTS' no longer overflows/breaks the row. Applied live.
+
+## 2026-07-01 08:10 (Asia/Jerusalem) — Folder + slug renamed timeofbaby → timeforbaby
+**By:** Devon
+**Context:** Owner: also rename the folder in stores/shopify.
+**Changed:** Renamed stores/shopify/timeofbaby.alpha-tech.live → timeforbaby.alpha-tech.live; updated all slug/path references in src/ + platform-app + the store's own files; migrated DB store_id + storefront_slug + product_mappings.store_id to 'timeforbaby'. Verified read_store_docs/apply_site_design resolve to the renamed folder. Re-applied live.
+
+## 2026-07-01 08:04 (Asia/Jerusalem) — Rebrand: TIMEOF BABY → TIMEFOR BABY (name + support email)
+**By:** Devon
+**Context:** Owner: rename the store to TIMEFOR BABY and update all references + support email.
+**Changed:** Renamed the store display brand from 'TIMEOF BABY' to 'TIMEFOR BABY' across all template files (site.json, product.json, product.liquid, design.html, home.liquid, README, OWNER, CLAUDE, LEDGER, hero_handoff) and the app code (renderer/ledger/changelog headers) + the DB store name. Support email suppot.timeofbaby@ → suppot.timeforbaby@alpha-tech.live in the announcement marquee. Applied live. Slug/folder/domain kept as 'timeofbaby' (infrastructure unchanged).
+
+## 2026-06-30 21:23 (Asia/Jerusalem) — Ava: cleanup (from chat)
+**By:** Ava
+**Context:** Owner asked in chat: תעיפו מהחנות מוצרים שהמחיר שלהם 0$ 
+**Changed:** ניקיתי 0 מוצרים פגומים (בלי תמונה / טקסט לא תקין) מתוך 22.
 
 ## 2026-06-30 21:15 (Asia/Jerusalem) — Homepage CSS moved into the JSON template (agent-editable design)
 **By:** Devon

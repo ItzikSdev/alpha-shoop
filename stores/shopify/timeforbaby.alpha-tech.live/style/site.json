@@ -2,10 +2,10 @@
   "page": "homepage",
   "version": 3,
   "meta": {
-    "store": "TIMEOF BABY",
-    "domain": "timeofbaby.alpha-tech.live",
+    "store": "TIMEFOR BABY",
+    "domain": "timeforbaby.alpha-tech.live",
     "reference": "Premium baby store — TerminalX-level polish",
-    "renders_to": "sections/timeofbaby-home.liquid + templates/index.json (uses ONLY this section)",
+    "renders_to": "sections/timeforbaby-home.liquid + templates/index.json (uses ONLY this section)",
     "principle": "This JSON is the single source of truth. To change the homepage you edit VALUES here and run apply_site_design — never touch the .liquid by hand.",
     "updated": "2026-06-27",
     "css_note": "Homepage CSS lives HERE now (array of lines) — edit it to restyle the store, then apply_site_design. The Python renderer only uses this if present."
@@ -87,7 +87,7 @@
         "30-DAY RETURNS",
         "ORGANIC COTTON",
         "DESIGNED FOR LITTLE ONES",
-        "CUSTOMER SUPPORT — suppot.timeofbaby@alpha-tech.live"
+        "CUSTOMER SUPPORT — suppot.timeforbaby@alpha-tech.live"
       ],
       "style": {
         "background": "#161616",
@@ -351,7 +351,7 @@
       "type": "footer",
       "enabled": true,
       "description": "Rich dark footer (TerminalX-style): brand + tagline + social, then link columns, then a copyright bar.",
-      "brand": "TIMEOF BABY",
+      "brand": "TIMEFOR BABY",
       "tagline": "Thoughtfully designed baby essentials in premium organic cotton. Made for the moments that matter.",
       "social": [
         {
@@ -436,7 +436,7 @@
           ]
         }
       ],
-      "copyright": "© 2026 TIMEOF BABY · Free shipping on all orders · 30-day returns",
+      "copyright": "© 2026 TIMEFOR BABY · Free shipping on all orders · 30-day returns",
       "style": {
         "background": "#161616",
         "text_color": "#ffffff",
@@ -582,6 +582,7 @@
     ".tob .tob-btn{font-size:1.5rem}                    /* button exception */",
     ".tob-sp a{font-size:.82rem;color:#161616;text-decoration:none;display:block;font-weight:600}",
     ".tob-sp span{display:block;font-size:.68rem;color:#8d8d8d;margin-top:3px}",
-    "@media(max-width:820px){.tob .tob-grid{grid-template-columns:repeat(2,1fr)}.tob .tob-hero h1{font-size:2.2rem}.tob .tob-hero{height:440px}.tob .tob-pills div{flex:1 1 50%}.tob-sp{left:10px;right:10px;bottom:10px;max-width:none}}"
+    "@media(max-width:820px){.tob .tob-grid{grid-template-columns:repeat(2,1fr)}.tob .tob-hero h1{font-size:2.2rem}.tob .tob-hero{height:440px}.tob .tob-pills div{flex:1 1 50%}.tob-sp{left:10px;right:10px;bottom:10px;max-width:none}}",
+    "@media(max-width:820px){.tob .tob-pills{flex-wrap:wrap}.tob .tob-pills div{flex:0 0 50%}.tob .tob-pills div:nth-child(2n){border-right:none}.tob .tob-pills div:nth-child(-n+2){border-bottom:1px solid var(--line)}}"
   ]
 }

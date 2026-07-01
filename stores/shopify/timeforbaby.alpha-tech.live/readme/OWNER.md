@@ -7,7 +7,7 @@ Grace and Linus: this is who you work for. The #1 reason a task goes wrong is no
 the code — it's misreading what Itzik actually wants. Read this first, every time.
 
 ## Who he is
-Hands-on founder of a one-store dropshipping business (**TIMEOF BABY** — baby
+Hands-on founder of a one-store dropshipping business (**TIMEFOR BABY** — baby
 clothes sourced from CJ). He runs the company through the dashboard at
 `localhost:5173` and the team channel. He can read code and notices small details,
 but he wants **you** to do the work and keep him clearly informed.

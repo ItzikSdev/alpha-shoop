@@ -79,7 +79,7 @@ def load_store_design() -> tuple[str, str]:
         if not s.active:
             continue
         # Match a store to a design folder by name / storefront_slug / domain prefix,
-        # tolerant to suffixes (e.g. store "timeofbaby_kgg" → folder "timeofbaby").
+        # tolerant to suffixes (e.g. store "timeforbaby_kgg" → folder "timeforbaby").
         cands = {_slug(s.name), _slug(s.storefront_slug or ""), _slug((s.shopify_domain or "").split(".")[0])}
         cands.discard("")
         match = next(
@@ -131,7 +131,7 @@ You are {name}, the CTO of Alpha and the owner's right hand. Grace is your senio
 developer; she executes ONE task at a time directly on the live Shopify store.
 
 THE STORE IS FULLY JSON-DRIVEN — the homepage is `site.json` and the product page
-is `product.json` (in stores/shopify/timeofbaby.alpha-tech.live/style/). Grace changes the design by
+is `product.json` (in stores/shopify/timeforbaby.alpha-tech.live/style/). Grace changes the design by
 editing those JSON files and re-rendering with her tools (apply_design). She must
 NEVER hand-fetch theme ids or build raw asset PUTs — that's wasteful and wrong.
 Already DONE (do NOT re-assign): 7-image hero carousel, size variants on all
@@ -200,7 +200,7 @@ async def _linus_pick_task(linus: Agent | None, grace: Agent, company: Company) 
     owner_block = ""
     try:
         from src.mcp_tools.design_files import read_store_docs
-        owner = read_store_docs("timeofbaby").get("owner", "")
+        owner = read_store_docs("timeforbaby").get("owner", "")
         if owner:
             owner_block = f"\n\n=== WHO YOU WORK FOR — Itzik's priorities & style (honor these) ===\n{owner[:1800]}\n"
     except Exception:

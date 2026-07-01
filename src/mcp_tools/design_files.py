@@ -72,8 +72,8 @@ def write_design_file(path: str, content: str) -> dict:
 # changing the store and the system LOGS every change here so nothing is invisible.
 
 def _store_dir(store_slug: str) -> Path:
-    """stores/shopify/<slug>/, tolerant to naming (e.g. slug 'timeofbaby' matches a
-    folder 'timeofbaby.alpha-tech.live'). Falls back to the only store folder when
+    """stores/shopify/<slug>/, tolerant to naming (e.g. slug 'timeforbaby' matches a
+    folder 'timeforbaby.alpha-tech.live'). Falls back to the only store folder when
     there's exactly one, so callers never need the exact on-disk name."""
     base = _STYLES_ROOT / "shopify"
     want = "".join(c for c in (store_slug or "").lower() if c.isalnum())
@@ -88,10 +88,10 @@ def _store_dir(store_slug: str) -> Path:
             return d
     if len(dirs) == 1:
         return dirs[0]
-    return base / (store_slug or "timeofbaby")
+    return base / (store_slug or "timeforbaby")
 
 
-def read_store_docs(store_slug: str = "timeofbaby", changelog_chars: int = 1600) -> dict:
+def read_store_docs(store_slug: str = "timeforbaby", changelog_chars: int = 1600) -> dict:
     """Return the store's CLAUDE.md (build guide) + README + OWNER + the most recent
     CHANGELOG tail, for the agents to READ before they change anything. Empty strings
     if a file doesn't exist yet.
@@ -114,7 +114,7 @@ def read_store_docs(store_slug: str = "timeofbaby", changelog_chars: int = 1600)
 
 def append_changelog(
     title: str, changed: str, by: str = "system", context: str = "",
-    store_slug: str = "timeofbaby",
+    store_slug: str = "timeforbaby",
 ) -> dict:
     """Prepend one entry to the store's CHANGELOG.md (newest-on-top), timestamped in
     Asia/Jerusalem. This is how EVERY store change gets recorded — call it right
@@ -139,7 +139,7 @@ def append_changelog(
     d = _store_dir(store_slug) / "changelog"
     d.mkdir(parents=True, exist_ok=True)
     f = d / "CHANGELOG.md"
-    header = "# TIMEOF BABY — Store Changelog\n\nEvery change to the store is recorded here. **Newest on top.**\n\n---\n\n"
+    header = "# TIMEFOR BABY — Store Changelog\n\nEvery change to the store is recorded here. **Newest on top.**\n\n---\n\n"
     if f.exists():
         body = f.read_text(encoding="utf-8", errors="ignore")
         marker = "---\n\n"

@@ -79,6 +79,6 @@ async def scan_store() -> dict:
             out["theme"]["name"] = main["name"]; out["theme"]["id"] = main["id"]
             for tpl in ("templates/index.json", "templates/product.json"):
                 a = (await c.get(f"{base}/themes/{main['id']}/assets.json", params={"asset[key]": tpl})).json().get("asset", {}).get("value", "")
-                out["theme"][tpl] = "timeofbaby" in a or "tobp" in a or "tob" in a
+                out["theme"][tpl] = "timeforbaby" in a or "tobp" in a or "tob" in a
 
     return out

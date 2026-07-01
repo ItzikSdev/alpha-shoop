@@ -91,7 +91,7 @@ mutation setPolicy($policy: ShopPolicyInput!) {
 """
 
 
-def _load_store_template(store_slug: str = "timeofbaby") -> str:
+def _load_store_template(store_slug: str = "timeforbaby") -> str:
     """The store folder IS the template + source of truth (see the store's CLAUDE.md).
     Pull the README rules + CLAUDE build guide + OWNER + the existing brand identity
     from style/site.json so Devon BUILDS TO THE TEMPLATE instead of inventing a new
@@ -282,7 +282,7 @@ async def store_setup_node(state: AgentState) -> dict:
 
     # READ the store template/folder FIRST (the store's CLAUDE.md rule: read before
     # you act, build to match the template) so Devon builds THIS store, not a new one.
-    template = _load_store_template("timeofbaby")
+    template = _load_store_template("timeforbaby")
     if template:
         agent_log("Read the store template (README + CLAUDE + site.json) — building to match it", "info")
     agent_log("Generating brand brief...", "info")
@@ -384,7 +384,7 @@ async def store_setup_node(state: AgentState) -> dict:
     if template:
         try:
             from src.mcp_tools.shopify_design import apply_site_design
-            res = await apply_site_design("timeofbaby")
+            res = await apply_site_design("timeforbaby")
             if res.get("ok"):
                 actions_done.append("Template homepage applied from site.json (announcement marquee + sections)")
                 agent_log("✓ Template homepage rendered from site.json", "success")

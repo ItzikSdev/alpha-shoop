@@ -807,6 +807,65 @@ async def dedupe_products(dry_run: bool = True) -> dict:
             "dry_run": dry_run, "duplicates": dupes[:50]}
 
 
+_GQL_PRICE_AUDIT = """
+query($cursor: String) {
+  products(first: 100, after: $cursor) {
+    pageInfo { hasNextPage endCursor }
+    nodes { id title variants(first: 100) { nodes { id price } } }
+  }
+}
+"""
+
+_GQL_VARIANTS_BULK_UPDATE = """
+mutation bulk($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+  productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+    userErrors { field message }
+  }
+}
+"""
+
+
+async def fix_zero_prices(dry_run: bool = True) -> dict:
+    """Fix products that have $0-priced variants: re-price each $0 variant to the
+    product's mapped retail price (product_mappings.retail_price); if no valid price
+    is on file, remove the product. The owner's 'no $0 products' rule, runnable by the
+    agents. Returns a report."""
+    import os as _os
+    import sqlite3 as _sql
+    con = _sql.connect(_os.environ.get("TRACES_DB_PATH", "./data/traces.db"))
+    retail = {gid: r for gid, r in con.execute(
+        "SELECT shopify_product_id, retail_price FROM product_mappings").fetchall()}
+    con.close()
+    cursor = None
+    repriced = deleted = 0
+    fixed: list[dict] = []
+    while True:
+        data = await _shopify_gql(_GQL_PRICE_AUDIT, {"cursor": cursor})
+        conn = data.get("products", {})
+        for n in conn.get("nodes", []):
+            zeros = [v for v in n["variants"]["nodes"] if float(v["price"]) == 0]
+            if not zeros:
+                continue
+            rp = float(retail.get(n["id"]) or 0)
+            if rp > 0:
+                if not dry_run:
+                    await _shopify_gql(_GQL_VARIANTS_BULK_UPDATE, {
+                        "productId": n["id"],
+                        "variants": [{"id": v["id"], "price": f"{rp:.2f}"} for v in zeros],
+                    })
+                repriced += 1
+                fixed.append({"title": n["title"][:50], "action": f"repriced {len(zeros)} variant(s) → ${rp:.2f}"})
+            else:
+                if not dry_run and await delete_shopify_product(n["id"]):
+                    deleted += 1
+                fixed.append({"title": n["title"][:50], "action": "removed (no price on file)"})
+        if conn.get("pageInfo", {}).get("hasNextPage"):
+            cursor = conn["pageInfo"]["endCursor"]
+        else:
+            break
+    return {"repriced": repriced, "deleted": deleted, "dry_run": dry_run, "fixed": fixed[:50]}
+
+
 async def update_inventory(
     product_id: str,
     location_id: str,

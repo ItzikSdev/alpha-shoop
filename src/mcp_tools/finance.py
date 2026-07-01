@@ -234,7 +234,7 @@ def _ad_spend(days: int) -> dict:
             "note": "Google Ads metrics are still mocked; wire the real GAQL API to populate."}
 
 
-async def finance_snapshot(days: int = 30, store_slug: str = "timeofbaby") -> dict:
+async def finance_snapshot(days: int = 30, store_slug: str = "timeforbaby") -> dict:
     """Aggregate revenue vs cost for the window. Returns a structured dict with a
     `status` per source and a `net_usd` computed from the connected parts only."""
     revenue = await _revenue(days)
@@ -286,14 +286,14 @@ def _ledger_dir(store_slug: str):
     return _store_dir(store_slug) / "finance"
 
 
-def read_finance_ledger(store_slug: str = "timeofbaby", chars: int = 1600) -> dict:
+def read_finance_ledger(store_slug: str = "timeforbaby", chars: int = 1600) -> dict:
     """Recent LEDGER.md tail for the operator to read."""
     f = _ledger_dir(store_slug) / "LEDGER.md"
     text = f.read_text(encoding="utf-8", errors="ignore") if f.exists() else ""
     return {"ledger_recent": text[:chars], "path": str(f)}
 
 
-async def log_finance_snapshot(days: int = 30, store_slug: str = "timeofbaby",
+async def log_finance_snapshot(days: int = 30, store_slug: str = "timeforbaby",
                                once_per_day: bool = True) -> dict:
     """Compute a snapshot and prepend it to finance/LEDGER.md (newest on top). When
     `once_per_day`, skips if today's snapshot is already logged. Returns {ok, path,
@@ -326,7 +326,7 @@ async def log_finance_snapshot(days: int = 30, store_slug: str = "timeofbaby",
         + (f"**Pending data pipes:** {', '.join(snap['pending_data'])}\n" if snap.get("pending_data") else "")
         + "\n"
     )
-    header = ("# TIMEOF BABY — Finance Ledger\n\nRevenue vs cost over time, newest on "
+    header = ("# TIMEFOR BABY — Finance Ledger\n\nRevenue vs cost over time, newest on "
               "top. Auto-snapshotted. Sources not yet connected are marked honestly "
               "(never faked). See ../readme/README.md.\n\n---\n\n")
     if existing:

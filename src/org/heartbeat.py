@@ -145,16 +145,16 @@ Company goals: {goals}
 THE STORE IS NOW FULLY JSON-DRIVEN (this is the system — use it, don't fight it).
 Each store lives at stores/shopify/<store>/ with style/ (design files), readme/
 and changelog/:
-- The homepage is built from `stores/shopify/timeofbaby.alpha-tech.live/style/site.json`
+- The homepage is built from `stores/shopify/timeforbaby.alpha-tech.live/style/site.json`
   (sections: marquee, hero 7-image carousel, category tiles, product grid, social).
-- The product page is built from `stores/shopify/timeofbaby.alpha-tech.live/style/product.json`
+- The product page is built from `stores/shopify/timeforbaby.alpha-tech.live/style/product.json`
   (its design_tokens.typography DRIVES the live font sizes).
 - To change the design you change those JSON files, then re-render. NEVER fetch
   theme ids or build raw asset PUTs by hand — the tools resolve everything.
 
 YOU HAVE FILE ACCESS to the templates under stores/ (read + write). To change the
 design, EDIT the JSON and it re-renders. Output ONE of:
-- "edit_design": {{"file":"shopify/timeofbaby.alpha-tech.live/style/site.json","content":"<full new JSON>"}}
+- "edit_design": {{"file":"shopify/timeforbaby.alpha-tech.live/style/site.json","content":"<full new JSON>"}}
   → writes the file (JSON validated) AND re-applies it live. This is how you change
   the homepage/product design — edit values in the JSON, never the .liquid.
 - "apply_design": true → just re-render the current site.json + product.json.
@@ -173,7 +173,7 @@ The real lever to revenue now is TRAFFIC (ads), not more design loops.
 
 Output ONLY JSON (use exactly ONE action, or all null to just share an update):
 {{"message":"<short first-person update in {language}>",
-  "edit_design": null OR {{"file":"shopify/timeofbaby.alpha-tech.live/style/site.json","content":"<full new JSON>"}},
+  "edit_design": null OR {{"file":"shopify/timeforbaby.alpha-tech.live/style/site.json","content":"<full new JSON>"}},
   "apply_design": false,
   "theme_css": null,
   "shopify_request": null OR {{"method":"GET|POST|PUT|DELETE","path":"products.json","body":<object or null>,"reason":"<why>"}}}}"""
@@ -217,7 +217,7 @@ async def _dev_turn(agent: Agent, company: Company) -> dict:
     # never re-reverts it. The system logs her changes automatically (below).
     try:
         from src.mcp_tools.design_files import read_store_docs
-        docs = read_store_docs("timeofbaby")
+        docs = read_store_docs("timeforbaby")
         if docs.get("owner"):
             design += (
                 "\n=== WHO YOU WORK FOR — UNDERSTAND ITZIK BEFORE YOU ACT ===\n"
@@ -226,7 +226,7 @@ async def _dev_turn(agent: Agent, company: Company) -> dict:
         if docs.get("claude") or docs.get("readme") or docs.get("changelog_recent"):
             design += (
                 "\n=== STORE SOURCE OF TRUTH + BUILD GUIDE — READ BEFORE CHANGING ANYTHING ===\n"
-                "stores/shopify/timeofbaby.alpha-tech.live/ is the source of truth + template. "
+                "stores/shopify/timeforbaby.alpha-tech.live/ is the source of truth + template. "
                 "Build to match the approved design (design.html / site.json); don't revert it; "
                 "if the live store doesn't match, re-apply, don't redesign. Every change is logged "
                 "to CHANGELOG.md automatically.\n"
@@ -311,7 +311,7 @@ async def _dev_turn(agent: Agent, company: Company) -> dict:
     # Design = JSON-driven. Grace renders site.json → live homepage AND posts the
     # full JSON spec to the channel so Linus + the owner SEE and control exactly
     # what was built (the owner's explicit request: visibility + a review trail).
-    _design_words = ("design", "עיצוב", "theme", "site.json", "homepage", "timeofbaby",
+    _design_words = ("design", "עיצוב", "theme", "site.json", "homepage", "timeforbaby",
                      "css", "html", "storefront", "חנות", "json")
     wants_design = apply_design or (isinstance(theme_css, str) and bool(theme_css.strip())) \
         or (not (isinstance(req, dict) and req.get("path")) and any(w in task.lower() for w in _design_words))
