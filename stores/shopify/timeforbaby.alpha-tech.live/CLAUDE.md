@@ -98,6 +98,7 @@ Build/restore the store so the live Shopify theme matches it — don't invent a 
 - **NO DUPLICATE PHOTOS on a product:** never repeat the same image within a product —
   dedup by image CONTENT (not filename; Shopify re-hosts with new names). Keep one per shot.
 - **NO $0 PRODUCTS:** every variant must be priced. Run `fix_zero_prices(dry_run=False)`
+- **UNIFORM PRODUCT IMAGES:** all product-card images render at ONE fixed ratio (4:5 / 125%, object-fit:cover) so the collection grid is even. Prefer consistent-ratio source photos; the theme CSS enforces it.
   (re-prices $0 variants from the mapped retail; removes ones with no price on file).
 - **SEO LIKE A PRO (every product):** a unique, human, keyword-rich **title** (baby + garment
   type + key feature; NO supplier codes/jargon); a unique **meta description** (~150–160 chars,

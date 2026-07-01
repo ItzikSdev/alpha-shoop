@@ -5,6 +5,11 @@ see [README.md](./README.md). Times are Asia/Jerusalem.
 
 ---
 
+## 2026-07-01 09:29 (Asia/Jerusalem) — Uniform product-card images (collection/grid)
+**By:** Remy
+**Context:** Owner: product images need to be the same size.
+**Changed:** Forced all product-card images to a fixed 4:5 (125%) ratio with object-fit:cover so the collection grid is even (was 'adapt' → mismatched heights). Better, consistent SEO/UX.
+
 ## 2026-07-01 09:22 (Asia/Jerusalem) — Global header on all pages + Shopify-style icons (search/account/cart)
 **By:** Remy
 **Context:** Owner: all pages like home; Shopify icons + cart icon instead of the word CART.
