@@ -5,6 +5,11 @@ see [README.md](./README.md). Times are Asia/Jerusalem.
 
 ---
 
+## 2026-07-01 10:27 (Asia/Jerusalem) — Header logo → serif wordmark; robust PNG favicon
+**By:** Remy
+**Context:** Owner: favicon not working; the badge logo looked off-brand.
+**Changed:** Replaced the black TF badge in the header with an on-brand 'TIMEFOR BABY' serif wordmark (Newsreader, matches the hero). Favicon now served from favicon-32.png/apple-touch-icon-180.png theme assets via <link> tags (+ settings.favicon).
+
 ## 2026-07-01 10:15 (Asia/Jerusalem) — New TF logo + favicon (owner-provided)
 **By:** Remy
 **Context:** Owner created a new logo+favicon; update the store.
