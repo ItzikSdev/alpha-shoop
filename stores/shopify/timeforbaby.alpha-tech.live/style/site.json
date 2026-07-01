@@ -86,8 +86,7 @@
         "FREE SHIPPING OVER $50",
         "30-DAY RETURNS",
         "ORGANIC COTTON",
-        "DESIGNED FOR LITTLE ONES",
-        "CUSTOMER SUPPORT — suppot.timeforbaby@alpha-tech.live"
+        "DESIGNED FOR LITTLE ONES"
       ],
       "style": {
         "background": "#161616",
@@ -386,6 +385,15 @@
             {
               "label": "Unisex",
               "link": "/collections/unisex"
+            }
+          ]
+        },
+        {
+          "title": "Support",
+          "links": [
+            {
+              "label": "suppot.timeforbaby@alpha-tech.live",
+              "link": "mailto:suppot.timeforbaby@alpha-tech.live"
             }
           ]
         }

@@ -5,6 +5,11 @@ see [README.md](./README.md). Times are Asia/Jerusalem.
 
 ---
 
+## 2026-07-01 10:40 (Asia/Jerusalem) — Support email moved from marquee to footer
+**By:** Remy
+**Context:** Owner: remove support email from the black line, put it in the footer.
+**Changed:** Removed 'suppot.timeforbaby@alpha-tech.live' from the top scrolling marquee (was cluttering it); added a 'Support' column in the footer with the email as a mailto link.
+
 ## 2026-07-01 10:27 (Asia/Jerusalem) — Header logo → serif wordmark; robust PNG favicon
 **By:** Remy
 **Context:** Owner: favicon not working; the badge logo looked off-brand.
