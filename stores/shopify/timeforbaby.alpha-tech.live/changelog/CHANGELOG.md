@@ -5,6 +5,11 @@ see [README.md](./README.md). Times are Asia/Jerusalem.
 
 ---
 
+## 2026-07-01 16:59 (Asia/Jerusalem) — Footer spacing (margin) + saved global header/footer to store folder
+**By:** Remy
+**Context:** Owner: add footer margin; save all changes in the store folder.
+**Changed:** Added margin/padding to the footer so it isn't cramped. Saved the global header+footer liquid to style/global-layout.liquid so the changes live in the store folder (version-controlled) and can be re-injected after a theme reset.
+
 ## 2026-07-01 16:55 (Asia/Jerusalem) — Global dark footer on all pages; hide theme's light footer
 **By:** Remy
 **Context:** Owner: keep only the black footer, remove the light part below it.
