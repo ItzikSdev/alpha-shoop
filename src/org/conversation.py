@@ -294,9 +294,11 @@ Operations you can run:
                   and product page (product.json) so design/JSON edits take effect.
 - "fix_prices":   fix products priced $0 — re-price each $0 variant from its mapped
                   retail price (or remove it if there's no price). Use for "$0 in store".
+- "ticket":       close or update a TICKET the owner refers to (mark it done/doing/blocked).
+                  Use for "close the ticket ..." / "סגור את הטיקט ..." / "mark X done".
 
 Pick "none" unless the message clearly asks for one of these (in any language).
-Output ONLY JSON: {"op":"dedupe|cleanup|apply_design|fix_prices|none","reply":"<short first-person line in %s>"}"""
+Output ONLY JSON: {"op":"dedupe|cleanup|apply_design|fix_prices|ticket|none","reply":"<short first-person line in %s>","ticket_query":"<words identifying the ticket, only when op=ticket>","ticket_status":"done|doing|blocked|todo"}"""
 
 
 async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
@@ -315,10 +317,23 @@ async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
         parsed = _parse_json(str(resp.content))
         op = str(parsed.get("op", "none")).strip()
         reply = str(parsed.get("reply", "")).strip()
+        ticket_query = str(parsed.get("ticket_query", "")).strip()
+        ticket_status = str(parsed.get("ticket_status", "done")).strip()
     except Exception:
         return None
-    if op not in {"dedupe", "cleanup", "apply_design", "fix_prices"}:
+    if op not in {"dedupe", "cleanup", "apply_design", "fix_prices", "ticket"}:
         return None
+    # Ticket ops don't need the Shopify store context — handle + return early.
+    if op == "ticket":
+        from src.org.tickets import list_tickets, update_ticket
+        q = ticket_query.lower()
+        cand = [t for t in list_tickets() if t["status"] != "done"
+                and (q in t["title"].lower() or q in t["id"].lower() or not q)]
+        if not cand:
+            return (reply + "\n" if reply else "") + f"⚠️ לא מצאתי טיקט פתוח שתואם ל־'{ticket_query}'."
+        done = [t for t in cand if update_ticket(t["id"], status=ticket_status or "done")]
+        titles = ", ".join(t["title"][:40] for t in done)
+        return (reply + "\n" if reply else "") + f"✅ עדכנתי {len(done)} טיקט ל־{ticket_status or 'done'}: {titles}"
     # Make sure the Shopify calls target the store (falls back to env creds anyway).
     try:
         from src.stores import list_stores, _current_store
