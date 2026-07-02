@@ -235,8 +235,11 @@ def _psychological_price(price: float) -> float:
 # 100; override with ORG_MAX_STORE_PRODUCTS. (Was a hard 30 "curated" cap before.)
 _MAX_STORE_PRODUCTS = int(os.environ.get("ORG_MAX_STORE_PRODUCTS", "100"))
 
-# How many candidate images to vision-vet per product (keeps cost bounded).
-_VET_MAX_IMAGES = int(os.environ.get("IMAGE_VET_MAX", "5"))
+# How many candidate images to vision-vet per product. CJ often ships 10-15 images
+# and the good lifestyle shots are frequently AFTER the first few — a low cap left
+# products with only 1-2 images. Default 12 so agents pull more distinct, sellable
+# shots per product (duplicates are stripped by content-hash later).
+_VET_MAX_IMAGES = int(os.environ.get("IMAGE_VET_MAX", "12"))
 
 _IMAGE_VET_SYS = (
     "You are an e-commerce visual merchandiser deciding if a supplier photo is good "
