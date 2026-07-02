@@ -94,6 +94,11 @@ Build/restore the store so the live Shopify theme matches it — don't invent a 
   Python to restyle the store. SAFETY: you may edit/add, but **never delete a section or
   the css wholesale without logging it in CHANGELOG.md first** — every change is recorded
   with a timestamp via `append_changelog`, so nothing is silently lost.
+- **NEVER PUBLISH THE OWNER'S PERSONAL DETAILS (HARD RULE):** Itzik's full name, home
+  address, phone, ID, or personal email must NEVER appear anywhere public — pages,
+  policies, product copy, ads, meta tags, structured data. The ONLY public contact is
+  **suppot.timeforbaby@alpha-tech.live**. If you find personal info anywhere, REMOVE it
+  immediately and log it. (More contact options may be added later; for now, email only.)
 - **NAV RULE (owner):** the ONLY links anywhere on the store — header, category tiles,
   footer — are **Baby Boys** (`/collections/baby-boys`), **Baby Girls** (`/collections/baby-girls`),
   **Unisex** (`/collections/unisex`). "Shop All" = **Unisex**. NO other links in nav/footer
