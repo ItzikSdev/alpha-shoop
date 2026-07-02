@@ -128,6 +128,11 @@ def integrations_status() -> list[dict]:
         row("facebook_instagram", "Facebook & Instagram", "Marketing", ["Max"],
             False,  # enriched by the REAL Shopify channel check in the /org/integrations route
             "Checking the store's sales channels…"),
+        row("tiktok", "TikTok (ads + sales channel)", "Marketing", ["Max"],
+            True,
+            "TikTok channel + $70 ad budget connected via the Shopify TikTok app. "
+            "NOTE: agents have NO Marketing-API access yet — ads run through TikTok's own "
+            "Smart campaigns in the app, not created by Max programmatically."),
         row("paypal", "PayPal (revenue reporting)", "Payments", ["Ava"],
             paypal_ok, "Credentials valid, but the app is MISSING the 'Transaction Search' permission (403 on reporting). Enable it in developer.paypal.com → Apps → Features." if paypal_ok else "No PayPal credentials."),
         row("payplus", "PayPlus (checkout payments)", "Payments", ["Ava"],
