@@ -105,6 +105,15 @@ Build/restore the store so the live Shopify theme matches it — don't invent a 
   (no policies/pages/social link lists). Every new product goes into exactly one of these 3.
 - **NO DUPLICATE PHOTOS on a product:** never repeat the same image within a product —
   dedup by image CONTENT (not filename; Shopify re-hosts with new names). Keep one per shot.
+- **PRODUCT MEDIA (owner rule) — applies to EVERY product:**
+  1. **As many distinct images as possible:** vet up to 12 of the CJ images (`IMAGE_VET_MAX=12`)
+     and add all the good, sellable ones — but **never duplicate/similar images** (content-hash
+     dedup). Image-light products (1–2 photos) are not acceptable.
+  2. **Variant → image binding:** bind each **Color** variant to ITS OWN photo, so clicking a
+     color **swaps the main gallery image** to that color's product shot.
+  3. **Unavailable options are not clickable:** when a **Size** (or Color) combination is out of
+     stock / doesn't exist, its button is **disabled or removed** (greyed/struck) and Add-to-Cart
+     shows **Sold out** — a customer must never be able to select an unbuyable option.
 - **NO $0 PRODUCTS:** every variant must be priced. Run `fix_zero_prices(dry_run=False)`
 - **UNIFORM PRODUCT IMAGES:** all product-card images render at ONE fixed ratio (4:5 / 125%, object-fit:cover) so the collection grid is even. Prefer consistent-ratio source photos; the theme CSS enforces it.
   (re-prices $0 variants from the mapped retail; removes ones with no price on file).
