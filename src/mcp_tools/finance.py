@@ -65,6 +65,8 @@ FIXED_COSTS = [
      "period": "yearly", "note": "Israel exempt-dealer (עוסק פטור) yearly cost (~₪150/mo)."},
     {"name": "Meta Ads — budget cap", "category": "Marketing", "amount": 50.0, "currency": "ILS",
      "period": "monthly", "note": "Ad-spend CEILING: 15 ₪ already in the Meta account + up to 50 ₪ from PayPal. HARD CAP — never spend more than 50 ₪ on ads right now."},
+    {"name": "TikTok Ads — budget", "category": "Marketing", "amount": 70.0, "currency": "USD",
+     "period": "one_time", "note": "Ad-spend budget added to the TikTok channel (via the Shopify TikTok app)."},
 ]
 
 
