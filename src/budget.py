@@ -112,10 +112,12 @@ def budget_status() -> dict:
 
 
 def over_budget() -> bool:
-    """True once EITHER the month's cap OR today's daily allowance is reached —
-    callers then route to the free local model. The daily cap spreads the budget
-    so it's never blown all at once."""
-    return monthly_claude_cost() >= MONTHLY_CAP_USD or today_claude_cost() >= DAILY_CAP_USD
+    """True once the MONTH's cap is reached — then callers route to the free local
+    model. We intentionally do NOT force local on the daily throttle: that made agents
+    (e.g. Hunter) suddenly drop to the slow local model mid-session and feel 'dumb'.
+    The daily figure stays informational (budget_line); only the hard monthly cap
+    (owner-funded $100) switches to Ollama."""
+    return monthly_claude_cost() >= MONTHLY_CAP_USD
 
 
 def budget_line() -> str:
