@@ -79,7 +79,7 @@ async def evaluator_node(state: AgentState) -> dict:
     loop_counter = int(state.get("loop_counter", 0)) + 1
     feedback = (
         f"All {len(annotated)} candidates are below the {MIN_NET_MARGIN:.0%} net-margin "
-        f"target (best was {best_margin:.1%} after 18% VAT + fees). Search a different, "
+        f"target (best was {best_margin:.1%} after fees, no VAT — עוסק פטור). Search a different, "
         f"higher-margin product cluster (lower supplier cost or higher resale value)."
     )
     agent_log(

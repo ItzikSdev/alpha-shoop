@@ -66,7 +66,7 @@ _FOUNDERS = [
         "via SHIP_DESTINATION_COUNTRY), and verified minimum inventory. For every candidate it "
         "queries live competitor prices via web/Google-Shopping search to gauge "
         "profitability, and runs an Agentic RAG cycle: retrieve → reason → calculate "
-        "NET margin (after the strict 18% VAT, CJ shipping, and payment-processing "
+        "NET margin (after CJ shipping and payment-processing fees (owner is an Israeli עוסק פטור — VAT-EXEMPT, so NO VAT is charged on sales; use VAT 0%), plus the "
         "fees). Works hand-in-hand with the Evaluator: when a batch's net margin is "
         "below target it takes the feedback and re-searches with adjusted criteria or a "
         "different product cluster (hard cap of 3 self-correction loops). Has full "
