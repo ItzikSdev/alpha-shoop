@@ -1,0 +1,15 @@
+node_modules
+/.cache
+/build
+/dist
+/public/build
+/.mf
+.env
+.env.*
+!.env.example
+.shopify
+*.local
+.DS_Store
+
+# per-store deploy secrets
+store-profiles/*/store.env

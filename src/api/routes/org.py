@@ -337,6 +337,21 @@ async def post_org_assign(body: dict) -> dict:
     return {"error": f"no active agent with role {role!r}"}
 
 
+@router.post("/org/sol", summary="Run Sol autonomously on a task (codes/builds/deploys/CJ; narrates to Slack)")
+async def post_org_sol(body: dict) -> dict:
+    """Fire the single agent's tool-use loop. Body: {task, store_slug?, max_steps?}.
+    Requires the litellm proxy up. Everything is narrated to Slack as Sol."""
+    from src.org.agent_loop import run_sol_task
+    task = (body.get("task") or "").strip()
+    if not task:
+        return {"error": "missing 'task'"}
+    return await run_sol_task(
+        task,
+        store_slug=body.get("store_slug", "timeforbaby"),
+        max_steps=int(body.get("max_steps", 25)),
+    )
+
+
 @router.get("/org/shopify-reauth", summary="Get the one-click URL to re-authorize Shopify (fixes a 401 token)")
 async def get_shopify_reauth(shop: str = "") -> dict:
     from src.mcp_tools.shopify_auth import build_authorize_url
