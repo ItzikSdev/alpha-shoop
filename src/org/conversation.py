@@ -613,6 +613,16 @@ async def route_and_respond(message: str, author: str = "You",
     # (Skipped when images are attached — then they react to the picture.)
     final: list[tuple[Agent, str]] = []
     for agent, reply in items:
+        # Sol (the sole autonomous builder) runs the FULL tool-use loop — codes,
+        # builds, deploys, sources from CJ — narrating each step to Slack itself.
+        if agent.name == "Sol" and not images:
+            try:
+                from src.org.agent_loop import run_sol_task
+                res = await run_sol_task(message, narrate=True)
+                final.append((agent, res.get("final") or "בוצע."))
+            except Exception as exc:  # noqa: BLE001
+                final.append((agent, f"נתקעתי: {exc}"))
+            continue
         if not images:
             # First try a real OP — ticket create/advance/close (ANY agent) or a store
             # maintenance op (dedupe/cleanup/fix-prices/apply-design). So "open a ticket"
