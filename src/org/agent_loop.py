@@ -160,8 +160,9 @@ def _system_prompt(store_slug: str) -> str:
 
 # ── The loop ─────────────────────────────────────────────────────────────────
 async def run_sol_task(task: str, store_slug: str = "timeforbaby", max_steps: int = 25,
-                       narrate: bool = True) -> dict:
+                       narrate: bool = True, images: list[str] | None = None) -> dict:
     """Run Sol autonomously on `task` until done (or max_steps). Narrates each step to Slack.
+    `images` = list of data: URLs (e.g. a Slack screenshot) — Sol sees them and fixes accordingly.
     Returns {steps, final, transcript_len}."""
     from src.org.slack import post_as
 
@@ -172,9 +173,17 @@ async def run_sol_task(task: str, store_slug: str = "timeforbaby", max_steps: in
             except Exception:  # noqa: BLE001
                 pass
 
+    # Multimodal first message when a screenshot is attached (e.g. a mobile bug photo).
+    if images:
+        human = HumanMessage(content=(
+            [{"type": "text", "text": task}]
+            + [{"type": "image_url", "image_url": {"url": u}} for u in images]
+        ))
+    else:
+        human = HumanMessage(content=task)
+
     llm = get_llm("executive", temperature=0.2, max_tokens=4000).bind_tools(_TOOLS)
-    messages = [SystemMessage(content=_system_prompt(store_slug)),
-                HumanMessage(content=task)]
+    messages = [SystemMessage(content=_system_prompt(store_slug)), human]
     await say(f":hammer_and_wrench: על זה — *{task}* (חנות: {store_slug})")
 
     steps = 0
