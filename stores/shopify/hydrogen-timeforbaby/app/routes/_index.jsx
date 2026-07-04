@@ -142,13 +142,8 @@ function CategoryTiles() {
       </div>
       <div className="tob-tiles">
         {config.tiles.map((t) => (
-          <Link
-            key={t.link}
-            to={t.link}
-            className="tob-tile"
-            style={{'--tile-img': `url(${t.image})`}}
-            prefetch="intent"
-          >
+          <Link key={t.link} to={t.link} className="tob-tile" prefetch="intent">
+            <img className="tob-tile-img" src={t.image} alt={t.label} loading="lazy" />
             <span>{t.label}</span>
           </Link>
         ))}

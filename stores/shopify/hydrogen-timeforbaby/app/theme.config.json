@@ -1,6 +1,5 @@
 {
   "_readme": "SINGLE SOURCE OF TRUTH for this storefront's look + content. To clone this template into a NEW store: copy the app, then edit THIS file (brand, colors, font sizes, nav, hero, tiles, testimonials). No component code changes needed. Font sizes are real CSS sizes (rem/px/clamp) — tune them here.",
-
   "brand": {
     "name": "TIMEFOR BABY",
     "logoText": "TIMEFOR BABY",
@@ -9,14 +8,12 @@
     "supportEmail": "suppot.timeforbaby@alpha-tech.live",
     "copyright": "© 2026 TIMEFOR BABY · Free shipping on all orders · 30-day returns"
   },
-
   "favicons": {
     "svg": "/favicon.svg",
     "png32": "/favicon-32.png",
     "appleTouch": "/apple-touch-icon.png",
     "png512": "/icon-512.png"
   },
-
   "_legal_note": "TEMPLATE, NOT LEGAL ADVICE. Fill the empty fields below with your REAL registered business details and have a lawyer review before going live. Do NOT invent a fake address (Google/Meta/Stripe ban for misrepresentation). Empty fields are hidden or shown as a clearly-marked TODO. Cookie/CCPA consent is handled by Shopify's built-in Privacy Banner (root.jsx withPrivacyBanner + admin → Settings → Customer privacy).",
   "legal": {
     "businessName": "TIMEFOR BABY",
@@ -28,15 +25,35 @@
     "contactPhone": "",
     "lastUpdated": "2026-07-03",
     "governingLaw": "the State of Israel",
-    "cancellation": {"windowDays": 14, "feePercent": 5, "feeCapILS": 100},
-    "returns": {"windowDays": 30, "customerPaysReturnShipping": true, "condition": "unused, in original packaging, with tags attached"},
+    "cancellation": {
+      "windowDays": 14,
+      "feePercent": 5,
+      "feeCapILS": 100
+    },
+    "returns": {
+      "windowDays": 30,
+      "customerPaysReturnShipping": true,
+      "condition": "unused, in original packaging, with tags attached"
+    },
     "shipping": {
       "processingTime": "1–3 business days",
       "regions": [
-        {"region": "United States", "time": "7–15 business days"},
-        {"region": "Europe & United Kingdom", "time": "8–18 business days"},
-        {"region": "Canada & Australia", "time": "10–20 business days"},
-        {"region": "Rest of world", "time": "10–25 business days"}
+        {
+          "region": "United States",
+          "time": "7–15 business days"
+        },
+        {
+          "region": "Europe & United Kingdom",
+          "time": "8–18 business days"
+        },
+        {
+          "region": "Canada & Australia",
+          "time": "10–20 business days"
+        },
+        {
+          "region": "Rest of world",
+          "time": "10–25 business days"
+        }
       ]
     },
     "accessibility": {
@@ -47,17 +64,33 @@
       "lastReviewed": "2026-07-03"
     }
   },
-
   "_legalLinks_note": "Shipping/Refund/Privacy/Terms are pulled LIVE from Shopify (admin → Settings → Legal). Accessibility + Contact are template pages (Shopify has no generator for them).",
   "legalLinks": [
-    {"label": "Shipping Policy", "url": "/policies/shipping-policy"},
-    {"label": "Returns & Refunds", "url": "/policies/refund-policy"},
-    {"label": "Privacy Policy", "url": "/policies/privacy-policy"},
-    {"label": "Terms of Service", "url": "/policies/terms-of-service"},
-    {"label": "Accessibility", "url": "/pages/accessibility"},
-    {"label": "Contact", "url": "/pages/contact"}
+    {
+      "label": "Shipping Policy",
+      "url": "/policies/shipping-policy"
+    },
+    {
+      "label": "Returns & Refunds",
+      "url": "/policies/refund-policy"
+    },
+    {
+      "label": "Privacy Policy",
+      "url": "/policies/privacy-policy"
+    },
+    {
+      "label": "Terms of Service",
+      "url": "/policies/terms-of-service"
+    },
+    {
+      "label": "Accessibility",
+      "url": "/pages/accessibility"
+    },
+    {
+      "label": "Contact",
+      "url": "/pages/contact"
+    }
   ],
-
   "tokens": {
     "colors": {
       "ink": "#161616",
@@ -98,20 +131,26 @@
       "description": "1rem"
     }
   },
-
   "announcement": [
     "FREE SHIPPING OVER $50",
     "30-DAY RETURNS",
     "ORGANIC COTTON",
     "DESIGNED FOR LITTLE ONES"
   ],
-
   "nav": [
-    {"label": "Baby Boys", "url": "/collections/baby-boys"},
-    {"label": "Baby Girls", "url": "/collections/baby-girls"},
-    {"label": "Unisex", "url": "/collections/unisex"}
+    {
+      "label": "Baby Boys",
+      "url": "/collections/baby-boys"
+    },
+    {
+      "label": "Baby Girls",
+      "url": "/collections/baby-girls"
+    },
+    {
+      "label": "Unisex",
+      "url": "/collections/unisex"
+    }
   ],
-
   "hero": {
     "eyebrow": "Organic cotton essentials",
     "headline": "Soft. Modern.",
@@ -122,8 +161,14 @@
     "secondaryText": "Our story",
     "secondaryLink": "/pages/about-us",
     "stats": [
-      {"num": "100%", "label": "GOTS organic"},
-      {"num": "1,000+", "label": "Happy parents"}
+      {
+        "num": "100%",
+        "label": "GOTS organic"
+      },
+      {
+        "num": "1,000+",
+        "label": "Happy parents"
+      }
     ],
     "images": [
       "/images/hero-1.jpg",
@@ -133,34 +178,65 @@
       "/images/hero-5.jpg"
     ]
   },
-
   "pills": [
     "Organic Cotton",
     "Gentle on Skin",
     "Free & Easy Returns",
     "Loved by 1,000+ Parents"
   ],
-
   "categoryHeading": "Shop by category",
   "tiles": [
-    {"label": "Baby Boys", "link": "/collections/baby-boys", "image": "/images/tile-baby-boys.jpg"},
-    {"label": "Baby Girls", "link": "/collections/baby-girls", "image": "/images/tile-baby-girls.jpg"},
-    {"label": "Unisex", "link": "/collections/unisex", "image": "/images/tile-unisex.jpg"}
+    {
+      "label": "Baby Boys",
+      "link": "/collections/baby-boys",
+      "image": "/images/tile-baby-boys.jpg"
+    },
+    {
+      "label": "Baby Girls",
+      "link": "/collections/baby-girls",
+      "image": "/images/tile-baby-girls.jpg"
+    },
+    {
+      "label": "Unisex",
+      "link": "/collections/unisex",
+      "image": "/images/tile-unisex.jpg"
+    }
   ],
-
   "productGridHeading": "Shop All",
   "productGridLimit": 12,
-
   "testimonialsHeading": "Loved by parents",
   "testimonials": [
-    {"name": "Maya R.", "location": "Tel Aviv", "text": "The softest fabric we've found — my daughter lives in these. Washed a dozen times and still perfect."},
-    {"name": "Daniel K.", "location": "New York", "text": "Ordered for my newborn and the quality blew me away for the price. Shipping was fast and free."},
-    {"name": "Sophie L.", "location": "London", "text": "Beautiful, modern designs that actually fit. The snap closures make 3am changes so much easier."},
-    {"name": "Noa B.", "location": "Toronto", "text": "Gift-wrapped feeling, gentle on my baby's skin. Already ordered three more."},
-    {"name": "Tom H.", "location": "Berlin", "text": "Finally a baby brand that looks as good as it feels. Returns policy gave me total peace of mind."},
-    {"name": "Aria M.", "location": "Sydney", "text": "Obsessed. Every piece photographs beautifully and holds up to a very active toddler."}
+    {
+      "name": "Maya R.",
+      "location": "Tel Aviv",
+      "text": "The softest fabric we've found — my daughter lives in these. Washed a dozen times and still perfect."
+    },
+    {
+      "name": "Daniel K.",
+      "location": "New York",
+      "text": "Ordered for my newborn and the quality blew me away for the price. Shipping was fast and free."
+    },
+    {
+      "name": "Sophie L.",
+      "location": "London",
+      "text": "Beautiful, modern designs that actually fit. The snap closures make 3am changes so much easier."
+    },
+    {
+      "name": "Noa B.",
+      "location": "Toronto",
+      "text": "Gift-wrapped feeling, gentle on my baby's skin. Already ordered three more."
+    },
+    {
+      "name": "Tom H.",
+      "location": "Berlin",
+      "text": "Finally a baby brand that looks as good as it feels. Returns policy gave me total peace of mind."
+    },
+    {
+      "name": "Aria M.",
+      "location": "Sydney",
+      "text": "Obsessed. Every piece photographs beautifully and holds up to a very active toddler."
+    }
   ],
-
   "productPage": {
     "trustBadges": [
       "✓ Free shipping on all orders",

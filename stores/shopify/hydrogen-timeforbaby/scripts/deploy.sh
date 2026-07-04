@@ -55,7 +55,7 @@ npm ci --no-audit --no-fund
 npm run build
 
 # 4) deploy to Oxygen
-DEPLOY_FLAGS="--no-lockfile-check"
+DEPLOY_FLAGS="--no-lockfile-check --force"
 if [ "$MODE" = "--preview" ]; then
   DEPLOY_FLAGS="$DEPLOY_FLAGS --environment preview"
   echo "▶ Deploying to Oxygen (PREVIEW)…"
