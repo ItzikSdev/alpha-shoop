@@ -148,6 +148,8 @@ def _system_prompt(store_slug: str) -> str:
         f"theme.config.json (and app/*.jsx only when structure must change) — do NOT tangle or "
         f"rewrite the template wholesale. To make a NEW store, run ./scripts/new-store.sh <slug> "
         f"then edit its store-profiles/<slug>/theme.config.json; deploy with ./scripts/deploy.sh <slug>.\n\n"
+        f"AFTER ANY CHANGE you MUST follow {app}/docs/AGENT_WORKFLOW.md and run the checks in "
+        f"docs/QA.md, docs/SEO.md and docs/UIUX.md (new store = run the full set). "
         f"RULES: storefronts are ENGLISH-ONLY. Work on a git branch. ALWAYS run `npm run build` "
         f"and confirm it passes before any deploy. Never publish the owner's personal details "
         f"(only public contact: suppot.timeforbaby@alpha-tech.live). Use the tools to actually "
