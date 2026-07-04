@@ -8,7 +8,7 @@ import {getEmptyPredictiveSearchResult} from '~/lib/search';
  * @type {Route.MetaFunction}
  */
 export const meta = () => {
-  return [{title: `Hydrogen | Search`}];
+  return [{title: `TIMEFOR BABY — Search`}];
 };
 
 /**

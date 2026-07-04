@@ -7,7 +7,7 @@ import {ProductItem} from '~/components/ProductItem';
  * @type {Route.MetaFunction}
  */
 export const meta = () => {
-  return [{title: `Hydrogen | Products`}];
+  return [{title: `TIMEFOR BABY — Products`}];
 };
 
 /**

@@ -4,7 +4,7 @@ import {Link, useLoaderData} from 'react-router';
  * @type {Route.MetaFunction}
  */
 export const meta = ({data}) => {
-  return [{title: `Hydrogen | ${data?.policy.title ?? ''}`}];
+  return [{title: `TIMEFOR BABY — ${data?.policy.title ?? ''}`}];
 };
 
 /**

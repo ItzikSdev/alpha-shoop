@@ -18,7 +18,7 @@ import {config} from '~/lib/theme';
  */
 export const meta = ({data}) => {
   return [
-    {title: `Hydrogen | ${data?.product.title ?? ''}`},
+    {title: `TIMEFOR BABY — ${data?.product.title ?? ''}`},
     {
       rel: 'canonical',
       href: `/products/${data?.product.handle}`,

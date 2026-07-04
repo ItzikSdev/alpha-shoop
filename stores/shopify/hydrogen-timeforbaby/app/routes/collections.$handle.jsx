@@ -8,7 +8,7 @@ import {ProductItem} from '~/components/ProductItem';
  * @type {Route.MetaFunction}
  */
 export const meta = ({data}) => {
-  return [{title: `Hydrogen | ${data?.collection.title ?? ''} Collection`}];
+  return [{title: `TIMEFOR BABY — ${data?.collection.title ?? ''} Collection`}];
 };
 
 /**
