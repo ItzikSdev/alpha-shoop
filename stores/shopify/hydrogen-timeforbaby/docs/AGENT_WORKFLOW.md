@@ -12,7 +12,7 @@ The template must never be tangled: change a store by editing its `theme.config.
    - [`UIUX.md`](UIUX.md) — background/product-image rule, effects, visual polish.
 3. **Verify live behavior** — load the affected page(s) and confirm the change actually works
    (not just that it compiled). Check desktop **and** mobile widths.
-4. **Deploy** — `./scripts/deploy.sh <slug>` (or `deploy --env-branch main` for production).
+4. **Deploy** — `./scripts/deploy.sh <slug>` — for PRODUCTION use `npx shopify hydrogen deploy --force --no-lockfile-check --env-branch main` (see docs/CI_CD.md).
    Never deploy if step 1 failed.
 5. **Log + narrate** — post to Slack what changed + which checks passed, and append a line to
    the store's `changelog/CHANGELOG.md` (title, time, context, what changed).

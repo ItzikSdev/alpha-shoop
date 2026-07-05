@@ -76,6 +76,23 @@ async def write_store_file(path: str, content: str) -> dict:
 
 
 @tool
+async def edit_store_file(path: str, old: str, new: str) -> dict:
+    """Make a SURGICAL edit to a file under stores/: replace the exact text `old` with `new`.
+    PREFER THIS over write_store_file for changing existing files — it avoids re-emitting the
+    whole file. `old` must appear EXACTLY once. Returns {ok} or {error}."""
+    r = read_design_file(path)
+    if r.get("error"):
+        return {"error": r["error"]}
+    body = r["content"]
+    n = body.count(old)
+    if n == 0:
+        return {"error": f"`old` text not found in {path}. Read the file first."}
+    if n > 1:
+        return {"error": f"`old` appears {n}× in {path}; make it unique (add surrounding lines)."}
+    return write_design_file(path, body.replace(old, new, 1))
+
+
+@tool
 async def shell(command: str, store_slug: str = "timeforbaby") -> dict:
     """Run ONE allow-listed shell command inside the store's Hydrogen app
     (npm run build | npm ci | ./scripts/deploy.sh <slug> | ./scripts/new-store.sh <slug> | git ...).
@@ -119,7 +136,7 @@ async def shopify_list_products() -> dict:
 
 
 _TOOLS = [
-    list_store_files, read_store_file, write_store_file, shell,
+    list_store_files, read_store_file, write_store_file, edit_store_file, shell,
     cj_search_products, shopify_list_products,
 ]
 _TOOLS_BY_NAME = {t.name: t for t in _TOOLS}
@@ -148,7 +165,12 @@ def _system_prompt(store_slug: str) -> str:
         f"policies come LIVE from Shopify. THIS IS A TEMPLATE: to change a store edit its "
         f"theme.config.json (and app/*.jsx only when structure must change) — do NOT tangle or "
         f"rewrite the template wholesale. To make a NEW store, run ./scripts/new-store.sh <slug> "
-        f"then edit its store-profiles/<slug>/theme.config.json; deploy with ./scripts/deploy.sh <slug>.\n\n"
+        f"then edit its store-profiles/<slug>/theme.config.json.\n\n"
+        f"EDITING: prefer edit_store_file (surgical find/replace) over write_store_file — only rewrite "
+        f"a whole file for new/small files. DEPLOY: follow {app}/docs/CI_CD.md — to publish to the "
+        f"live domain run `npx shopify hydrogen deploy --force --no-lockfile-check --env-branch main` "
+        f"after sourcing store-profiles/<slug>/store.env (env-branch main = production). Verify on the "
+        f"real domain (Oxygen *.myshopify.dev URLs are staff-gated).\n\n"
         f"AFTER ANY CHANGE you MUST follow {app}/docs/AGENT_WORKFLOW.md and run the checks in "
         f"docs/QA.md, docs/SEO.md and docs/UIUX.md (new store = run the full set). Before going to "
         f"production, run the full audit in stores/shopify/skills/store-audit.md. "
@@ -183,7 +205,8 @@ async def run_sol_task(task: str, store_slug: str = "timeforbaby", max_steps: in
     else:
         human = HumanMessage(content=task)
 
-    llm = get_llm("executive", temperature=0.2, max_tokens=4000).bind_tools(_TOOLS)
+    # Big token budget so whole-file writes aren't truncated (that caused stuck loops).
+    llm = get_llm("executive", temperature=0.2, max_tokens=8000).bind_tools(_TOOLS)
     messages = [SystemMessage(content=_system_prompt(store_slug)), human]
     await say(f":hammer_and_wrench: על זה — *{task}* (חנות: {store_slug})")
 

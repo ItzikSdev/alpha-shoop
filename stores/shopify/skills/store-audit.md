@@ -58,3 +58,5 @@ report findings (most severe first) and fix them. Storefronts are **English-only
 
 ## Output
 A findings table (most severe first) + verdict: **SHIP** / **FIX FIRST**.
+
+- **Deploy:** follow `hydrogen-<slug>/docs/CI_CD.md` — `npx shopify hydrogen deploy --force --no-lockfile-check --env-branch main` (production).
