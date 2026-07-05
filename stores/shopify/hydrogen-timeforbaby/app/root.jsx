@@ -86,9 +86,10 @@ export async function loader(args) {
       // env doesn't crash the Analytics.Provider (which broke cart/menu clicks).
       checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN || env.PUBLIC_STORE_DOMAIN,
       storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
-      // Shopify's built-in GDPR/CCPA cookie-consent banner (blocks non-essential
-      // tracking until consent). Configure regions in admin → Settings → Customer privacy.
-      withPrivacyBanner: true,
+      // OFF: the privacy banner requires Customer-Privacy config in Oxygen env and was
+      // crashing Analytics.Provider on hydration → dead cart/menu clicks. Re-enable only
+      // after configuring admin → Settings → Customer privacy + PUBLIC_CHECKOUT_DOMAIN.
+      withPrivacyBanner: false,
       // localize the privacy banner
       country: args.context.storefront.i18n.country,
       language: args.context.storefront.i18n.language,
