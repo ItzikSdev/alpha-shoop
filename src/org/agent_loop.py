@@ -178,6 +178,8 @@ def _system_prompt(store_slug: str) -> str:
         f"the LIVE domain by running shell `./scripts/deploy.sh {store_slug}` (it handles the token + "
         f"deploys to production; add `--preview` for a preview env). Do NOT read .env/secrets — the "
         f"script handles them. Then verify on the real domain (Oxygen *.myshopify.dev URLs are staff-gated).\n\n"
+        f"BEFORE any visual/UI-UX work, read stores/shopify/skills/ui-ux-pro.md and build to that "
+        f"agency-level bar (concrete spacing/type/color scales, component states, motion). "
         f"AFTER ANY CHANGE you MUST follow {app}/docs/AGENT_WORKFLOW.md and run the checks in "
         f"docs/QA.md, docs/SEO.md and docs/UIUX.md (new store = run the full set). Before going to "
         f"production, run the full audit in stores/shopify/skills/store-audit.md. "
