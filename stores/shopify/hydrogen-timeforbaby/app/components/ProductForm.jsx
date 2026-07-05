@@ -94,6 +94,7 @@ export function ProductForm({productOptions, selectedVariant}) {
       <AddToCartButton
         disabled={!selectedVariant || !selectedVariant.availableForSale}
         redirectTo="/cart"
+        className="tob-atc-btn"
         lines={
           selectedVariant
             ? [

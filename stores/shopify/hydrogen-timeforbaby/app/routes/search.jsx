@@ -17,16 +17,24 @@ export const meta = () => {
 export async function loader({request, context}) {
   const url = new URL(request.url);
   const isPredictive = url.searchParams.has('predictive');
-  const searchPromise = isPredictive
-    ? predictiveSearch({request, context})
-    : regularSearch({request, context});
 
-  searchPromise.catch((error) => {
+  // Never let a search error bubble up to a 500 — return a graceful empty
+  // result with an error message instead (the UI handles empty gracefully).
+  try {
+    return await (isPredictive
+      ? predictiveSearch({request, context})
+      : regularSearch({request, context}));
+  } catch (error) {
     console.error(error);
-    return {term: '', result: null, error: error.message};
-  });
-
-  return await searchPromise;
+    return {
+      type: isPredictive ? 'predictive' : 'regular',
+      term: '',
+      result: isPredictive
+        ? getEmptyPredictiveSearchResult()
+        : {total: 0, items: {}},
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 /**

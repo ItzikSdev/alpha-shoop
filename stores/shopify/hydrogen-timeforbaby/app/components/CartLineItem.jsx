@@ -18,6 +18,22 @@ import {useAside} from './Aside';
 export function CartLineItem({layout, line, childrenMap}) {
   const {id, merchandise} = line;
   const {product, title, image, selectedOptions} = merchandise;
+
+  // Optimistic line price: when the shopper changes quantity, the server hasn't
+  // re-priced the line yet — so multiply the per-unit price by the (optimistic)
+  // quantity ourselves so the amount updates INSTANTLY, not after a round-trip.
+  const perUnit =
+    line?.cost?.amountPerQuantity?.amount ?? merchandise?.price?.amount;
+  const optimisticTotal =
+    perUnit != null
+      ? {
+          amount: (Number(perUnit) * (line.quantity || 1)).toFixed(2),
+          currencyCode:
+            line?.cost?.amountPerQuantity?.currencyCode ||
+            merchandise?.price?.currencyCode ||
+            line?.cost?.totalAmount?.currencyCode,
+        }
+      : line?.cost?.totalAmount;
   const lineItemUrl = useVariantUrl(product.handle, selectedOptions);
   const {close} = useAside();
   const lineItemChildren = childrenMap[id];
@@ -51,7 +67,7 @@ export function CartLineItem({layout, line, childrenMap}) {
               <strong>{product.title}</strong>
             </p>
           </Link>
-          <ProductPrice price={line?.cost?.totalAmount} />
+          <ProductPrice price={optimisticTotal} />
           <ul>
             {selectedOptions.map((option) => (
               <li key={option.name}>

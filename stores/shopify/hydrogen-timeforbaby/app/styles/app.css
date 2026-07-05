@@ -27,32 +27,173 @@ img { max-width:100%; }
   .tob .tobp-gallery{position:static}
 }
 
-/* ── Express / accelerated "Buy it now" button (product page) ── */
-.tob .tob-buynow{margin-top:12px}
-.tob .tob-buynow form{margin:0}
+/* ── Product-page cart buttons — ONE shared button language ──
+   Add to cart = solid dark (primary). Buy it now = matching outline (secondary).
+   Same height / radius / font so they read as a set (not mismatched). */
+.tob .product-form{display:flex;flex-direction:column;gap:10px;margin-top:22px}
+.tob .product-form form{margin:0}
+.tob .tob-atc-btn,
 .tob .tob-buynow-btn{
   width:100%;
-  min-height:52px;
+  min-height:54px;
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  padding:14px 20px;
-  border:1.5px solid var(--tob-ink,#161616);
+  padding:15px 20px;
   border-radius:12px;
-  background:#fff;
-  color:var(--tob-ink,#161616);
   font-family:var(--font-body);
-  font-size:1rem;font-weight:700;letter-spacing:.01em;
+  font-size:1rem;font-weight:700;letter-spacing:.02em;
   cursor:pointer;
   transition:background .18s ease,color .18s ease,transform .05s ease,opacity .18s ease;
+}
+/* PRIMARY — solid dark, matches hero CTA / other store buttons */
+.tob .tob-atc-btn{
+  border:1.5px solid var(--tob-ink,#161616);
+  background:var(--tob-ink,#161616);
+  color:#fff;
+}
+.tob .tob-atc-btn:hover:not(:disabled){background:#000;border-color:#000}
+.tob .tob-atc-btn:active:not(:disabled){transform:translateY(1px)}
+.tob .tob-atc-btn:focus-visible{outline:3px solid var(--hero-accent,#b07a5f);outline-offset:2px}
+.tob .tob-atc-btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* SECONDARY — outline in the SAME shape/size; fills on hover */
+.tob .tob-buynow{margin:0}
+.tob .tob-buynow form{margin:0}
+.tob .tob-buynow-btn{
+  border:1.5px solid var(--tob-ink,#161616);
+  background:#fff;
+  color:var(--tob-ink,#161616);
 }
 .tob .tob-buynow-btn:hover:not(:disabled){background:var(--tob-ink,#161616);color:#fff}
 .tob .tob-buynow-btn:active:not(:disabled){transform:translateY(1px)}
 .tob .tob-buynow-btn:focus-visible{outline:3px solid var(--hero-accent,#b07a5f);outline-offset:2px}
-.tob .tob-buynow-btn:disabled{opacity:.5;cursor:not-allowed}
+.tob .tob-buynow-btn:disabled{opacity:.45;cursor:not-allowed}
 .tob .tob-buynow-note{
   margin:8px 0 0;text-align:center;
   font-size:0.76rem;font-weight:600;letter-spacing:.04em;
   color:var(--tob-muted,#8d8d8d);
 }
+
+/* ── Header search field (always visible on desktop) + live predictive dropdown ── */
+.tob .tob-hsearch-wrap{position:relative;flex:1 1 auto;max-width:360px;margin:0 auto}
+.tob .tob-hsearch{
+  width:100%;
+  display:flex;align-items:center;gap:8px;
+  padding:0 14px;height:42px;
+  background:var(--tob-soft,#f6f4f1);
+  border:1px solid var(--tob-line,#eee);
+  border-radius:999px;
+}
+.tob .tob-hsearch:focus-within{border-color:var(--tob-ink,#161616)}
+.tob .tob-hsearch .tob-ic{width:18px;height:18px;flex:0 0 18px;color:var(--tob-muted,#8d8d8d)}
+.tob .tob-hsearch input{
+  flex:1 1 auto;min-width:0;border:none;background:transparent;outline:none;
+  font-family:var(--font-body);font-size:0.9rem;color:var(--tob-ink,#161616);
+}
+.tob .tob-hsearch input::placeholder{color:var(--tob-muted,#8d8d8d)}
+.tob .tob-hsearch input::-webkit-search-cancel-button{cursor:pointer}
+
+/* Live results dropdown — appears BELOW the navbar field, no page jump */
+.tob .tob-hsearch-drop{
+  position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);
+  width:min(420px,88vw);max-height:70vh;overflow-y:auto;z-index:60;
+  background:#fff;border:1px solid var(--tob-line,#eee);border-radius:14px;
+  box-shadow:0 18px 44px rgba(0,0,0,.14);padding:8px;
+}
+.tob .tob-hsearch-msg{margin:0;padding:16px;text-align:center;color:var(--tob-muted,#8d8d8d);font-size:0.9rem}
+.tob .tob-hsearch-head{margin:2px 8px 8px;font-size:0.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--tob-muted,#8d8d8d)}
+
+/* ── Payment icons inside the scrolling announcement marquee ── */
+.tob .tob-ann-pay{display:inline-flex;align-items:center;gap:8px;vertical-align:middle}
+.tob .tob-ann-pay-ico{
+  height:23px;width:auto;display:block;border-radius:4px;
+  box-shadow:0 0 0 1px rgba(255,255,255,.14);
+}
+/* Search field is ALWAYS visible now (desktop + mobile). Old /search icon removed. */
+@media (max-width:820px){
+  .tob .tob-hsearch-wrap{display:flex;max-width:none;order:3;flex-basis:100%;margin:8px 0 0}
+  .tob .tob-hsearch-drop{left:0;transform:none;width:100%}
+}
+.tob .tob-hsearch-drop .predictive-search-result{margin:0}
+.tob .tob-hsearch-drop .predictive-search-result h5{
+  margin:6px 8px;font-size:0.72rem;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--tob-muted,#8d8d8d);
+}
+.tob .tob-hsearch-drop .predictive-search-result ul{list-style:none;margin:0;padding:0}
+.tob .tob-hsearch-drop .predictive-search-result-item a{
+  display:flex;align-items:center;gap:12px;padding:8px;border-radius:10px;
+  color:var(--tob-ink,#161616);text-decoration:none;transition:background .15s ease;
+}
+.tob .tob-hsearch-drop .predictive-search-result-item a:hover{background:var(--tob-soft,#f6f4f1)}
+.tob .tob-hsearch-drop .predictive-search-result-item img{
+  width:46px;height:46px;flex:0 0 46px;object-fit:cover;border-radius:8px;background:var(--tob-soft,#f6f4f1);
+}
+.tob .tob-hsearch-drop .predictive-search-result-item span{font-size:0.9rem;font-weight:600}
+.tob .tob-hsearch-drop .predictive-search-result-item small{color:var(--tob-muted,#8d8d8d);font-size:0.82rem}
+.tob .tob-hsearch-all{
+  display:block;margin-top:6px;padding:12px 8px;border-top:1px solid var(--tob-line,#eee);
+  text-align:center;font-size:0.85rem;font-weight:700;color:var(--tob-ink,#161616);text-decoration:none;
+}
+.tob .tob-hsearch-all:hover{text-decoration:underline}
+
+/* mobile search icon in the CTA row — hidden on desktop (bar is shown instead) */
+@media(min-width:820px){ .tob .tob-hsearch-mob{display:none} }
+@media(max-width:819px){ .tob .tob-hsearch-wrap{display:flex} }
+
+/* ── Cart summary refinements (higher specificity → wins over base .cart-* rules) ──
+   Tighter Continue-to-Checkout CTA + compact discount/gift-card spacing. */
+.tob .cart-main .cart-summary-aside,
+.tob .cart-main .cart-summary-page{padding-top:14px}
+/* Totals heading + subtotal row */
+.tob .cart-main .cart-summary-aside h4,
+.tob .cart-main .cart-summary-page h4{margin:0 0 10px;font-size:0.82rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--tob-muted,#8d8d8d)}
+.tob .cart-main .cart-subtotal{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 12px}
+.tob .cart-main .cart-subtotal dt{font-size:1rem;font-weight:600}
+.tob .cart-main .cart-subtotal dd{margin:0;font-size:1.15rem;font-weight:700}
+
+/* discount + gift-card sections — tight, consistent spacing (kills the big gap) */
+.tob .cart-main section[aria-label="Discounts"],
+.tob .cart-main section[aria-label="Gift cards"]{margin:0 0 10px}
+.tob .cart-main section[aria-label="Discounts"] > div,
+.tob .cart-main section[aria-label="Gift cards"] > div{display:flex;gap:8px;align-items:center;margin:0}
+.tob .cart-main section[aria-label="Discounts"] input,
+.tob .cart-main section[aria-label="Gift cards"] input{
+  flex:1 1 auto;min-width:0;height:42px;padding:0 12px;
+  border:1px solid var(--tob-line,#eee);border-radius:10px;
+  font-family:var(--font-body);font-size:0.9rem;background:#fff;
+}
+.tob .cart-main section[aria-label="Discounts"] input:focus,
+.tob .cart-main section[aria-label="Gift cards"] input:focus{outline:none;border-color:var(--tob-ink,#161616)}
+.tob .cart-main section[aria-label="Discounts"] > div > button,
+.tob .cart-main section[aria-label="Gift cards"] > div > button{
+  flex:0 0 auto;height:42px;padding:0 16px;
+  border:1px solid var(--tob-ink,#161616);border-radius:10px;
+  background:#fff;color:var(--tob-ink,#161616);
+  font-family:var(--font-body);font-size:0.85rem;font-weight:700;cursor:pointer;
+  transition:background .16s ease,color .16s ease;
+}
+.tob .cart-main section[aria-label="Discounts"] > div > button:hover,
+.tob .cart-main section[aria-label="Gift cards"] > div > button:hover{background:var(--tob-ink,#161616);color:#fff}
+/* kill stray &nbsp; whitespace between input and button */
+.tob .cart-main section[aria-label="Discounts"] br,
+.tob .cart-main section[aria-label="Gift cards"] br{display:none}
+
+/* Continue-to-Checkout CTA — right-sized (not oversized) */
+.tob .cart-main .cart-summary-aside a[href],
+.tob .cart-main .cart-summary-page a[href]{display:block;margin-top:14px}
+.tob .cart-main .cart-summary-aside a[href] p,
+.tob .cart-main .cart-summary-page a[href] p{
+  margin:0;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  height:52px;padding:0 20px;
+  background:var(--tob-ink,#161616);color:#fff;
+  border-radius:12px;
+  font-family:var(--font-body);font-size:0.98rem;font-weight:700;letter-spacing:.02em;
+  transition:background .16s ease;
+}
+.tob .cart-main .cart-summary-aside a[href]:hover p,
+.tob .cart-main .cart-summary-page a[href]:hover p{background:#000}
+.tob .cart-main .cart-summary-aside a[href] + br,
+.tob .cart-main .cart-summary-page a[href] + br{display:none}
 
 /* ── design system root (colors mapped from JSON → the --ink/--muted/… used below) ── */
 .tob{

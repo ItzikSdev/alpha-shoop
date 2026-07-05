@@ -34,10 +34,15 @@ export function SearchFormPredictive({
     aside.close();
   }
 
-  /** Fetch search results based on the input value */
+  /** Fetch predictive search results based on the input value.
+   * Shopify's predictiveSearch does NOT accept an empty term (or `*`) — doing
+   * so throws and returns a 500. So when the field is empty we DON'T hit the
+   * predictive endpoint; the UI shows a "Browse all products" shortcut instead. */
   function fetchResults(event) {
+    const value = event.target.value?.trim();
+    if (!value) return;
     void fetcher.submit(
-      {q: event.target.value || '', limit: 5, predictive: true},
+      {q: value, limit: 8, predictive: true},
       {method: 'GET', action: SEARCH_ENDPOINT},
     );
   }

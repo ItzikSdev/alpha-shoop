@@ -135,7 +135,15 @@
     "FREE SHIPPING OVER $50",
     "30-DAY RETURNS",
     "ORGANIC COTTON",
-    "DESIGNED FOR LITTLE ONES"
+    "DESIGNED FOR LITTLE ONES",
+    "WE ACCEPT PAYPAL · VISA · MASTERCARD · ISRACARD & MORE",
+    "SECURE CHECKOUT"
+  ],
+  "paymentIcons": [
+    {"src": "/images/pay-paypal.svg", "alt": "PayPal"},
+    {"src": "/images/pay-visa.svg", "alt": "Visa"},
+    {"src": "/images/pay-mastercard.svg", "alt": "Mastercard"},
+    {"src": "/images/pay-isracard.svg", "alt": "Isracard"}
   ],
   "nav": [
     {

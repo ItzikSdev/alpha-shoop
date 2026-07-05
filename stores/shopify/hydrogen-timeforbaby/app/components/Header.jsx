@@ -1,7 +1,9 @@
-import {Suspense} from 'react';
+import {Suspense, useState, useRef, useEffect} from 'react';
 import {Await, NavLink, Link} from 'react-router';
 import {useAnalytics, useOptimisticCart} from '@shopify/hydrogen';
 import {useAside} from '~/components/Aside';
+import {SearchFormPredictive} from '~/components/SearchFormPredictive';
+import {SearchResultsPredictive} from '~/components/SearchResultsPredictive';
 import {config} from '~/lib/theme';
 
 // Brand + nav come from app/theme.config.json (clone-friendly).
@@ -25,9 +27,128 @@ export function Header({cart, isLoggedIn}) {
         {/* Desktop nav — visible on screens ≥ 820 px */}
         <DesktopNav />
 
+        {/* Persistent search bar — always visible in the header (desktop) */}
+        <HeaderSearch />
+
         <HeaderCtas isLoggedIn={isLoggedIn} cart={cart} />
       </div>
     </header>
+  );
+}
+
+/**
+ * Always-on search field in the header with a live predictive dropdown.
+ * Results appear INSIDE the navbar (dropdown) — no page jump to /search.
+ * Pressing Enter still runs a full search on /search as a fallback.
+ */
+function HeaderSearch() {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  // Close the dropdown when clicking outside the search area.
+  useEffect(() => {
+    function onDocClick(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, []);
+
+  return (
+    <div className="tob-hsearch-wrap" ref={wrapRef}>
+      <SearchFormPredictive className="tob-hsearch" role="search">
+        {({fetchResults, goToSearch, inputRef}) => (
+          <>
+            <IconSearch />
+            <input
+              ref={inputRef}
+              type="search"
+              name="q"
+              placeholder="Search products…"
+              aria-label="Search products"
+              enterKeyHint="search"
+              onChange={(e) => {
+                setOpen(true);
+                fetchResults(e);
+              }}
+              onFocus={(e) => {
+                setOpen(true);
+                fetchResults(e);
+              }}
+              onClick={(e) => {
+                setOpen(true);
+                fetchResults(e);
+              }}
+            />
+          </>
+        )}
+      </SearchFormPredictive>
+
+      {open && (
+        <div className="tob-hsearch-drop">
+          <SearchResultsPredictive>
+            {({items, total, term, state, closeSearch}) => {
+              const {products, collections, pages} = items;
+              const handleClose = () => {
+                closeSearch();
+                setOpen(false);
+              };
+              // Empty field → predictive search is NOT run (it can't take an
+              // empty term). Show a "browse all" shortcut to the full catalog.
+              if (!term.current) {
+                return (
+                  <Link
+                    className="tob-hsearch-all"
+                    to="/collections/all"
+                    onClick={handleClose}
+                  >
+                    Browse all products →
+                  </Link>
+                );
+              }
+              if (state === 'loading' && !total) {
+                return <p className="tob-hsearch-msg">Loading products…</p>;
+              }
+              if (!total) {
+                return (
+                  <p className="tob-hsearch-msg">
+                    No results for “{term.current}”.
+                  </p>
+                );
+              }
+              return (
+                <>
+                  <SearchResultsPredictive.Products
+                    products={products}
+                    closeSearch={handleClose}
+                    term={term}
+                  />
+                  <SearchResultsPredictive.Collections
+                    collections={collections}
+                    closeSearch={handleClose}
+                    term={term}
+                  />
+                  <SearchResultsPredictive.Pages
+                    pages={pages}
+                    closeSearch={handleClose}
+                    term={term}
+                  />
+                  <Link
+                    className="tob-hsearch-all"
+                    to={`/search?q=${term.current}`}
+                    onClick={handleClose}
+                  >
+                    View all results for “{term.current}” →
+                  </Link>
+                </>
+              );
+            }}
+          </SearchResultsPredictive>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -58,9 +179,6 @@ function HeaderCtas({isLoggedIn, cart}) {
       >
         <IconMenu />
       </button>
-      <Link prefetch="intent" to="/search" aria-label="Search">
-        <IconSearch />
-      </Link>
       <NavLink prefetch="intent" to="/account" aria-label="Account">
         <Suspense fallback={<IconUser />}>
           <Await resolve={isLoggedIn} errorElement={<IconUser />}>

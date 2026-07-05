@@ -13,6 +13,7 @@ import {config} from '~/lib/theme';
 
 // Dark scrolling announcement bar — from theme.config.json
 const MARQUEE = config.announcement;
+const PAY_ICONS = config.paymentIcons || [];
 
 /** The top-level chrome. Everything is wrapped in `.tob` so the ported design CSS applies. */
 export function PageLayout({cart, children = null, isLoggedIn}) {
@@ -33,14 +34,37 @@ export function PageLayout({cart, children = null, isLoggedIn}) {
 }
 
 function AnnouncementMarquee() {
-  // duplicate the items so the -50% translate loop is seamless
-  const items = [...MARQUEE, ...MARQUEE];
+  // one "unit" = all messages + the payment icons; duplicate it so the -50% loop is seamless
+  const payGroup = PAY_ICONS.length ? (
+    <span className="tob-ann-pay">
+      {PAY_ICONS.map((p) => (
+        <img
+          key={p.src}
+          src={p.src}
+          alt={p.alt}
+          className="tob-ann-pay-ico"
+          width="34"
+          height="23"
+          loading="lazy"
+        />
+      ))}
+    </span>
+  ) : null;
+
+  const unit = (
+    <>
+      {MARQUEE.map((t, i) => (
+        <span key={i}>{t}</span>
+      ))}
+      {payGroup}
+    </>
+  );
+
   return (
     <div className="tob-ann" role="complementary" aria-label="Announcements">
       <div className="tob-ann-track">
-        {items.map((t, i) => (
-          <span key={i}>{t}</span>
-        ))}
+        {unit}
+        {unit}
       </div>
     </div>
   );

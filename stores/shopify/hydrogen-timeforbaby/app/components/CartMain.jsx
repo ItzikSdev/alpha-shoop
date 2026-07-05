@@ -44,6 +44,33 @@ export function CartMain({layout, cart: originalCart}) {
   const cartHasItems = cart?.totalQuantity ? cart.totalQuantity > 0 : false;
   const childrenMap = getLineItemChildrenMap(cart?.lines?.nodes ?? []);
 
+  // The optimistic cart updates line quantities instantly, but the SERVER-priced
+  // subtotal only refreshes after a round-trip — making the total look "stuck".
+  // Recompute the subtotal from per-unit prices × (optimistic) quantities so the
+  // amount moves the moment the shopper taps + / −.
+  const optimisticCart = (() => {
+    const nodes = cart?.lines?.nodes ?? [];
+    if (!nodes.length || !cart?.cost?.subtotalAmount) return cart;
+    let sum = 0;
+    let currencyCode = cart.cost.subtotalAmount.currencyCode;
+    for (const line of nodes) {
+      if ('parentRelationship' in line && line.parentRelationship?.parent)
+        continue;
+      const perUnit =
+        line?.cost?.amountPerQuantity?.amount ??
+        line?.merchandise?.price?.amount;
+      if (perUnit == null) return cart; // can't safely compute → use server value
+      sum += Number(perUnit) * (line.quantity || 1);
+    }
+    return {
+      ...cart,
+      cost: {
+        ...cart.cost,
+        subtotalAmount: {amount: sum.toFixed(2), currencyCode},
+      },
+    };
+  })();
+
   return (
     <section
       className={className}
@@ -75,7 +102,9 @@ export function CartMain({layout, cart: originalCart}) {
             })}
           </ul>
         </div>
-        {cartHasItems && <CartSummary cart={cart} layout={layout} />}
+        {cartHasItems && (
+          <CartSummary cart={optimisticCart} layout={layout} />
+        )}
       </div>
     </section>
   );
@@ -97,7 +126,7 @@ function CartEmpty({hidden = false}) {
         started!
       </p>
       <br />
-      <Link to="/collections" onClick={close} prefetch="viewport">
+      <Link to="/" onClick={close} prefetch="viewport">
         Continue shopping →
       </Link>
     </div>
