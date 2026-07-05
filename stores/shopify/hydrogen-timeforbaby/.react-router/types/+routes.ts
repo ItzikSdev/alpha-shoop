@@ -31,6 +31,9 @@ type Pages = {
       "blogHandle": string;
     };
   };
+  "/admin/fix-collections": {
+    params: {};
+  };
   "/collections/:handle": {
     params: {
       "handle": string;
@@ -132,7 +135,7 @@ type Pages = {
 type RouteFiles = {
   "root.jsx": {
     id: "root";
-    page: "/" | "/blogs/:blogHandle/:articleHandle" | "/sitemap/:type/:page.xml" | "/blogs/:blogHandle" | "/collections/:handle" | "/pages/accessibility" | "/account/authorize" | "/collections" | "/policies/:handle" | "/products/:handle" | "/account/logout" | "/collections/all" | "/policies" | "/account/login" | "/discount/:code" | "/sitemap.xml" | "/pages/:handle" | "/pages/contact" | "/robots.txt" | "/blogs" | "/account" | "/account/orders" | "/account/orders/:id" | "/account/addresses" | "/account/profile" | "/account/*" | "/search" | "/cart" | "/cart/:lines" | "/*";
+    page: "/" | "/blogs/:blogHandle/:articleHandle" | "/sitemap/:type/:page.xml" | "/blogs/:blogHandle" | "/admin/fix-collections" | "/collections/:handle" | "/pages/accessibility" | "/account/authorize" | "/collections" | "/policies/:handle" | "/products/:handle" | "/account/logout" | "/collections/all" | "/policies" | "/account/login" | "/discount/:code" | "/sitemap.xml" | "/pages/:handle" | "/pages/contact" | "/robots.txt" | "/blogs" | "/account" | "/account/orders" | "/account/orders/:id" | "/account/addresses" | "/account/profile" | "/account/*" | "/search" | "/cart" | "/cart/:lines" | "/*";
   };
   "routes/blogs.$blogHandle.$articleHandle.jsx": {
     id: "routes/blogs.$blogHandle.$articleHandle";
@@ -145,6 +148,10 @@ type RouteFiles = {
   "routes/blogs.$blogHandle._index.jsx": {
     id: "routes/blogs.$blogHandle._index";
     page: "/blogs/:blogHandle";
+  };
+  "routes/admin.fix-collections.jsx": {
+    id: "routes/admin.fix-collections";
+    page: "/admin/fix-collections";
   };
   "routes/collections.$handle.jsx": {
     id: "routes/collections.$handle";
@@ -265,6 +272,7 @@ type RouteModules = {
   "routes/blogs.$blogHandle.$articleHandle": typeof import("./app/routes/blogs.$blogHandle.$articleHandle.jsx");
   "routes/sitemap.$type.$page[.xml]": typeof import("./app/routes/sitemap.$type.$page[.xml].jsx");
   "routes/blogs.$blogHandle._index": typeof import("./app/routes/blogs.$blogHandle._index.jsx");
+  "routes/admin.fix-collections": typeof import("./app/routes/admin.fix-collections.jsx");
   "routes/collections.$handle": typeof import("./app/routes/collections.$handle.jsx");
   "routes/pages.accessibility": typeof import("./app/routes/pages.accessibility.jsx");
   "routes/account_.authorize": typeof import("./app/routes/account_.authorize.jsx");

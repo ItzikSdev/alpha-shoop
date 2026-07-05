@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parents[2]
 AGENT_NAME = "Sol"
 # Role shown in Slack next to Sol's name — includes his model so it's always visible.
-AGENT_ROLE = "Full-Stack Store Builder · Sonnet"
+AGENT_ROLE = "Full-Stack Store Builder · Opus"
 
 # shell allow-list: only these command prefixes may run, and only inside the app dir.
 _SHELL_ALLOW = (
@@ -229,7 +229,9 @@ async def run_sol_task(task: str, store_slug: str = "timeforbaby", max_steps: in
         human = HumanMessage(content=task)
 
     # Big token budget so whole-file writes aren't truncated (that caused stuck loops).
-    llm = get_llm("executive", temperature=0.2, max_tokens=8000).bind_tools(_TOOLS)
+    # Sol runs on Opus (the "builder" tier) for deep reasoning + code; falls back to
+    # the free local model only when over the monthly budget cap.
+    llm = get_llm("builder", temperature=0.2, max_tokens=8000).bind_tools(_TOOLS)
     messages = [SystemMessage(content=_system_prompt(store_slug)), human]
     await say(f":hammer_and_wrench: על זה — *{task}* (חנות: {store_slug})")
 

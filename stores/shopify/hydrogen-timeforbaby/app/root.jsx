@@ -82,7 +82,9 @@ export async function loader(args) {
       publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
     }),
     consent: {
-      checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN,
+      // Fallback to the store domain so a missing PUBLIC_CHECKOUT_DOMAIN in Oxygen
+      // env doesn't crash the Analytics.Provider (which broke cart/menu clicks).
+      checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN || env.PUBLIC_STORE_DOMAIN,
       storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
       // Shopify's built-in GDPR/CCPA cookie-consent banner (blocks non-essential
       // tracking until consent). Configure regions in admin → Settings → Customer privacy.

@@ -9,7 +9,8 @@
     "dev": "shopify hydrogen dev --codegen",
     "preview": "shopify hydrogen preview --build",
     "lint": "eslint --no-error-on-unmatched-pattern .",
-    "codegen": "shopify hydrogen codegen && react-router typegen"
+    "codegen": "shopify hydrogen codegen && react-router typegen",
+    "fix-collections": "node scripts/fix-collections.mjs"
   },
   "prettier": "@shopify/prettier-config",
   "dependencies": {

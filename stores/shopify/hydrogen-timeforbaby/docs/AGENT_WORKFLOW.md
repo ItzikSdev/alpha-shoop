@@ -11,7 +11,7 @@ The template must never be tangled: change a store by editing its `theme.config.
    - [`SEO.md`](SEO.md) — titles/meta/alt, unique copy, no dup images/products, price sane.
    - [`ui-ux-pro skill`](ui-ux-pro skill) — background/product-image rule, effects, visual polish.
 3. **Verify live behavior** — load the affected page(s) and confirm the change actually works
-   (not just that it compiled). Check desktop **and** mobile widths.
+   (not just that it compiled). For interactive things (hamburger, cart, variant select) add a temporary `console.log` to PROVE the handler fires (open/close), confirm it, then remove debug logs. Check desktop AND mobile.
 4. **Deploy** — `./scripts/deploy.sh <slug>` — for PRODUCTION use `npx shopify hydrogen deploy --force --no-lockfile-check --env-branch main` (see docs/CI_CD.md).
    Never deploy if step 1 failed.
 5. **Log + narrate** — post to Slack what changed + which checks passed, and append a line to

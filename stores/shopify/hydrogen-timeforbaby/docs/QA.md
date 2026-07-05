@@ -36,3 +36,9 @@ Run after any change (and fully for a new store). Test **desktop AND mobile**. F
 - [ ] Images load (hero carousel + tiles are `<img>`/local files, CSP-safe — not external URLs).
 
 **Report:** list each ✗ with the page + what's wrong, fix, re-run.
+
+## 6. Product media (required)
+- [ ] **Minimum 2 images per product** — a 1-image product is not acceptable.
+- [ ] Images within a product are **NOT similar/duplicate** (dedupe by content, not filename).
+- [ ] **No product appears twice** in the store (no duplicate listing — same title or same main image).
+- [ ] Product is in the RIGHT collection (e.g. a pink bow romper must NOT be under Baby Boys).

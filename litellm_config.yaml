@@ -29,6 +29,13 @@ model_list:
       api_key: os.environ/ANTHROPIC_API_KEY
       max_tokens: 8192   # design_agent generates large CSS payloads (was 4096 — caused truncation/hangs)
 
+  # ── Director: most capable, deep reasoning — Sol the builder (Opus 4.8) ──
+  - model_name: alpha/director
+    litellm_params:
+      model: anthropic/claude-opus-4-8
+      api_key: os.environ/ANTHROPIC_API_KEY
+      max_tokens: 8192
+
   # ── Worker fast: cheapest, high volume (Scraper + Fulfillment) ───────────
   - model_name: alpha/worker-fast
     litellm_params:
