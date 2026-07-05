@@ -108,6 +108,29 @@ export function ProductForm({productOptions, selectedVariant}) {
       >
         {selectedVariant?.availableForSale ? 'Add to cart' : 'Sold out'}
       </AddToCartButton>
+
+      {/* Express / accelerated checkout — adds the selected variant and jumps
+          straight to Shopify checkout, where PayPal + dynamic checkout buttons
+          appear once enabled in admin (Settings → Payments). */}
+      {selectedVariant?.availableForSale && (
+        <div className="tob-buynow">
+          <AddToCartButton
+            disabled={!selectedVariant || !selectedVariant.availableForSale}
+            redirectTo="checkout"
+            className="tob-buynow-btn"
+            lines={[
+              {
+                merchandiseId: selectedVariant.id,
+                quantity: 1,
+                selectedVariant,
+              },
+            ]}
+          >
+            Buy it now
+          </AddToCartButton>
+          <p className="tob-buynow-note">Express checkout · secure payment</p>
+        </div>
+      )}
     </div>
   );
 }

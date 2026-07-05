@@ -80,10 +80,17 @@ export async function action({request, context}) {
   const headers = cartId ? cart.setCartId(result.cart.id) : new Headers();
   const {cart: cartResult, errors, warnings} = result;
 
-  const redirectTo = formData.get('redirectTo') ?? null;
+  let redirectTo = formData.get('redirectTo') ?? null;
   if (typeof redirectTo === 'string') {
-    status = 303;
-    headers.set('Location', redirectTo);
+    // Sentinel: "checkout" → send the shopper straight to Shopify checkout
+    // (where accelerated / PayPal buttons appear once enabled in admin).
+    if (redirectTo === 'checkout' && cartResult?.checkoutUrl) {
+      redirectTo = cartResult.checkoutUrl;
+    }
+    if (redirectTo !== 'checkout') {
+      status = 303;
+      headers.set('Location', redirectTo);
+    }
   }
 
   return data(

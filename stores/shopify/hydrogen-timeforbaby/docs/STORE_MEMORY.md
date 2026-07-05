@@ -25,6 +25,9 @@ everything each time. After you change something, APPEND a short line under "Rec
 - ENGLISH-ONLY storefront. Production deploy = `./scripts/deploy.sh timeforbaby` (--env-branch main).
 
 ## Recent changes (append newest on top — one line each)
+- 2026-07-05 — Added express "Buy it now" button on product page (ProductForm.jsx) under Add-to-cart: uses AddToCartButton with redirectTo="checkout" sentinel; cart.jsx action converts "checkout" → cartResult.checkoutUrl (303) so shopper lands straight on Shopify checkout (PayPal/dynamic buttons show there once enabled in Settings→Payments). AddToCartButton now accepts className. Styled .tob-buynow (outline→fill hover, 52px min, focus ring) per ui-ux-pro. Build passed, deployed.
+- 2026-07-05 — Cart drawer CSS fix (app.css): added missing `.sr-only` util (hides "Line items" label); added full `.tob .cart-*` block (Subtotal now a flex space-between row so the AMOUNT shows on the right; line items with 76px thumbs, qty/remove controls, primary checkout CTA, drawer flex-column so summary pins to bottom; cart PAGE gets 2-col grid ≥820px). Build passed, deployed.
+- 2026-07-05 — Fixed collection categorization: moved 3 from Baby Boys (Fishing Print, Classic Crew Neck, Cozy Autumn Layered — all described as "unisex") + 2 from Baby Girls (Cotton Baby Essentials Set, Cozy Split-Leg Sleepsuit — gender-neutral prints) into Unisex via collectionAdd/RemoveProducts.
 - 2026-07-05 — nav moved to hamburger-only (Header.jsx, PageLayout.jsx, app.css); local hero/tile images.
 - 2026-07-05 — Desktop nav restored (DesktopNav in Header.jsx, CSS ≥820px); hamburger hidden on desktop, shown on mobile; product image CSS fixed (.tob .product-image + .tobp grid); deployed.
 - 2026-07-05 — Bug fix: added productPage.trustBadges to theme.config.json (was missing → runtime crash on product page); fixed hero secondaryLink /pages/about-us → /collections/all (was 404); deployed.
