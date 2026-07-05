@@ -1,5 +1,17 @@
 # TIMEFOR BABY — Store Changelog
 
+## 2026-07-05 — Bug fixes: product page crash + hero 404 link
+
+### Fixed
+- **Product page crash**: `config.productPage.trustBadges` was referenced in `products.$handle.jsx` but the key didn't exist in `theme.config.json` → runtime crash on every product page. Added `productPage.trustBadges` with 4 trust badges (Organic Cotton, Free Shipping, 30-Day Returns, Secure Checkout).
+- **Hero secondary link 404**: `hero.secondaryLink` pointed to `/pages/about-us` which doesn't exist → changed to `/collections/all` ("View all products").
+
+### Deployed
+- `npm run build` ✅ → `./scripts/deploy.sh timeforbaby` ✅
+
+---
+
+
 ## 2026-07-05 — Desktop nav + mobile hamburger + product image fix
 
 ### Fixed

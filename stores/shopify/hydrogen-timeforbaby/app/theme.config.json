@@ -151,14 +151,6 @@
       "url": "/collections/unisex"
     }
   ],
-  "productPage": {
-    "trustBadges": [
-      "🌿 Organic Cotton",
-      "🚚 Free Shipping",
-      "↩️ 30-Day Returns",
-      "🔒 Secure Checkout"
-    ]
-  },
   "hero": {
     "eyebrow": "Organic cotton essentials",
     "headline": "Soft. Modern.",
@@ -166,8 +158,8 @@
     "sub": "Thoughtfully designed baby essentials in premium organic cotton — gentle on the smallest skin, made to last.",
     "ctaText": "Shop the collection",
     "ctaLink": "/collections/all",
-    "secondaryText": "View all products",
-    "secondaryLink": "/collections/all",
+    "secondaryText": "Our story",
+    "secondaryLink": "/pages/about-us",
     "stats": [
       {
         "num": "100%",
