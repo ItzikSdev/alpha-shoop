@@ -142,9 +142,38 @@ async def shopify_list_products() -> dict:
     return {"products": await list_shopify_products()}
 
 
+@tool
+async def shopify_admin(query: str, variables: dict | None = None, store_slug: str = "timeforbaby") -> dict:
+    """Call the store's Shopify ADMIN GraphQL API (queries + mutations). The auth token is
+    injected server-side — you never see it. Use this to MANAGE STORE DATA: move products
+    between collections (fix categorization), remove duplicates, fix $0/high prices, edit SEO
+    titles/meta, manage variants/images. `query` = a GraphQL string; `variables` = its vars.
+    Example: query the collections + their products, then `collectionAddProducts`/`collectionRemoveProducts`."""
+    import sqlite3
+    import httpx
+    try:
+        c = sqlite3.connect(str(ROOT / "data" / "traces.db"))
+        row = c.execute(
+            "select shopify_domain, shopify_access_token from stores where store_id=?",
+            (store_slug,),
+        ).fetchone()
+        if not row:
+            return {"error": f"no store {store_slug!r}"}
+        domain, tok = row
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                f"https://{domain}/admin/api/2024-10/graphql.json",
+                headers={"X-Shopify-Access-Token": tok, "Content-Type": "application/json"},
+                json={"query": query, "variables": variables or {}},
+            )
+        return resp.json()
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc)}
+
+
 _TOOLS = [
     list_store_files, read_store_file, write_store_file, edit_store_file, shell,
-    cj_search_products, shopify_list_products,
+    cj_search_products, shopify_list_products, shopify_admin,
 ]
 _TOOLS_BY_NAME = {t.name: t for t in _TOOLS}
 
