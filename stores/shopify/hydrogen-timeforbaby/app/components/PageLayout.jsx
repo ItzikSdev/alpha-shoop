@@ -20,8 +20,10 @@ export function PageLayout({cart, children = null, isLoggedIn}) {
     <Aside.Provider>
       <div className="tob">
         <AnnouncementMarquee />
-        {/* Mobile/hamburger nav drawer */}
+        {/* All drawers rendered here so they're inside .tob and get the CSS vars */}
         <MobileMenuAside />
+        <CartAside cart={cart} />
+        <SearchAside />
         <Header cart={cart} isLoggedIn={isLoggedIn} />
         <main>{children}</main>
         <Footer />

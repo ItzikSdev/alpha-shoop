@@ -53,11 +53,89 @@ img { max-width:100%; }
 .tob .tob-hcta button,.tob .tob-hcta a{display:inline-flex;align-items:center;background:none;border:none;cursor:pointer;color:var(--ink);font-family:inherit;padding:6px;text-decoration:none}
 .tob .tob-hcta button:hover,.tob .tob-hcta a:hover{opacity:.6}
 .tob .tob-ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;display:block}
-.tob .tob-hcart{position:relative}
+.tob .tob-hcart{position:relative;background:none;border:none;cursor:pointer;color:var(--ink);padding:6px;display:inline-flex;align-items:center}
 .tob .tob-hcart-count{position:absolute;top:-2px;right:-4px;min-width:16px;height:16px;padding:0 4px;background:var(--ink);color:#fff;border-radius:9px;font-size:0.62rem;font-weight:700;line-height:16px;text-align:center}
+/* reset utility for plain buttons */
+.tob button.reset{background:none;border:none;cursor:pointer;padding:0;font:inherit;color:inherit;display:inline-flex;align-items:center}
 /* hamburger always visible — nav links live ONLY inside the mobile drawer */
 .tob .tob-hcta .tob-hmob{display:inline-flex}
 @media(max-width:820px){.tob .tob-hrow{height:auto;padding:10px 0;flex-wrap:wrap;justify-content:center}}
+
+/* ── Mobile menu drawer (Aside overlay) ── */
+.tob .overlay{
+  position:fixed;inset:0;z-index:200;
+  display:flex;align-items:stretch;justify-content:flex-end;
+  pointer-events:none;
+}
+.tob .overlay.expanded{pointer-events:auto}
+.tob .overlay .close-outside{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,0);
+  border:none;cursor:pointer;
+  transition:background .25s ease;
+  pointer-events:none;
+}
+.tob .overlay.expanded .close-outside{pointer-events:auto}
+.tob .overlay.expanded .close-outside{background:rgba(0,0,0,.35)}
+.tob .overlay aside{
+  position:relative;z-index:1;
+  width:min(320px,88vw);
+  height:100%;
+  background:#fff;
+  display:flex;flex-direction:column;
+  transform:translateX(100%);
+  transition:transform .28s cubic-bezier(.4,0,.2,1);
+  box-shadow:-4px 0 24px rgba(0,0,0,.12);
+  overflow-y:auto;
+}
+.tob .overlay.expanded aside{transform:translateX(0)}
+.tob .overlay aside header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 24px;
+  border-bottom:1px solid var(--tob-line,#eee);
+  flex-shrink:0;
+}
+.tob .overlay aside header h3{
+  margin:0;
+  font-size:0.78rem;
+  font-weight:800;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--tob-ink,#161616);
+}
+.tob .overlay aside header .close{
+  background:none;border:none;cursor:pointer;
+  font-size:1.5rem;line-height:1;
+  color:var(--tob-ink,#161616);
+  padding:4px 8px;
+  border-radius:4px;
+}
+.tob .overlay aside header .close:hover{opacity:.6}
+.tob .overlay aside main{flex:1;padding:8px 0}
+
+/* ── Mobile nav links inside the drawer ── */
+.tob .tob-mob-nav{
+  display:flex;flex-direction:column;
+  padding:8px 0;
+}
+.tob .tob-mob-link{
+  display:block;
+  padding:16px 24px;
+  font-size:0.95rem;
+  font-weight:600;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--tob-ink,#161616);
+  text-decoration:none;
+  border-bottom:1px solid var(--tob-line,#eee);
+  transition:background .15s ease,color .15s ease;
+}
+.tob .tob-mob-link:last-child{border-bottom:none}
+.tob .tob-mob-link:hover{background:var(--tob-soft,#f6f4f1)}
+.tob .tob-mob-link--active{
+  color:var(--tob-hero-accent,#b07a5f);
+  background:var(--tob-soft,#f6f4f1);
+}
 
 /* ── editorial split hero ── */
 .tob .tob-eh{position:relative;display:grid;grid-template-columns:1.05fr 1fr;min-height:620px;background:var(--hero-bg);overflow:hidden}

@@ -1,3 +1,30 @@
+# TIMEFOR BABY — Store Changelog
+
+## 2025-07-27 — Hamburger + Cart drawer fix (pointer-events + missing asides)
+
+### Fixed
+- **Hamburger not opening**: `close-outside` button (position:absolute;inset:0) was intercepting all clicks even when drawer was closed — added `pointer-events:none` on it by default, `pointer-events:auto` only when `.expanded`.
+- **CartAside + SearchAside missing**: Were never rendered in `PageLayout` — added them so cart/search drawers actually exist in the DOM.
+- **Cart icon**: Changed from `<Link to="/cart">` to `<button onClick={() => open('cart')}>` so it opens the slide-in cart drawer instead of navigating away.
+- **CSS**: Added `.tob button.reset` utility + fixed `.tob-hcart` as a button.
+
+### Deployed
+- `npm run build` ✅ → `./scripts/deploy.sh timeforbaby` ✅
+
+---
+
+## 2025-07-27 — Mobile hamburger menu fix + product link audit
+
+### Fixed
+- **Hamburger menu (mobile)**: Nav links were rendering inline (`HomeBaby BoysBaby GirlsUnisex`) with no spacing/layout. Added full CSS for `.tob .overlay`, `.tob .overlay aside`, `.tob .tob-mob-nav`, `.tob .tob-mob-link` — drawer now slides in from right, links are stacked vertically with proper padding, active state highlighted, overlay backdrop dims the page.
+- **Aside overlay**: Added slide-in animation (`translateX(100%) → 0`), backdrop blur, close button styling, header styling.
+- **Product links**: Confirmed all product cards use `/products/${handle}` — handle mismatch is a Shopify admin data issue (not code). Products with duplicate/wrong titles need to be reviewed in Shopify admin.
+
+### Deployed
+- `npm run build` ✅ → `./scripts/deploy.sh timeforbaby` ✅
+
+---
+
 # skeleton
 
 ## 2026.4.3

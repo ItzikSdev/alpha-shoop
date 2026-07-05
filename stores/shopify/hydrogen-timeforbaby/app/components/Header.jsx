@@ -65,25 +65,25 @@ function HeaderCtas({isLoggedIn, cart}) {
  * @param {{count: number}}
  */
 function CartBadge({count}) {
+  const {open} = useAside();
   const {publish, shop, cart, prevCart} = useAnalytics();
   return (
-    <Link
-      className="tob-hcart"
-      to="/cart"
-      prefetch="intent"
+    <button
+      className="tob-hcart reset"
       aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}
-      onClick={() =>
+      onClick={() => {
+        open('cart');
         publish('cart_viewed', {
           cart,
           prevCart,
           shop,
           url: typeof window !== 'undefined' ? window.location.href : '',
-        })
-      }
+        });
+      }}
     >
       <IconBag />
       {count > 0 && <span className="tob-hcart-count">{count}</span>}
-    </Link>
+    </button>
   );
 }
 
