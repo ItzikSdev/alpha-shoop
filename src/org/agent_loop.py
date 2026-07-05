@@ -162,9 +162,23 @@ def _charter() -> str:
     return "Sole autonomous full-stack Shopify builder. Sources from CJ, writes code, deploys."
 
 
+def _store_memory(store_slug: str) -> str:
+    """Sol's persistent knowledge of the store — so he doesn't re-read everything each run."""
+    try:
+        p = ROOT / "stores" / "shopify" / f"hydrogen-{store_slug}" / "docs" / "STORE_MEMORY.md"
+        if p.exists():
+            return ("\n\nYOUR STORE MEMORY (you already KNOW this store — do NOT re-read files you "
+                    "know from here; read a file only when you need its current content to edit it. "
+                    "After a change, APPEND one line under 'Recent changes' in docs/STORE_MEMORY.md "
+                    "via edit_store_file):\n" + p.read_text(encoding="utf-8")[:4500])
+    except Exception:  # noqa: BLE001
+        pass
+    return ""
+
+
 def _system_prompt(store_slug: str) -> str:
     app = f"stores/shopify/hydrogen-{store_slug}"
-    return (
+    return _store_memory(store_slug) + (
         f"You are {AGENT_NAME}, {AGENT_ROLE}. {_charter()}\n\n"
         f"CURRENT STORE: {store_slug}. Its Hydrogen app is at {app}/ — the store's whole look "
         f"is driven by {app}/app/theme.config.json (brand, colors, fonts, nav, hero, tiles, "

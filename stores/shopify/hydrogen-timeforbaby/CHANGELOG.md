@@ -1,5 +1,18 @@
 # TIMEFOR BABY — Store Changelog
 
+## 2025-07-27 — Fix hamburger not opening (aria-modal inert trap)
+
+### Bug
+- ה-hamburger לא נפתח בלחיצה — ה-`Aside` component רנדר `role="dialog"` + `aria-modal` **תמיד** (גם כשהוא סגור). ב-browsers מסוימים `aria-modal` גורם ל-browser לחסום interactions מחוץ ל-dialog (inert trap), מה שמנע לחיצה על כפתור ה-hamburger.
+
+### Fix — `Aside.jsx`
+- `aria-modal`, `role="dialog"`, `aria-labelledby` — מוגדרים **רק** כשה-aside פתוח (`expanded === true`). כשסגור — אין role/aria-modal בכלל, אין inert trap.
+
+### Deployed
+- `npm run build` ✅ → `./scripts/deploy.sh timeforbaby` ✅
+
+---
+
 ## 2025-07-27 — Hamburger + Cart drawer fix (pointer-events + missing asides)
 
 ### Fixed

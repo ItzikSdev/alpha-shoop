@@ -48,3 +48,21 @@ English-only. Everything is driven by `theme.config.json` where possible.
 
 **Method:** design mobile-first → build with tokens from theme.config.json → run the ui-ux-pro skill +
 docs/QA.md → fix until it clears this bar → deploy (docs/CI_CD.md) → report to Slack.
+
+## 6. Authoritative references (industry-standard — build to these)
+These are the best-known UX sources; the rules above distill them. When unsure, follow them.
+- **Refactoring UI** (Wathan & Schoger) — the practical playbook this skill is based on:
+  start with too much whitespace then remove; limit choices; establish hierarchy with size/weight/
+  color not just position; use a defined spacing + type + color scale; make one thing the emphasis;
+  soften large text, don't use pure black; add depth with layered shadows.
+- **Baymard Institute** — e-commerce UX research (product listing, product page, cart, checkout).
+  Key: clear product images + variants, prominent price + add-to-cart, trust signals, short checkout,
+  no forced account, visible shipping/returns. This is the gold standard for store conversion UX.
+- **Nielsen Norman Group (NN/g)** — 10 usability heuristics: visibility of system status, match to
+  the real world, user control (undo/back), consistency, error prevention, recognition over recall,
+  flexibility, minimalist design, help users recover from errors, help/docs.
+- **Shopify Polaris** — Shopify's own design system: content/voice, component patterns, accessibility.
+- **WCAG 2.1 AA** — accessibility (contrast, focus, keyboard, alt text, semantics).
+
+**How Sol should use this:** before building, restate the relevant rules for the task; after building,
+grade the result against §1–§5 and these sources, list what fails, fix, then ship.
