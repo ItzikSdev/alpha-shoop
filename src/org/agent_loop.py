@@ -44,11 +44,15 @@ AGENT_ROLE = "Full-Stack Store Builder · Sonnet"
 # shell allow-list: only these command prefixes may run, and only inside the app dir.
 _SHELL_ALLOW = (
     "npm run build", "npm ci", "npm install", "npm run dev",
+    "npx shopify hydrogen deploy",
     "./scripts/deploy.sh", "./scripts/new-store.sh",
     "git status", "git checkout -b", "git checkout", "git add", "git commit",
     "git branch", "git diff", "git switch", "git restore",
-    "node -", "ls", "cat ", "pwd",
+    "ls", "pwd",
 )
+# Never let a shell command touch secrets (Sol has read_store_file for store files).
+_SHELL_DENY = (".env", "store.env", "printenv", "process.env", "shpat_", "atkn_",
+               "SHOPIFY_ACCESS_TOKEN", "DEPLOYMENT_TOKEN", "SECRET", "PASSWORD")
 
 
 def _app_dir(store_slug: str) -> Path:
@@ -98,6 +102,9 @@ async def shell(command: str, store_slug: str = "timeforbaby") -> dict:
     (npm run build | npm ci | ./scripts/deploy.sh <slug> | ./scripts/new-store.sh <slug> | git ...).
     Returns {ok, code, output}. Non-allow-listed commands are refused."""
     cmd = command.strip()
+    if any(bad in cmd for bad in _SHELL_DENY):
+        return {"ok": False, "error": "refused: commands may not read/echo secrets (.env, tokens). "
+                "Store files: use read_store_file. Shopify/CJ: use the API tools."}
     if not any(cmd.startswith(p) for p in _SHELL_ALLOW):
         return {"ok": False, "error": f"command not allow-listed: {cmd!r}. Allowed: {_SHELL_ALLOW}"}
     cwd = _app_dir(store_slug)
@@ -182,7 +189,7 @@ def _system_prompt(store_slug: str) -> str:
 
 
 # ── The loop ─────────────────────────────────────────────────────────────────
-async def run_sol_task(task: str, store_slug: str = "timeforbaby", max_steps: int = 25,
+async def run_sol_task(task: str, store_slug: str = "timeforbaby", max_steps: int = 40,
                        narrate: bool = True, images: list[str] | None = None) -> dict:
     """Run Sol autonomously on `task` until done (or max_steps). Narrates each step to Slack.
     `images` = list of data: URLs (e.g. a Slack screenshot) — Sol sees them and fixes accordingly.
