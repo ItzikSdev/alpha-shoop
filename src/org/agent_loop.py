@@ -181,7 +181,7 @@ def _system_prompt(store_slug: str) -> str:
         f"BEFORE any visual/UI-UX work, read stores/shopify/skills/ui-ux-pro.md and build to that "
         f"agency-level bar (concrete spacing/type/color scales, component states, motion). "
         f"AFTER ANY CHANGE you MUST follow {app}/docs/AGENT_WORKFLOW.md and run the checks in "
-        f"docs/QA.md, docs/SEO.md and docs/UIUX.md (new store = run the full set). Before going to "
+        f"docs/QA.md, docs/SEO.md and the ui-ux-pro skill (new store = run the full set). Before going to "
         f"production, run the full audit in stores/shopify/skills/store-audit.md. "
         f"RULES: storefronts are ENGLISH-ONLY. Work on a git branch. ALWAYS run `npm run build` "
         f"and confirm it passes before any deploy. Never publish the owner's personal details "

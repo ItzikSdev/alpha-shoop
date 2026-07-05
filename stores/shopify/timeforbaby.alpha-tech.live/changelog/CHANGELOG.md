@@ -5,6 +5,16 @@ see [README.md](./README.md). Times are Asia/Jerusalem.
 
 ---
 
+## 2026-07-02 14:55 (Asia/Jerusalem) — Fix double marquee — re-disabled global sections in site.json
+**By:** system
+**Context:** Owner: Remy stuck/confused on the announcement bar.
+**Changed:** Remy re-enabled announcement_marquee thinking it was off; it's global in theme.liquid, so that caused a duplicate. Set marquee/header/footer enabled=false again + added _do_not_enable notes so agents don't re-enable the globally-rendered sections.
+
+## 2026-07-02 14:51 (Asia/Jerusalem) — Remy: store design edit (chat)
+**By:** Remy
+**Context:** Owner asked in chat: Remy אולי אני יכול לעזור איפה אתה תקועה ?
+**Changed:** announcement_marquee: enabled false → true (הופעל כחלק מ-conversion checklist proof)
+
 ## 2026-07-01 17:15 (Asia/Jerusalem) — Footer rebuilt with flex layout (fix text overlap)
 **By:** Remy
 **Context:** Owner: footer text overlapping, fix it.

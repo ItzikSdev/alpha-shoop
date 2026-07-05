@@ -10,7 +10,7 @@ report findings (most severe first) and fix them. Storefronts are **English-only
 ## Inputs
 - Store slug (default `timeforbaby`) → app at `stores/shopify/hydrogen-<slug>/`.
 - Its docs (read FIRST — they define "correct"): `hydrogen-<slug>/docs/AGENT_WORKFLOW.md`, `docs/QA.md`,
-  `docs/SEO.md`, `docs/UIUX.md`. **A new store runs the FULL set.**
+  `docs/SEO.md`, `ui-ux-pro skill`. **A new store runs the FULL set.**
 
 ## How to run
 1. **Read the 4 docs**, then work through every section below. Verify programmatically
@@ -40,7 +40,7 @@ report findings (most severe first) and fix them. Storefronts are **English-only
 - [ ] Per product: unique selling copy, descriptive alt text, **no duplicate images in a product**,
       **no duplicate products**, price present (never `$0`), price sane (not too high vs market).
 
-### D. UI/UX (see docs/UIUX.md)
+### D. UI/UX (see ui-ux-pro skill)
 - [ ] **Background rule:** white store bg → white-bg product photos; non-white bg → NO white-bg photos.
 - [ ] Uniform card ratio; consistent type scale + spacing; accessible contrast.
 - [ ] Effects (carousel/hover/transitions) smooth, no jank/layout-shift, degrade on mobile.

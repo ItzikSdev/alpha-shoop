@@ -1,6 +1,6 @@
-import {Await, Link} from 'react-router';
+import {Await, NavLink, Link} from 'react-router';
 import {Suspense, useId} from 'react';
-import {Aside} from '~/components/Aside';
+import {Aside, useAside} from '~/components/Aside';
 import {Footer} from '~/components/Footer';
 import {Header} from '~/components/Header';
 import {CartMain} from '~/components/CartMain';
@@ -20,8 +20,7 @@ export function PageLayout({cart, children = null, isLoggedIn}) {
     <Aside.Provider>
       <div className="tob">
         <AnnouncementMarquee />
-        {/* Cart + search are full PAGES (/cart, /search) like a Liquid storefront,
-            not drawers. Only the mobile nav uses an aside. */}
+        {/* Mobile/hamburger nav drawer */}
         <MobileMenuAside />
         <Header cart={cart} isLoggedIn={isLoggedIn} />
         <main>{children}</main>
@@ -147,15 +146,35 @@ function SearchAside() {
 function MobileMenuAside() {
   return (
     <Aside type="mobile" heading="MENU">
-      <nav className="header-menu-mobile" role="navigation">
-        <Link to="/">Home</Link>
-        {config.nav.map((l) => (
-          <Link key={l.url} to={l.url}>
-            {l.label}
-          </Link>
-        ))}
-      </nav>
+      <MobileMenuNav />
     </Aside>
+  );
+}
+
+/** Nav links inside the hamburger drawer — NavLink so active state works, close on click */
+function MobileMenuNav() {
+  const {close} = useAside();
+  return (
+    <nav className="tob-mob-nav" role="navigation" aria-label="Main navigation">
+      <NavLink
+        to="/"
+        end
+        className={({isActive}) => (isActive ? 'tob-mob-link tob-mob-link--active' : 'tob-mob-link')}
+        onClick={close}
+      >
+        Home
+      </NavLink>
+      {config.nav.map((l) => (
+        <NavLink
+          key={l.url}
+          to={l.url}
+          className={({isActive}) => (isActive ? 'tob-mob-link tob-mob-link--active' : 'tob-mob-link')}
+          onClick={close}
+        >
+          {l.label}
+        </NavLink>
+      ))}
+    </nav>
   );
 }
 

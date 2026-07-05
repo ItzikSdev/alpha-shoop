@@ -6,7 +6,7 @@ Deploys run **on this machine**, not in GitHub Actions. Each store is a profile 
 ## The flow (dev → test → production)
 1. **Dev/localhost first.** Edit code / `theme.config.json`. Preview locally if possible.
 2. **Build gate:** `npm run build` MUST pass. Fix any error before deploying.
-3. **Run the checks:** QA.md + SEO.md + UIUX.md + the store-audit skill. Fix findings.
+3. **Run the checks:** QA.md + SEO.md + ui-ux-pro skill + the store-audit skill. Fix findings.
 4. **Deploy to PRODUCTION** (the live domain = the `main` git-branch environment on Oxygen):
    ```bash
    set -a; source store-profiles/<slug>/store.env; set +a

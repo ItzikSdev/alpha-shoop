@@ -5,12 +5,11 @@ import {useAside} from '~/components/Aside';
 import {config} from '~/lib/theme';
 
 // Brand + nav come from app/theme.config.json (clone-friendly).
-const NAV = config.nav;
 const LOGO = config.brand.logoText;
 const LOGO_IMG = config.brand.logoImage;
 
 /**
- * @param {{cart: Promise<CartApiQueryFragment|null>, isLoggedIn: Promise<boolean>}}
+ * @param {{cart: Promise<CartApiQueryFragment|null>, isLoggedIn: Promise<boolean>}}\
  */
 export function Header({cart, isLoggedIn}) {
   return (
@@ -23,13 +22,8 @@ export function Header({cart, isLoggedIn}) {
           <span>{LOGO}</span>
         </NavLink>
 
-        <nav className="tob-hnav" role="navigation">
-          {NAV.map((item) => (
-            <NavLink key={item.url} prefetch="intent" to={item.url}>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
+        {/* Nav links are ONLY inside the hamburger menu (MobileMenuAside).
+            No inline nav here — hamburger is always visible. */}
 
         <HeaderCtas isLoggedIn={isLoggedIn} cart={cart} />
       </div>
@@ -43,7 +37,8 @@ export function Header({cart, isLoggedIn}) {
 function HeaderCtas({isLoggedIn, cart}) {
   const {open} = useAside();
   return (
-    <nav className="tob-hcta" role="navigation">
+    <nav className="tob-hcta" role="navigation" aria-label="Header actions">
+      {/* Hamburger — always visible, opens the slide-in menu with nav links */}
       <button
         className="tob-hmob reset"
         aria-label="Open menu"

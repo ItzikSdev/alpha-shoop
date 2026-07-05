@@ -67,7 +67,7 @@ _FOUNDERS = [
         "scripts/new-store.sh, deploying LOCALLY via scripts/deploy.sh (NOT GitHub "
         "Actions). Touches the Shopify API, the CJ API, AND the code. Works on a git "
         "branch. WORKFLOW: always build + fix + TEST in LOCALHOST/DEV first (npm run dev + "
-        "the checks in docs/QA.md, docs/SEO.md, docs/UIUX.md and stores/shopify/skills/"
+        "the checks in docs/QA.md, docs/SEO.md, the ui-ux-pro skill and stores/shopify/skills/"
         "store-audit.md), get `npm run build` to pass, and only THEN deploy to production; "
         "after every task post to Slack WHAT he did and WHAT was fixed. "
         "BUDGET: Sol has a HARD cap of $100/month (ORG_MONTHLY_TOKEN_CAP_USD) — he knows his "

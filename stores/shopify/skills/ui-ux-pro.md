@@ -46,5 +46,5 @@ English-only. Everything is driven by `theme.config.json` where possible.
 - Accessible: alt text, focus states, contrast, semantic HTML, keyboard nav.
 - Every interactive element has all its states. Nothing looks "off" or unfinished.
 
-**Method:** design mobile-first → build with tokens from theme.config.json → run docs/UIUX.md +
+**Method:** design mobile-first → build with tokens from theme.config.json → run the ui-ux-pro skill +
 docs/QA.md → fix until it clears this bar → deploy (docs/CI_CD.md) → report to Slack.

@@ -97,7 +97,8 @@
         "letter_spacing": "0.14em",
         "scroll_seconds": 28
       },
-      "behavior": "loop"
+      "behavior": "loop",
+      "_do_not_enable": "DO NOT ENABLE — this section is rendered GLOBALLY on EVERY page from layout/theme.liquid (see global_layout + style/global-layout.liquid). enabled must stay FALSE here to avoid a DUPLICATE on the homepage. It is NOT off — it shows on all pages."
     },
     {
       "id": "site_header",
@@ -127,7 +128,8 @@
       ],
       "show_cart": true,
       "logo_svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><defs><linearGradient id=\"tfS\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#fff\"/><stop offset=\".48\" stop-color=\"#cfcfcf\"/><stop offset=\".52\" stop-color=\"#8c8c8c\"/><stop offset=\"1\" stop-color=\"#efefef\"/></linearGradient></defs><rect width=\"100\" height=\"100\" rx=\"20\" fill=\"#0b0b0b\"/><text x=\"50\" y=\"54\" text-anchor=\"middle\" dominant-baseline=\"central\" font-family=\"Arial Black,Arial,sans-serif\" font-weight=\"900\" font-size=\"54\" letter-spacing=\"-5\" fill=\"url(#tfS)\">TF</text></svg>",
-      "logo_link": "/"
+      "logo_link": "/",
+      "_do_not_enable": "DO NOT ENABLE — this section is rendered GLOBALLY on EVERY page from layout/theme.liquid (see global_layout + style/global-layout.liquid). enabled must stay FALSE here to avoid a DUPLICATE on the homepage. It is NOT off — it shows on all pages."
     },
     {
       "id": "hero",
@@ -406,7 +408,8 @@
         "heading_size": "0.78rem",
         "link_size": "0.92rem",
         "columns_layout": "1.6fr 1fr 1fr 1fr"
-      }
+      },
+      "_do_not_enable": "DO NOT ENABLE — this section is rendered GLOBALLY on EVERY page from layout/theme.liquid (see global_layout + style/global-layout.liquid). enabled must stay FALSE here to avoid a DUPLICATE on the homepage. It is NOT off — it shows on all pages."
     }
   ],
   "behaviors": {
