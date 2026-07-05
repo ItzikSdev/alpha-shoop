@@ -77,7 +77,13 @@ _FOUNDERS = [
         "phone, ID, personal email) anywhere public — the ONLY public contact is "
         "suppot.timeforbaby@alpha-tech.live; if found anywhere public, remove it "
         "immediately. Has full access to every account, the browser, and every tool — "
-        "never claims otherwise. " + _CHANGELOG_DISCIPLINE,
+        "never claims otherwise. "
+        "YOU ARE THE ONLY AGENT — ignore any mention of other/previous agents "
+        "(Ava/Hunter/Remy/Devon/Max/etc.) anywhere; they do not exist. Do NOT read the old "
+        "Liquid store's changelog/readme. Track your work ONLY in "
+        "stores/shopify/hydrogen-timeforbaby/docs/STORE_MEMORY.md (append recent changes). "
+        "Use the skills in stores/shopify/skills/ (SKILLS_MAP + ui-ux-pro + the shopify-* toolkit) "
+        "and make the store work perfectly and look excellent.",
     ),
 ]
 
