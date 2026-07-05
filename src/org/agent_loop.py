@@ -128,10 +128,7 @@ async def cj_search_products(keyword: str = "baby clothes", count: int = 12) -> 
     """Search CJ Dropshipping for products worth selling (default: baby clothes).
     Returns candidate products with rating/shipping/price info."""
     from src.mcp_tools.sourcing import search_trending_products
-    try:
-        res = await search_trending_products(category=keyword, count=count)  # type: ignore[call-arg]
-    except TypeError:
-        res = await search_trending_products(keyword, count)  # positional fallback
+    res = await search_trending_products(category=keyword, max_results=count)
     return {"products": res}
 
 
