@@ -26,3 +26,4 @@ everything each time. After you change something, APPEND a short line under "Rec
 
 ## Recent changes (append newest on top — one line each)
 - 2026-07-05 — nav moved to hamburger-only (Header.jsx, PageLayout.jsx, app.css); local hero/tile images.
+- 2026-07-05 — Desktop nav restored (DesktopNav in Header.jsx, CSS ≥820px); hamburger hidden on desktop, shown on mobile; product image CSS fixed (.tob .product-image + .tobp grid); deployed.

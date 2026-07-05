@@ -1,5 +1,22 @@
 # TIMEFOR BABY — Store Changelog
 
+## 2026-07-05 — Desktop nav + mobile hamburger + product image fix
+
+### Fixed
+- **Desktop nav**: Added inline `<DesktopNav>` component in `Header.jsx` — shows Home + Baby Boys / Baby Girls / Unisex links on screens ≥820px. CSS: `.tob-hnav-desktop{display:flex}`.
+- **Mobile hamburger**: Hidden on desktop (`display:none`), shown only on mobile (`≤820px`). Hamburger opens slide-in drawer with all nav links — open/close tested working.
+- **Product image not showing**: Added full `.tob .product-image` + `.tob .tobp` CSS block in `app.css` — product page now renders the image in a proper 1:1 aspect-ratio container with `object-fit:cover`.
+- **Product page layout**: Added `.tobp` 2-column grid (desktop) / 1-column (mobile) with sticky gallery, brand, title, trust badges, description.
+
+### Shopify Admin (manual step needed)
+- **Cozy Newborn One-Piece Romper** (ID: 7593161195591) — needs to be added to `baby-girls` collection in Shopify Admin → Products → Collections.
+
+### Deployed
+- `npm run build` ✅ → `./scripts/deploy.sh timeforbaby` ✅
+
+---
+
+
 ## 2025-07-27 — Fix hamburger not opening (aria-modal inert trap)
 
 ### Bug

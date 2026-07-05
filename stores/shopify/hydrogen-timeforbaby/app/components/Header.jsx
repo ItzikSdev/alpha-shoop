@@ -22,12 +22,24 @@ export function Header({cart, isLoggedIn}) {
           <span>{LOGO}</span>
         </NavLink>
 
-        {/* Nav links are ONLY inside the hamburger menu (MobileMenuAside).
-            No inline nav here — hamburger is always visible. */}
+        {/* Desktop nav — visible on screens ≥ 820 px */}
+        <DesktopNav />
 
         <HeaderCtas isLoggedIn={isLoggedIn} cart={cart} />
       </div>
     </header>
+  );
+}
+
+/** Desktop nav links — hidden on mobile (CSS handles it) */
+function DesktopNav() {
+  return (
+    <nav className="tob-hnav tob-hnav-desktop" role="navigation" aria-label="Main navigation">
+      <NavLink to="/" end>Home</NavLink>
+      {config.nav.map((l) => (
+        <NavLink key={l.url} to={l.url}>{l.label}</NavLink>
+      ))}
+    </nav>
   );
 }
 
