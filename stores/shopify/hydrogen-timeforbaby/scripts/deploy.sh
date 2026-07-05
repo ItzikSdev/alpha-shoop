@@ -55,15 +55,15 @@ npm ci --no-audit --no-fund
 npm run build
 
 # 4) deploy to Oxygen
-DEPLOY_FLAGS="--no-lockfile-check --force"
+DEPLOY_FLAGS="--no-lockfile-check --force --env-branch main"   # production (live domain)
 if [ "$MODE" = "--preview" ]; then
-  DEPLOY_FLAGS="$DEPLOY_FLAGS --environment preview"
+  DEPLOY_FLAGS="--no-lockfile-check --force --preview"
   echo "▶ Deploying to Oxygen (PREVIEW)…"
 else
   echo "▶ Deploying to Oxygen (production)…"
 fi
 # The deploy token authenticates + targets the right Oxygen storefront.
 SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN="$SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN" \
-  npx shopify hydrogen deploy $DEPLOY_FLAGS
+  CI=1 SHOPIFY_CLI_NO_ANALYTICS=1 npx shopify hydrogen deploy $DEPLOY_FLAGS
 
 echo "✅ Deployed store '$SLUG'."
