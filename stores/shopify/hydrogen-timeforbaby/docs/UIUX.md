@@ -34,4 +34,40 @@ then pick product images accordingly.
 - Transitions are smooth; no layout shift; effects don't hurt performance or mobile.
 - On mobile, heavy effects degrade gracefully (no jank, no horizontal scroll).
 
+## Shopify e-commerce UX best practices (build + check against these)
+Conversion- and trust-focused rules Sol builds to and QAs every store against:
+
+**Buttons & CTAs**
+- One clear primary CTA per view ("Add to cart" / "Shop the collection") — high contrast, obvious.
+- Buttons look clickable (solid fill, adequate padding ≥44px tap target), have hover + active +
+  disabled + loading states. "Add to cart" shows feedback; "Sold out" is disabled, not hidden.
+- No dead buttons/links; every control does something.
+
+**Product page (highest-value page)**
+- Above the fold on mobile: image + title + price + variant selectors + Add-to-cart (not pushed
+  below the browser bar). Gallery with multiple real photos; image swaps on variant.
+- Price clear; compare-at + % off if discounted. Trust badges (free shipping / returns / secure).
+- Concise scannable description (bullets for material/fit/care) — not a wall of text.
+
+**Trust & conversion**
+- Visible: free-shipping threshold, returns policy, secure-checkout signal, real reviews/social proof.
+- Announcement bar for shipping/returns. Clear, low-friction path to checkout.
+- Real contact + policies in footer; nothing that looks like a "ghost store".
+
+**Forms & checkout**
+- Minimal fields, clear labels, inline validation, visible errors. Cart → checkout in one tap.
+- Checkout must actually work (payment provider enabled) — see QA.md.
+
+**Navigation & IA**
+- Simple, predictable nav (the 3 collections). Search reachable. Breadcrumbs on deep pages.
+- Logo → home. No dead ends; every page has a next step.
+
+**Visual system**
+- Consistent color/type/spacing scale (from theme.config.json). Generous whitespace. Aligned grids.
+- Uniform product-card ratio. Accessible contrast (WCAG AA). Readable line-length + size.
+
+**Performance & mobile (mobile is most traffic)**
+- Fast LCP: sized/lazy images, no layout shift. Test 375/768/1280 — no horizontal scroll.
+- Sticky add-to-cart on mobile product pages is a plus. Effects degrade gracefully on mobile.
+
 **Rule of thumb:** if anything looks "off", it does not ship. Sweat every visual detail.
