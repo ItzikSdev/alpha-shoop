@@ -108,6 +108,54 @@ img { max-width:100%; }
   height:23px;width:auto;display:block;border-radius:4px;
   box-shadow:0 0 0 1px rgba(255,255,255,.14);
 }
+
+/* Payment icons pinned to the RIGHT of the black bar — always visible.
+   On mobile the scrolling text hid the icons, so we anchor a static strip
+   over the right edge with a small fade so text scrolls "behind" it. */
+.tob .tob-ann{position:relative}
+.tob .tob-ann-fixedpay{
+  display:none;
+  position:absolute;top:0;right:0;bottom:0;z-index:2;
+  align-items:center;gap:6px;
+  padding:0 12px 0 26px;
+  background:linear-gradient(to right,
+    rgba(22,22,22,0) 0,
+    var(--tob-ink,#161616) 22px,
+    var(--tob-ink,#161616) 100%);
+}
+.tob .tob-ann-fixedpay .tob-ann-pay-ico{height:20px}
+@media (max-width:820px){
+  /* On mobile hide the icons that live INSIDE the scroll track (they'd scroll
+     off-screen) and show the pinned strip instead. */
+  .tob .tob-ann-track .tob-ann-pay{display:none}
+  .tob .tob-ann-fixedpay{display:flex}
+}
+
+/* ── Sticky HEADER that HIDES on scroll-down, REVEALS on scroll-up ──
+   Only the HEADER (navbar) is the sticky hide/show unit — the black marquee
+   scrolls away naturally at the top (so they never overlap). When the body has
+   .tob-chrome-down (set from JS while scrolling down) the header slides up out
+   of view; .tob-chrome-up slides it back. Near the top it's always shown.
+   Transform + a small transition = smooth "disappear / come back". */
+.tob .tob-header{
+  position:sticky;
+  top:0;
+  z-index:50;
+  background:#fff;
+  transition:transform .28s cubic-bezier(.4,0,.2,1);
+  will-change:transform;
+}
+.tob.tob-chrome-down .tob-header{transform:translateY(-100%)}
+.tob.tob-chrome-up .tob-header{transform:translateY(0)}
+
+/* ── Tighter mobile navbar — less vertical margin/padding ── */
+@media (max-width:820px){
+  .tob .tob-header .tob-hrow{padding-top:10px;padding-bottom:10px}
+  .tob .tob-hlogo{margin:0}
+  .tob .tob-hlogo span{font-size:1.15rem}
+  /* pull the search + actions closer to the logo (less dead space) */
+  .tob .tob-hsearch-wrap{margin-top:4px}
+}
 /* Search field is ALWAYS visible now (desktop + mobile). Old /search icon removed. */
 @media (max-width:820px){
   .tob .tob-hsearch-wrap{display:flex;max-width:none;order:3;flex-basis:100%;margin:8px 0 0}

@@ -1,5 +1,5 @@
 import {Await, NavLink, Link} from 'react-router';
-import {Suspense, useId} from 'react';
+import {Suspense, useId, useState, useEffect, useRef} from 'react';
 import {Aside, useAside} from '~/components/Aside';
 import {Footer} from '~/components/Footer';
 import {Header} from '~/components/Header';
@@ -15,11 +15,47 @@ import {config} from '~/lib/theme';
 const MARQUEE = config.announcement;
 const PAY_ICONS = config.paymentIcons || [];
 
+/**
+ * Show the chrome (marquee + header) when at the top or scrolling UP; hide it
+ * when scrolling DOWN. Returns 'up' | 'down'. Mobile-first: keeps the header
+ * out of the way while browsing, brings it back the moment you scroll up.
+ */
+function useScrollDirection() {
+  const [dir, setDir] = useState('up');
+  const lastY = useRef(0);
+  useEffect(() => {
+    lastY.current = window.scrollY;
+    let ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const delta = y - lastY.current;
+        // Ignore tiny jitters; always show near the very top.
+        if (y < 60) {
+          setDir('up');
+        } else if (delta > 6) {
+          setDir('down');
+        } else if (delta < -6) {
+          setDir('up');
+        }
+        lastY.current = y;
+        ticking = false;
+      });
+    }
+    window.addEventListener('scroll', onScroll, {passive: true});
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  return dir;
+}
+
 /** The top-level chrome. Everything is wrapped in `.tob` so the ported design CSS applies. */
 export function PageLayout({cart, children = null, isLoggedIn}) {
+  const dir = useScrollDirection();
   return (
     <Aside.Provider>
-      <div className="tob">
+      <div className={`tob tob-chrome-${dir}`}>
         <AnnouncementMarquee />
         {/* All drawers rendered here so they're inside .tob and get the CSS vars */}
         <MobileMenuAside />
@@ -66,6 +102,23 @@ function AnnouncementMarquee() {
         {unit}
         {unit}
       </div>
+      {/* Payment icons pinned to the right — ALWAYS visible (esp. on mobile,
+          where the scrolling text can hide the icons in the marquee). */}
+      {PAY_ICONS.length ? (
+        <div className="tob-ann-fixedpay" aria-label="Accepted payments">
+          {PAY_ICONS.map((p) => (
+            <img
+              key={p.src}
+              src={p.src}
+              alt={p.alt}
+              className="tob-ann-pay-ico"
+              width="34"
+              height="23"
+              loading="lazy"
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
