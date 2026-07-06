@@ -48,7 +48,7 @@ _ROLE_MODEL: dict[str, str] = {
     "ux_content":      "alpha/worker-fast",   # Haiku — copy + design refinement
     "shopify_dev":     "alpha/worker-fast",   # Haiku — GraphQL push, tags/SEO/variants
     "growth_marketer": "alpha/worker-fast",   # Haiku — ad copy, hooks, targeting
-    "builder":         "alpha/director",       # Opus 4.8 — Sol: deep reasoning, code, UI/UX
+    "builder":         "alpha/worker-smart",   # Sonnet — cheaper (~5x), protects the $100 cap
 }
 
 # ── Sensible defaults per role ────────────────────────────────────────────────
