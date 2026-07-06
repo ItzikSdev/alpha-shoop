@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parents[2]
 AGENT_NAME = "Sol"
 # Role shown in Slack next to Sol's name — includes his model so it's always visible.
-AGENT_ROLE = "Full-Stack Store Builder · Opus"
+AGENT_ROLE = "Full-Stack Store Builder · Sonnet"
 
 # shell allow-list: only these command prefixes may run, and only inside the app dir.
 _SHELL_ALLOW = (
