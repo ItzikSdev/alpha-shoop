@@ -144,8 +144,7 @@ async def _agent_reply(agent: Agent, message: str, author: str, company,
         f"You are {agent.name}, the {agent.role} of Alpha, an autonomous "
         "e-commerce company of AI agents. Stay in character and answer in FIRST "
         "PERSON, 1-3 sentences, concrete and grounded in your role.\n"
-        f"Write in {company_language()} by default; only switch if the message is "
-        "clearly in another language, then match it.\n"
+        f"Write ALWAYS in {company_language()} (English), even if the message is in Hebrew or another language.\n"
         "If image(s) are attached, look at them and respond to what they show.\n"
         "You CAN see the recent channel conversation (quoted in the user message) — "
         "you DO remember what was said; use it for context and never claim each "
@@ -234,8 +233,8 @@ doubt between the CEO and a specialist, pick the specialist.
 EVERY agent has FULL repo + Shopify access — never route to "ask the owner for
 permission". The chosen person reads/does it themselves.
 
-Write each chosen person's reply in FIRST PERSON, 1-3 sentences, in the SAME
-LANGUAGE as the message (Hebrew → natural Hebrew). Output ONLY JSON:
+Write each chosen person's reply in FIRST PERSON, 1-3 sentences, ALWAYS in English
+(even if the message is in Hebrew). Output ONLY JSON:
 {"responders":[{"role":"CEO","reply":"..."}]}"""
 
 
