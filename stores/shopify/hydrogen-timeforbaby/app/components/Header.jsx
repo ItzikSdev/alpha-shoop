@@ -1,9 +1,10 @@
 import {Suspense, useState, useRef, useEffect} from 'react';
-import {Await, NavLink, Link} from 'react-router';
+import {Await, NavLink, Link, useFetcher} from 'react-router';
 import {useAnalytics, useOptimisticCart} from '@shopify/hydrogen';
 import {useAside} from '~/components/Aside';
 import {SearchFormPredictive} from '~/components/SearchFormPredictive';
 import {SearchResultsPredictive} from '~/components/SearchResultsPredictive';
+import {ProductItem} from '~/components/ProductItem';
 import {config} from '~/lib/theme';
 
 // Brand + nav come from app/theme.config.json (clone-friendly).
@@ -44,6 +45,7 @@ export function Header({cart, isLoggedIn}) {
 function HeaderSearch() {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
+  const fetcher = useFetcher();
 
   // Close the dropdown when clicking outside the search area.
   useEffect(() => {
@@ -55,6 +57,13 @@ function HeaderSearch() {
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
   }, []);
+
+  // Pre-load all products when the dropdown opens with an empty field.
+  useEffect(() => {
+    if (open && !fetcher.data && fetcher.state === 'idle') {
+      fetcher.load('/collections/all');
+    }
+  }, [open, fetcher]);
 
   return (
     <div className="tob-hsearch-wrap" ref={wrapRef}>
@@ -95,19 +104,43 @@ function HeaderSearch() {
                 closeSearch();
                 setOpen(false);
               };
-              // Empty field → predictive search is NOT run (it can't take an
-              // empty term). Show a "browse all" shortcut to the full catalog.
+              // Empty field → show the full product catalog loaded via fetcher.
               if (!term.current) {
+                // The /collections/all loader returns the CollectionItem shape
+                // (featuredImage + priceRange). Map it to the variant shape the
+                // Products component reads so images and prices render.
+                const allProducts = (fetcher.data?.products?.nodes ?? []).map(
+                  (p) => ({
+                    ...p,
+                    selectedOrFirstAvailableVariant: {
+                      price: p.priceRange?.minVariantPrice,
+                      image: p.featuredImage,
+                    },
+                  }),
+                );
+                if (!allProducts.length) {
+                  return (
+                    <p className="tob-hsearch-msg">Loading products…</p>
+                  );
+                }
                 return (
-                  <Link
-                    className="tob-hsearch-all"
-                    to="/collections/all"
-                    onClick={handleClose}
-                  >
-                    Browse all products →
-                  </Link>
+                  <>
+                    <SearchResultsPredictive.Products
+                      products={allProducts}
+                      closeSearch={handleClose}
+                      term={term}
+                    />
+                    <Link
+                      className="tob-hsearch-all"
+                      to="/search"
+                      onClick={handleClose}
+                    >
+                      View all products →
+                    </Link>
+                  </>
                 );
               }
+
               if (state === 'loading' && !total) {
                 return <p className="tob-hsearch-msg">Loading products…</p>;
               }

@@ -136,7 +136,11 @@ export function Layout({children}) {
         <link rel="stylesheet" href={resetStyles}></link>
         <link rel="stylesheet" href={appStyles}></link>
         {/* Theme tokens (colors + font sizes) from app/theme.config.json → CSS vars */}
-        <style nonce={nonce} dangerouslySetInnerHTML={{__html: themeCss()}} />
+        <style
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{__html: themeCss()}}
+        />
         <Meta />
         <Links />
       </head>

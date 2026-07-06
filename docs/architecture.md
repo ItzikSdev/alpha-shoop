@@ -78,6 +78,42 @@ graph TB
 
 One orchestrator sequencing 7 worker steps in a fixed pipeline (no per-step LLM routing), fed by two external data sources (CJ Dropshipping for supply, Serper for trend search), serving many clients' stores across six commerce platforms, backed by a four-part data layer. The Storefront Runner and the price/stock monitor job are deliberately outside the pipeline — see diagrams 2–4.
 
+## 1b. Sol + CJ data access (REST vs REAL MCP) — 2026-07
+
+Day-to-day store work runs through **Sol**, the single autonomous builder
+(`run_sol_task` in `src/org/agent_loop.py`, on Opus, bound to a fixed `_TOOLS`
+set). Sol narrates every step to Slack and does the work itself (code, build,
+deploy, source, publish).
+
+CJ is reached two different ways — and the naming matters:
+
+```mermaid
+graph LR
+    SOL["Sol (run_sol_task)"]
+    subgraph REST ["src/mcp_tools — in-process Python, REST (NOT MCP)"]
+        SRC["cj_search_products\nCJ REST /api2.0 · >=3 imgs"]
+    end
+    subgraph MCP ["src/cj_mcp — REAL MCP (JSON-RPC 2.0 / StreamableHTTP)"]
+        INV["cj_product_inventory\nstock by country"]
+        TRK["cj_track_shipment\nlive tracking"]
+    end
+    SOL --> SRC --> CJREST["CJ REST API\ndevelopers.cjdropshipping.com/api2.0"]
+    SOL --> INV & TRK --> CJMCP["CJ MCP Server\ndevelopers.cjdropshipping.cn/mcp/&lt;token&gt;"]
+    CJREST --> CJ["CJ backend"]
+    CJMCP --> CJ
+```
+
+- **`src/mcp_tools/`** is a misnomer: it's an in-process Python function registry
+  whose CJ calls are plain **REST**. Great for catalog **search + product detail**
+  (product/query returns ~55 fields).
+- **`src/cj_mcp/`** is the **real** Model Context Protocol client (authenticated by
+  the same `cj_mcp_key` JWT). It exposes CJ **operations REST doesn't**: live
+  **inventory-by-country** and **shipment tracking**.
+- Rule of thumb (also in Sol's charter): **REST for the catalog, MCP for inventory
+  + tracking.** MCP wraps the same backend, so it is *not* richer product detail.
+  Full field-level comparison: [`mcp_vs_rest.md`](mcp_vs_rest.md) · client docs:
+  [`src/cj_mcp/README.md`](../src/cj_mcp/README.md).
+
 ## 2. New Store Creation Process Flow
 
 ```mermaid

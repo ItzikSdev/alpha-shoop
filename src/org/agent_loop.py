@@ -126,10 +126,24 @@ async def shell(command: str, store_slug: str = "timeforbaby") -> dict:
 @tool
 async def cj_search_products(keyword: str = "baby clothes", count: int = 12) -> dict:
     """Search CJ Dropshipping for products worth selling (default: baby clothes).
-    Returns candidate products with rating/shipping/price info."""
-    from src.mcp_tools.sourcing import search_trending_products
-    res = await search_trending_products(category=keyword, max_results=count)
-    return {"products": res}
+    Returns candidate products (each with images[], video, price, margin). Only
+    products with >= 3 images are returned (store rule). Resolves the keyword to a
+    real CJ category first so results stay on-niche instead of the junk free-text
+    search returns (adult clothing, gadgets, car parts)."""
+    from src.mcp_tools.sourcing import search_trending_products, resolve_category
+    # Resolve to a real CJ leaf category — this is what keeps results genuinely
+    # baby-relevant (verified: category_id → 10/10 real baby items vs. mostly junk
+    # for the same free-text keyword). Falls back to keyword search if resolve fails.
+    resolved = await resolve_category(keyword)
+    res = await search_trending_products(
+        category=keyword,
+        category_id=resolved["category_id"] if resolved else "",
+        max_results=count,
+    )
+    return {
+        "products": res,
+        "cj_category": resolved["path"] if resolved else None,
+    }
 
 
 @tool
@@ -168,9 +182,114 @@ async def shopify_admin(query: str, variables: dict | None = None, store_slug: s
         return {"error": str(exc)}
 
 
+@tool
+async def cj_add_product(pid: str, title: str = "", collection: str = "") -> dict:
+    """Create ONE store product PROPERLY from a CJ product id — the right way to add
+    products (use this, NOT raw shopify_admin productCreate). Fetches the CJ detail
+    and builds: all images, Color+Size variants EACH with their own image (so the
+    gallery swaps on color), a Product Details spec table (material/packaging/weight),
+    psychological pricing, and publishes to the storefront. Pass a clean English
+    `title`; optional `collection` (e.g. 'Baby Girls') to categorise it."""
+    import httpx
+    from src.config import get_settings
+    from src.mcp_tools.sourcing import _fetch_detail, _parse_price_range, _build_supplier_variants, _supplier_specs
+    from src.agents.workers.ecommerce import _psychological_price
+    from src.mcp_tools.shopify import create_shopify_product, add_product_to_collection, create_collection
+    tok = get_settings().cj_mcp_key or get_settings().cj_api_key
+    try:
+        async with httpx.AsyncClient(timeout=40) as c:
+            d = await _fetch_detail(c, tok, pid)
+    except Exception as exc:  # noqa: BLE001
+        return {"error": f"CJ fetch failed: {exc}"}
+    if not d or not d.get("variants"):
+        return {"error": "CJ returned no product/variants for that pid"}
+    imgs = [i for i in (d.get("productImageSet") or []) if i]
+    if len(imgs) < 3:
+        return {"error": f"only {len(imgs)} images — store rule needs >=3, skipped"}
+    supplier = _parse_price_range(d.get("sellPrice", "0"))
+    sv = _build_supplier_variants(d["variants"], 2.5, d.get("description", "") or "")
+    variants = [{"color": v["color"], "label": v["size_label"], "sku": v["vid"], "image": v.get("image", ""),
+                 "price": _psychological_price(v["price_retail_usd"]),
+                 "compare_at_price": _psychological_price(v["price_retail_usd"] * 1.35)}
+                for v in sv]
+    base = _psychological_price(min([x["price"] for x in variants], default=_psychological_price(supplier * 2.5)))
+    res = await create_shopify_product(
+        title=title or (d.get("productNameEn") or "")[:80],
+        description=f"<p>{(d.get('productNameEn') or '').strip()}</p>",
+        price=base, compare_at_price=_psychological_price(base * 1.35),
+        images=imgs, variants=variants, video_url=d.get("productVideo") or "",
+        specs=_supplier_specs(d))
+    if not res.get("success"):
+        return {"error": res.get("error")}
+    prod_id = res["product"]["id"]
+    if collection:
+        try:
+            coll = await create_collection(collection)  # get-or-create by title
+            if coll.get("collection_id"):
+                await add_product_to_collection(prod_id, coll["collection_id"])
+        except Exception:  # noqa: BLE001
+            pass
+    return {"product_id": prod_id, "images": len(imgs), "variants": len(variants),
+            "collection": collection or "(none)", "published": True}
+
+
+@tool
+async def shopify_publish_products(store_slug: str = "timeforbaby") -> dict:
+    """Publish EVERY currently-unpublished product to the storefront sales channels
+    (Online Store + the headless channel). A product created via shopify_admin is
+    ACTIVE but INVISIBLE on the live store until published — run this after adding
+    products, or whenever 'I don't see products on the store'. Idempotent."""
+    from src.mcp_tools.shopify import _shopify_gql, _publish_product
+    try:
+        nodes = (await _shopify_gql('{ products(first:100){ nodes{ id title publishedAt } } }', {}))["products"]["nodes"]
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc)}
+    todo = [n for n in nodes if n.get("publishedAt") is None]
+    published = 0
+    for n in todo:
+        try:
+            await _publish_product(n["id"])
+            published += 1
+        except Exception:  # noqa: BLE001
+            pass
+    return {"unpublished_found": len(todo), "published": published,
+            "note": "products are now on the storefront" if published else "all already published"}
+
+
+@tool
+async def cj_product_inventory(pid: str, country_code: str = "US") -> dict:
+    """Live CJ warehouse STOCK for a product in a destination country — via CJ's
+    REAL MCP server (src/cj_mcp), NOT available through cj_search_products (REST).
+    `pid` = CJ product id. Returns per-warehouse inventory (totalInventoryNum,
+    cjInventoryNum, factoryInventoryNum) so you can see if an item is actually in
+    stock (e.g. US warehouse) before featuring or reordering it."""
+    from src.cj_mcp import get_product_inventory, CJMCPThrottled, CJMCPError
+    try:
+        return {"inventory": await get_product_inventory(pid, country_code)}
+    except CJMCPThrottled as exc:
+        return {"error": f"CJ MCP throttled (retry shortly): {exc}"}
+    except CJMCPError as exc:
+        return {"error": str(exc)}
+
+
+@tool
+async def cj_track_shipment(track_numbers: str) -> dict:
+    """Live shipment TRACKING for one or more CJ tracking numbers (comma-separated)
+    — via CJ's REAL MCP server (src/cj_mcp). Use to answer 'where is order X?'."""
+    from src.cj_mcp import get_tracking_info, CJMCPThrottled, CJMCPError
+    try:
+        return {"tracking": await get_tracking_info(track_numbers)}
+    except CJMCPThrottled as exc:
+        return {"error": f"CJ MCP throttled (retry shortly): {exc}"}
+    except CJMCPError as exc:
+        return {"error": str(exc)}
+
+
 _TOOLS = [
     list_store_files, read_store_file, write_store_file, edit_store_file, shell,
-    cj_search_products, shopify_list_products, shopify_admin,
+    cj_search_products, cj_add_product, shopify_list_products, shopify_admin, shopify_publish_products,
+    # CJ via REAL MCP (src/cj_mcp) — data REST/cj_search_products can't reach
+    cj_product_inventory, cj_track_shipment,
 ]
 _TOOLS_BY_NAME = {t.name: t for t in _TOOLS}
 
@@ -226,6 +345,18 @@ def _system_prompt(store_slug: str) -> str:
         f"stores/shopify/hydrogen-{store_slug}/h2_deploy_log.json, and in your reply give Itzik the "
         f"PREVIEW URL + a short summary of what you changed, and STOP. Do NOT deploy to production "
         f"(`./scripts/deploy.sh {store_slug}`) until Itzik explicitly approves the preview.\n\n"
+        f"PUBLISHING (CRITICAL): a product you create via shopify_admin is ACTIVE but INVISIBLE "
+        f"on the live store until it is published to the storefront sales channel. After creating "
+        f"ANY product(s), you MUST call shopify_publish_products — otherwise the owner sees NOTHING "
+        f"on the store. When told 'I don't see products', run shopify_publish_products first.\n\n"
+        f"CJ DATA TOOLS: for product SEARCH/detail use cj_search_products (CJ REST — already "
+        f"filters to >=3 images, resolves the niche category). For anything about STOCK or "
+        f"SHIPMENTS use the REAL CJ MCP tools: cj_product_inventory(pid, country_code) for live "
+        f"warehouse stock by country, and cj_track_shipment(track_numbers) for tracking — REST "
+        f"cannot give these. From now on ALWAYS check cj_product_inventory before featuring, "
+        f"reordering, or promising availability on a product (e.g. confirm the US warehouse "
+        f"actually has stock). MCP wraps the same CJ backend, so it is NOT richer product detail "
+        f"than REST — use REST for the catalog, MCP for inventory + tracking. See docs/mcp_vs_rest.md.\n\n"
         f"FOR ANY TASK: first read stores/shopify/skills/SKILLS_MAP.md and open the MATCHING skill "
         f"(UI/UX → skills/ui-ux-pro.md; manage store data/collections → skills/.claude/skills/shopify-admin/"
         f"SKILL.md + the shopify_admin tool; Hydrogen code → skills/.claude/skills/shopify-hydrogen/SKILL.md; "

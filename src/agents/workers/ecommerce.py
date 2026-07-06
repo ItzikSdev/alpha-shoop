@@ -592,6 +592,8 @@ async def ecommerce_node(state: AgentState) -> dict:
             images=good_images,
             variants=product_variants,
             video_url=product.get("video", ""),
+            # Real CJ spec sheet (material/packaging/weight) → PDP Product Details
+            specs=product.get("specs"),
         )
 
         if result.get("success"):

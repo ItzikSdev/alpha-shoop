@@ -118,9 +118,9 @@ const SYSTEM_MERMAID = `graph TB
     HZ["Horizon Theme\nkgg8n0-k0.myshopify.com"]
     SS --> THEME --> HZ
 
-    subgraph MCP ["MCP Tools"]
+    subgraph MCP ["Tool Registry — src/mcp_tools (in-process Python, REST — NOT MCP)"]
         direction LR
-        T1["Sourcing\nCJ · price cap 3×"]
+        T1["Sourcing\nCJ REST · >=3 imgs · cap 3×"]
         T2["Market Data\nSerper / Trends"]
         T3["Shopify\nGraphQL + REST"]
         T4["Ads Tools"]
@@ -141,6 +141,22 @@ const SYSTEM_MERMAID = `graph TB
     T2 --> SERP
     T3 --> SHOP
     T4 --> GADS
+
+    subgraph SOLBLK ["Sol — single autonomous builder (run_sol_task, Opus)"]
+        direction LR
+        SOL["Sol\ncodes · builds · sources · deploys"]
+    end
+    GW --> SOL
+    SOL --> T1 & T3
+
+    subgraph REALMCP ["REAL MCP — src/cj_mcp (JSON-RPC 2.0 / StreamableHTTP)"]
+        direction LR
+        CJMCP["cj_mcp client\ncj_product_inventory · cj_track_shipment"]
+        CJMCPSRV["CJ MCP Server\ndevelopers.cjdropshipping.cn/mcp/&lt;token&gt;"]
+        CJMCP --> CJMCPSRV
+    end
+    SOL --> CJMCP
+    CJMCPSRV --> CJ
 
     subgraph SF ["Storefront — Shopify CLI Liquid themes"]
         direction LR
@@ -173,10 +189,12 @@ const SYSTEM_MERMAID = `graph TB
     classDef theme fill:#065f46,stroke:#059669,color:#d1fae5
     classDef gw fill:#292524,stroke:#78716c,color:#d6d3d1
     classDef store fill:#312e81,stroke:#6366f1,color:#e0e7ff
-    class ORC,SS,DA,FRA,TS,EM agent
+    class ORC,SS,DA,FRA,TS,EM,SOL agent
     class MA,FA,MONJOB,EV detagent
     class T1,T2,T3,T4,T5 mcp
+    class CJMCP,CJMCPSRV realmcp
     class CJ,SERP,SHOP,GADS ext
+    classDef realmcp fill:#0b3d2e,stroke:#10b981,color:#d1fae5
     class THEME,HZ theme
     class GW,CREDS,DAEMON gw
     class RUNNER,CLI,THEMEDIR,DOCS store`;

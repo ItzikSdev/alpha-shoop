@@ -245,6 +245,9 @@ def _build_supplier_variants(variants: list[dict], price_ratio: float, descripti
             "size_cm": size_sort,
             "price_supplier_usd": supplier_price,
             "price_retail_usd": round(supplier_price * price_ratio, 2),
+            # CJ's per-variant image — lets the publisher give each COLOR its own
+            # photo so the storefront swaps the gallery image on color selection.
+            "image": v.get("variantImage") or "",
         })
     out.sort(key=lambda e: (e["color"], e["size_cm"]))
     return out
@@ -273,6 +276,50 @@ async def _fetch_detail(client: httpx.AsyncClient, token: str, pid: str) -> dict
         return None
 
 
+def _first(value) -> str:
+    """CJ returns some fields as a list (…Set) or a JSON-encoded string
+    ('["Cloth"]'). Return the first human-readable value, or ''."""
+    if isinstance(value, list):
+        return str(value[0]).strip() if value else ""
+    if isinstance(value, str):
+        s = value.strip()
+        if s.startswith("["):
+            try:
+                arr = json.loads(s)
+                return str(arr[0]).strip() if arr else ""
+            except (json.JSONDecodeError, IndexError):
+                return s
+        return s
+    return ""
+
+
+def _supplier_specs(detail: dict) -> dict:
+    """Extract the rich CJ product fields we used to discard (REST product/query
+    returns ~55; we kept ~12). These carry real spec data — fabric, package
+    contents, weights, customs classification, supplier — surfaced on the PDP.
+    Prefer the pre-parsed *Set list fields; fall back to the JSON-string field."""
+    material = _first(detail.get("materialNameEnSet") or detail.get("materialNameEn"))
+    packaging = _first(detail.get("packingNameEnSet") or detail.get("packingNameEn"))
+    properties = _first(detail.get("productProEnSet") or detail.get("productProEn"))
+    # CJ uses generic placeholder codes here ("COMMON", "NONE") that aren't real
+    # product features — drop them so we don't surface "Features: COMMON" on the PDP.
+    if properties.strip().upper() in ("COMMON", "NONE", "COMMON PRODUCT"):
+        properties = ""
+    return {
+        "material": material,
+        "packaging": packaging,
+        "properties": properties,
+        "product_weight_g": (detail.get("productWeight") or "").strip() if isinstance(detail.get("productWeight"), str) else detail.get("productWeight"),
+        "package_weight_g": (detail.get("packingWeight") or "").strip() if isinstance(detail.get("packingWeight"), str) else detail.get("packingWeight"),
+        "product_unit": detail.get("productUnit") or "",
+        "customs_name": _first(detail.get("entryNameEn")),
+        "customs_code": detail.get("entryCode") or "",
+        "supplier_name": detail.get("supplierName") or "",
+        "supplier_sku": detail.get("productSku") or "",
+        "listed_count": detail.get("listedNum") or 0,
+    }
+
+
 async def search_trending_products(
     category: str = "",
     category_id: str = "",
@@ -280,6 +327,7 @@ async def search_trending_products(
     min_margin: float = 0.30,
     max_price_usd: float = 0.0,
     page_num: int = 1,
+    min_images: int = 3,
 ) -> list[dict]:
     """
     Search CJ Dropshipping for trending products above a minimum margin.
@@ -296,6 +344,12 @@ async def search_trending_products(
             filters down to zero "new" candidates once a category's first page
             has already been mined. Callers building toward a product-count
             target should advance this across rounds.
+        min_images: Minimum number of real supplier images a product must have to
+            be a candidate (default 3). The store's rule is "no single-image
+            products on the storefront" — a bare product page with one photo looks
+            unfinished and converts poorly. Products whose CJ productImageSet has
+            fewer than this are dropped here so they never reach the publisher.
+            Set to 0 to disable the gate.
 
     Returns:
         List of product dicts with keys: product_id, title, price_supplier_usd,
@@ -377,11 +431,27 @@ async def search_trending_products(
             # publisher builds Color/Size selectors; a single entry means a
             # single-variant product (no selectors needed).
             "supplier_variants": supplier_variants if len(supplier_variants) > 1 else [],
+            # Rich CJ spec fields (fabric, package contents, weight, customs,
+            # supplier) extracted from the full REST payload — surfaced on the
+            # Shopify PDP as a Product Details block (see create_shopify_product).
+            "specs": _supplier_specs(detail),
         })
 
     filtered = [p for p in products if p.get("margin_pct", 0) >= min_margin]
     if max_price_usd > 0:
         filtered = [p for p in filtered if p.get("estimated_price_shopify_usd", 0) <= max_price_usd]
+    # Image gate: the storefront must never show a single-image product. Drop any
+    # candidate CJ only has < min_images photos for, BEFORE it reaches the
+    # publisher (cheaper than deleting a live 1-image product after the fact).
+    if min_images > 0:
+        before = len(filtered)
+        filtered = [p for p in filtered if len(p.get("images", [])) >= min_images]
+        dropped = before - len(filtered)
+        if dropped:
+            logger.info(
+                "Image gate: dropped %d/%d candidate(s) with < %d images for '%s'",
+                dropped, before, min_images, category or category_id,
+            )
     return filtered[:max_results]
 
 

@@ -1,5 +1,5 @@
 import {useLoaderData, Link} from 'react-router';
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useRef} from 'react';
 import {Image, Money} from '@shopify/hydrogen';
 import {config} from '~/lib/theme';
 
@@ -22,25 +22,53 @@ export async function loader(args) {
 }
 
 async function loadCriticalData({context}) {
-  const [{products}] = await Promise.all([
+  // Load featured products + all 3 category collections in parallel
+  const [
+    {products},
+    boysData,
+    girlsData,
+    unisexData,
+  ] = await Promise.all([
     context.storefront.query(HOMEPAGE_PRODUCTS_QUERY, {
       cache: context.storefront.CacheShort(),
       variables: {first: config.productGridLimit ?? 12},
     }),
+    context.storefront.query(COLLECTION_PRODUCTS_QUERY, {
+      cache: context.storefront.CacheShort(),
+      variables: {handle: 'baby-boys', first: 12},
+    }),
+    context.storefront.query(COLLECTION_PRODUCTS_QUERY, {
+      cache: context.storefront.CacheShort(),
+      variables: {handle: 'baby-girls', first: 12},
+    }),
+    context.storefront.query(COLLECTION_PRODUCTS_QUERY, {
+      cache: context.storefront.CacheShort(),
+      variables: {handle: 'unisex', first: 12},
+    }),
   ]);
-  return {products};
+
+  return {
+    products,
+    collectionProducts: {
+      'baby-boys':  boysData?.collection?.products?.nodes   ?? [],
+      'baby-girls': girlsData?.collection?.products?.nodes  ?? [],
+      'unisex':     unisexData?.collection?.products?.nodes ?? [],
+    },
+  };
 }
 
 export default function Homepage() {
   /** @type {LoaderReturnData} */
   const data = useLoaderData();
   const products = data.products?.nodes ?? [];
+  const collectionProducts = data.collectionProducts ?? {};
+
   return (
     <div className="tob-home">
       <Hero />
       <Pills />
       <div className="tob-wrap">
-        <CategoryTiles />
+        <CategoryTiles collectionProducts={collectionProducts} />
         <ProductGrid products={products} />
       </div>
       <Testimonials />
@@ -134,20 +162,113 @@ function Pills() {
   );
 }
 
-function CategoryTiles() {
+/* ─── Category Tiles with inline product expand ─────────────────────────── */
+function CategoryTiles({collectionProducts}) {
+  const [openKey, setOpenKey] = useState(null); // handle of the open tile
+  const panelRef = useRef(null);
+
+  // derive the handle from the tile URL  e.g. "/collections/baby-boys" → "baby-boys"
+  function handleFromUrl(url) {
+    return url.split('/').pop();
+  }
+
+  function toggle(handle) {
+    setOpenKey((prev) => (prev === handle ? null : handle));
+  }
+
+  // scroll the panel into view when it opens
+  useEffect(() => {
+    if (openKey && panelRef.current) {
+      panelRef.current.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+    }
+  }, [openKey]);
+
   return (
     <>
       <div className="tob-sec-head">
         <h2>{config.categoryHeading}</h2>
       </div>
+
+      {/* Tiles row */}
       <div className="tob-tiles">
-        {config.tiles.map((t) => (
-          <Link key={t.link} to={t.link} className="tob-tile" prefetch="intent">
-            <img className="tob-tile-img" src={t.image} alt={t.label} loading="lazy" />
-            <span>{t.label}</span>
-          </Link>
-        ))}
+        {config.tiles.map((t) => {
+          const handle = handleFromUrl(t.link);
+          const isOpen = openKey === handle;
+          return (
+            <button
+              key={t.link}
+              className={`tob-tile tob-tile-btn${isOpen ? ' tob-tile-open' : ''}`}
+              onClick={() => toggle(handle)}
+              aria-expanded={isOpen}
+              aria-controls={`tob-catpanel-${handle}`}
+            >
+              <img
+                className="tob-tile-img"
+                src={t.image}
+                alt={t.label}
+                loading="lazy"
+              />
+              <span>
+                {t.label}
+                <svg
+                  className="tob-tile-chevron"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M5 7.5L10 12.5L15 7.5"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+          );
+        })}
       </div>
+
+      {/* Inline product panel — renders BELOW the tiles row */}
+      {config.tiles.map((t) => {
+        const handle = handleFromUrl(t.link);
+        const isOpen = openKey === handle;
+        const items = collectionProducts[handle] ?? [];
+        return (
+          <div
+            key={handle}
+            id={`tob-catpanel-${handle}`}
+            ref={isOpen ? panelRef : null}
+            className={`tob-catpanel${isOpen ? ' tob-catpanel-open' : ''}`}
+            aria-hidden={!isOpen}
+          >
+            {isOpen && (
+              <>
+                <div className="tob-catpanel-head">
+                  <span>{t.label}</span>
+                  <Link to={t.link} prefetch="intent" className="tob-catpanel-viewall">
+                    View all →
+                  </Link>
+                </div>
+                {items.length === 0 ? (
+                  <p className="tob-catpanel-empty">No products found.</p>
+                ) : (
+                  <div className="tob-grid tob-catpanel-grid">
+                    {items.map((product, i) => (
+                      <HomeProductCard
+                        key={product.id}
+                        product={product}
+                        index={i}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        );
+      })}
     </>
   );
 }
@@ -207,13 +328,17 @@ function Testimonials() {
         <h2>{config.testimonialsHeading}</h2>
       </div>
       <div className="tob-tgrid">
-        {config.testimonials.map((r) => (
-          <div className="tob-tcard" key={r.name}>
-            <div className="tob-stars">★★★★★</div>
-            <p>{r.text}</p>
-            <div className="tob-tname">
-              {r.name} · {r.location}{' '}
-              <span className="tob-verified">✔ verified buyer</span>
+        {config.testimonials.map((t, i) => (
+          <div key={t.author ?? i} className="tob-tcard">
+            <div className="tob-tstars" aria-label={`${t.stars} stars`}>
+              {'★'.repeat(t.stars)}
+            </div>
+            <p className="tob-ttext">"{t.text}"</p>
+            <div className="tob-tauthor">
+              <span className="tob-tname">{t.author}</span>
+              {t.verified && (
+                <span className="tob-tverified">✓ Verified buyer</span>
+              )}
             </div>
           </div>
         ))}
@@ -222,22 +347,35 @@ function Testimonials() {
   );
 }
 
-const HOMEPAGE_PRODUCTS_QUERY = `#graphql
+/* ─── GraphQL queries ────────────────────────────────────────────────────── */
+
+const PRODUCT_FRAGMENT = `#graphql
   fragment HomeProduct on Product {
     id
     title
     handle
     availableForSale
+    featuredImage { url altText width height }
     priceRange { minVariantPrice { amount currencyCode } }
-    featuredImage { id url altText width height }
   }
-  query HomepageProducts ($country: CountryCode, $language: LanguageCode, $first: Int)
-    @inContext(country: $country, language: $language) {
-    products(first: $first, sortKey: UPDATED_AT, reverse: true) {
+`;
+
+const HOMEPAGE_PRODUCTS_QUERY = `#graphql
+  ${PRODUCT_FRAGMENT}
+  query HomepageProducts($first: Int!) {
+    products(first: $first, sortKey: BEST_SELLING) {
       nodes { ...HomeProduct }
     }
   }
 `;
 
-/** @typedef {import('./+types/_index').Route} Route */
-/** @typedef {ReturnType<typeof useLoaderData<typeof loader>>} LoaderReturnData */
+const COLLECTION_PRODUCTS_QUERY = `#graphql
+  ${PRODUCT_FRAGMENT}
+  query CollectionProducts($handle: String!, $first: Int!) {
+    collection(handle: $handle) {
+      products(first: $first) {
+        nodes { ...HomeProduct }
+      }
+    }
+  }
+`;

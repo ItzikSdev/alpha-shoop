@@ -616,12 +616,16 @@ async def route_and_respond(message: str, author: str = "You",
         # builds, deploys, sources from CJ — narrating each step to Slack itself.
         # Passes any attached image (e.g. a mobile-bug screenshot) so he sees + fixes it.
         if agent.name == "Sol":
+            from src.org.agent_loop import run_sol_task
             try:
-                from src.org.agent_loop import run_sol_task
-                res = await run_sol_task(message, narrate=True, images=images)
-                final.append((agent, res.get("final") or "בוצע."))
+                # narrate=True → Sol posts every step AND its final summary to
+                # Slack itself (say(resp.content)). Do NOT append to `final` —
+                # _post_replies would post the summary a SECOND time. That double
+                # post was the "Sol replies twice" bug.
+                await run_sol_task(message, narrate=True, images=images)
             except Exception as exc:  # noqa: BLE001
-                final.append((agent, f"נתקעתי: {exc}"))
+                from src.org.slack import post_as
+                await post_as(agent.name, agent.role, f"Got stuck: {exc}")
             continue
         if not images:
             # First try a real OP — ticket create/advance/close (ANY agent) or a store

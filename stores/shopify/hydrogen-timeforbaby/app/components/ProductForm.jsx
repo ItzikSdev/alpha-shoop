@@ -29,7 +29,11 @@ export function ProductForm({productOptions, selectedVariant}) {
                   exists,
                   isDifferentProduct,
                   swatch,
+                  firstSelectableVariant,
                 } = value;
+                // CJ-style: use this option value's variant photo as its button
+                // thumbnail (so colors show as pictures, not text).
+                const variantImage = firstSelectableVariant?.image?.url;
 
                 if (isDifferentProduct) {
                   // SEO
@@ -51,7 +55,7 @@ export function ProductForm({productOptions, selectedVariant}) {
                         opacity: available ? 1 : 0.3,
                       }}
                     >
-                      <ProductOptionSwatch swatch={swatch} name={name} />
+                      <ProductOptionSwatch swatch={swatch} name={name} image={variantImage} />
                     </Link>
                   );
                 } else {
@@ -81,7 +85,7 @@ export function ProductForm({productOptions, selectedVariant}) {
                         }
                       }}
                     >
-                      <ProductOptionSwatch swatch={swatch} name={name} />
+                      <ProductOptionSwatch swatch={swatch} name={name} image={variantImage} />
                     </button>
                   );
                 }
@@ -142,21 +146,27 @@ export function ProductForm({productOptions, selectedVariant}) {
  *   name: string;
  * }}
  */
-function ProductOptionSwatch({swatch, name}) {
-  const image = swatch?.image?.previewImage?.url;
+function ProductOptionSwatch({swatch, name, image}) {
+  // Prefer a native Shopify swatch image; fall back to the option value's own
+  // variant photo (CJ-style color thumbnails). Only text if neither exists.
+  const swatchImage = swatch?.image?.previewImage?.url;
   const color = swatch?.color;
+  const thumb = swatchImage || image;
 
-  if (!image && !color) return name;
+  if (!thumb && !color) {
+    return <span className="tob-swatch-text">{name}</span>;
+  }
 
   return (
     <div
       aria-label={name}
-      className="product-option-label-swatch"
+      title={name}
+      className={`product-option-label-swatch${thumb ? ' has-image' : ''}`}
       style={{
         backgroundColor: color || 'transparent',
       }}
     >
-      {!!image && <img src={image} alt={name} />}
+      {!!thumb && <img src={thumb} alt={name} loading="lazy" />}
     </div>
   );
 }

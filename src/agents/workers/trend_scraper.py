@@ -202,8 +202,15 @@ async def trend_scraper_node(state: AgentState) -> dict:
                 seen_ids.add(pid)
                 all_products.append(p)
 
-    # Enrich with shipping costs (limit to top 15 by margin to avoid slow API calls)
-    candidates = sorted(all_products, key=lambda p: p.get("margin_pct", 0), reverse=True)[:15]
+    # Rank candidates: a product VIDEO is the owner's first priority (video PDPs
+    # convert far better than photos alone), so products that carry a CJ
+    # productVideo sort ahead of video-less ones; margin breaks the tie. Then take
+    # the top 15 to enrich (shipping lookups are slow).
+    candidates = sorted(
+        all_products,
+        key=lambda p: (bool(p.get("video")), p.get("margin_pct", 0)),
+        reverse=True,
+    )[:15]
     enriched = []
     for p in candidates:
         # The store sells GLOBALLY, not to one local market. We quote shipping to the

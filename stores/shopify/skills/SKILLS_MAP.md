@@ -6,6 +6,7 @@ Base path for the Shopify toolkit skills: `stores/shopify/skills/.claude/skills/
 ## Route by request type
 | The request is about… | Use skill |
 |---|---|
+| **Find / add / vet PRODUCTS** (source from CJ, fill a collection, fix 1-image products, sourcing targets) | `skills/product-sourcing.md` |
 | **UI / UX / design / visual / "looks off" / buttons / spacing / mobile look** | `skills/ui-ux-pro.md` |
 | **Full store check before shipping (QA/SEO/links/mobile)** | `skills/store-audit.md` |
 | **Hydrogen storefront CODE** (React/Remix, routes, components, `theme.config.json`) | `.claude/skills/shopify-hydrogen/SKILL.md` |

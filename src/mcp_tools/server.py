@@ -1,7 +1,14 @@
-"""MCP server registry — maps tool names to their Python implementations."""
+"""MCP server registry — maps tool names to their Python implementations.
+
+NOTE: despite the folder name, the tools here are plain in-process Python
+functions (most call vendor REST APIs). The one genuine Model Context Protocol
+client lives in `src/cj_mcp/` — the `cj_mcp_*` tools below delegate to it to
+expose CJ data the REST subset can't reach (live inventory-by-country, tracking).
+"""
 from __future__ import annotations
 from typing import Any
 from src.mcp_tools import sourcing, market, shopify, ads, fulfillment, cj_connect, paypal, cloudflare, shopify_design, store_scan, design_files, variant_backfill, finance
+from src import cj_mcp
 
 _TOOLS: dict[str, Any] = {
     "search_trending_products": sourcing.search_trending_products,
@@ -14,6 +21,10 @@ _TOOLS: dict[str, Any] = {
     "get_campaign_metrics": ads.get_campaign_metrics,
     "place_supplier_order": fulfillment.place_supplier_order,
     "fulfill_shopify_order": fulfillment.fulfill_shopify_order,
+    # CJ via REAL MCP (src/cj_mcp) — data the REST tools above don't expose:
+    # live warehouse stock by destination country + shipment tracking.
+    "cj_mcp_product_inventory": cj_mcp.get_product_inventory,
+    "cj_mcp_tracking_info": cj_mcp.get_tracking_info,
     # CJ ⇄ Shopify product connection (enables the CJ app to auto-fulfill)
     "list_cj_shops": cj_connect.list_cj_shops,
     "connect_product": cj_connect.connect_product,

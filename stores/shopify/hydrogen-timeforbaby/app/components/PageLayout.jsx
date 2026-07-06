@@ -232,9 +232,30 @@ function MobileMenuAside() {
 
 /** Nav links inside the hamburger drawer — NavLink so active state works, close on click */
 function MobileMenuNav() {
-  const {close} = useAside();
+  const {close, open} = useAside();
   return (
     <nav className="tob-mob-nav" role="navigation" aria-label="Main navigation">
+      {/* Account + Cart pinned to the top of the drawer (moved off the header) */}
+      <div className="tob-mob-icons">
+        <NavLink
+          to="/account"
+          className="tob-mob-ico"
+          aria-label="Account"
+          onClick={close}
+        >
+          <MobileUserIcon />
+          <span>Sign in</span>
+        </NavLink>
+        <button
+          type="button"
+          className="tob-mob-ico reset"
+          aria-label="Cart"
+          onClick={() => open('cart')}
+        >
+          <MobileBagIcon />
+          <span>Cart</span>
+        </button>
+      </div>
       <NavLink
         to="/"
         end
@@ -254,6 +275,23 @@ function MobileMenuNav() {
         </NavLink>
       ))}
     </nav>
+  );
+}
+
+function MobileUserIcon() {
+  return (
+    <svg className="tob-ic" viewBox="0 0 20 20" aria-hidden="true">
+      <circle cx="10" cy="6.5" r="3.2" />
+      <path d="M4 17c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" />
+    </svg>
+  );
+}
+function MobileBagIcon() {
+  return (
+    <svg className="tob-ic" viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M5 6h10l1 11H4L5 6z" />
+      <path d="M7.5 6V5a2.5 2.5 0 0 1 5 0v1" />
+    </svg>
   );
 }
 

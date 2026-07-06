@@ -63,6 +63,7 @@ export default function Collection() {
       <PaginatedResourceSection
         connection={products}
         resourcesClassName="products-grid"
+        autoLoad
       >
         {({node: product, index}) => (
           <ProductItem

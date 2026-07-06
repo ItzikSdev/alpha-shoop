@@ -75,6 +75,9 @@ type Pages = {
       "code": string;
     };
   };
+  "/pages/about-us": {
+    params: {};
+  };
   "/sitemap.xml": {
     params: {};
   };
@@ -135,7 +138,7 @@ type Pages = {
 type RouteFiles = {
   "root.jsx": {
     id: "root";
-    page: "/" | "/blogs/:blogHandle/:articleHandle" | "/sitemap/:type/:page.xml" | "/blogs/:blogHandle" | "/admin/fix-collections" | "/collections/:handle" | "/pages/accessibility" | "/account/authorize" | "/collections" | "/policies/:handle" | "/products/:handle" | "/account/logout" | "/collections/all" | "/policies" | "/account/login" | "/discount/:code" | "/sitemap.xml" | "/pages/:handle" | "/pages/contact" | "/robots.txt" | "/blogs" | "/account" | "/account/orders" | "/account/orders/:id" | "/account/addresses" | "/account/profile" | "/account/*" | "/search" | "/cart" | "/cart/:lines" | "/*";
+    page: "/" | "/blogs/:blogHandle/:articleHandle" | "/sitemap/:type/:page.xml" | "/blogs/:blogHandle" | "/admin/fix-collections" | "/collections/:handle" | "/pages/accessibility" | "/account/authorize" | "/collections" | "/policies/:handle" | "/products/:handle" | "/account/logout" | "/collections/all" | "/policies" | "/account/login" | "/discount/:code" | "/pages/about-us" | "/sitemap.xml" | "/pages/:handle" | "/pages/contact" | "/robots.txt" | "/blogs" | "/account" | "/account/orders" | "/account/orders/:id" | "/account/addresses" | "/account/profile" | "/account/*" | "/search" | "/cart" | "/cart/:lines" | "/*";
   };
   "routes/blogs.$blogHandle.$articleHandle.jsx": {
     id: "routes/blogs.$blogHandle.$articleHandle";
@@ -196,6 +199,10 @@ type RouteFiles = {
   "routes/discount.$code.jsx": {
     id: "routes/discount.$code";
     page: "/discount/:code";
+  };
+  "routes/pages.about-us.jsx": {
+    id: "routes/pages.about-us";
+    page: "/pages/about-us";
   };
   "routes/[sitemap.xml].jsx": {
     id: "routes/[sitemap.xml]";
@@ -284,6 +291,7 @@ type RouteModules = {
   "routes/policies._index": typeof import("./app/routes/policies._index.jsx");
   "routes/account_.login": typeof import("./app/routes/account_.login.jsx");
   "routes/discount.$code": typeof import("./app/routes/discount.$code.jsx");
+  "routes/pages.about-us": typeof import("./app/routes/pages.about-us.jsx");
   "routes/[sitemap.xml]": typeof import("./app/routes/[sitemap.xml].jsx");
   "routes/pages.$handle": typeof import("./app/routes/pages.$handle.jsx");
   "routes/pages.contact": typeof import("./app/routes/pages.contact.jsx");

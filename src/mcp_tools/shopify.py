@@ -195,10 +195,55 @@ async def _shopify_rest(method: str, path: str, body: dict | None = None) -> dic
         return resp.json()
 
 
+_STOREFRONT_PUBLICATION_NAMES = ("Online Store",)
+# Channels a headless/custom storefront reads from show up as their own
+# publication (e.g. "TIMEFOR BABY", "Hydrogen", "Headless"). The live Hydrogen
+# site reads the store-named channel, NOT "Online Store" — so we must publish
+# there too or products stay invisible on the storefront.
+_HEADLESS_HINT = ("headless", "hydrogen", "storefront")
+
+
+async def _storefront_publication_ids() -> list[str]:
+    """Publication ids a customer-facing storefront reads from: Online Store plus
+    any headless/custom-storefront channel. Excludes POS/social channels, which
+    reject online-only products with userErrors."""
+    data = await _shopify_gql("{ publications(first:30){ edges { node { id name } } } }", {})
+    ids: list[str] = []
+    for e in data.get("publications", {}).get("edges", []):
+        name = (e["node"].get("name") or "")
+        low = name.lower()
+        if name in _STOREFRONT_PUBLICATION_NAMES or any(h in low for h in _HEADLESS_HINT):
+            ids.append(e["node"]["id"])
+        # A store-named channel (e.g. "TIMEFOR BABY") is the headless storefront's
+        # publication — include anything that isn't a known non-web channel.
+        elif low not in ("point of sale", "facebook & instagram", "tiktok", "shop", "google & youtube"):
+            ids.append(e["node"]["id"])
+    return ids
+
+
 async def _publish_product(product_gid: str) -> None:
-    """Publish a product to the Online Store channel via REST (no publications scope needed)."""
-    numeric_id = _gid_to_id(product_gid)
-    await _shopify_rest("PUT", f"products/{numeric_id}.json", {"product": {"published": True}})
+    """Publish a product to every storefront channel (Online Store + headless).
+
+    Uses GraphQL publishablePublish — the legacy REST `published:true` field only
+    touches Online Store and is unreliable on current API versions (it left
+    Sol-created products with publishedAt=None → invisible on the Hydrogen site).
+    Raises on hard failure so the caller can log it instead of silently shipping
+    an unpublished product.
+    """
+    pub_ids = await _storefront_publication_ids()
+    if not pub_ids:
+        raise RuntimeError("no storefront publications found to publish to")
+    mutation = (
+        "mutation Pub($id:ID!, $pubs:[PublicationInput!]!){"
+        " publishablePublish(id:$id, input:$pubs){ userErrors{ field message } } }"
+    )
+    result = await _shopify_gql(
+        mutation,
+        {"id": product_gid, "pubs": [{"publicationId": pid} for pid in pub_ids]},
+    )
+    errs = result.get("publishablePublish", {}).get("userErrors", [])
+    if errs:
+        raise RuntimeError(f"publishablePublish userErrors: {errs}")
 
 
 async def get_sales_channels() -> list[str]:
@@ -216,6 +261,41 @@ async def get_sales_channels() -> list[str]:
         return []
 
 
+def _specs_html(specs: dict | None) -> str:
+    """Render CJ's rich spec fields (fabric, package contents, weight, customs,
+    supplier) as a 'Product Details' table appended to the PDP description. Only
+    non-empty fields are shown, so a sparse supplier record degrades cleanly."""
+    if not specs:
+        return ""
+    rows = [
+        ("Material", specs.get("material")),
+        ("Package contents", specs.get("packaging")),
+        ("Features", specs.get("properties")),
+        ("Item weight", _weight_label(specs.get("product_weight_g"))),
+        ("Package weight", _weight_label(specs.get("package_weight_g"))),
+    ]
+    cells = "".join(
+        f"<tr><th style='text-align:left;padding:6px 16px 6px 0;color:#666;font-weight:600'>{k}</th>"
+        f"<td style='padding:6px 0'>{v}</td></tr>"
+        for k, v in rows if v
+    )
+    if not cells:
+        return ""
+    return (
+        "<div class='product-specs'><h3>Product Details</h3>"
+        f"<table><tbody>{cells}</tbody></table></div>"
+    )
+
+
+def _weight_label(grams) -> str:
+    """CJ weights come as grams, sometimes a range like '170.00-369.00'. Show a
+    clean gram label, or '' if missing/unparseable."""
+    if not grams:
+        return ""
+    s = str(grams).strip()
+    return f"{s} g" if s and s.lower() != "none" else ""
+
+
 async def create_shopify_product(
     title: str,
     description: str,
@@ -224,6 +304,7 @@ async def create_shopify_product(
     images: list[str],
     variants: list[dict],
     video_url: str = "",
+    specs: dict | None = None,
 ) -> dict:
     """
     Create a product in Shopify and set pricing.
@@ -248,17 +329,36 @@ async def create_shopify_product(
     # The CJ vid to stamp on a single-variant product's default variant (binds it
     # to the right CJ SKU even when there are no Color/Size selectors).
     default_sku = (variants[0].get("sku", "") if variants else "")
+    # Map each COLOR to its CJ variant image so we can (a) tag that media with a
+    # distinct alt and (b) later link the color's variants to it → the storefront
+    # swaps the gallery image when the shopper picks a color. First-seen wins.
+    color_image: dict[str, str] = {}
+    for v in variants:
+        img, col = (v.get("image") or "").strip(), (v.get("color") or "").strip()
+        if img and col:
+            color_image.setdefault(img, col)
+
+    def _alt_for(url: str) -> str:
+        col = color_image.get(url)
+        return f"cjcolor::{col}" if col else title
+
     media = [
-        {"originalSource": url, "alt": title, "mediaContentType": "IMAGE"}
+        {"originalSource": url, "alt": _alt_for(url), "mediaContentType": "IMAGE"}
         for url in images if url
     ]
+    # Ensure every color's image is present as media even if it wasn't in `images`.
+    for url, col in color_image.items():
+        if url not in images:
+            media.append({"originalSource": url, "alt": f"cjcolor::{col}", "mediaContentType": "IMAGE"})
     try:
         data = await _shopify_gql(
             _GQL_CREATE_PRODUCT,
             {
                 "product": {
                     "title": title,
-                    "descriptionHtml": description,
+                    # Marketing copy + a real spec table built from CJ's rich REST
+                    # fields (material/packaging/weight) that we used to discard.
+                    "descriptionHtml": description + _specs_html(specs),
                     "status": "ACTIVE",
                 },
                 "media": media or None,
@@ -271,6 +371,21 @@ async def create_shopify_product(
     errors = data.get("productCreate", {}).get("userErrors", [])
     if errors or not product:
         return {"product": None, "success": False, "error": str(errors) or "no product returned"}
+
+    # Look up the media id we tagged per color (alt = "cjcolor::<color>") so each
+    # color's variants can be linked to its own photo (gallery swaps on color).
+    media_by_color: dict[str, str] = {}
+    if color_image:
+        try:
+            mq = await _shopify_gql(
+                '{ product(id: "%s") { media(first: 100) { nodes { id alt } } } }' % product["id"], {}
+            )
+            for node in mq.get("product", {}).get("media", {}).get("nodes", []):
+                alt = node.get("alt") or ""
+                if alt.startswith("cjcolor::"):
+                    media_by_color[alt.split("cjcolor::", 1)[1]] = node["id"]
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("variant-image media lookup failed for %s: %s", title, exc)
 
     # Build a Color and/or Size selector from the supplier variants — only for a
     # dimension that actually varies (2+ distinct values), so a single-color item
@@ -337,6 +452,11 @@ async def create_shopify_product(
                         # Stamp the CJ vid onto the Shopify variant SKU → cj_connect
                         # binds this exact (color, size) to the right CJ SKU.
                         entry["inventoryItem"] = {"sku": match["sku"]}
+                    # Link this variant to its color's photo → the storefront's
+                    # selectedVariant.image swaps the gallery on color selection.
+                    mid = media_by_color.get((match.get("color") or "").strip())
+                    if mid:
+                        entry["mediaId"] = mid
                     bulk_input.append(entry)
                 if bulk_input:
                     await _shopify_gql(_GQL_SET_PRICE, {"productId": product["id"], "variants": bulk_input})
@@ -386,11 +506,14 @@ async def create_shopify_product(
         except Exception as exc:
             logger.warning("Video attach failed for %s: %s", title, exc)
 
-    # Publish to Online Store channel
+    # Publish to the storefront channels (Online Store + headless). Log on failure
+    # — a silently-unpublished product is invisible on the live site (this is the
+    # bug that left Sol's products with publishedAt=None / not on the storefront).
     try:
         await _publish_product(product["id"])
-    except Exception:
-        pass  # publish failure is non-fatal
+    except Exception as exc:
+        logger.warning("Publish failed for '%s' (%s) — product is ACTIVE but NOT on the storefront: %s",
+                       title, product.get("id"), exc)
 
     return {"product": product, "success": True, "error": None}
 
@@ -672,18 +795,22 @@ _GQL_PRODUCTS_AUDIT = """
 query($cursor: String) {
   products(first: 100, after: $cursor) {
     pageInfo { hasNextPage endCursor }
-    nodes { id title images(first: 1) { nodes { url } } }
+    nodes { id title images(first: 10) { nodes { url } } }
   }
 }
 """
 
 
-async def cleanup_bad_products(dry_run: bool = True) -> dict:
-    """Remove storefront products that aren't fit to sell: ones with NO image, or whose
-    title still contains raw foreign-language text (Chinese/CJK) — i.e. they never got
-    proper images or SEO/branding. Returns a report; with dry_run=False it deletes them.
-    This is the owner's 'remove products with no images or invalid text' rule, made
-    reusable so the agents can run it any time."""
+async def cleanup_bad_products(dry_run: bool = True, min_images: int = 3) -> dict:
+    """Remove storefront products that aren't fit to sell: ones with FEWER than
+    `min_images` images (owner rule: no product with <3 images may be on the store),
+    an empty title, or a title that still contains raw foreign-language text
+    (Chinese/CJK) — i.e. they never got proper images or SEO/branding.
+
+    Returns a report; with dry_run=False it DELETES them (irreversible). After a
+    cleanup, Sol must source replacement products (≥3 images, video prioritized —
+    see stores/shopify/skills/product-sourcing.md) to refill the assortment.
+    """
     bad: list[dict] = []
     cursor = None
     scanned = 0
@@ -695,14 +822,14 @@ async def cleanup_bad_products(dry_run: bool = True) -> dict:
             title = (n.get("title") or "").strip()
             n_imgs = len(n.get("images", {}).get("nodes", []))
             reason = ""
-            if n_imgs == 0:
-                reason = "no image"
+            if n_imgs < min_images:
+                reason = f"only {n_imgs} image(s) (< {min_images} required)"
             elif not title:
                 reason = "empty title"
             elif _CJK.search(title):
                 reason = "foreign-language (CJK) title"
             if reason:
-                bad.append({"id": n["id"], "title": title[:60], "reason": reason})
+                bad.append({"id": n["id"], "title": title[:60], "reason": reason, "images": n_imgs})
         if conn.get("pageInfo", {}).get("hasNextPage"):
             cursor = conn["pageInfo"]["endCursor"]
         else:
@@ -713,7 +840,7 @@ async def cleanup_bad_products(dry_run: bool = True) -> dict:
             if await delete_shopify_product(b["id"]):
                 deleted += 1
     return {"scanned": scanned, "bad_count": len(bad), "deleted": deleted,
-            "dry_run": dry_run, "bad": bad[:50]}
+            "dry_run": dry_run, "min_images": min_images, "bad": bad[:50]}
 
 
 def _norm_title(t: str) -> str:
