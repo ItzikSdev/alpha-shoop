@@ -204,7 +204,10 @@ def _store_memory(store_slug: str) -> str:
 
 def _system_prompt(store_slug: str) -> str:
     app = f"stores/shopify/hydrogen-{store_slug}"
-    return _store_memory(store_slug) + (
+    return (
+        "CRITICAL LANGUAGE RULE: You ALWAYS respond in ENGLISH ONLY, in every message, "
+        "even when the user writes to you in Hebrew or any other language. Never reply in Hebrew.\n"
+        + _store_memory(store_slug) + (
         f"You are {AGENT_NAME}, {AGENT_ROLE}. {_charter()}\n\n"
         f"CURRENT STORE: {store_slug}. Its Hydrogen app is at {app}/ — the store's whole look "
         f"is driven by {app}/app/theme.config.json (brand, colors, fonts, nav, hero, tiles, "
@@ -233,8 +236,8 @@ def _system_prompt(store_slug: str) -> str:
         f"RULES: storefronts are ENGLISH-ONLY. Work on a git branch. ALWAYS run `npm run build` "
         f"and confirm it passes before any deploy. Never publish the owner's personal details "
         f"(only public contact: suppot.timeforbaby@alpha-tech.live). Use the tools to actually "
-        f"DO the work — don't just describe it. When done, give a short final summary in Hebrew."
-    )
+        f"DO the work — don't just describe it. When done, give a short final summary IN ENGLISH."
+    ))
 
 
 # ── The loop ─────────────────────────────────────────────────────────────────
@@ -266,7 +269,7 @@ async def run_sol_task(task: str, store_slug: str = "timeforbaby", max_steps: in
     # the free local model only when over the monthly budget cap.
     llm = get_llm("builder", temperature=0.2, max_tokens=8000).bind_tools(_TOOLS)
     messages = [SystemMessage(content=_system_prompt(store_slug)), human]
-    await say(f":hammer_and_wrench: על זה — *{task}* (חנות: {store_slug})")
+    await say(f":hammer_and_wrench: On it — *{task}* (חנות: {store_slug})")
 
     steps = 0
     for _ in range(max_steps):
@@ -293,7 +296,7 @@ async def run_sol_task(task: str, store_slug: str = "timeforbaby", max_steps: in
             messages.append(ToolMessage(content=_truncate(result), tool_call_id=call["id"]))
             await say(_result_line(name, result))
 
-    await say(":warning: הגעתי למקסימום צעדים — עוצר. תגיד לי אם להמשיך.")
+    await say(":warning: Reached max steps — stopping. Tell me to continue.")
     return {"steps": steps, "final": "max_steps reached", "transcript_len": len(messages)}
 
 
