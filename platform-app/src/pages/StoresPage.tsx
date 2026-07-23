@@ -24,7 +24,17 @@ interface Store {
   has_payplus: boolean;
   has_theme_password?: boolean; // Theme Access password saved (needed for `shopify theme dev`)
   storefront_slug?: string;
+  supplier?: string;                    // e.g. "cj" — which dropshipping supplier this store sources from
+  support_email?: string;               // this store's customer-facing mailbox
+  has_supplier_credentials?: boolean;   // supplier API keys configured (per-store, not global .env)
+  has_email_credentials?: boolean;      // Gmail OAuth credentials configured for support_email
+  has_hype_credentials?: boolean;
+  has_max_credentials?: boolean;
+  has_meta_ads_credentials?: boolean;
 }
+
+const EMPTY_EMAIL_FORM = { support_email: '', client_id: '', client_secret: '', refresh_token: '' };
+const EMPTY_PAY_FORM = { hype_api_key: '', max_api_key: '', meta_access_token: '', meta_ad_account_id: '' };
 
 /** Derive a slug client-side from a myshopify domain handle. */
 function slugFromDomain(domain: string): string {
@@ -47,6 +57,16 @@ export function StoresPage() {
   const [editingDescId, setEditingDescId] = useState<string | null>(null);
   const [descDraft, setDescDraft] = useState('');
   const [savingDesc, setSavingDesc] = useState(false);
+
+  // ── Supplier / customer-email integration config ─────────────────────────
+  const [emailConfigId, setEmailConfigId] = useState<string | null>(null);
+  const [emailForm, setEmailForm] = useState(EMPTY_EMAIL_FORM);
+  const [savingEmail, setSavingEmail] = useState(false);
+
+  // ── Payments (Hype/Max) + Meta Ads integration config ─────────────────────
+  const [payConfigId, setPayConfigId] = useState<string | null>(null);
+  const [payForm, setPayForm] = useState(EMPTY_PAY_FORM);
+  const [savingPay, setSavingPay] = useState(false);
 
   // ── Storefront runner state ──────────────────────────────────────────────
   const [storefronts, setStorefronts] = useState<Record<string, StorefrontStatus>>({});
@@ -196,6 +216,53 @@ export function StoresPage() {
       setError('Failed to save description');
     } finally {
       setSavingDesc(false);
+    }
+  }
+
+  /** Save this store's support inbox + Gmail OAuth refresh-token credentials
+   * (merged server-side, not replaced — see update_store_integrations). */
+  async function handleSaveEmailConfig(store_id: string) {
+    setSavingEmail(true);
+    setError('');
+    try {
+      await apiPatch(`/stores/${store_id}`, {
+        support_email: emailForm.support_email,
+        email_credentials: {
+          client_id: emailForm.client_id,
+          client_secret: emailForm.client_secret,
+          refresh_token: emailForm.refresh_token,
+        },
+      });
+      setEmailConfigId(null);
+      setEmailForm(EMPTY_EMAIL_FORM);
+      await loadStores();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save email configuration');
+    } finally {
+      setSavingEmail(false);
+    }
+  }
+
+  /** Save Hype/Max payment API keys + Meta Marketing API credentials — all under
+   * the generic `integrations` catch-all (merged server-side, not replaced). */
+  async function handleSavePayConfig(store_id: string) {
+    setSavingPay(true);
+    setError('');
+    try {
+      await apiPatch(`/stores/${store_id}`, {
+        integrations: {
+          hype: { api_key: payForm.hype_api_key },
+          max: { api_key: payForm.max_api_key },
+          meta_ads: { access_token: payForm.meta_access_token, ad_account_id: payForm.meta_ad_account_id },
+        },
+      });
+      setPayConfigId(null);
+      setPayForm(EMPTY_PAY_FORM);
+      await loadStores();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save payment/ads configuration');
+    } finally {
+      setSavingPay(false);
     }
   }
 
@@ -423,7 +490,131 @@ export function StoresPage() {
                         No PayPlus
                       </span>
                     )}
+                    <span className="px-2 py-0.5 rounded text-xs bg-sky-900/40 text-sky-300 border border-sky-800 font-mono">
+                      Supplier: {(store.supplier || 'cj').toUpperCase()}
+                      {store.has_supplier_credentials ? ' ✓' : ' (using global .env)'}
+                    </span>
+                    {store.has_email_credentials ? (
+                      <span className="px-2 py-0.5 rounded text-xs bg-emerald-900/40 text-emerald-300 border border-emerald-800">
+                        ✉️ {store.support_email || 'email configured'}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-xs text-gray-600 border border-gray-800">
+                        No customer email configured
+                      </span>
+                    )}
+                    <button
+                      onClick={() => {
+                        setEmailConfigId(emailConfigId === store.store_id ? null : store.store_id);
+                        setEmailForm({ ...EMPTY_EMAIL_FORM, support_email: store.support_email || '' });
+                      }}
+                      className="px-2 py-0.5 rounded text-xs text-indigo-400 border border-indigo-900 hover:bg-indigo-900/30 transition-colors"
+                    >
+                      {emailConfigId === store.store_id ? 'Cancel' : 'Configure email'}
+                    </button>
+                    <span className="px-2 py-0.5 rounded text-xs bg-gray-800 text-gray-400 border border-gray-700">
+                      Hype {store.has_hype_credentials ? '✓' : '✗'} · Max {store.has_max_credentials ? '✓' : '✗'} · Meta Ads {store.has_meta_ads_credentials ? '✓' : '✗'}
+                    </span>
+                    <button
+                      onClick={() => setPayConfigId(payConfigId === store.store_id ? null : store.store_id)}
+                      className="px-2 py-0.5 rounded text-xs text-indigo-400 border border-indigo-900 hover:bg-indigo-900/30 transition-colors"
+                    >
+                      {payConfigId === store.store_id ? 'Cancel' : 'Configure payments & ads'}
+                    </button>
                   </div>
+
+                  {payConfigId === store.store_id && (
+                    <div className="mt-3 p-3 rounded-lg bg-gray-800/60 border border-gray-700 space-y-2">
+                      <p className="text-xs text-gray-500">
+                        Hype and Max are this store's checkout payment gateways (replacing PayPlus).
+                        Meta access token + ad account id let Sol actually CREATE ads via the Marketing
+                        API — the sales-channel connection alone only syncs the catalog, it can't create campaigns.
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input type="password"
+                          className="bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white placeholder-gray-600 font-mono"
+                          placeholder="Hype API key"
+                          value={payForm.hype_api_key}
+                          onChange={e => setPayForm({ ...payForm, hype_api_key: e.target.value })}
+                        />
+                        <input type="password"
+                          className="bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white placeholder-gray-600 font-mono"
+                          placeholder="Max API key"
+                          value={payForm.max_api_key}
+                          onChange={e => setPayForm({ ...payForm, max_api_key: e.target.value })}
+                        />
+                        <input type="password"
+                          className="col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white placeholder-gray-600 font-mono"
+                          placeholder="Meta Marketing API access token"
+                          value={payForm.meta_access_token}
+                          onChange={e => setPayForm({ ...payForm, meta_access_token: e.target.value })}
+                        />
+                        <input
+                          className="col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white placeholder-gray-600 font-mono"
+                          placeholder="Meta ad account id"
+                          value={payForm.meta_ad_account_id}
+                          onChange={e => setPayForm({ ...payForm, meta_ad_account_id: e.target.value })}
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => handleSavePayConfig(store.store_id)}
+                          disabled={savingPay}
+                          className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium transition-colors"
+                        >
+                          {savingPay ? 'Saving…' : 'Save payments & ads config'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {emailConfigId === store.store_id && (
+                    <div className="mt-3 p-3 rounded-lg bg-gray-800/60 border border-gray-700 space-y-2">
+                      <p className="text-xs text-gray-500">
+                        Gmail API OAuth2 refresh-token credentials for THIS store's support inbox — Sol
+                        uses these to send/read customer email (never a global mailbox). Create them via
+                        Google Cloud Console (enable Gmail API, OAuth client, one-time consent for a
+                        refresh token) — see docs/sol_integrations_rag_fulfillment_email.md.
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          className="col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white placeholder-gray-600 font-mono"
+                          placeholder="support@yourstore.com"
+                          value={emailForm.support_email}
+                          onChange={e => setEmailForm({ ...emailForm, support_email: e.target.value })}
+                        />
+                        <input
+                          className="bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white placeholder-gray-600 font-mono"
+                          placeholder="OAuth client_id"
+                          value={emailForm.client_id}
+                          onChange={e => setEmailForm({ ...emailForm, client_id: e.target.value })}
+                        />
+                        <input
+                          type="password"
+                          className="bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white placeholder-gray-600 font-mono"
+                          placeholder="OAuth client_secret"
+                          value={emailForm.client_secret}
+                          onChange={e => setEmailForm({ ...emailForm, client_secret: e.target.value })}
+                        />
+                        <input
+                          type="password"
+                          className="col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white placeholder-gray-600 font-mono"
+                          placeholder="refresh_token"
+                          value={emailForm.refresh_token}
+                          onChange={e => setEmailForm({ ...emailForm, refresh_token: e.target.value })}
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => handleSaveEmailConfig(store.store_id)}
+                          disabled={savingEmail || !emailForm.support_email}
+                          className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium transition-colors"
+                        >
+                          {savingEmail ? 'Saving…' : 'Save email config'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col items-end gap-2 ml-4 shrink-0">

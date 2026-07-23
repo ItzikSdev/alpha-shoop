@@ -145,16 +145,16 @@ Company goals: {goals}
 THE STORE IS NOW FULLY JSON-DRIVEN (this is the system — use it, don't fight it).
 Each store lives at stores/shopify/<store>/ with style/ (design files), readme/
 and changelog/:
-- The homepage is built from `stores/shopify/timeforbaby.alpha-tech.live/style/site.json`
+- The homepage is built from `stores/shopify/alphaforbaby.alpha-tech.live/style/site.json`
   (sections: marquee, hero 7-image carousel, category tiles, product grid, social).
-- The product page is built from `stores/shopify/timeforbaby.alpha-tech.live/style/product.json`
+- The product page is built from `stores/shopify/alphaforbaby.alpha-tech.live/style/product.json`
   (its design_tokens.typography DRIVES the live font sizes).
 - To change the design you change those JSON files, then re-render. NEVER fetch
   theme ids or build raw asset PUTs by hand — the tools resolve everything.
 
 YOU HAVE FILE ACCESS to the templates under stores/ (read + write). To change the
 design, EDIT the JSON and it re-renders. Output ONE of:
-- "edit_design": {{"file":"shopify/timeforbaby.alpha-tech.live/style/site.json","content":"<full new JSON>"}}
+- "edit_design": {{"file":"shopify/alphaforbaby.alpha-tech.live/style/site.json","content":"<full new JSON>"}}
   → writes the file (JSON validated) AND re-applies it live. This is how you change
   the homepage/product design — edit values in the JSON, never the .liquid.
 - "apply_design": true → just re-render the current site.json + product.json.
@@ -173,7 +173,7 @@ The real lever to revenue now is TRAFFIC (ads), not more design loops.
 
 Output ONLY JSON (use exactly ONE action, or all null to just share an update):
 {{"message":"<short first-person update in {language}>",
-  "edit_design": null OR {{"file":"shopify/timeforbaby.alpha-tech.live/style/site.json","content":"<full new JSON>"}},
+  "edit_design": null OR {{"file":"shopify/alphaforbaby.alpha-tech.live/style/site.json","content":"<full new JSON>"}},
   "apply_design": false,
   "theme_css": null,
   "shopify_request": null OR {{"method":"GET|POST|PUT|DELETE","path":"products.json","body":<object or null>,"reason":"<why>"}}}}"""
@@ -217,7 +217,7 @@ async def _dev_turn(agent: Agent, company: Company) -> dict:
     # never re-reverts it. The system logs her changes automatically (below).
     try:
         from src.mcp_tools.design_files import read_store_docs
-        docs = read_store_docs("timeforbaby")
+        docs = read_store_docs("alphaforbaby")
         if docs.get("owner"):
             design += (
                 "\n=== WHO YOU WORK FOR — UNDERSTAND ITZIK BEFORE YOU ACT ===\n"
@@ -226,7 +226,7 @@ async def _dev_turn(agent: Agent, company: Company) -> dict:
         if docs.get("claude") or docs.get("readme") or docs.get("changelog_recent"):
             design += (
                 "\n=== STORE SOURCE OF TRUTH + BUILD GUIDE — READ BEFORE CHANGING ANYTHING ===\n"
-                "stores/shopify/timeforbaby.alpha-tech.live/ is the source of truth + template. "
+                "stores/shopify/alphaforbaby.alpha-tech.live/ is the source of truth + template. "
                 "Build to match the approved design (design.html / site.json); don't revert it; "
                 "if the live store doesn't match, re-apply, don't redesign. Every change is logged "
                 "to CHANGELOG.md automatically.\n"
@@ -274,34 +274,20 @@ async def _dev_turn(agent: Agent, company: Company) -> dict:
     theme_css = parsed.get("theme_css") if isinstance(parsed, dict) else None
     edit = parsed.get("edit_design") if isinstance(parsed, dict) else None
 
-    # Grace edits a JSON template file directly (scoped to styles/) then it re-applies.
+    # RETIRED 2026-07-07: this used to write stores/shopify/alphaforbaby.alpha-tech.live/
+    # style/*.json and re-render it via the Liquid-theme apply_site_design/
+    # apply_product_design pipeline. That pipeline is dead — the live site is 100%
+    # Hydrogen (stores/shopify/hydrogen-alphaforbaby/), which those functions don't
+    # touch at all, and write_design_file was unrestricted across all of stores/ (the
+    # exact boundary violation fixed in agent_loop.py the same day). Rather than let
+    # this autonomous heartbeat keep writing to a dead path, it's now a no-op.
     if isinstance(edit, dict) and edit.get("file") and edit.get("content"):
-        from src.mcp_tools.design_files import write_design_file
-        from src.mcp_tools.shopify_design import apply_site_design, apply_product_design
-        content = edit["content"] if isinstance(edit["content"], str) else json.dumps(edit["content"])
-        wr = write_design_file(edit["file"], content)
-        if wr.get("ok"):
-            ap = await (apply_product_design() if "product" in edit["file"] else apply_site_design())
-            ok = bool(ap.get("ok"))
-            await post_as(agent.name, agent.role, f"✏️ edited {wr['path']} ({wr['bytes']}B) → applied: {'✅' if ok else '⚠️'}")
-            actions = [f"edit_design {wr['path']}" + (" ✓" if ok else " ✗")]
-            result_record.update(ok=ok, status=200 if ok else 500, action=f"edit {wr['path']}", detail=str(ap)[:160])
-            # Changelog skill — log this change automatically so the store always has
-            # a record (the local model can't be relied on to write it itself).
-            if ok:
-                try:
-                    from src.mcp_tools.design_files import append_changelog
-                    append_changelog(
-                        title=(task[:80] or f"edited {wr['path']}"),
-                        changed=f"{wr['path']} ({wr['bytes']}B) edited and re-applied live.",
-                        by=agent.name, context=msg[:200],
-                    )
-                except Exception:
-                    logger.warning("changelog append failed (non-fatal)")
-        else:
-            await post_as(agent.name, agent.role, f"⚠️ edit failed: {wr.get('error')}")
-            actions = ["edit_design failed"]
-            result_record.update(ok=False, status=400, action="edit_design", detail=str(wr.get('error'))[:160])
+        await post_as(agent.name, agent.role,
+                      "⚠️ Design-edit via the legacy site.json pipeline is retired — "
+                      "the live site is Hydrogen now. No file was written.")
+        actions = ["edit_design retired (no-op)"]
+        result_record.update(ok=False, status=410, action="edit_design",
+                              detail="legacy site.json pipeline retired 2026-07-07")
         fresh = get_agent(agent.agent_id) or agent
         fresh.memory["turns_on_task"] = int(fresh.memory.get("turns_on_task", 0)) + 1
         fresh.memory["last_result"] = result_record
@@ -311,10 +297,13 @@ async def _dev_turn(agent: Agent, company: Company) -> dict:
     # Design = JSON-driven. Grace renders site.json → live homepage AND posts the
     # full JSON spec to the channel so Linus + the owner SEE and control exactly
     # what was built (the owner's explicit request: visibility + a review trail).
-    _design_words = ("design", "עיצוב", "theme", "site.json", "homepage", "timeforbaby",
-                     "css", "html", "storefront", "חנות", "json")
-    wants_design = apply_design or (isinstance(theme_css, str) and bool(theme_css.strip())) \
-        or (not (isinstance(req, dict) and req.get("path")) and any(w in task.lower() for w in _design_words))
+    # RETIRED 2026-07-07 alongside edit_design above: apply_site_design() re-renders
+    # the legacy Liquid-theme site.json, which is NOT what's live (Hydrogen is) — this
+    # branch's broad keyword trigger (any task mentioning "design"/"theme"/"json"/the
+    # store name) was firing it constantly for no live effect. wants_design is now
+    # always False; design/CSS work happens via the sandboxed Sol tools in
+    # agent_loop.py against stores/shopify/hydrogen-alphaforbaby/ instead.
+    wants_design = False
     if wants_design:
         from src.mcp_tools.shopify_design import apply_site_design
         res = await apply_site_design()
@@ -380,6 +369,15 @@ async def _dev_turn(agent: Agent, company: Company) -> dict:
 
 
 async def _agent_take_turn(agent: Agent, company: Company) -> dict:
+    # Sol is a real tool-using agent (src/org/agent_loop.py's run_sol_task), not the
+    # old sandboxed "propose only, no tools" persona _dev_turn was built for — his
+    # actual heartbeat work (sourcing, email) already ran in _sourcing_tick/
+    # _poll_inboxes above, both of which narrate to Slack themselves. Skip the
+    # legacy JSON-proposal roleplay for him entirely (no separate LLM call, no
+    # confusing double narration).
+    if agent.name == "Sol":
+        return {"agent": agent.name, "role": agent.role, "message": "", "actions": []}
+
     # Developers are sandboxed proposers managed by the CTO — different path,
     # no business decisions, no tools.
     if agent.role == "Developer" or agent.team == "engineering":
@@ -437,11 +435,126 @@ async def _agent_take_turn(agent: Agent, company: Company) -> dict:
     return {"agent": agent.name, "role": agent.role, "message": message, "actions": actions}
 
 
+# Rotated so a standing sourcing loop doesn't hammer the same keyword forever —
+# CJ's free-text search is noisy per-keyword (docs/PRODUCT_UPLOAD_PIPELINE.md), so
+# variety here also surfaces different candidates across cycles.
+_SOURCING_KEYWORDS = [
+    "newborn girl romper", "newborn boy onesie", "baby girl dress", "infant pajama set",
+    "baby boy jumpsuit", "toddler girl outfit", "infant swaddle blanket", "baby bib set",
+]
+
+
+def _system_memory_ok(min_pct: float = 15.0) -> tuple[bool, str]:
+    """Guard against firing a heavy local-LLM cycle (qwen3:14b loads ~11GB) when
+    the host machine is already memory-starved. Confirmed 2026-07-09: the Mac
+    mini running this loop hard-froze — 11GB resident in a stuck llama-server
+    process plus everyday Chrome/VS Code/VM usage left under 150MB free out of
+    ~24GB total. Parses `vm_stat`/`sysctl` directly (no psutil dependency)."""
+    try:
+        import re
+        import subprocess
+        vm = subprocess.run(["vm_stat"], capture_output=True, text=True, timeout=5).stdout
+        page_size = int(re.search(r"page size of (\d+)", vm).group(1))
+        stats = dict(re.findall(r"Pages (\w[\w ]*\w):\s+(\d+)\.", vm))
+        free = int(stats.get("free", 0)) * page_size
+        inactive = int(stats.get("inactive", 0)) * page_size
+        total = int(subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True, text=True, timeout=5).stdout.strip())
+        avail_pct = (free + inactive) / total * 100
+        if avail_pct < min_pct:
+            return False, f"only {avail_pct:.1f}% memory available (need >={min_pct}%) — skipping this cycle"
+        return True, f"{avail_pct:.1f}% memory available"
+    except Exception as exc:  # noqa: BLE001
+        return True, f"memory check failed ({exc}) — proceeding anyway"  # fail open, don't block forever on a parsing bug
+
+
+async def _sourcing_tick(company: Company) -> None:
+    """Sol's real 24/7 sourcing loop: every `sourcing_interval_minutes` (default 45),
+    source + evaluate ONE small batch of CJ candidates so the catalog and local RAG
+    (search_local_catalog) grow on their own between sessions, without you having to
+    prompt Sol each time. Small bounded batch keeps a single cycle's spend small —
+    the existing $100/month cap fallback (get_llm) still applies underneath."""
+    interval = int(company.daemon.get("sourcing_interval_minutes", 45))
+    last = company.daemon.get("last_sourcing_run_at")
+    if last:
+        try:
+            since_min = (datetime.now(timezone.utc) - datetime.fromisoformat(last)).total_seconds() / 60
+            if since_min < interval:
+                return
+        except Exception:
+            pass
+    if _build_running():
+        return  # don't compete with an active build/deploy
+    # Memory guard is intentionally NOT gated by/saved into last_sourcing_run_at —
+    # it re-checks every tick (cheap) and fires as soon as memory recovers, rather
+    # than waiting out a full interval on top of the memory being tight.
+    mem_ok, mem_detail = _system_memory_ok()
+    if not mem_ok:
+        logger.warning("Sourcing tick skipped: %s", mem_detail)
+        return
+
+    idx = int(company.daemon.get("sourcing_kw_idx", 0)) % len(_SOURCING_KEYWORDS)
+    keyword = _SOURCING_KEYWORDS[idx]
+    company.daemon["sourcing_kw_idx"] = (idx + 1) % len(_SOURCING_KEYWORDS)
+    company.daemon["last_sourcing_run_at"] = datetime.now(timezone.utc).isoformat()
+    save_company(company)
+
+    from src.org.agent_loop import run_sol_task
+    try:
+        await run_sol_task(
+            f'Autonomous sourcing cycle: search CJ for "{keyword}" — try search_local_catalog '
+            "first so you don't re-evaluate a known reject. Evaluate up to 8 candidates and "
+            "cj_add_product any that pass the guards (pick whichever collection fits: Baby "
+            "Girls / Baby Boys / Unisex). Stop after ~8 candidates evaluated even if none pass "
+            "— this is a small bounded batch, not an open-ended search.",
+            store_slug="alphaforbaby", max_steps=18,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Autonomous sourcing tick failed: %s", exc)
+
+
+async def _poll_inboxes() -> None:
+    """Cheap per-tick check for new customer emails across every store with a support
+    inbox configured. Runs every tick regardless of the operator change-gate below —
+    a new customer email IS the "something changed" signal, not something to wait on.
+    Dispatches each new thread as a full run_sol_task (not just an ack) so Sol reads
+    it, replies via send_customer_email, and marks it handled."""
+    from src.stores import list_stores, _current_store
+    from src.mcp_tools.email import check_inbox
+    from src.org.agent_loop import run_sol_task
+
+    for store in list_stores():
+        if not store.active or not store.support_email or not store.email_credentials:
+            continue
+        token = _current_store.set(store)
+        try:
+            result = await check_inbox(max_results=5)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Inbox poll failed for %s: %s", store.store_id, exc)
+            continue
+        finally:
+            _current_store.reset(token)
+        for msg in (result.get("messages") or []):
+            try:
+                await run_sol_task(
+                    f"Customer email from {msg.get('from')}: {msg.get('subject')} — "
+                    f"{msg.get('body') or msg.get('snippet')}. Use search_local_catalog / "
+                    "search_playbook / cj_track_shipment as needed, reply via send_customer_email "
+                    f"(in_reply_to={msg.get('message_id')!r}), then "
+                    f"mark_email_handled(thread_id={msg.get('thread_id')!r}).",
+                    store_slug=store.store_id,
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Failed to dispatch email task for %s: %s", store.store_id, exc)
+
+
 async def agent_heartbeat() -> dict | None:
     """Advance one agent's proactive turn. No-op unless the daemon is enabled."""
     company = seed_founding_team()
     if not company.daemon.get("enabled"):
         return None
+
+    await _poll_inboxes()
+    await _sourcing_tick(company)
 
     # Respect the global kill-switch (lazy import avoids a route import cycle).
     try:

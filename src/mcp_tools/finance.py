@@ -61,6 +61,14 @@ FIXED_COSTS = [
      "period": "one_time", "note": "One-time account opening fee."},
     {"name": "PayPlus — transaction fees", "category": "Payments", "amount": 0.0, "currency": "ILS",
      "period": "variable", "note": "Per-transaction; scales with sales volume (see PayPlus quote)."},
+    {"name": "Hype — Israel setup fee", "category": "Payments", "amount": 300.0, "currency": "ILS",
+     "period": "one_time", "note": "One-time account setup (עמלה ישראל, חד פעמי)."},
+    {"name": "Hype — international transaction fee", "category": "Payments", "amount": 0.0, "currency": "ILS",
+     "period": "variable", "note": "1% per international-card transaction (עמלה מחו\"ל)."},
+    {"name": "Hype — processing fee", "category": "Payments", "amount": 0.0, "currency": "ILS",
+     "period": "variable", "note": "2.8% per transaction (סליקה עמלה)."},
+    {"name": "Hype — website processing fee", "category": "Payments", "amount": 0.0, "currency": "ILS",
+     "period": "variable", "note": "0.6% per on-site transaction (סליקה באתר)."},
     {"name": "עוסק פטור — annual business fee", "category": "Business / Legal", "amount": 1800.0, "currency": "ILS",
      "period": "yearly", "note": "Israel exempt-dealer (עוסק פטור) yearly cost (~₪150/mo)."},
     {"name": "Meta Ads — budget cap", "category": "Marketing", "amount": 50.0, "currency": "ILS",
@@ -74,6 +82,19 @@ def _to_usd(amount: float, currency: str) -> float:
     return round(amount * (_ILS_USD if currency.upper() == "ILS" else 1.0), 2)
 
 
+def _redis_status(settings) -> tuple[bool, str]:
+    """Quick, short-timeout ping — Redis is local/fast so a live check is cheap
+    (unlike the other rows, which only check config presence)."""
+    try:
+        import redis
+        r = redis.Redis.from_url(settings.redis_url, socket_connect_timeout=0.5)
+        r.ping()
+        return True, ("Redis reachable — backs the CJ catalog + playbook RAG (needs the "
+                      "redis-stack image for vector search, not plain redis:7-alpine).")
+    except Exception as exc:
+        return False, f"Redis not reachable at {settings.redis_url}: {exc}"
+
+
 def _monthly_usd(item: dict) -> float:
     """Normalize a cost line to recurring USD/month (one_time + variable → 0)."""
     usd = _to_usd(item["amount"], item["currency"])
@@ -85,10 +106,17 @@ def _monthly_usd(item: dict) -> float:
 
 
 def costs_breakdown() -> dict:
-    """The fixed/known business costs as a table + normalized monthly-USD run-rate."""
+    """The fixed/known business costs as a table + normalized monthly-USD run-rate.
+
+    Reads from the editable `finance_costs` SQLite table (src/finance/costs_store.py)
+    — the owner edits this live from the Finance page's spreadsheet, not by hand-
+    editing FIXED_COSTS (that list is only the one-time seed for a fresh DB)."""
+    from src.finance.costs_store import list_costs
     items = []
-    for c in FIXED_COSTS:
-        items.append({**c, "amount_usd": _to_usd(c["amount"], c["currency"]),
+    for row in list_costs():
+        c = {"name": row.name, "category": row.category, "amount": row.amount,
+             "currency": row.currency, "period": row.period, "note": row.note}
+        items.append({**c, "id": row.id, "amount_usd": _to_usd(c["amount"], c["currency"]),
                       "monthly_usd": _monthly_usd(c)})
     monthly = round(sum(i["monthly_usd"] for i in items), 2)
     one_time = round(sum(i["amount_usd"] for i in items if i["period"] == "one_time"), 2)
@@ -116,13 +144,38 @@ def integrations_status() -> list[dict]:
 
     shop_ok = bool((store and store.shopify_access_token) or s.shopify_access_token)
     paypal_ok = bool(s.paypal_client_id and s.paypal_secret)
-    payplus_ok = bool(store and getattr(store, "payplus_api_key", ""))
+    store_cj_creds = (getattr(store, "supplier_credentials", None) or {}) if store else {}
+    cj_ok = bool(store_cj_creds.get("mcp_key") or store_cj_creds.get("api_key") or s.cj_mcp_key or s.cj_api_key)
+    email_creds = (getattr(store, "email_credentials", None) or {}) if store else {}
+    gmail_ok = bool(email_creds.get("refresh_token"))
+    redis_ok, redis_detail = _redis_status(s)
+    # Checkout payment gateways — replaced PayPlus with Hype + Max (owner switch,
+    # 2026-07-09). Credentials live per-store under StoreConfig.integrations
+    # (the generic catch-all field), not a dedicated column — a future gateway
+    # swap is a new key here, not a migration.
+    store_integrations = (getattr(store, "integrations", None) or {}) if store else {}
+    hype_creds = store_integrations.get("hype") or {}
+    hype_ok = bool(hype_creds.get("api_key"))
+    max_creds = store_integrations.get("max") or {}
+    max_ok = bool(max_creds.get("api_key"))
+    # Meta Marketing API — separate from the sales-channel check below. The
+    # channel being installed only means the catalog syncs to Meta Shop; actually
+    # CREATING ads programmatically needs this token + ad account id.
+    meta_creds = store_integrations.get("meta_ads") or {}
+    meta_api_ok = bool((meta_creds.get("access_token") or s.meta_access_token)
+                        and (meta_creds.get("ad_account_id") or s.meta_ad_account_id))
     ALL = ["Ava", "Hunter", "Remy", "Devon", "Max"]
     return [
         row("shopify", "Shopify (storefront + admin)", "Platform", ["Devon", "Remy", "Ava"],
             shop_ok, "Store admin token present." if shop_ok else "No access token — re-auth via /org/shopify-reauth."),
-        row("cj", "CJ Dropshipping (sourcing + fulfillment)", "Suppliers", ["Hunter", "Devon"],
-            bool(s.cj_mcp_key or s.cj_api_key), "CJ token configured." if (s.cj_mcp_key or s.cj_api_key) else "No CJ token."),
+        row("cj", "CJ Dropshipping (sourcing + fulfillment)", "Suppliers", ["Sol"],
+            cj_ok, "CJ token configured (per-store or global)." if cj_ok else "No CJ token."),
+        row("redis_rag", "Redis (vector RAG — CJ catalog + playbook)", "AI / Data", ["Sol"],
+            redis_ok, redis_detail),
+        row("gmail", "Gmail (customer email)", "Communication", ["Sol"],
+            gmail_ok,
+            f"Support inbox {store.support_email} configured." if gmail_ok and store and store.support_email
+            else "No Gmail credentials on the active store yet — see docs/sol_integrations_rag_fulfillment_email.md."),
         row("serper", "Serper (competitor price / market search)", "Market data", ["Hunter"],
             bool(getattr(s, "serper_api_key", "")), "Serper key present — live competitor pricing." if getattr(s, "serper_api_key", "") else "No Serper key — competitor pricing falls back."),
         row("facebook_instagram", "Facebook & Instagram", "Marketing", ["Max"],
@@ -130,18 +183,27 @@ def integrations_status() -> list[dict]:
             "Checking the store's sales channels…"),
         row("tiktok", "TikTok (ads + sales channel)", "Marketing", ["Max"],
             True,
-            "TikTok channel + $70 ad budget connected via the Shopify TikTok app. "
-            "NOTE: agents have NO Marketing-API access yet — ads run through TikTok's own "
-            "Smart campaigns in the app, not created by Max programmatically."),
+            "$70 ad budget was added to the TikTok channel, but it is NOT currently in "
+            "active use — no Smart campaign is running. Agents have no Marketing-API "
+            "access either way; TikTok ads would run through the app's own UI, not "
+            "created by Max programmatically."),
         row("paypal", "PayPal (revenue reporting)", "Payments", ["Ava"],
-            paypal_ok, "Credentials valid, but the app is MISSING the 'Transaction Search' permission (403 on reporting). Enable it in developer.paypal.com → Apps → Features." if paypal_ok else "No PayPal credentials."),
-        row("payplus", "PayPlus (checkout payments)", "Payments", ["Ava"],
-            payplus_ok, "PayPlus API key on the store." if payplus_ok else "No PayPlus key on the active store."),
+            paypal_ok, "Not working yet — owner is sending more information before this is fixed." if paypal_ok else "No PayPal credentials."),
+        row("hype", "Hype (checkout payments)", "Payments", ["Ava"],
+            hype_ok, "Hype API key on the active store." if hype_ok else "No Hype key configured yet — set it on the Stores page."),
+        row("max", "Max (checkout payments)", "Payments", ["Ava"],
+            max_ok, "Max API key on the active store." if max_ok else "No Max key configured yet — set it on the Stores page."),
         row("cloudflare", "Cloudflare (domain / DNS)", "Infra", ["Ava"],
             bool(s.cloudflare_api_token), "Cloudflare token present." if s.cloudflare_api_token else "No Cloudflare token."),
         row("google_ads", "Google Ads (paid traffic)", "Marketing", ["Max"],
             bool(s.google_ads_developer_token and s.google_ads_customer_id),
             "Configured." if (s.google_ads_developer_token and s.google_ads_customer_id) else "Not connected — ad-spend metrics are still mocked."),
+        row("meta_ads_api", "Meta Marketing API (create ads)", "Marketing", ["Sol"],
+            meta_api_ok,
+            "Access token + ad account id configured — Sol can create/manage campaigns." if meta_api_ok
+            else "Sales channel may be connected, but creating ads needs a Marketing API access "
+                 "token + ad account id — set them on the Stores page (same idea as PayPal: more "
+                 "info needed before this actually works)."),
         row("gcp", "Google Cloud (GCP)", "Cloud / Infra", ["Ava"],
             bool(s.google_application_credentials), "Service-account credentials set." if s.google_application_credentials else "No GCP credentials file."),
         row("claude", "Claude via LiteLLM (the agents' brain)", "AI", ALL,
@@ -245,7 +307,7 @@ def _ad_spend(days: int) -> dict:
             "note": "Google Ads metrics are still mocked; wire the real GAQL API to populate."}
 
 
-async def finance_snapshot(days: int = 30, store_slug: str = "timeforbaby") -> dict:
+async def finance_snapshot(days: int = 30, store_slug: str = "alphaforbaby") -> dict:
     """Aggregate revenue vs cost for the window. Returns a structured dict with a
     `status` per source and a `net_usd` computed from the connected parts only."""
     revenue = await _revenue(days)
@@ -297,14 +359,14 @@ def _ledger_dir(store_slug: str):
     return _store_dir(store_slug) / "finance"
 
 
-def read_finance_ledger(store_slug: str = "timeforbaby", chars: int = 1600) -> dict:
+def read_finance_ledger(store_slug: str = "alphaforbaby", chars: int = 1600) -> dict:
     """Recent LEDGER.md tail for the operator to read."""
     f = _ledger_dir(store_slug) / "LEDGER.md"
     text = f.read_text(encoding="utf-8", errors="ignore") if f.exists() else ""
     return {"ledger_recent": text[:chars], "path": str(f)}
 
 
-async def log_finance_snapshot(days: int = 30, store_slug: str = "timeforbaby",
+async def log_finance_snapshot(days: int = 30, store_slug: str = "alphaforbaby",
                                once_per_day: bool = True) -> dict:
     """Compute a snapshot and prepend it to finance/LEDGER.md (newest on top). When
     `once_per_day`, skips if today's snapshot is already logged. Returns {ok, path,
@@ -337,7 +399,7 @@ async def log_finance_snapshot(days: int = 30, store_slug: str = "timeforbaby",
         + (f"**Pending data pipes:** {', '.join(snap['pending_data'])}\n" if snap.get("pending_data") else "")
         + "\n"
     )
-    header = ("# TIMEFOR BABY — Finance Ledger\n\nRevenue vs cost over time, newest on "
+    header = ("# ALPHA FOR BABY — Finance Ledger\n\nRevenue vs cost over time, newest on "
               "top. Auto-snapshotted. Sources not yet connected are marked honestly "
               "(never faked). See ../readme/README.md.\n\n---\n\n")
     if existing:

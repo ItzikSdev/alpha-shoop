@@ -1,0 +1,209 @@
+<mxfile host="app.diagrams.net" agent="alpha-shoop" version="24.0.0">
+  <diagram name="Sol — Registry, RAG, Fulfillment, Email" id="sol-int-rag-fulfill-email-1">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1840" pageHeight="1160" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="Sol — Store Registry, RAG (Redis), Order Fulfillment &amp; Customer Email" style="text;html=1;align=left;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="40" y="0" width="900" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ═══ Row: Store Registry (shared config source) ═══ -->
+        <mxCell id="storeRegistry" value="Store Registry&#10;SQLite `stores` table / StoreConfig&#10;(supplier, supplier_credentials, support_email, email_credentials, integrations)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="650" y="80" width="340" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="supplierTools" value="Supplier tools&#10;(uses supplier_credentials)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="150" y="220" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="fulfillLabel" value="Fulfillment pipeline&#10;(uses supplier_credentials + support_email)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="700" y="220" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="emailTools" value="Email tools&#10;(uses email_credentials + support_email)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="220" width="240" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-reg-supplier" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;" edge="1" parent="1" source="storeRegistry" target="supplierTools">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-reg-fulfill" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;" edge="1" parent="1" source="storeRegistry" target="fulfillLabel">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-reg-email" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;" edge="1" parent="1" source="storeRegistry" target="emailTools">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ═══ Cluster: Sourcing & RAG ═══ -->
+        <mxCell id="ragGroup" value="Sourcing &amp; RAG" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="300" width="760" height="400" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cjApi" value="CJ Dropshipping API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="70" y="360" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="searchTool" value="search_trending_products (sourcing.py)&#10;cj_add_product (agent_loop.py)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="250" y="360" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="corpusA" value="Corpus A:&#10;CJ Catalog (Redis / redisvl)&#10;pid, verdict+reason, category, images, variants" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="580" y="360" width="190" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="docsFiles" value="docs/*.md, guides/**/*.md&#10;(hydrogen-timeforbaby)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="70" y="500" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ingestScript" value="scripts/ingest_playbook.py" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="500" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="corpusB" value="Corpus B:&#10;Playbook (Redis / redisvl)&#10;chunked by section" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="580" y="500" width="190" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-cj-search" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="cjApi" target="searchTool">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-search-corpusA" value="embed_text (Ollama nomic-embed-text)" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" edge="1" parent="1" source="searchTool" target="corpusA">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-docs-ingest" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="docsFiles" target="ingestScript">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-ingest-corpusB" value="embed_text (Ollama nomic-embed-text)" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" edge="1" parent="1" source="ingestScript" target="corpusB">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ═══ Cluster: Order Fulfillment ═══ -->
+        <mxCell id="fulfillGroup" value="Order Fulfillment" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="840" y="300" width="700" height="400" as="geometry" />
+        </mxCell>
+
+        <mxCell id="webhook" value="Shopify order webhook&#10;(orders/create, HMAC-validated)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="870" y="360" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="processOrder" value="process_order()&#10;fulfillment.py&#10;(deterministic, no LLM)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="360" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="placeSupplierOrder" value="place_supplier_order()&#10;(CJ createOrderV2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1330" y="360" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="fulfillShopify" value="fulfill_shopify_order()&#10;(pushes tracking, Shopify email)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="460" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="sendConfirmEmail" value="send confirmation email&#10;(from support_email)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1330" y="460" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ticket" value="Ticket + run_sol_task&#10;(tickets.py board → Sol investigates)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="870" y="560" width="220" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-webhook-process" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="webhook" target="processOrder">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-fulfillLabel-process" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="fulfillLabel" target="processOrder">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-process-place" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="processOrder" target="placeSupplierOrder">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-supplier-place" value="supplier_credentials" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;dashed=1;strokeColor=#666666;" edge="1" parent="1" source="supplierTools" target="placeSupplierOrder">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-place-fulfill" value="success" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;strokeColor=#82b366;fontColor=#82b366;" edge="1" parent="1" source="placeSupplierOrder" target="fulfillShopify">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-place-email" value="success" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;strokeColor=#82b366;fontColor=#82b366;" edge="1" parent="1" source="placeSupplierOrder" target="sendConfirmEmail">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-place-ticket" value="failure (CJ error / bad address / unknown SKU)" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;strokeColor=#ff0000;fontColor=#ff0000;dashed=1;" edge="1" parent="1" source="placeSupplierOrder" target="ticket">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-email-sendemail" value="support_email" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;dashed=1;strokeColor=#666666;" edge="1" parent="1" source="emailTools" target="sendConfirmEmail">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ═══ Sol hub (shared by all clusters) ═══ -->
+        <mxCell id="solHub" value="SOL&#10;LLM tool loop&#10;(run_sol_task, agent_loop.py)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="740" width="280" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-corpusA-sol" value="search_local_catalog(query)" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" edge="1" parent="1" source="corpusA" target="solHub">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-corpusB-sol" value="search_playbook(query)" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" edge="1" parent="1" source="corpusB" target="solHub">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-ticket-sol" value="hands off investigation / retry / customer delay email" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;strokeColor=#ff0000;fontColor=#ff0000;dashed=1;" edge="1" parent="1" source="ticket" target="solHub">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ═══ Cluster: Email ═══ -->
+        <mxCell id="emailGroup" value="Email" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="860" width="1500" height="260" as="geometry" />
+        </mxCell>
+
+        <mxCell id="customerInbox" value="Customer inbox (Gmail)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="930" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="checkInboxSendEmail" value="check_inbox / send_email / mark_handled&#10;(src/mcp_tools/email.py — OAuth2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="420" y="930" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="heartbeatPoll" value="heartbeat poll&#10;(heartbeat.py proactive tick)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="420" y="1030" width="300" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-inbox-tools" value="unread email" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;startArrow=classic;startFill=1;endArrow=classic;endFill=1;" edge="1" parent="1" source="customerInbox" target="checkInboxSendEmail">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-tools-sol" value="run_sol_task reads + replies" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;startArrow=classic;startFill=1;endArrow=classic;endFill=1;" edge="1" parent="1" source="checkInboxSendEmail" target="solHub">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-heartbeat-tools" value="heartbeat tick" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" edge="1" parent="1" source="heartbeatPoll" target="checkInboxSendEmail">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ═══ Legend ═══ -->
+        <mxCell id="legend" value="Legend" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="320" width="220" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-blue" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="360" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-blue-txt" value="Data store (SQLite / Redis)" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1640" y="358" width="150" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-green" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="395" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-green-txt" value="Existing / reused code" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1640" y="393" width="150" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-orange" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="430" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-orange-txt" value="New code" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1640" y="428" width="150" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-purple" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="465" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-purple-txt" value="Sol (LLM tool loop)" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1640" y="463" width="150" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-red" value="" style="line;html=1;strokeColor=#ff0000;strokeWidth=2;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="505" width="30" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-red-txt" value="Failure / exception path" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1640" y="498" width="150" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-gray" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="535" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-gray-txt" value="External system / config router" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1640" y="533" width="150" height="24" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

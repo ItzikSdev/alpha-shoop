@@ -371,7 +371,7 @@ CJ settings toggles, keep the wallet funded, and scope the agent’s account.
 ---
 
 ### Appendix — this repo’s current reality (so nobody gets confused)
-Today `stores/shopify/timeforbaby.alpha-tech.live/` renders a **Liquid theme** (not Hydrogen)
+Today `stores/shopify/alphaforbaby.alpha-tech.live/` renders a **Liquid theme** (not Hydrogen)
 from `style/*.json` via the Python pipeline, and the CJdropshipping app is already installed
 (auto tracking works). **Sections 1–2 of this guide apply as‑is right now.** Section 3 is the
 **target** for when you migrate the storefront to Hydrogen; until then the Liquid theme is the

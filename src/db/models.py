@@ -97,3 +97,43 @@ class ProductMapping(Base):
         if not self.retail_price or self.retail_price == 0:
             return 0.0
         return float((self.retail_price - self.cost_price) / self.retail_price * 100)
+
+
+class ProductTitleAlias(Base):
+    """
+    One row per Shopify product that's had its title rewritten by copywriting
+    (cj_add_product on create, cj_rewrite_all_copy on existing products) — keeps
+    the ORIGINAL (raw CJ/supplier) title alongside the current one, since Shopify
+    itself only ever holds the latest title once overwritten.
+
+    `original_title` is set ONCE on first insert and never touched again on later
+    rewrites — only `current_title`/`updated_at` move forward — so this always
+    answers "what did CJ actually call this" even after several rewrites.
+    """
+
+    __tablename__ = "product_title_aliases"
+
+    shopify_product_id: Mapped[str] = mapped_column(
+        String(255),
+        primary_key=True,
+        comment="Shopify product GID, e.g. gid://shopify/Product/123",
+    )
+    original_title: Mapped[str] = mapped_column(
+        String(500),
+        nullable=False,
+        comment="The raw CJ/supplier title, captured before the first rewrite",
+    )
+    current_title: Mapped[str] = mapped_column(
+        String(500),
+        nullable=False,
+        comment="The current (most recently written) copywritten title",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"ProductTitleAlias({self.original_title!r} -> {self.current_title!r})"

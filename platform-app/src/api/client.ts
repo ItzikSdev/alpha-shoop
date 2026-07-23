@@ -82,3 +82,12 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
   }
   return res.json() as Promise<T>;
 }
+
+export async function apiDelete<T>(path: string): Promise<T> {
+  const res = await apiFetch(path, { method: 'DELETE' });
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`DELETE ${path} → ${res.status}: ${detail}`);
+  }
+  return res.json() as Promise<T>;
+}

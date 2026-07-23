@@ -27,7 +27,7 @@ import httpx
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.llm import get_llm
-from src.org.models import Agent, get_company, list_agents
+from src.org.models import Agent, get_company, list_agents, save_company
 from src.org.slack import post_as, post_to_slack
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ from pathlib import Path as _Path
 _STORES_ROOT = _Path(__file__).resolve().parents[2] / "stores" / "shopify"
 
 
-def _store_context(store_slug: str = "timeforbaby") -> str:
+def _store_context(store_slug: str = "alphaforbaby") -> str:
     """The REAL store folder tree + the CLAUDE.md build guide, injected into the
     agents' prompts so they can answer 'list the folders' / 'read the style files'
     THEMSELVES — instead of confabulating that they lack access and asking the
@@ -114,9 +114,14 @@ def _human_content(text: str, images: list[str] | None):
         parts.append({"type": "image_url", "image_url": {"url": url}})
     return parts
 
-# Remember the last Slack message timestamp we answered, so the poller doesn't
-# reply to the same message twice within a process.
-_last_ts: dict[str, str] = {}
+# Remember the last Slack message timestamp we answered — persisted in
+# company.daemon["slack_last_ts"] (src/org/models, same SQLite-backed store as
+# last_sourcing_run_at), NOT an in-memory dict. A plain in-memory dict here was
+# a real bug: it reset to empty on every process restart, so the poller would
+# re-find the last human message and re-run Sol's FULL tool loop on stale input
+# after every restart/redeploy — confirmed 2026-07-08 (a restart mid-session
+# caused Sol to re-execute an old message twice, producing duplicate "On it"/
+# generic-greeting Slack posts).
 
 # Guards against the fast poll firing a second round while one is still posting
 # (a full 3-agent reply takes a few seconds; the poll runs every ~4s).
@@ -349,7 +354,7 @@ async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
             _current_store.set(store)
     except Exception:
         store = None
-    slug = "timeforbaby"
+    slug = "alphaforbaby"
     try:
         if op == "dedupe":
             from src.mcp_tools.shopify import dedupe_products
@@ -461,7 +466,7 @@ def _apply_site_changes(changes: list[dict]) -> tuple[bool, list[str]]:
     Returns (ok, applied_labels)."""
     from src.mcp_tools.shopify_design import load_site_json
     from src.mcp_tools.design_files import write_design_file, read_store_docs
-    site = load_site_json("timeforbaby")
+    site = load_site_json("alphaforbaby")
     if not site:
         return False, []
     sections = site.get("sections", [])
@@ -479,7 +484,7 @@ def _apply_site_changes(changes: list[dict]) -> tuple[bool, list[str]]:
             applied.append(key)
     if not applied:
         return False, []
-    site_path = str(_Path(read_store_docs("timeforbaby").get("dir", "")) / "style" / "site.json")
+    site_path = str(_Path(read_store_docs("alphaforbaby").get("dir", "")) / "style" / "site.json")
     res = write_design_file(site_path, json.dumps(site, ensure_ascii=False, indent=2))
     return bool(res.get("ok")), applied
 
@@ -492,7 +497,7 @@ async def _agent_act_design(agent: Agent, message: str, company) -> str:
     site = {}
     try:
         from src.mcp_tools.shopify_design import load_site_json
-        site = load_site_json("timeforbaby")
+        site = load_site_json("alphaforbaby")
     except Exception:
         pass
     sections_digest = json.dumps(
@@ -539,7 +544,7 @@ async def _agent_act_design(agent: Agent, message: str, company) -> str:
     live_note = ""
     try:
         from src.mcp_tools.shopify_design import apply_site_design
-        res = await apply_site_design("timeforbaby")
+        res = await apply_site_design("alphaforbaby")
         live_note = " and applied it live" if res.get("ok") else " (saved; live apply pending)"
     except Exception:
         live_note = " (saved; live apply pending)"
@@ -723,6 +728,9 @@ async def _fetch_and_respond_locked(token: str, channel: str, limit: int) -> lis
         logger.warning("Slack history error: %s", data.get("error"))
         return []
 
+    company = get_company()
+    last_ts_by_channel: dict = (company.daemon.get("slack_last_ts") if company else None) or {}
+
     # Newest first → find the most recent real human message. Skip bot posts and
     # system messages, but KEEP image uploads (subtype "file_share") — those were
     # being dropped, which is why an image looked like an "empty message".
@@ -737,7 +745,7 @@ async def _fetch_and_respond_locked(token: str, channel: str, limit: int) -> lis
         if not text and not has_files:
             continue
         ts = msg.get("ts", "")
-        if ts and _last_ts.get(channel) == ts:
+        if ts and last_ts_by_channel.get(channel) == ts:
             return []  # already answered the latest one
         images = await _extract_images(msg, token) if has_files else []
         if has_files and not images:
@@ -752,7 +760,11 @@ async def _fetch_and_respond_locked(token: str, channel: str, limit: int) -> lis
         replies = await route_and_respond(text, author="You", images=images)
         # Mark as answered only AFTER a successful round, so a mid-failure
         # (e.g. litellm not ready yet) doesn't permanently skip the message.
-        if replies:
-            _last_ts[channel] = ts
+        # Persisted immediately (not just held in memory) so a restart mid-session
+        # doesn't cause this same message to be re-run through Sol's tool loop.
+        if replies and company:
+            last_ts_by_channel[channel] = ts
+            company.daemon["slack_last_ts"] = last_ts_by_channel
+            save_company(company)
         return replies
     return []

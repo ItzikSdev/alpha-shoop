@@ -68,7 +68,7 @@ def _design_to_theme_css(mockup_css: str) -> str:
     that maps the design language onto generic Shopify/Spotlight selectors (body,
     headings, buttons, announcement bar) so the change is actually visible."""
     bridge = """
-/* ── timeforbaby → live-theme bridge (generic Shopify/Spotlight selectors) ── */
+/* ── alphaforbaby → live-theme bridge (generic Shopify/Spotlight selectors) ── */
 body, .template-index, .shopify-section {
   font-family: -apple-system, "Helvetica Neue", Inter, Arial, sans-serif !important;
   color: #161616;
@@ -262,7 +262,7 @@ def render_site_design(site: dict) -> str:
             )
             cart = ('<a class="tob-hcart" href="/cart" aria-label="Cart">Cart</a>'
                     if sec.get("show_cart", True) else "")
-            logo = sec.get("logo_svg") or _esc(sec.get("logo_text", "TIMEFOR BABY"))
+            logo = sec.get("logo_svg") or _esc(sec.get("logo_text", "ALPHA FOR BABY"))
             parts.append(
                 f'<header class="tob-header"><div class="tob-wrap tob-hrow">'
                 f'<a class="tob-hlogo" href="{sec.get("logo_link","/")}">{logo}</a>'
@@ -417,7 +417,7 @@ def render_site_design(site: dict) -> str:
             socials = "".join(f'<a href="{soc.get("link","#")}" aria-label="{_esc(soc.get("name",""))}">{_esc(soc.get("name","")[:2])}</a>' for soc in sec.get("social", []))
             parts.append(
                 f'<footer class="tob-footer"><div class="tob-wrap"><div class="tob-fcols">'
-                f'<div class="tob-fbrand"><div class="tob-flogo">{_esc(sec.get("brand","TIMEFOR BABY"))}</div>'
+                f'<div class="tob-fbrand"><div class="tob-flogo">{_esc(sec.get("brand","ALPHA FOR BABY"))}</div>'
                 f'<p>{_esc(sec.get("tagline",""))}</p><div class="tob-fsocial">{socials}</div></div>'
                 f'{cols}</div><div class="tob-fbottom">{_esc(sec.get("copyright",""))}</div></div></footer>'
             )
@@ -514,7 +514,7 @@ async def apply_site_design(store_slug: str = "", theme_id: str | None = None) -
     if not tid:
         return {"ok": False, "error": "no active theme"}
     liquid = render_site_design(site)
-    section_type = "timeforbaby-home"
+    section_type = "alphaforbaby-home"
     ok1 = await _write_asset(tid, f"sections/{section_type}.liquid", liquid)
     ok2 = await _write_asset(tid, "templates/index.json",
                              '{"sections":{"main":{"type":"%s","settings":{}}},"order":["main"]}' % section_type)
@@ -554,7 +554,7 @@ async def apply_store_homepage(store_slug: str = "", theme_id: str | None = None
     tid = theme_id or await _active_theme_id()
     if not tid:
         return {"ok": False, "error": "no active theme"}
-    section_type = "timeforbaby-home"
+    section_type = "alphaforbaby-home"
     ok_section = await _write_asset(tid, f"sections/{section_type}.liquid", liquid)
     index_json = (
         '{"sections":{"main":{"type":"%s","settings":{}}},"order":["main"]}' % section_type
@@ -562,7 +562,7 @@ async def apply_store_homepage(store_slug: str = "", theme_id: str | None = None
     ok_index = await _write_asset(tid, "templates/index.json", index_json)
     # The old global CSS bridge fought the theme — neutralize it now that the
     # homepage is a self-styled section.
-    await _write_asset(tid, "assets/custom-alpha.css", "/* superseded by the timeforbaby-home section */")
+    await _write_asset(tid, "assets/custom-alpha.css", "/* superseded by the alphaforbaby-home section */")
     return {"ok": bool(ok_section and ok_index), "slug": slug, "theme_id": tid,
             "section": f"sections/{section_type}.liquid"}
 
@@ -620,7 +620,7 @@ async def apply_product_design(store_slug: str = "", theme_id: str | None = None
     tid = theme_id or await _active_theme_id()
     if not tid:
         return {"ok": False, "error": "no active theme"}
-    section_type = "timeforbaby-product"
+    section_type = "alphaforbaby-product"
     ok1 = await _write_asset(tid, f"sections/{section_type}.liquid", liquid)
     ok2 = await _write_asset(tid, "templates/product.json",
                              '{"sections":{"main":{"type":"%s","settings":{}}},"order":["main"]}' % section_type)

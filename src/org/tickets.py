@@ -1,10 +1,11 @@
 """
 Agent ticket board — a lightweight Jira for the team.
 
-Agents OPEN tickets from the problems they hit (quality scans, a problem you raise
-in chat, or a run failure), the CEO (Ava) AUTO-ASSIGNS each one to the right agent
-with a priority and a **due date/time** they must meet, and the team works the
-board (Todo → Doing → Blocked → Done). Stored in the shared SQLite (data/traces.db).
+Tickets get OPENED from the problems that come up (quality scans, a problem raised
+in chat, or a run failure), auto-assigned to **Sol** (the sole active agent — the old
+Ava/Hunter/Remy/Devon/Max roster retired 2026-07-04, see src/org/seed.py) with a
+priority and a **due date/time**, and worked on the board (Todo → Doing → Blocked →
+Done). Stored in the shared SQLite (data/traces.db).
 """
 from __future__ import annotations
 
@@ -58,24 +59,26 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-# ── Ava (CEO): route + prioritize + set the deadline ─────────────────────────
-# Keyword → (assignee role-name, priority). First match wins; default = Ava/medium.
+# ── Auto-triage: everything routes to Sol (the sole active agent); only the
+# PRIORITY is inferred from keywords. First match wins; default = medium.
 _ROUTING = [
-    (("duplicate", "dupe", "$0", "price", "variant", "shopify", "theme", "checkout", "seo", "meta", "handle"), "Devon", "high"),
-    (("image", "photo", "white background", "chinese", "logo", "favicon", "design", "font", "layout", "mobile", "copy", "hero", "nav"), "Remy", "high"),
-    (("cj", "source", "sourcing", "product", "margin", "supplier", "catalog"), "Hunter", "high"),
-    (("ad", "campaign", "traffic", "facebook", "instagram", "tiktok", "marketing"), "Max", "medium"),
-    (("run failed", "run_failure", "build failed", "crash", "error", "broken", "down"), "Devon", "critical"),
+    (("run failed", "run_failure", "build failed", "crash", "error", "broken", "down"), "critical"),
+    (("duplicate", "dupe", "$0", "price", "variant", "shopify", "theme", "checkout", "seo",
+      "meta", "handle", "image", "photo", "white background", "chinese", "logo", "favicon",
+      "design", "font", "layout", "mobile", "copy", "hero", "nav", "cj", "source", "sourcing",
+      "product", "margin", "supplier", "catalog"), "high"),
+    (("ad", "campaign", "traffic", "facebook", "instagram", "tiktok", "marketing"), "medium"),
 ]
 
 
 def ava_assign(title: str, description: str, source: str) -> tuple[str, str, str]:
-    """Ava routes the ticket: returns (assignee, priority, due_at_iso)."""
+    """Auto-triage the ticket: returns (assignee, priority, due_at_iso). Assignee is
+    always Sol — he's the only active agent (see src/org/seed.py)."""
     text = f"{title} {description} {source}".lower()
-    assignee, priority = "Ava", "medium"
-    for keys, who, prio in _ROUTING:
+    assignee, priority = "Sol", "medium"
+    for keys, prio in _ROUTING:
         if any(k in text for k in keys):
-            assignee, priority = who, prio
+            priority = prio
             break
     if source == "run_failure":
         priority = "critical"
@@ -84,9 +87,9 @@ def ava_assign(title: str, description: str, source: str) -> tuple[str, str, str
 
 
 def open_ticket(title: str, description: str = "", source: str = "chat",
-                created_by: str = "system", store_id: str = "timeforbaby",
+                created_by: str = "system", store_id: str = "alphaforbaby",
                 dedupe_key: str = "") -> Ticket | None:
-    """Open a ticket — Ava auto-assigns owner + priority + deadline. If a dedupe_key
+    """Open a ticket — auto-assigned to Sol with a priority + deadline. If a dedupe_key
     is given and an OPEN ticket with it already exists, no duplicate is created."""
     init_tickets_table()
     key = dedupe_key or title.strip().lower()
@@ -144,7 +147,7 @@ def update_ticket(ticket_id: str, **fields) -> bool:
     return cur.rowcount > 0
 
 
-async def scan_and_open_tickets(store_id: str = "timeforbaby") -> list[dict]:
+async def scan_and_open_tickets(store_id: str = "alphaforbaby") -> list[dict]:
     """Quality scan → open a ticket for each real problem found on the live store
     (duplicates, $0-priced products, bad/no-image products). Reuses the existing
     dry-run checks. Idempotent via dedupe_key. Returns the tickets opened."""
@@ -157,20 +160,20 @@ async def scan_and_open_tickets(store_id: str = "timeforbaby") -> list[dict]:
         if dup.get("duplicate_count", 0) > 0:
             t = open_ticket(f"Remove {dup['duplicate_count']} duplicate product(s)",
                             "Quality scan found duplicate products (same CJ item listed more than once).",
-                            source="quality_scan", created_by="Devon", store_id=store_id, dedupe_key="scan:duplicates")
+                            source="quality_scan", created_by="quality_scan", store_id=store_id, dedupe_key="scan:duplicates")
             if t: opened.append(t)
         zero = await fix_zero_prices(dry_run=True)
         if zero.get("repriced", 0) or zero.get("deleted", 0):
             n = zero.get("repriced", 0) + zero.get("deleted", 0)
             t = open_ticket(f"Fix {n} product(s) priced $0",
                             "Quality scan found products with $0-priced variants.",
-                            source="quality_scan", created_by="Devon", store_id=store_id, dedupe_key="scan:zero_price")
+                            source="quality_scan", created_by="quality_scan", store_id=store_id, dedupe_key="scan:zero_price")
             if t: opened.append(t)
         bad = await cleanup_bad_products(dry_run=True)
         if bad.get("bad_count", 0) > 0:
             t = open_ticket(f"Remove {bad['bad_count']} product(s) with no image / bad title",
                             "Quality scan found products with no image or a foreign-language title.",
-                            source="quality_scan", created_by="Remy", store_id=store_id, dedupe_key="scan:bad_products")
+                            source="quality_scan", created_by="quality_scan", store_id=store_id, dedupe_key="scan:bad_products")
             if t: opened.append(t)
     except Exception as exc:
         open_ticket("Quality scan failed", f"scan_and_open_tickets error: {exc}",

@@ -15,6 +15,7 @@ from src.stores import (
     save_store,
     delete_store,
     update_store_storefront,
+    update_store_integrations,
     _current_store,
 )
 from src.mcp_tools.shopify import _shopify_gql, _shopify_rest
@@ -43,6 +44,14 @@ class StoreUpdateRequest(BaseModel):
     active: bool | None = None
     oxygen_deploy_token: str | None = None
     theme_access_password: str | None = None
+    # Integration registry (src/stores StoreConfig) — which supplier/inbox this store
+    # uses, so a future store on a different supplier/domain/mailbox is just a new row.
+    supplier: str | None = None
+    support_email: str | None = None
+    supplier_credentials: dict | None = None  # merged into existing, not replaced
+    email_credentials: dict | None = None     # merged into existing, not replaced
+    integrations: dict | None = None          # catch-all (e.g. {"hype": {...}, "max": {...},
+                                               # "meta_ads": {...}}) — merged into existing, not replaced
 
 
 async def _sync_store_embedding(store: StoreConfig) -> None:
@@ -75,6 +84,13 @@ async def get_stores() -> list[dict]:
             # Storefront/theme runner state (localhost dev dashboard).
             "storefront_slug": s.storefront_slug,
             "has_theme_password": bool(s.theme_access_password),  # needed for `shopify theme dev`
+            "supplier": s.supplier,
+            "support_email": s.support_email,
+            "has_supplier_credentials": bool(s.supplier_credentials),
+            "has_email_credentials": bool(s.email_credentials),
+            "has_hype_credentials": bool((s.integrations.get("hype") or {}).get("api_key")),
+            "has_max_credentials": bool((s.integrations.get("max") or {}).get("api_key")),
+            "has_meta_ads_credentials": bool((s.integrations.get("meta_ads") or {}).get("access_token")),
         }
         for s in stores
     ]
@@ -117,6 +133,10 @@ async def get_store_detail(store_id: str) -> dict:
         "installed_theme": store.installed_theme,
         "has_payplus": bool(store.payplus_api_key),
         "store_brand": store.store_brand,
+        "supplier": store.supplier,
+        "support_email": store.support_email,
+        "has_supplier_credentials": bool(store.supplier_credentials),
+        "has_email_credentials": bool(store.email_credentials),
     }
 
 
@@ -146,6 +166,18 @@ async def update_store(store_id: str, body: StoreUpdateRequest) -> dict:
     save_store(store)
     if body.description is not None:
         await _sync_store_embedding(store)
+    # Integration fields go through update_store_integrations so credential dicts are
+    # MERGED (e.g. setting just a new refresh_token doesn't wipe an existing client_id).
+    integration_fields = {
+        k: v for k, v in {
+            "supplier": body.supplier, "support_email": body.support_email,
+            "supplier_credentials": body.supplier_credentials,
+            "email_credentials": body.email_credentials,
+            "integrations": body.integrations,
+        }.items() if v is not None
+    }
+    if integration_fields:
+        update_store_integrations(store_id, **integration_fields)
     return {"store_id": store_id, "updated": True}
 
 

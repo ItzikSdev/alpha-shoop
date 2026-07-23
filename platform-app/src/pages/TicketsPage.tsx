@@ -10,7 +10,7 @@ interface Ticket {
 const COLUMNS = ['todo', 'doing', 'blocked', 'done'];
 const COL_LABEL: Record<string, string> = { todo: 'Todo', doing: 'Doing', blocked: 'Blocked', done: 'Done' };
 const NEXT: Record<string, string> = { todo: 'doing', doing: 'done', blocked: 'doing', done: 'todo' };
-const AGENT_EMOJI: Record<string, string> = { Ava: '👑', Hunter: '🎯', Remy: '🎨', Devon: '🛠️', Max: '📣' };
+const AGENT_EMOJI: Record<string, string> = { Sol: '🛠️' };
 const PRIO_CLS: Record<string, string> = {
   critical: 'bg-red-900/40 text-red-400 border-red-800',
   high: 'bg-orange-900/40 text-orange-400 border-orange-800',
@@ -49,7 +49,7 @@ export function TicketsPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">🎫 Tickets</h1>
           <p className="text-gray-400 text-sm mt-1">
-            Agents open tickets from problems; Ava assigns owner, priority &amp; deadline.
+            Tickets get auto-assigned to Sol with a priority &amp; deadline.
             &nbsp;·&nbsp; {open} open &nbsp;·&nbsp;
             <span className={overdue ? 'text-red-400' : 'text-gray-500'}> {overdue} overdue</span>
           </p>

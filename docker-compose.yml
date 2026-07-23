@@ -4,9 +4,9 @@ services:
   # (data/traces.db): org agents, stores, traces AND product mappings live there,
   # so Linus, Grace and the dashboard all read/write the same place.
 
-  # ── Redis 7 ───────────────────────────────────────────────────────────────
+  # ── Redis Stack (RediSearch + vector similarity, for src/rag RAG corpora) ──
   redis:
-    image: redis:7-alpine
+    image: redis/redis-stack-server:latest
     restart: unless-stopped
     ports:
       - "6379:6379"

@@ -34,6 +34,12 @@ class StoreConfig:
     oxygen_deploy_token: str = ""   # Shopify Oxygen deployment token for the Hydrogen storefront
     storefront_slug: str = ""       # slug used for the host-side storefront/theme folder
     theme_access_password: str = "" # Theme Access app password (shptka_…) — needed for `shopify theme dev`
+    supplier: str = "cj"             # e.g. "cj" — which dropshipping supplier this store sources from
+    supplier_credentials: dict = field(default_factory=dict)  # supplier-specific keys, e.g. CJ's api_key/mcp_key
+    support_email: str = ""          # this store's customer-facing mailbox, e.g. support@alphaforbaby.com
+    email_credentials: dict = field(default_factory=dict)  # Gmail OAuth refresh token / service-account ref
+    integrations: dict = field(default_factory=dict)  # catch-all for anything else store-specific (new
+                                     # integration types are new keys here, not new columns/migrations)
 
 
 # ContextVar: which store is active for this async task
@@ -61,7 +67,12 @@ def init_stores_table() -> None:
                 oxygen_deploy_token TEXT DEFAULT '',
                 storefront_slug TEXT DEFAULT '',
                 theme_access_password TEXT DEFAULT '',
-                store_designed INTEGER DEFAULT 0
+                store_designed INTEGER DEFAULT 0,
+                supplier TEXT DEFAULT 'cj',
+                supplier_credentials TEXT DEFAULT '{}',
+                support_email TEXT DEFAULT '',
+                email_credentials TEXT DEFAULT '{}',
+                integrations TEXT DEFAULT '{}'
             )
         """)
         # Migrations: add columns added after initial schema
@@ -76,6 +87,11 @@ def init_stores_table() -> None:
             ("storefront_slug", "''"),
             ("theme_access_password", "''"),
             ("store_designed", "0"),
+            ("supplier", "'cj'"),
+            ("supplier_credentials", "'{}'"),
+            ("support_email", "''"),
+            ("email_credentials", "'{}'"),
+            ("integrations", "'{}'"),
         ]:
             try:
                 con.execute(f"ALTER TABLE stores ADD COLUMN {col} TEXT DEFAULT {default}")
@@ -87,7 +103,8 @@ def init_stores_table() -> None:
 _SELECT_COLS = (
     "store_id, name, shopify_domain, shopify_access_token, platform, niche, "
     "store_brand, active, created_at, payplus_api_key, payplus_secret, installed_theme, description, "
-    "storefront_api_token, oxygen_deploy_token, storefront_slug, theme_access_password, store_designed"
+    "storefront_api_token, oxygen_deploy_token, storefront_slug, theme_access_password, store_designed, "
+    "supplier, supplier_credentials, support_email, email_credentials, integrations"
 )
 
 
@@ -102,6 +119,9 @@ def _row_to_store(r: tuple) -> StoreConfig:
         storefront_api_token=r[13] or "", oxygen_deploy_token=r[14] or "",
         storefront_slug=r[15] or "", theme_access_password=r[16] or "",
         store_designed=bool(int(r[17] or 0)),
+        supplier=r[18] or "cj", supplier_credentials=json.loads(r[19] or "{}"),
+        support_email=r[20] or "", email_credentials=json.loads(r[21] or "{}"),
+        integrations=json.loads(r[22] or "{}"),
     )
 
 
@@ -122,14 +142,27 @@ def get_store(store_id: str) -> StoreConfig | None:
     return _row_to_store(row) if row else None
 
 
+def get_store_by_domain(shopify_domain: str) -> StoreConfig | None:
+    """Look up a store by its Shopify domain — used by the order webhook, which
+    identifies the store via the `X-Shopify-Shop-Domain` header, not our internal
+    store_id slug."""
+    with sqlite3.connect(_DB_PATH) as con:
+        row = con.execute(
+            f"SELECT {_SELECT_COLS} FROM stores WHERE shopify_domain = ?",
+            (shopify_domain,),
+        ).fetchone()
+    return _row_to_store(row) if row else None
+
+
 def save_store(store: StoreConfig) -> None:
     with sqlite3.connect(_DB_PATH) as con:
         con.execute(
             """INSERT OR REPLACE INTO stores
                (store_id, name, shopify_domain, shopify_access_token, platform, niche,
                 store_brand, active, created_at, payplus_api_key, payplus_secret, installed_theme, description,
-                storefront_api_token, oxygen_deploy_token, storefront_slug, theme_access_password, store_designed)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                storefront_api_token, oxygen_deploy_token, storefront_slug, theme_access_password, store_designed,
+                supplier, supplier_credentials, support_email, email_credentials, integrations)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 store.store_id, store.name, store.shopify_domain,
                 store.shopify_access_token, store.platform, store.niche,
@@ -137,6 +170,9 @@ def save_store(store: StoreConfig) -> None:
                 store.payplus_api_key, store.payplus_secret, store.installed_theme, store.description,
                 store.storefront_api_token, store.oxygen_deploy_token, store.storefront_slug,
                 store.theme_access_password, int(store.store_designed),
+                store.supplier, json.dumps(store.supplier_credentials),
+                store.support_email, json.dumps(store.email_credentials),
+                json.dumps(store.integrations),
             ),
         )
         con.commit()
@@ -180,6 +216,39 @@ _STOREFRONT_COLS = ("storefront_api_token", "oxygen_deploy_token", "storefront_s
 def update_store_storefront(store_id: str, **fields) -> None:
     """Update any of the Hydrogen storefront columns (only the provided ones)."""
     updates = {k: v for k, v in fields.items() if k in _STOREFRONT_COLS and v is not None}
+    if not updates:
+        return
+    set_clause = ", ".join(f"{col} = ?" for col in updates)
+    params = list(updates.values()) + [store_id]
+    with sqlite3.connect(_DB_PATH) as con:
+        con.execute(f"UPDATE stores SET {set_clause} WHERE store_id = ?", params)
+        con.commit()
+
+
+_INTEGRATION_JSON_COLS = ("supplier_credentials", "email_credentials", "integrations")
+_INTEGRATION_TEXT_COLS = ("supplier", "support_email")
+
+
+def update_store_integrations(store_id: str, **fields) -> None:
+    """Update supplier/email/integration columns (only the provided ones).
+
+    JSON-valued fields (supplier_credentials, email_credentials, integrations) are
+    dicts merged into the existing stored dict (not replaced), so setting one key
+    doesn't wipe out others already saved for that store.
+    """
+    store = get_store(store_id)
+    if store is None:
+        return
+    updates: dict[str, str] = {}
+    for k, v in fields.items():
+        if v is None:
+            continue
+        if k in _INTEGRATION_JSON_COLS:
+            merged = dict(getattr(store, k))
+            merged.update(v)
+            updates[k] = json.dumps(merged)
+        elif k in _INTEGRATION_TEXT_COLS:
+            updates[k] = v
     if not updates:
         return
     set_clause = ", ".join(f"{col} = ?" for col in updates)

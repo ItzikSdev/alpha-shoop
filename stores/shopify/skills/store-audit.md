@@ -8,7 +8,7 @@ Audit a Hydrogen store end-to-end against its own docs + a professional release 
 report findings (most severe first) and fix them. Storefronts are **English-only**.
 
 ## Inputs
-- Store slug (default `timeforbaby`) → app at `stores/shopify/hydrogen-<slug>/`.
+- Store slug (default `alphaforbaby`) → app at `stores/shopify/hydrogen-<slug>/`.
 - Its docs (read FIRST — they define "correct"): `hydrogen-<slug>/docs/AGENT_WORKFLOW.md`, `docs/QA.md`,
   `docs/SEO.md`, `ui-ux-pro skill`. **A new store runs the FULL set.**
 

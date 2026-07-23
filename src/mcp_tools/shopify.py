@@ -13,6 +13,7 @@ mutation productCreate($product: ProductCreateInput!, $media: [CreateMediaInput!
   productCreate(product: $product, media: $media) {
     product {
       id title status
+      seo { title description }
       variants(first: 1) { nodes { id inventoryItem { id } } }
       images(first: 10) { nodes { url } }
     }
@@ -20,6 +21,37 @@ mutation productCreate($product: ProductCreateInput!, $media: [CreateMediaInput!
   }
 }
 """
+
+_GQL_UPDATE_PRODUCT_COPY = """
+mutation productUpdate($product: ProductUpdateInput!) {
+  productUpdate(product: $product) {
+    product { id title seo { title description } }
+    userErrors { field message }
+  }
+}
+"""
+
+
+async def update_product_copy(
+    product_id: str, title: str, description_html: str,
+    seo_title: str = "", seo_description: str = "",
+) -> dict:
+    """Rewrite an EXISTING Shopify product's title/description/SEO fields — e.g. to
+    replace raw supplier copy with real marketing copy. Does not touch images,
+    variants, or price."""
+    product_input: dict = {"id": product_id, "title": title, "descriptionHtml": description_html}
+    if seo_title or seo_description:
+        product_input["seo"] = {"title": seo_title or title, "description": seo_description or ""}
+    try:
+        data = await _shopify_gql(_GQL_UPDATE_PRODUCT_COPY, {"product": product_input})
+    except Exception as exc:  # noqa: BLE001
+        return {"success": False, "error": str(exc)}
+    product = data.get("productUpdate", {}).get("product")
+    errors = data.get("productUpdate", {}).get("userErrors", [])
+    if errors or not product:
+        return {"success": False, "error": str(errors) or "no product returned"}
+    return {"success": True, "product": product}
+
 
 _GQL_SET_PRICE = """
 mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
@@ -197,7 +229,7 @@ async def _shopify_rest(method: str, path: str, body: dict | None = None) -> dic
 
 _STOREFRONT_PUBLICATION_NAMES = ("Online Store",)
 # Channels a headless/custom storefront reads from show up as their own
-# publication (e.g. "TIMEFOR BABY", "Hydrogen", "Headless"). The live Hydrogen
+# publication (e.g. "ALPHA FOR BABY", "Hydrogen", "Headless"). The live Hydrogen
 # site reads the store-named channel, NOT "Online Store" — so we must publish
 # there too or products stay invisible on the storefront.
 _HEADLESS_HINT = ("headless", "hydrogen", "storefront")
@@ -214,7 +246,7 @@ async def _storefront_publication_ids() -> list[str]:
         low = name.lower()
         if name in _STOREFRONT_PUBLICATION_NAMES or any(h in low for h in _HEADLESS_HINT):
             ids.append(e["node"]["id"])
-        # A store-named channel (e.g. "TIMEFOR BABY") is the headless storefront's
+        # A store-named channel (e.g. "ALPHA FOR BABY") is the headless storefront's
         # publication — include anything that isn't a known non-web channel.
         elif low not in ("point of sale", "facebook & instagram", "tiktok", "shop", "google & youtube"):
             ids.append(e["node"]["id"])
@@ -305,9 +337,15 @@ async def create_shopify_product(
     variants: list[dict],
     video_url: str = "",
     specs: dict | None = None,
+    seo_title: str = "",
+    seo_description: str = "",
 ) -> dict:
     """
     Create a product in Shopify and set pricing.
+
+    seo_title/seo_description: optional, set Shopify's `seo` field (search-result
+    title/snippet) — distinct from the on-page title/description. Omit to leave
+    Shopify to derive its own defaults from the product title/body.
 
     variants: optional per-(color, size) options, each
         {"color": str, "label": str (size), "sku": str (supplier vid),
@@ -350,17 +388,20 @@ async def create_shopify_product(
     for url, col in color_image.items():
         if url not in images:
             media.append({"originalSource": url, "alt": f"cjcolor::{col}", "mediaContentType": "IMAGE"})
+    product_input: dict = {
+        "title": title,
+        # Marketing copy + a real spec table built from CJ's rich REST
+        # fields (material/packaging/weight) that we used to discard.
+        "descriptionHtml": description + _specs_html(specs),
+        "status": "ACTIVE",
+    }
+    if seo_title or seo_description:
+        product_input["seo"] = {"title": seo_title or title, "description": seo_description or ""}
     try:
         data = await _shopify_gql(
             _GQL_CREATE_PRODUCT,
             {
-                "product": {
-                    "title": title,
-                    # Marketing copy + a real spec table built from CJ's rich REST
-                    # fields (material/packaging/weight) that we used to discard.
-                    "descriptionHtml": description + _specs_html(specs),
-                    "status": "ACTIVE",
-                },
+                "product": product_input,
                 "media": media or None,
             },
         )

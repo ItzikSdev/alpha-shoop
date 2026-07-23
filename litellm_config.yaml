@@ -21,13 +21,12 @@
 # Python control flow. No code calls get_llm("director") anymore.
 
 model_list:
-
   # ── Worker smart: balanced cost/quality (E-com + Marketing + Store Setup) ─
   - model_name: alpha/worker-smart
     litellm_params:
       model: anthropic/claude-sonnet-4-6
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_tokens: 8192   # design_agent generates large CSS payloads (was 4096 — caused truncation/hangs)
+      max_tokens: 8192 # design_agent generates large CSS payloads (was 4096 — caused truncation/hangs)
 
   # ── Director: most capable, deep reasoning — Sol the builder (Opus 4.8) ──
   - model_name: alpha/director
@@ -46,40 +45,58 @@ model_list:
   # ── Local fast: FREE local model for the agent "company" layer ───────────
   # Used by the org's frequent/cheap calls (standups, onboarding, training)
   # via get_llm("standup"). Runs through Ollama on the host — no API cost.
-  # Setup: `brew install ollama` → `ollama serve` → `ollama pull qwen2.5:7b`.
+  # Setup: `brew install ollama` → `ollama serve` → `ollama pull qwen3:14b`.
   # If Ollama isn't running, the org's meeting code degrades safely (0
   # decisions), so this never crashes the autonomous loop.
   - model_name: alpha/local-fast
     litellm_params:
-      # Reaches Ollama on the HOST (same as local-coder below). The old
-      # api_base http://ollama:11434 was a docker-service name that doesn't
-      # resolve when Ollama runs natively on the host → every standup meeting +
-      # the over-budget fallback failed with "Cannot connect to host ollama".
-      # Model = qwen2.5-coder:14b (the one actually pulled). For a lighter 7B:
-      # `ollama pull qwen2.5:7b` then set model back to ollama_chat/qwen2.5:7b.
-      model: ollama_chat/qwen2.5-coder:14b
-      api_base: http://host.docker.internal:11434
-      max_tokens: 2048
-
-  # ── Local CODER: stronger local model for the Developer agent (Grace) ────
-  - model_name: alpha/local-coder
-    litellm_params:
-      model: ollama_chat/qwen2.5-coder:14b
+      model: ollama_chat/qwen3:14b
       api_base: http://host.docker.internal:11434
       max_tokens: 4096
+      num_ctx: 32768 # Ollama's actual KV-cache context window (default 4096 was silently
+                      # truncating prompts — max_input_tokens alone doesn't set this).
+      initial_status_system_prompt: "You must respond ONLY in English. Do not use Hebrew under any circumstances."
+
+  # ── Local CODER: stronger local model for the Developer agent (Grace) / Sol ──
+  # Sol (role "builder") runs on this as his PRIMARY model — see _ROLE_MODEL in
+  # src/llm/client.py. qwen3:14b → qwen3.6:35b → qwen3.6:27b → back to qwen3:14b
+  # (owner-tuned 2026-07-07; 27b/35b generated at only ~5-7 tok/s — too slow for
+  # Sol's multi-step tool-calling loop; 14b trades some quality for real speed).
+  - model_name: alpha/local-coder
+    litellm_params:
+      model: ollama_chat/qwen3:14b
+      api_base: http://host.docker.internal:11434
+      max_input_tokens: 8192
+      max_tokens: 4096 # Raised to 8192 to allow Qwen3 to spit out full, long code scripts without truncation
+      num_ctx: 32768 # Ollama's actual KV-cache context window (was defaulting to 4096 —
+                      # Sol's system prompt + ~13 tool schemas + growing tool-call transcript
+                      # blew past that and produced empty/no-tool-call responses).
+      initial_status_system_prompt: "You must respond ONLY in English. All explanations, comments, and code architecture must be written in English only, regardless of the input language."
 
 litellm_settings:
-  drop_params: true          # ignore unsupported params (e.g. top_k) instead of erroring
-  num_retries: 3             # retry transient Anthropic errors automatically
-  request_timeout: 90        # seconds before a request is killed
+  drop_params: true # ignore unsupported params (e.g. top_k) instead of erroring
+  num_retries: 3 # retry transient Anthropic errors automatically
+  request_timeout: 900 # seconds before a request is killed
 
 router_settings:
   routing_strategy: simple-shuffle
   num_retries: 3
-  timeout: 90
-  retry_after: 2             # seconds to wait before retry
-  allowed_fails: 3           # mark a model unhealthy after this many failures
+  timeout: 900
+  retry_after: 2 # seconds to wait before retry
+  allowed_fails: 3 # mark a model unhealthy after this many failures
+  # When the Anthropic model fails (e.g. "credit balance too low", rate limit,
+  # outage), fall back to the FREE local Ollama model so Sol + the pipeline keep
+  # working with no API credits. Sol/builder + director use the stronger coder
+  # model; the cheap tier uses local-fast.
+  fallbacks:
+    - alpha/worker-smart: ["alpha/local-coder"]
+    - alpha/director: ["alpha/local-coder"]
+    - alpha/worker-fast: ["alpha/local-fast"]
+  # Also fall back on context-window and content errors rather than hard-failing.
+  context_window_fallbacks:
+    - alpha/worker-smart: ["alpha/local-coder"]
+    - alpha/worker-fast: ["alpha/local-fast"]
 
 general_settings:
-  master_key: os.environ/LITELLM_MASTER_KEY   # Bearer token agents must send
-  store_model_in_db: false                     # disable LiteLLM's own DB (we use ours)
+  master_key: os.environ/LITELLM_MASTER_KEY # Bearer token agents must send
+  store_model_in_db: false # disable LiteLLM's own DB (we use ours)

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { MermaidDiagram } from '../components/MermaidDiagram';
 import { DrawioViewer } from '../components/DrawioViewer';
 
-type DiagramTab = 'drawio' | 'mcp' | 'system';
+type DiagramTab = 'drawio' | 'mcp' | 'system' | 'sol_rag';
 
 export function Architecture() {
   const [tab, setTab] = useState<DiagramTab>('mcp');
@@ -18,6 +18,7 @@ export function Architecture() {
     { id: 'mcp', label: 'MCP Architecture', icon: '🔌' },
     { id: 'system', label: 'Full System', icon: '🗺️' },
     { id: 'drawio', label: 'Draw.io Diagram', icon: '📐' },
+    { id: 'sol_rag', label: 'Sol: RAG + Fulfillment + Email', icon: '🧠' },
   ];
 
   return (
@@ -73,6 +74,18 @@ export function Architecture() {
       {/* Draw.io */}
       {tab === 'drawio' && (
         <DrawioViewer url="/architecture.drawio" height={700} />
+      )}
+
+      {/* Sol: store integration registry + Redis RAG + fulfillment + email */}
+      {tab === 'sol_rag' && (
+        <div className="space-y-2">
+          <p className="text-gray-500 text-xs">
+            Store integration registry (per-store supplier/email creds), the two Redis RAG
+            corpora (CJ catalog + Sol's playbook), automatic order fulfillment, and the
+            customer email tool. See <code className="text-gray-400">docs/sol_integrations_rag_fulfillment_email.md</code>.
+          </p>
+          <DrawioViewer url="/sol_integrations_rag_fulfillment_email.drawio" height={700} />
+        </div>
       )}
     </div>
   );

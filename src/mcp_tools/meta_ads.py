@@ -41,7 +41,7 @@ async def create_paused_ad(
     end_time = (datetime.now(timezone.utc) + timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%S+0000")
     async with httpx.AsyncClient(timeout=40) as c:
         camp = await _post(c, f"{acct}/campaigns", {
-            "name": f"TIMEFOR BABY — {product_title[:40]}", "objective": "OUTCOME_TRAFFIC",
+            "name": f"ALPHA FOR BABY — {product_title[:40]}", "objective": "OUTCOME_TRAFFIC",
             "status": "PAUSED", "special_ad_categories": "[]",
             "is_adset_budget_sharing_enabled": "false"}, token)
         adset = await _post(c, f"{acct}/adsets", {

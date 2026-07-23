@@ -21,8 +21,36 @@ from src.mcp_tools.finance import (
     max_connect_facebook_instagram,
 )
 from src.org.slack import read_agent_messages
+from src.finance.costs_store import create_cost, delete_cost, list_costs, update_cost
 
 router = APIRouter()
+
+
+@router.get("/finance/costs", summary="List editable cost line items (the Finance page's spreadsheet)")
+async def get_costs() -> dict:
+    from dataclasses import asdict
+    return {"items": [asdict(c) for c in list_costs()]}
+
+
+@router.post("/finance/costs", summary="Add a cost row")
+async def post_cost(body: dict) -> dict:
+    from dataclasses import asdict
+    item = create_cost(
+        name=body.get("name", ""), category=body.get("category", ""),
+        amount=float(body.get("amount", 0) or 0), currency=body.get("currency", "USD"),
+        period=body.get("period", "monthly"), note=body.get("note", ""),
+    )
+    return asdict(item)
+
+
+@router.patch("/finance/costs/{cost_id}", summary="Edit one or more fields on a cost row")
+async def patch_cost(cost_id: str, body: dict) -> dict:
+    return {"ok": update_cost(cost_id, **body)}
+
+
+@router.delete("/finance/costs/{cost_id}", summary="Remove a cost row")
+async def remove_cost(cost_id: str) -> dict:
+    return {"ok": delete_cost(cost_id)}
 
 
 @router.get("/finance/budget", summary="Live Claude/org token budget — how many $ are left this month (the $100 cap)")

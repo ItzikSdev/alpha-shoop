@@ -12,7 +12,12 @@ builds it kicks off appear in GET /api/v1/runs alongside normal runs.
 """
 from __future__ import annotations
 
+import asyncio
+import json
+import uuid
+
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 
 from src.api.deps import get_current_operator
 from src.org.conversation import agents_respond, fetch_and_respond, two_way_enabled
@@ -69,7 +74,7 @@ async def post_org_unblock() -> dict:
         "MISSION: maximise real profit from this store, then reinvest it into "
         "opening MORE stores and hiring MORE agents. Growth is gated on real "
         "revenue — spend only what you've earned.",
-        "FOCUS NOW: (1) make timeforbaby convert better and look great — clean "
+        "FOCUS NOW: (1) make alphaforbaby convert better and look great — clean "
         "design, strong product pages/copy, enough quality products, trust/reviews; "
         "(2) grow sales consistently toward the next orders.",
         "RULE: every order needs the customer's phone + zip (collected at "
@@ -339,16 +344,87 @@ async def post_org_assign(body: dict) -> dict:
 
 @router.post("/org/sol", summary="Run Sol autonomously on a task (codes/builds/deploys/CJ; narrates to Slack)")
 async def post_org_sol(body: dict) -> dict:
-    """Fire the single agent's tool-use loop. Body: {task, store_slug?, max_steps?}.
-    Requires the litellm proxy up. Everything is narrated to Slack as Sol."""
+    """Fire Sol's tool-use loop in the background and return immediately with a run_id.
+    Body: {task, store_slug?, max_steps?, ticket_id?}. Requires the litellm proxy up.
+    Everything is narrated to Slack as Sol AND recorded live to agent_runs/agent_steps —
+    watch it (and any other agent's runs) at GET /org/agents/runs/{run_id}/stream, used by
+    the platform-app `/agents/live` live activity page."""
     from src.org.agent_loop import run_sol_task
     task = (body.get("task") or "").strip()
     if not task:
         return {"error": "missing 'task'"}
-    return await run_sol_task(
+    run_id = str(uuid.uuid4())
+    asyncio.create_task(run_sol_task(
         task,
-        store_slug=body.get("store_slug", "timeforbaby"),
+        store_slug=body.get("store_slug", "alphaforbaby"),
         max_steps=int(body.get("max_steps", 25)),
+        run_id=run_id,
+        ticket_id=body.get("ticket_id"),
+    ))
+    return {"run_id": run_id, "status": "running"}
+
+
+@router.get("/org/agents/tools", summary="Tool catalog grouped for the live activity diagram (all agents, or ?agent=Name)")
+async def get_agent_tools(agent: str = "") -> dict:
+    from src.org.tool_catalog import AGENT_TOOL_GROUPS, tool_groups_for
+    if agent:
+        return {"groups": {agent: tool_groups_for(agent)}}
+    return {"groups": AGENT_TOOL_GROUPS}
+
+
+@router.get("/org/agents/runs", summary="Recent agent runs across the org (for the live activity page's run picker)")
+async def get_agent_runs(agent: str = "", limit: int = 50) -> list[dict]:
+    from src.org.agent_runs import list_agent_runs
+    return list_agent_runs(agent_name=agent or None, limit=limit)
+
+
+@router.get("/org/agents/runs/{run_id}", summary="One agent run's full step history (snapshot, no SSE)")
+async def get_agent_run_detail(run_id: str) -> dict:
+    from src.org.agent_runs import get_agent_run
+    run = get_agent_run(run_id)
+    if not run:
+        return {"error": f"run {run_id!r} not found"}
+    return run
+
+
+@router.get(
+    "/org/agents/runs/{run_id}/stream",
+    summary="SSE stream of live agent steps (thought/tool_call/tool_result) for one run",
+    # No JWT dep — EventSource cannot set Authorization headers
+)
+async def stream_agent_run(run_id: str) -> StreamingResponse:
+    from src.org.agent_runs import steps_after, run_status
+
+    async def generate():
+        status = None
+        for _ in range(15):
+            status = await asyncio.to_thread(run_status, run_id)
+            if status:
+                break
+            await asyncio.sleep(0.2)
+        if not status:
+            yield f"data: {json.dumps({'type': 'error', 'msg': 'Run not found'})}\n\n"
+            return
+
+        last_id = 0
+        while True:
+            new_steps = await asyncio.to_thread(steps_after, run_id, last_id)
+            for step in new_steps:
+                last_id = step["id"]
+                yield f"data: {json.dumps({'type': 'step', **step})}\n\n"
+
+            status = await asyncio.to_thread(run_status, run_id)
+            if status not in ("running", None):
+                yield f"data: {json.dumps({'type': 'done', 'status': status})}\n\n"
+                return
+
+            yield ": keepalive\n\n"
+            await asyncio.sleep(0.4)
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
 
@@ -446,7 +522,7 @@ from src.org.tickets import (
 )
 
 
-@router.get("/org/tickets", summary="Agent ticket board — all tickets (Ava-assigned, with deadlines)")
+@router.get("/org/tickets", summary="Agent ticket board — all tickets (auto-assigned to Sol, with deadlines)")
 async def get_tickets(status: str | None = None) -> dict:
     from src.stores import list_stores
     stores = {s.store_id: s for s in list_stores()}
@@ -459,7 +535,7 @@ async def get_tickets(status: str | None = None) -> dict:
     return {"tickets": ts}
 
 
-@router.post("/org/tickets", summary="Open a ticket (Ava auto-assigns owner + priority + deadline)")
+@router.post("/org/tickets", summary="Open a ticket (auto-assigned to Sol with priority + deadline)")
 async def create_ticket(body: dict) -> dict:
     t = _open_ticket(
         title=body.get("title", ""), description=body.get("description", ""),
@@ -476,3 +552,132 @@ async def patch_ticket(ticket_id: str, body: dict) -> dict:
 @router.post("/org/tickets/scan", summary="Run a quality scan → agents open tickets for real problems")
 async def scan_tickets() -> dict:
     return {"opened": await _scan_tickets()}
+
+
+@router.get(
+    "/org/rag",
+    summary="Browse a live RAG corpus (cj_catalog | playbook) — metadata only, no raw vector bytes",
+)
+async def get_rag_corpus(corpus: str = "cj_catalog", limit: int = 100) -> dict:
+    from src.rag.index import list_all
+    entries = await list_all(corpus, limit=limit)
+    return {"corpus": corpus, "count": len(entries), "entries": entries}
+
+
+# ── Live DB browser (SQLite — the single shared traces.db) — read-only ──────
+# Postgres was dropped from this system; SQLite is the actual system of
+# record (org agents, stores, traces, tickets, product mappings all live in
+# one file). Table names are always validated against sqlite_master before
+# being interpolated into SQL, so this stays injection-safe despite the
+# f-string (no other value is ever attacker-controlled).
+
+async def _live_table_names(conn) -> set[str]:
+    from sqlalchemy import text
+    result = await conn.execute(
+        text("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+    )
+    return {row[0] for row in result.fetchall()}
+
+
+# Columns holding secrets (Shopify/PayPlus/CJ tokens, email creds, the
+# per-store `integrations` JSON blob with nested ad-platform API keys, ...).
+# /org/stores already redacts these to booleans (has_payplus, ...) for the
+# Stores page — this raw table browser must match that, not bypass it.
+_SENSITIVE_COLUMN_HINTS = ("token", "secret", "password", "credentials", "integrations")
+
+
+def _redact_row(row: dict[str, str | None]) -> dict[str, str | None]:
+    return {
+        col: ("***redacted***" if val and any(h in col.lower() for h in _SENSITIVE_COLUMN_HINTS) else val)
+        for col, val in row.items()
+    }
+
+
+@router.get("/org/db/tables", summary="List live SQLite tables + row counts — read-only DB browser")
+async def list_db_tables() -> dict:
+    from sqlalchemy import text
+    from src.db.engine import engine
+    async with engine.connect() as conn:
+        names = sorted(await _live_table_names(conn))
+        tables = []
+        for name in names:
+            count = await conn.execute(text(f'SELECT COUNT(*) FROM "{name}"'))
+            tables.append({"name": name, "count": count.scalar()})
+    return {"tables": tables}
+
+
+@router.get("/org/db/tables/{table}", summary="Browse rows of one live SQLite table (read-only, paginated)")
+async def get_db_table(table: str, limit: int = 100, offset: int = 0) -> dict:
+    from sqlalchemy import text
+    from src.db.engine import engine
+    async with engine.connect() as conn:
+        if table not in await _live_table_names(conn):
+            return {"table": table, "columns": [], "rows": [], "count": 0, "error": "unknown table"}
+        total = (await conn.execute(text(f'SELECT COUNT(*) FROM "{table}"'))).scalar()
+        result = await conn.execute(
+            text(f'SELECT * FROM "{table}" LIMIT :limit OFFSET :offset'),
+            {"limit": limit, "offset": offset},
+        )
+        columns = list(result.keys())
+        rows = [
+            _redact_row({col: (str(val) if val is not None else None) for col, val in zip(columns, row)})
+            for row in result.fetchall()
+        ]
+    return {"table": table, "columns": columns, "rows": rows, "count": total}
+
+
+# ── Live DB browser (Redis — raw keyspace, not just the curated RAG view) ───
+# src/rag/index.py's list_all() only returns the two curated RAG corpora.
+# This browses the whole keyspace as-is, for debugging what's actually in
+# Redis. Vector bytes are always redacted (decode_responses=True would crash
+# trying to UTF-8-decode them).
+
+_REDIS_VECTOR_FIELD = "vector"
+
+
+@router.get("/org/redis/keys", summary="Scan the live Redis keyspace (raw keys, any prefix) — read-only")
+async def list_redis_keys(pattern: str = "*", limit: int = 200) -> dict:
+    import redis.asyncio as aredis
+
+    from src.config import get_settings
+    client = aredis.from_url(get_settings().redis_url, decode_responses=True)
+    out = []
+    try:
+        async for key in client.scan_iter(match=pattern, count=100):
+            if len(out) >= limit:
+                break
+            out.append({"key": key, "type": await client.type(key), "ttl": await client.ttl(key)})
+    finally:
+        await client.aclose()
+    return {"pattern": pattern, "count": len(out), "keys": out}
+
+
+@router.get("/org/redis/keys/{key:path}", summary="Read one live Redis key's value — read-only, vector bytes redacted")
+async def get_redis_key(key: str) -> dict:
+    import redis.asyncio as aredis
+
+    from src.config import get_settings
+    client = aredis.from_url(get_settings().redis_url, decode_responses=True)
+    try:
+        key_type = await client.type(key)
+        ttl = await client.ttl(key)
+        value: object = None
+        if key_type == "string":
+            value = await client.get(key)
+        elif key_type == "hash":
+            fields = [f for f in await client.hkeys(key) if f != _REDIS_VECTOR_FIELD]
+            values = await client.hmget(key, fields) if fields else []
+            value = dict(zip(fields, values))
+            if await client.hexists(key, _REDIS_VECTOR_FIELD):
+                value[_REDIS_VECTOR_FIELD] = "<binary vector, redacted>"
+        elif key_type == "list":
+            value = await client.lrange(key, 0, 200)
+        elif key_type == "set":
+            value = list(await client.smembers(key))
+        elif key_type == "zset":
+            value = await client.zrange(key, 0, 200, withscores=True)
+        elif key_type != "none":
+            value = f"<unsupported type: {key_type}>"
+    finally:
+        await client.aclose()
+    return {"key": key, "type": key_type, "ttl": ttl, "value": value}

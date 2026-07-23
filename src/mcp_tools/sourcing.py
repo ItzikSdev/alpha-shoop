@@ -80,7 +80,7 @@ async def _get_category_list() -> list[dict]:
     token = settings.cj_mcp_key or settings.cj_api_key
     leaves: list[dict] = []
     try:
-        async with httpx.AsyncClient(timeout=20) as client:
+        async with httpx.AsyncClient(timeout=60) as client:
             resp = await client.get(f"{_BASE}/product/getCategory", headers={"CJ-Access-Token": token})
             resp.raise_for_status()
             body = resp.json()
@@ -155,8 +155,12 @@ def _parse_height_age_map(description: str) -> dict[int, str]:
     to showing the cm measurement alone, never an invented age label.
     """
     mapping: dict[int, str] = {}
-    for age, unit, cm in re.findall(r'(\d{1,2})\s*([mM])\s*/\s*(\d{2,3})\s*cm', description or ""):
+    text = description or ""
+    for age, unit, cm in re.findall(r'(\d{1,2})\s*([mM])\s*/\s*(\d{2,3})\s*cm', text):
         mapping[int(cm)] = f"{age}{unit.upper()}"
+    # Alternate CJ phrasing seen just as often: "Size 59 (1–3 months)" / "Size 66 (3-6 Months)".
+    for cm, age_text in re.findall(r'Size\s*(\d{2,3})\s*\(([^)]+?)\)', text, flags=re.IGNORECASE):
+        mapping.setdefault(int(cm), age_text.strip().replace('–', '-').replace('—', '-'))
     return mapping
 
 
@@ -189,24 +193,55 @@ def _clean_color(color: str) -> str:
     return color
 
 
-def _normalize_size(token: str, age_map: dict[int, str]) -> tuple[str, int]:
-    """Turn a CJ size token into (label, sort_key).
+# Standard baby-clothing age(months)→height(cm) midpoints — fallback ONLY for a
+# bare age token with no cm anywhere and no listing-specific age_map hit (e.g.
+# "3 M", "6m", "NEWBORN", "0 To 3M"). Anchor values match what CJ's own per-
+# listing age_map commonly states (confirmed against real listings 2026-07-09:
+# 59cm~1-3mo, 66cm~3-6mo, 73cm~6-9mo, 80cm~9-12mo, 90cm~12-24mo).
+_MONTH_TO_CM = {0: 50, 3: 59, 6: 66, 9: 73, 12: 80, 18: 83, 24: 90, 36: 98}
 
-    Handles both schemes CJ uses: a height in cm ("59cm" → mapped to the
-    supplier's stated age band when known, e.g. "6M (59cm)"), and an explicit age
-    band ("0to3M", "6to12M", "2to3Y" → "0-3M", "6-12M", "2-3Y"). Unknown tokens
-    pass through verbatim and sort last so nothing is silently dropped.
+
+def _closest_month_cm(months: int) -> int:
+    return _MONTH_TO_CM[min(_MONTH_TO_CM, key=lambda k: abs(k - months))]
+
+
+def _normalize_size(token: str, age_map: dict[int, str]) -> tuple[str, int]:
+    """Turn a CJ size token into a PURE-cm label ("XXcm") — store rule: every
+    Size button on one product must show the SAME kind of information (cm only),
+    never a mix of cm / age-band / raw-code buttons side by side (confirmed
+    2026-07-09: live products showed "NEWBORN", "3 M", "WW942", bare "100" all as
+    Size options on different products with no consistent unit). Returns
+    ("", 9999) when no cm value can be recovered at all (CJ's own internal codes
+    like "WW942", or garbage like "Flagship 2") — the caller drops that variant
+    rather than show a non-cm button next to real ones.
     """
-    m = re.search(r'(\d{2,3})\s*cm', token, re.IGNORECASE)
+    t = token.strip()
+    m = re.search(r'(\d{2,3})\s*cm', t, re.IGNORECASE)
     if m:
         cm = int(m.group(1))
-        label = f"{age_map[cm]} ({cm}cm)" if cm in age_map else f"{cm}cm"
-        return label, cm
-    m = re.match(r'(\d{1,2})\s*to\s*(\d{1,2})\s*([a-zA-Z]*)', token)
+        return f"{cm}cm", cm
+    m = re.match(r'(\d{1,2})\s*to\s*(\d{1,2})\s*([a-zA-Z]*)', t, re.IGNORECASE)
     if m:
         unit = (m.group(3) or "M").upper()
-        return f"{m.group(1)}-{m.group(2)}{unit}", int(m.group(1))
-    return token, 9999
+        upper = int(m.group(2))
+        months = upper * 12 if unit == "Y" else upper
+        cm = _closest_month_cm(months)
+        return f"{cm}cm", cm
+    # Some CJ listings mislabel the unit entirely (e.g. "59Yards" on a garment that's
+    # really sized by height in cm — "Yards" is meaningless for baby clothing), or
+    # give a bare 2-3 digit number with NO unit at all (kids sizing like "100","150").
+    m = re.match(r'(\d{2,3})\b', t)
+    if m:
+        cm = int(m.group(1))
+        if cm in age_map or 40 <= cm <= 180:
+            return f"{cm}cm", cm
+    m = re.match(r'(\d{1,2})\s*M\b', t, re.IGNORECASE)
+    if m:
+        cm = _closest_month_cm(int(m.group(1)))
+        return f"{cm}cm", cm
+    if re.match(r'NEWBORN|NB\b', t, re.IGNORECASE):
+        return f"{_MONTH_TO_CM[0]}cm", _MONTH_TO_CM[0]
+    return "", 9999
 
 
 def _build_supplier_variants(variants: list[dict], price_ratio: float, description: str = "") -> list[dict]:
@@ -374,7 +409,7 @@ async def search_trending_products(
     elif keyword:
         params["productNameEn"] = keyword
 
-    async with httpx.AsyncClient(timeout=30) as client:
+    async with httpx.AsyncClient(timeout=60) as client:
         try:
             body = await _cj_get(client, "product/list", params, token)
             if not body.get("result"):
@@ -452,6 +487,11 @@ async def search_trending_products(
                 "Image gate: dropped %d/%d candidate(s) with < %d images for '%s'",
                 dropped, before, min_images, category or category_id,
             )
+    # Video-first preference (product-sourcing.md §3): among otherwise-comparable
+    # candidates, prefer ones with a real CJ product video. Matches the same sort
+    # trend_scraper.py already applies in the old pipeline — this is the live path,
+    # so the rule needs to hold here too, not just there.
+    filtered.sort(key=lambda p: (bool(p.get("video")), p.get("margin_pct", 0)), reverse=True)
     return filtered[:max_results]
 
 
@@ -474,7 +514,7 @@ async def get_shipping_cost(
     """
     settings = get_settings()
     token = settings.cj_mcp_key or settings.cj_api_key
-    async with httpx.AsyncClient(timeout=15) as client:
+    async with httpx.AsyncClient(timeout=60) as client:
         try:
             resp = await client.post(
                 f"{_BASE}/logistic/freightCalculate",
