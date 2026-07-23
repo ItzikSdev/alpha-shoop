@@ -1,0 +1,278 @@
+{
+  "_readme": "SINGLE SOURCE OF TRUTH for this storefront's look + content. To clone this template into a NEW store: copy the app, then edit THIS file (brand, colors, font sizes, nav, hero, tiles, testimonials). No component code changes needed. Font sizes are real CSS sizes (rem/px/clamp) — tune them here.",
+  "brand": {
+    "name": "ALPHA FOR BABY",
+    "logoText": "ALPHA FOR BABY",
+    "logoImage": "/favicon.svg",
+    "tagline": "Thoughtfully designed baby essentials in premium organic cotton. Made for the moments that matter.",
+    "supportEmail": "support@alphaforbaby.com",
+    "copyright": "© 2026 ALPHA FOR BABY · Free shipping on all orders · 30-day returns"
+  },
+  "favicons": {
+    "svg": "/favicon.svg",
+    "png32": "/favicon-32.png",
+    "appleTouch": "/apple-touch-icon.png",
+    "png512": "/icon-512.png"
+  },
+  "_legal_note": "TEMPLATE, NOT LEGAL ADVICE. Fill the empty fields below with your REAL registered business details and have a lawyer review before going live. Do NOT invent a fake address (Google/Meta/Stripe ban for misrepresentation). Empty fields are hidden or shown as a clearly-marked TODO. Cookie/CCPA consent is handled by Shopify's built-in Privacy Banner (root.jsx withPrivacyBanner + admin → Settings → Customer privacy).",
+  "legal": {
+    "businessName": "ALPHA FOR BABY",
+    "legalEntityName": "",
+    "companyNumber": "",
+    "registeredCountry": "Israel",
+    "businessAddress": "",
+    "contactEmail": "support@alphaforbaby.com",
+    "contactPhone": "",
+    "lastUpdated": "2026-07-03",
+    "governingLaw": "the State of Israel",
+    "cancellation": {
+      "windowDays": 14,
+      "feePercent": 5,
+      "feeCapILS": 100
+    },
+    "returns": {
+      "windowDays": 30,
+      "customerPaysReturnShipping": true,
+      "condition": "unused, in original packaging, with tags attached"
+    },
+    "shipping": {
+      "processingTime": "1–3 business days",
+      "regions": [
+        {
+          "region": "United States",
+          "time": "7–15 business days"
+        },
+        {
+          "region": "Europe & United Kingdom",
+          "time": "8–18 business days"
+        },
+        {
+          "region": "Canada & Australia",
+          "time": "10–20 business days"
+        },
+        {
+          "region": "Rest of world",
+          "time": "10–25 business days"
+        }
+      ]
+    },
+    "accessibility": {
+      "standard": "WCAG 2.1 Level AA",
+      "coordinatorName": "",
+      "coordinatorEmail": "support@alphaforbaby.com",
+      "coordinatorPhone": "",
+      "lastReviewed": "2026-07-03"
+    }
+  },
+  "_legalLinks_note": "Shipping/Refund/Privacy/Terms are pulled LIVE from Shopify (admin → Settings → Legal). Accessibility + Contact are template pages (Shopify has no generator for them).",
+  "legalLinks": [
+    {
+      "label": "Shipping Policy",
+      "url": "/policies/shipping-policy"
+    },
+    {
+      "label": "Returns & Refunds",
+      "url": "/policies/refund-policy"
+    },
+    {
+      "label": "Privacy Policy",
+      "url": "/policies/privacy-policy"
+    },
+    {
+      "label": "Terms of Service",
+      "url": "/policies/terms-of-service"
+    },
+    {
+      "label": "Accessibility",
+      "url": "/pages/accessibility"
+    },
+    {
+      "label": "Contact",
+      "url": "/pages/contact"
+    }
+  ],
+  "tokens": {
+    "colors": {
+      "ink": "#161616",
+      "muted": "#8d8d8d",
+      "line": "#eeeeee",
+      "soft": "#f6f4f1",
+      "heroBg": "#f3efe9",
+      "heroInk": "#2e2722",
+      "heroAccent": "#b07a5f",
+      "heroEyebrow": "#9a7a6a",
+      "footerBg": "#161616",
+      "footerText": "#ffffff",
+      "star": "#e0a93b",
+      "verified": "#3a9d5a"
+    },
+    "fonts": {
+      "body": "-apple-system, 'Helvetica Neue', Inter, Arial, sans-serif",
+      "display": "'Newsreader', Georgia, serif"
+    },
+    "fontSizes": {
+      "logo": "1.4rem",
+      "nav": "0.82rem",
+      "marquee": "0.78rem",
+      "heroEyebrow": "0.8rem",
+      "heroTitle": "clamp(40px, 5vw, 72px)",
+      "heroSub": "1.05rem",
+      "button": "0.82rem",
+      "sectionHeading": "1.9rem",
+      "cardTitle": "0.95rem",
+      "cardPrice": "1rem",
+      "tileLabel": "1.6rem",
+      "pill": "0.8rem",
+      "testimonial": "1rem",
+      "footer": "0.9rem",
+      "productTitle": "2rem",
+      "productPrice": "1.7rem",
+      "optionButton": "0.9rem",
+      "description": "1rem"
+    }
+  },
+  "announcement": [
+    "FREE SHIPPING ON ALL ORDERS",
+    "30-DAY RETURNS",
+    "ORGANIC COTTON",
+    "DESIGNED FOR LITTLE ONES",
+    "WE ACCEPT VISA · MASTERCARD · AMEX · JCB · DISCOVER · DINERS · PAYPAL · APPLE PAY · GOOGLE PAY",
+    "SECURE CHECKOUT"
+  ],
+  "paymentIcons": [
+    {"src": "/images/pay-visa.svg", "alt": "Visa"},
+    {"src": "/images/pay-mastercard.svg", "alt": "Mastercard"},
+    {"src": "/images/pay-amex.svg", "alt": "American Express"},
+    {"src": "/images/pay-jcb.svg", "alt": "JCB"},
+    {"src": "/images/pay-discover.svg", "alt": "Discover"},
+    {"src": "/images/pay-diners.svg", "alt": "Diners Club"},
+    {"src": "/images/pay-paypal.svg", "alt": "PayPal"},
+    {"src": "/images/pay-apple-pay.svg", "alt": "Apple Pay"},
+    {"src": "/images/pay-google-pay.svg", "alt": "Google Pay"}
+  ],
+  "nav": [
+    {
+      "label": "Baby Boys",
+      "url": "/collections/baby-boys"
+    },
+    {
+      "label": "Baby Girls",
+      "url": "/collections/baby-girls"
+    },
+    {
+      "label": "Unisex",
+      "url": "/collections/unisex"
+    }
+  ],
+  "hero": {
+    "eyebrow": "Organic cotton essentials",
+    "headline": "Soft. Modern.",
+    "headlineEm": "Made for first moments.",
+    "sub": "Thoughtfully designed baby essentials in premium organic cotton — gentle on the smallest skin, made to last.",
+    "ctaText": "Shop the collection",
+    "ctaLink": "/collections/all",
+    "secondaryText": "Our story",
+    "secondaryLink": "/pages/about-us",
+    "stats": [
+      {
+        "num": "100%",
+        "label": "GOTS organic"
+      },
+      {
+        "num": "1,000+",
+        "label": "Happy parents"
+      }
+    ],
+    "images": [
+      "/images/hero-1.jpg",
+      "/images/hero-2.jpg",
+      "/images/hero-3.jpg",
+      "/images/hero-4.jpg",
+      "/images/hero-5.jpg"
+    ]
+  },
+  "pills": [
+    "Organic Cotton",
+    "Gentle on Skin",
+    "Free & Easy Returns",
+    "Loved by 1,000+ Parents"
+  ],
+  "categoryHeading": "Shop by category",
+  "tiles": [
+    {
+      "label": "Baby Boys",
+      "link": "/collections/baby-boys",
+      "image": "/images/tile-baby-boys.jpg"
+    },
+    {
+      "label": "Baby Girls",
+      "link": "/collections/baby-girls",
+      "image": "/images/tile-baby-girls.jpg"
+    },
+    {
+      "label": "Unisex",
+      "link": "/collections/unisex",
+      "image": "/images/tile-unisex.jpg"
+    }
+  ],
+  "productGridHeading": "Shop All",
+  "productGridLimit": 12,
+  "testimonialsHeading": "Loved by parents",
+  "testimonials": [
+    {
+      "name": "Maya R.",
+      "location": "Tel Aviv",
+      "author": "Maya R. — Tel Aviv",
+      "stars": 5,
+      "verified": true,
+      "text": "The softest fabric we've found — my daughter lives in these. Washed a dozen times and still perfect."
+    },
+    {
+      "name": "Daniel K.",
+      "location": "New York",
+      "author": "Daniel K. — New York",
+      "stars": 5,
+      "verified": true,
+      "text": "Ordered for my newborn and the quality blew me away for the price. Shipping was fast and free."
+    },
+    {
+      "name": "Sophie L.",
+      "location": "London",
+      "author": "Sophie L. — London",
+      "stars": 4,
+      "verified": true,
+      "text": "Beautiful, modern designs that actually fit. The snap closures make 3am changes so much easier."
+    },
+    {
+      "name": "Noa B.",
+      "location": "Toronto",
+      "author": "Noa B. — Toronto",
+      "stars": 5,
+      "verified": true,
+      "text": "Gift-wrapped feeling, gentle on my baby's skin. Already ordered three more."
+    },
+    {
+      "name": "Tom H.",
+      "location": "Berlin",
+      "author": "Tom H. — Berlin",
+      "stars": 5,
+      "verified": true,
+      "text": "Finally a baby brand that looks as good as it feels. Returns policy gave me total peace of mind."
+    },
+    {
+      "name": "Aria M.",
+      "location": "Sydney",
+      "author": "Aria M. — Sydney",
+      "stars": 4,
+      "verified": true,
+      "text": "Obsessed. Every piece photographs beautifully and holds up to a very active toddler."
+    }
+  ],
+  "productPage": {
+    "trustBadges": [
+      "✓ Free shipping on all orders",
+      "✓ 30-day easy returns",
+      "✓ Satisfaction guaranteed"
+    ]
+  }
+}
