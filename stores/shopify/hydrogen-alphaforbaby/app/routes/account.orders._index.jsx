@@ -124,49 +124,55 @@ function OrderSearchForm({currentFilters}) {
     <form
       ref={formRef}
       onSubmit={handleSubmit}
-      className="order-search-form"
       aria-label="Search orders"
+      className="flex flex-col gap-4 max-w-md"
     >
-      <fieldset className="order-search-fieldset">
-        <legend className="order-search-legend">Filter Orders</legend>
+      <Typography variant="h6" color="blue-gray">
+        Filter Orders
+      </Typography>
 
-        <div className="order-search-inputs">
-          <input
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="w-full">
+          <Input
             type="search"
             name={ORDER_FILTER_FIELDS.NAME}
-            placeholder="Order #"
+            label="Order #"
             aria-label="Order number"
             defaultValue={currentFilters.name || ''}
-            className="order-search-input"
+            crossOrigin=""
           />
-          <input
+        </div>
+        <div className="w-full">
+          <Input
             type="search"
             name={ORDER_FILTER_FIELDS.CONFIRMATION_NUMBER}
-            placeholder="Confirmation #"
+            label="Confirmation #"
             aria-label="Confirmation number"
             defaultValue={currentFilters.confirmationNumber || ''}
-            className="order-search-input"
+            crossOrigin=""
           />
         </div>
+      </div>
 
-        <div className="order-search-buttons">
-          <button type="submit" disabled={isSearching}>
-            {isSearching ? 'Searching' : 'Search'}
-          </button>
-          {hasFilters && (
-            <button
-              type="button"
-              disabled={isSearching}
-              onClick={() => {
-                setSearchParams(new URLSearchParams());
-                formRef.current?.reset();
-              }}
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      </fieldset>
+      <div className="flex gap-3">
+        <Button type="submit" size="sm" disabled={isSearching}>
+          {isSearching ? 'Searching…' : 'Search'}
+        </Button>
+        {hasFilters && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outlined"
+            disabled={isSearching}
+            onClick={() => {
+              setSearchParams(new URLSearchParams());
+              formRef.current?.reset();
+            }}
+          >
+            Clear
+          </Button>
+        )}
+      </div>
     </form>
   );
 }
