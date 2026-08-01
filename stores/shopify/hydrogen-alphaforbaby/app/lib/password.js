@@ -16,7 +16,11 @@
 // iteration count is embedded so it can be increased later without breaking
 // verification of previously-hashed passwords.
 
-const PBKDF2_ITERATIONS = 120_000;
+// Oxygen's production Workers runtime caps Web Crypto PBKDF2 at 100,000
+// iterations (confirmed via a live production error: "iteration counts
+// above 100000 are not supported") — MiniOxygen's local dev runtime does
+// NOT enforce this cap, which is why this only surfaced after deploying.
+const PBKDF2_ITERATIONS = 100_000;
 const SALT_BYTES = 16;
 const HASH_BITS = 256; // 32 bytes
 
