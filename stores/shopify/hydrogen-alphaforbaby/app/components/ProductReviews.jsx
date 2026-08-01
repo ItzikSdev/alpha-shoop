@@ -68,21 +68,6 @@ export function ProductReviews({productId, reviews}) {
         )}
       </div>
 
-      {reviews.length > 0 && (
-        <ul className="product-reviews-list">
-          {reviews.map((r) => (
-            <li key={r.id} className="review-card">
-              <Rating value={r.rating} readonly />
-              <Typography className="review-card-comment">&ldquo;{r.comment}&rdquo;</Typography>
-              <div className="review-card-meta">
-                <span className="review-card-name">{r.name}</span>
-                {r.createdAt && <span className="review-card-date">{formatDate(r.createdAt)}</span>}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
       <fetcher.Form method="post" ref={formRef} className="review-form">
         <h3 className="review-form-heading">Write a review</h3>
 
@@ -116,6 +101,21 @@ export function ProductReviews({productId, reviews}) {
           {submitting ? 'Submitting…' : 'Submit review'}
         </Button>
       </fetcher.Form>
+
+      {reviews.length > 0 && (
+        <ul className="product-reviews-list">
+          {reviews.map((r) => (
+            <li key={r.id} className="review-card">
+              <Rating value={r.rating} readonly />
+              <Typography className="review-card-comment">&ldquo;{r.comment}&rdquo;</Typography>
+              <div className="review-card-meta">
+                <span className="review-card-name">{r.name}</span>
+                {r.createdAt && <span className="review-card-date">{formatDate(r.createdAt)}</span>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

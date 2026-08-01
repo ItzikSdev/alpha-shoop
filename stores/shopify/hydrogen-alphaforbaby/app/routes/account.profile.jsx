@@ -1,4 +1,3 @@
-import {CUSTOMER_UPDATE_MUTATION} from '~/graphql/customer/CustomerUpdateMutation';
 import {
   data,
   Form,
@@ -6,7 +5,7 @@ import {
   useNavigation,
   useOutletContext,
 } from 'react-router';
-import {requireCustomer, getCustomerAccessToken} from '~/lib/customer';
+import {requireCustomer, updateCustomerProfile} from '~/lib/customer';
 
 /**
  * @type {Route.MetaFunction}
@@ -20,66 +19,40 @@ export const meta = () => {
  */
 export async function loader({request, context}) {
   await requireCustomer(context, request);
-
   return {};
 }
 
 /**
+ * Updates the customer's profile via the Admin API. Auth is enforced by
+ * requiring a valid session customerId (set by our own login/register/OAuth
+ * flows) — never a Shopify Storefront customerAccessToken.
  * @param {Route.ActionArgs}
  */
 export async function action({request, context}) {
-  const {storefront, session} = context;
-
   if (request.method !== 'PUT') {
     return data({error: 'Method not allowed'}, {status: 405});
   }
 
-  const customerAccessToken = getCustomerAccessToken(session);
-  if (!customerAccessToken) {
-    return data({error: 'Unauthorized', customer: null}, {status: 401});
-  }
-
+  const customer = await requireCustomer(context, request);
   const form = await request.formData();
 
   try {
-    const customer = {};
-    const validInputKeys = ['firstName', 'lastName'];
-    for (const [key, value] of form.entries()) {
-      if (!validInputKeys.includes(key)) {
-        continue;
-      }
+    const fields = {};
+    for (const key of ['firstName', 'lastName']) {
+      const value = form.get(key);
       if (typeof value === 'string' && value.length) {
-        customer[key] = value;
+        fields[key] = value;
       }
     }
 
-    const result = await storefront.mutate(CUSTOMER_UPDATE_MUTATION, {
-      variables: {
-        customerAccessToken,
-        customer,
-        language: storefront.i18n?.language,
-      },
-    });
+    const updated = await updateCustomerProfile(context.env, customer.id, fields);
 
-    const userErrors = result?.customerUpdate?.customerUserErrors;
-    if (userErrors?.length) {
-      throw new Error(userErrors[0].message);
-    }
-
-    if (!result?.customerUpdate?.customer) {
-      throw new Error('Customer profile update failed.');
-    }
-
-    return {
-      error: null,
-      customer: result?.customerUpdate?.customer,
-    };
+    return {error: null, customer: updated};
   } catch (error) {
+    console.error('[account.profile] update failed', error);
     return data(
-      {error: error.message, customer: null},
-      {
-        status: 400,
-      },
+      {error: error instanceof Error ? error.message : 'Could not update profile.', customer: null},
+      {status: 400},
     );
   }
 }
@@ -106,7 +79,7 @@ export default function AccountProfile() {
             autoComplete="given-name"
             placeholder="First name"
             aria-label="First name"
-            defaultValue={customer.firstName ?? ''}
+            defaultValue={customer?.firstName ?? ''}
             minLength={2}
           />
           <label htmlFor="lastName">Last name</label>
@@ -117,7 +90,7 @@ export default function AccountProfile() {
             autoComplete="family-name"
             placeholder="Last name"
             aria-label="Last name"
-            defaultValue={customer.lastName ?? ''}
+            defaultValue={customer?.lastName ?? ''}
             minLength={2}
           />
         </fieldset>
@@ -141,12 +114,10 @@ export default function AccountProfile() {
 /**
  * @typedef {{
  *   error: string | null;
- *   customer: CustomerFragment | null;
+ *   customer: object | null;
  * }} ActionResponse
  */
 
-/** @typedef {import('customer-accountapi.generated').CustomerFragment} CustomerFragment */
-/** @typedef {import('@shopify/hydrogen/customer-account-api-types').CustomerUpdateInput} CustomerUpdateInput */
 /** @typedef {import('./+types/account.profile').Route} Route */
 /** @typedef {ReturnType<typeof useLoaderData<typeof loader>>} LoaderReturnData */
 /** @typedef {ReturnType<typeof useActionData<typeof action>>} ActionReturnData */

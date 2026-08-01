@@ -58,7 +58,7 @@ export function PageLayout({cart, children = null, isLoggedIn}) {
       <div className={`tob tob-chrome-${dir}`}>
         <AnnouncementMarquee />
         {/* All drawers rendered here so they're inside .tob and get the CSS vars */}
-        <MobileMenuAside />
+        <MobileMenuAside isLoggedIn={isLoggedIn} />
         <CartAside cart={cart} />
         <SearchAside />
         <Header cart={cart} isLoggedIn={isLoggedIn} />
@@ -205,20 +205,20 @@ function SearchAside() {
   );
 }
 
-function MobileMenuAside() {
+function MobileMenuAside({isLoggedIn}) {
   return (
     <Aside type="mobile" heading="MENU">
-      <MobileMenuNav />
+      <MobileMenuNav isLoggedIn={isLoggedIn} />
     </Aside>
   );
 }
 
 /** Nav links inside the hamburger drawer — NavLink so active state works, close on click */
-function MobileMenuNav() {
+function MobileMenuNav({isLoggedIn}) {
   const {close, open} = useAside();
   return (
     <nav className="tob-mob-nav" role="navigation" aria-label="Main navigation">
-      {/* Cart pinned to the top of the drawer (moved off the header) */}
+      {/* Cart + Account pinned to the top of the drawer (moved off the header) */}
       <div className="tob-mob-icons">
         <button
           type="button"
@@ -229,6 +229,7 @@ function MobileMenuNav() {
           <MobileBagIcon />
           <span>Cart</span>
         </button>
+        <MobileAccountLink isLoggedIn={isLoggedIn} onNavigate={close} />
       </div>
       <NavLink
         to="/"
@@ -249,6 +250,36 @@ function MobileMenuNav() {
         </NavLink>
       ))}
     </nav>
+  );
+}
+
+/**
+ * @param {{isLoggedIn: Promise<boolean>, onNavigate: () => void}}
+ */
+function MobileAccountLink({isLoggedIn, onNavigate}) {
+  return (
+    <Suspense fallback={<MobileAccountLinkResolved loggedIn={false} onNavigate={onNavigate} />}>
+      <Await resolve={isLoggedIn}>
+        {(loggedIn) => (
+          <MobileAccountLinkResolved loggedIn={loggedIn} onNavigate={onNavigate} />
+        )}
+      </Await>
+    </Suspense>
+  );
+}
+
+function MobileAccountLinkResolved({loggedIn, onNavigate}) {
+  return (
+    <Link
+      to={loggedIn ? '/account' : '/account/login'}
+      prefetch="intent"
+      className="tob-mob-ico reset"
+      aria-label={loggedIn ? 'Account' : 'Sign in'}
+      onClick={onNavigate}
+    >
+      <MobileUserIcon />
+      <span>{loggedIn ? 'Account' : 'Sign in'}</span>
+    </Link>
   );
 }
 

@@ -1,5 +1,5 @@
 import {redirect} from 'react-router';
-import {clearCustomerAccessToken} from '~/lib/customer';
+import {clearSessionCustomerId} from '~/lib/customer';
 
 // if we don't implement this, /account/logout will get caught by account.$.jsx to do login
 
@@ -11,7 +11,7 @@ export async function loader() {
  * @param {Route.ActionArgs}
  */
 export async function action({context}) {
-  clearCustomerAccessToken(context.session);
+  clearSessionCustomerId(context.session);
   return redirect('/');
 }
 

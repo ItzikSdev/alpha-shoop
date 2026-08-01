@@ -6,7 +6,12 @@ import {
   useNavigation,
   useSearchParams,
 } from 'react-router';
-import {registerCustomer, isLoggedIn, setCustomerAccessToken} from '~/lib/customer';
+import {
+  findCustomerByEmail,
+  createCustomerAccount,
+  isLoggedIn,
+  setSessionCustomerId,
+} from '~/lib/customer';
 import {Input, Button, Typography, Alert} from '@material-tailwind/react';
 
 /**
@@ -49,10 +54,24 @@ export async function action({request, context}) {
   }
 
   try {
-    const token = await registerCustomer(context, {email, password, firstName, lastName});
-    setCustomerAccessToken(context.session, token);
+    const existing = await findCustomerByEmail(context.env, email);
+    if (existing) {
+      return data(
+        {error: 'An account with this email already exists.'},
+        {status: 400},
+      );
+    }
+
+    const customer = await createCustomerAccount(context.env, {
+      email,
+      password,
+      firstName,
+      lastName,
+    });
+    setSessionCustomerId(context.session, customer.id);
     return redirect(redirectTo);
   } catch (error) {
+    console.error('[account.register] failed', error);
     return data(
       {error: error instanceof Error ? error.message : 'Could not create account.'},
       {status: 400},
@@ -81,9 +100,13 @@ export default function Register() {
 
         <Form method="POST" className="flex flex-col gap-4">
           <input type="hidden" name="redirect" value={redirectTo} />
-          <div className="flex gap-4">
-            <Input id="firstName" name="firstName" label="First name" required crossOrigin="" />
-            <Input id="lastName" name="lastName" label="Last name" required crossOrigin="" />
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="w-full">
+              <Input id="firstName" name="firstName" label="First name" required crossOrigin="" />
+            </div>
+            <div className="w-full">
+              <Input id="lastName" name="lastName" label="Last name" required crossOrigin="" />
+            </div>
           </div>
           <Input
             id="email"

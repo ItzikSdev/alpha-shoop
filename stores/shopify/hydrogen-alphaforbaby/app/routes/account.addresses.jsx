@@ -6,12 +6,11 @@ import {
   useOutletContext,
 } from 'react-router';
 import {
-  UPDATE_ADDRESS_MUTATION,
-  DELETE_ADDRESS_MUTATION,
-  CREATE_ADDRESS_MUTATION,
-  UPDATE_DEFAULT_ADDRESS_MUTATION,
-} from '~/graphql/customer/CustomerAddressMutations';
-import {requireCustomer, getCustomerAccessToken} from '~/lib/customer';
+  requireCustomer,
+  createCustomerAddress,
+  updateCustomerAddress,
+  deleteCustomerAddress,
+} from '~/lib/customer';
 
 /**
  * @type {Route.MetaFunction}
@@ -25,7 +24,6 @@ export const meta = () => {
  */
 export async function loader({request, context}) {
   await requireCustomer(context, request);
-
   return {};
 }
 
@@ -33,7 +31,7 @@ export async function loader({request, context}) {
  * @param {Route.ActionArgs}
  */
 export async function action({request, context}) {
-  const {storefront, session} = context;
+  const customer = await requireCustomer(context, request);
 
   try {
     const form = await request.formData();
@@ -45,23 +43,12 @@ export async function action({request, context}) {
       throw new Error('You must provide an address id.');
     }
 
-    // this will ensure redirecting to login never happen for mutatation
-    const customerAccessToken = getCustomerAccessToken(session);
-    if (!customerAccessToken) {
-      return data(
-        {error: {[addressId]: 'Unauthorized'}},
-        {
-          status: 401,
-        },
-      );
-    }
-
     const defaultAddress = form.has('defaultAddress')
       ? String(form.get('defaultAddress')) === 'on'
       : false;
-    // Classic Storefront API's MailingAddressInput uses `country`/`province`/
-    // `phone` (free-text country/province name, not the territoryCode/
-    // zoneCode 2-letter codes the old Customer Account API input used).
+
+    // Admin API's MailingAddressInput uses `country`/`province`/`phone`
+    // (free-text country/province name), same shape the form already uses.
     const address = {};
     const fieldMap = {
       address1: 'address1',
@@ -83,186 +70,81 @@ export async function action({request, context}) {
       }
     }
 
-    // Sets the given address as the customer's default address, if requested.
-    // (Classic Storefront API doesn't accept `defaultAddress` on create/update
-    // mutations — it's a separate mutation.)
-    async function applyDefaultAddress(resolvedAddressId) {
-      if (!defaultAddress || !resolvedAddressId) return;
-      const result = await storefront.mutate(UPDATE_DEFAULT_ADDRESS_MUTATION, {
-        variables: {
-          customerAccessToken,
-          addressId: resolvedAddressId,
-          language: storefront.i18n?.language,
-        },
-      });
-      const userErrors = result?.customerDefaultAddressUpdate?.customerUserErrors;
-      if (userErrors?.length) {
-        throw new Error(userErrors[0].message);
-      }
-    }
-
     switch (request.method) {
       case 'POST': {
-        // handle new address creation
         try {
-          const result = await storefront.mutate(CREATE_ADDRESS_MUTATION, {
-            variables: {
-              customerAccessToken,
-              address,
-              language: storefront.i18n?.language,
-            },
-          });
-
-          const userErrors = result?.customerAddressCreate?.customerUserErrors;
-          if (userErrors?.length) {
-            throw new Error(userErrors[0].message);
-          }
-
-          const createdAddress = result?.customerAddressCreate?.customerAddress;
+          const createdAddress = await createCustomerAddress(
+            context.env,
+            customer.id,
+            address,
+            defaultAddress,
+          );
           if (!createdAddress) {
             throw new Error('Customer address create failed.');
           }
-
-          await applyDefaultAddress(createdAddress.id);
-
-          return {
-            error: null,
-            createdAddress,
-            defaultAddress,
-          };
+          return {error: null, createdAddress, defaultAddress};
         } catch (error) {
-          if (error instanceof Error) {
-            return data(
-              {error: {[addressId]: error.message}},
-              {
-                status: 400,
-              },
-            );
-          }
           return data(
-            {error: {[addressId]: error}},
-            {
-              status: 400,
-            },
+            {error: {[addressId]: error instanceof Error ? error.message : String(error)}},
+            {status: 400},
           );
         }
       }
 
       case 'PUT': {
-        // handle address updates
         try {
-          const result = await storefront.mutate(UPDATE_ADDRESS_MUTATION, {
-            variables: {
-              customerAccessToken,
-              address,
-              id: decodeURIComponent(addressId),
-              language: storefront.i18n?.language,
-            },
-          });
-
-          const userErrors = result?.customerAddressUpdate?.customerUserErrors;
-          if (userErrors?.length) {
-            throw new Error(userErrors[0].message);
-          }
-
-          if (!result?.customerAddressUpdate?.customerAddress) {
+          const decodedId = decodeURIComponent(addressId);
+          const updatedAddress = await updateCustomerAddress(
+            context.env,
+            customer.id,
+            decodedId,
+            address,
+            defaultAddress,
+          );
+          if (!updatedAddress) {
             throw new Error('Customer address update failed.');
           }
-
-          await applyDefaultAddress(decodeURIComponent(addressId));
-
-          return {
-            error: null,
-            updatedAddress: address,
-            defaultAddress,
-          };
+          return {error: null, updatedAddress, defaultAddress};
         } catch (error) {
-          if (error instanceof Error) {
-            return data(
-              {error: {[addressId]: error.message}},
-              {
-                status: 400,
-              },
-            );
-          }
           return data(
-            {error: {[addressId]: error}},
-            {
-              status: 400,
-            },
+            {error: {[addressId]: error instanceof Error ? error.message : String(error)}},
+            {status: 400},
           );
         }
       }
 
       case 'DELETE': {
-        // handles address deletion
         try {
-          const result = await storefront.mutate(DELETE_ADDRESS_MUTATION, {
-            variables: {
-              customerAccessToken,
-              id: decodeURIComponent(addressId),
-              language: storefront.i18n?.language,
-            },
-          });
-
-          const userErrors = result?.customerAddressDelete?.customerUserErrors;
-          if (userErrors?.length) {
-            throw new Error(userErrors[0].message);
-          }
-
-          if (!result?.customerAddressDelete?.deletedCustomerAddressId) {
+          const decodedId = decodeURIComponent(addressId);
+          const deletedId = await deleteCustomerAddress(context.env, customer.id, decodedId);
+          if (!deletedId) {
             throw new Error('Customer address delete failed.');
           }
-
           return {error: null, deletedAddress: addressId};
         } catch (error) {
-          if (error instanceof Error) {
-            return data(
-              {error: {[addressId]: error.message}},
-              {
-                status: 400,
-              },
-            );
-          }
           return data(
-            {error: {[addressId]: error}},
-            {
-              status: 400,
-            },
+            {error: {[addressId]: error instanceof Error ? error.message : String(error)}},
+            {status: 400},
           );
         }
       }
 
       default: {
-        return data(
-          {error: {[addressId]: 'Method not allowed'}},
-          {
-            status: 405,
-          },
-        );
+        return data({error: {[addressId]: 'Method not allowed'}}, {status: 405});
       }
     }
   } catch (error) {
-    if (error instanceof Error) {
-      return data(
-        {error: error.message},
-        {
-          status: 400,
-        },
-      );
-    }
     return data(
-      {error},
-      {
-        status: 400,
-      },
+      {error: error instanceof Error ? error.message : String(error)},
+      {status: 400},
     );
   }
 }
 
 export default function Addresses() {
   const {customer} = useOutletContext();
-  const {defaultAddress, addresses} = customer;
+  const defaultAddress = customer?.defaultAddress ?? null;
+  const addresses = customer?.addresses ?? [];
 
   return (
     <div className="account-addresses">
@@ -271,18 +153,15 @@ export default function Addresses() {
       <div>
         <div>
           <legend>Create address</legend>
-          <NewAddressForm key={addresses.nodes.length} />
+          <NewAddressForm key={addresses.length} />
         </div>
         <br />
         <hr />
         <br />
-        {!addresses.nodes.length ? (
+        {!addresses.length ? (
           <p>You have no addresses saved.</p>
         ) : (
-          <ExistingAddresses
-            addresses={addresses}
-            defaultAddress={defaultAddress}
-          />
+          <ExistingAddresses addresses={addresses} defaultAddress={defaultAddress} />
         )}
       </div>
     </div>
@@ -305,11 +184,7 @@ function NewAddressForm() {
   };
 
   return (
-    <AddressForm
-      addressId={'NEW_ADDRESS_ID'}
-      address={newAddress}
-      defaultAddress={null}
-    >
+    <AddressForm addressId={'NEW_ADDRESS_ID'} address={newAddress} defaultAddress={null}>
       {({stateForMethod}) => (
         <div>
           <button
@@ -325,14 +200,11 @@ function NewAddressForm() {
   );
 }
 
-/**
- * @param {Pick<CustomerFragment, 'addresses' | 'defaultAddress'>}
- */
 function ExistingAddresses({addresses, defaultAddress}) {
   return (
     <div>
       <legend>Existing addresses</legend>
-      {addresses.nodes.map((address) => (
+      {addresses.map((address) => (
         <AddressForm
           key={address.id}
           addressId={address.id}
@@ -341,11 +213,7 @@ function ExistingAddresses({addresses, defaultAddress}) {
         >
           {({stateForMethod}) => (
             <div>
-              <button
-                disabled={stateForMethod('PUT') !== 'idle'}
-                formMethod="PUT"
-                type="submit"
-              >
+              <button disabled={stateForMethod('PUT') !== 'idle'} formMethod="PUT" type="submit">
                 {stateForMethod('PUT') !== 'idle' ? 'Saving' : 'Save'}
               </button>
               <button
@@ -363,16 +231,6 @@ function ExistingAddresses({addresses, defaultAddress}) {
   );
 }
 
-/**
- * @param {{
- *   addressId: AddressFragment['id'];
- *   address: CustomerAddressInput;
- *   defaultAddress: CustomerFragment['defaultAddress'];
- *   children: (props: {
- *     stateForMethod: (method: 'PUT' | 'POST' | 'DELETE') => Fetcher['state'];
- *   }) => React.ReactNode;
- * }}
- */
 export function AddressForm({addressId, address, defaultAddress, children}) {
   const {state, formMethod} = useNavigation();
   /** @type {ActionReturnData} */
@@ -520,18 +378,14 @@ export function AddressForm({addressId, address, defaultAddress, children}) {
 /**
  * @typedef {{
  *   addressId?: string | null;
- *   createdAddress?: AddressFragment;
- *   defaultAddress?: string | null;
+ *   createdAddress?: object;
+ *   defaultAddress?: boolean | null;
  *   deletedAddress?: string | null;
- *   error: Record<AddressFragment['id'], string> | null;
- *   updatedAddress?: AddressFragment;
+ *   error: Record<string, string> | string | null;
+ *   updatedAddress?: object;
  * }} ActionResponse
  */
 
-/** @typedef {import('@shopify/hydrogen/customer-account-api-types').CustomerAddressInput} CustomerAddressInput */
-/** @typedef {import('customer-accountapi.generated').AddressFragment} AddressFragment */
-/** @typedef {import('customer-accountapi.generated').CustomerFragment} CustomerFragment */
-/** @template T @typedef {import('react-router').Fetcher<T>} Fetcher */
 /** @typedef {import('./+types/account.addresses').Route} Route */
 /** @typedef {ReturnType<typeof useLoaderData<typeof loader>>} LoaderReturnData */
 /** @typedef {ReturnType<typeof useActionData<typeof action>>} ActionReturnData */

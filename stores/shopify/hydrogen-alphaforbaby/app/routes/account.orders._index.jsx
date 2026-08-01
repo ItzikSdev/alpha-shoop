@@ -9,11 +9,11 @@ import {Money, getPaginationVariables} from '@shopify/hydrogen';
 import {
   buildOrderSearchQuery,
   parseOrderFilters,
-  ORDER_FILTER_FIELDS,
 } from '~/lib/orderFilters';
-import {CUSTOMER_ORDERS_QUERY} from '~/graphql/customer/CustomerOrdersQuery';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
-import {requireCustomer, getCustomerAccessToken} from '~/lib/customer';
+import {requireCustomer, getCustomerOrders} from '~/lib/customer';
+
+const ORDER_FILTER_FIELDS = {NAME: 'name', CONFIRMATION_NUMBER: 'confirmation_number'};
 
 /**
  * @type {Route.MetaFunction}
@@ -26,35 +26,24 @@ export const meta = () => {
  * @param {Route.LoaderArgs}
  */
 export async function loader({request, context}) {
-  await requireCustomer(context, request);
-  const paginationVariables = getPaginationVariables(request, {
-    pageBy: 20,
-  });
+  const customer = await requireCustomer(context, request);
+  const paginationVariables = getPaginationVariables(request, {pageBy: 20});
 
   const url = new URL(request.url);
   const filters = parseOrderFilters(url.searchParams);
-  const query = buildOrderSearchQuery(filters);
+  const searchQuery = buildOrderSearchQuery(filters);
 
-  const data = await context.storefront.query(CUSTOMER_ORDERS_QUERY, {
-    variables: {
-      customerAccessToken: getCustomerAccessToken(context.session),
-      ...paginationVariables,
-      query,
-      language: context.storefront.i18n?.language,
-    },
+  const orders = await getCustomerOrders(context.env, customer.id, {
+    searchQuery,
+    paginationVariables,
   });
 
-  if (!data?.customer) {
-    throw Error('Customer orders not found');
-  }
-
-  return {customer: data.customer, filters};
+  return {orders: orders ?? {nodes: [], pageInfo: {}}, filters};
 }
 
 export default function Orders() {
   /** @type {LoaderReturnData} */
-  const {customer, filters} = useLoaderData();
-  const {orders} = customer;
+  const {orders, filters} = useLoaderData();
 
   return (
     <div className="orders">
@@ -64,18 +53,12 @@ export default function Orders() {
   );
 }
 
-/**
- * @param {{
- *   orders: CustomerOrdersFragment['orders'];
- *   filters: OrderFilterParams;
- * }}
- */
 function OrdersTable({orders, filters}) {
   const hasFilters = !!(filters.name || filters.confirmationNumber);
 
   return (
     <div className="acccount-orders" aria-live="polite">
-      {orders?.nodes.length ? (
+      {orders?.nodes?.length ? (
         <PaginatedResourceSection connection={orders}>
           {({node: order}) => <OrderItem key={order.id} order={order} />}
         </PaginatedResourceSection>
@@ -86,9 +69,6 @@ function OrdersTable({orders, filters}) {
   );
 }
 
-/**
- * @param {{hasFilters?: boolean}}
- */
 function EmptyOrders({hasFilters = false}) {
   return (
     <div>
@@ -113,13 +93,8 @@ function EmptyOrders({hasFilters = false}) {
   );
 }
 
-/**
- * @param {{
- *   currentFilters: OrderFilterParams;
- * }}
- */
 function OrderSearchForm({currentFilters}) {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [, setSearchParams] = useSearchParams();
   const navigation = useNavigation();
   const isSearching =
     navigation.state !== 'idle' &&
@@ -197,20 +172,26 @@ function OrderSearchForm({currentFilters}) {
   );
 }
 
-/**
- * @param {{order: OrderItemFragment}}
- */
+function formatStatus(value) {
+  if (!value) return null;
+  return value
+    .toLowerCase()
+    .split('_')
+    .map((w) => w[0]?.toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
 function OrderItem({order}) {
   return (
     <>
       <fieldset>
         <Link to={`/account/orders/${btoa(order.id)}`}>
-          <strong>#{order.orderNumber}</strong>
+          <strong>{order.name}</strong>
         </Link>
         <p>{new Date(order.processedAt).toDateString()}</p>
-        <p>{order.financialStatus}</p>
-        {order.fulfillmentStatus && <p>{order.fulfillmentStatus}</p>}
-        <Money data={order.currentTotalPrice} />
+        <p>{formatStatus(order.displayFinancialStatus)}</p>
+        {order.displayFulfillmentStatus && <p>{formatStatus(order.displayFulfillmentStatus)}</p>}
+        <Money data={order.currentTotalPriceSet.shopMoney} />
         <Link to={`/account/orders/${btoa(order.id)}`}>View Order →</Link>
       </fieldset>
       <br />
@@ -218,15 +199,6 @@ function OrderItem({order}) {
   );
 }
 
-/**
- * @typedef {{
- *   customer: CustomerOrdersFragment;
- *   filters: OrderFilterParams;
- * }} OrdersLoaderData
- */
-
 /** @typedef {import('./+types/account.orders._index').Route} Route */
 /** @typedef {import('~/lib/orderFilters').OrderFilterParams} OrderFilterParams */
-/** @typedef {import('customer-accountapi.generated').CustomerOrdersFragment} CustomerOrdersFragment */
-/** @typedef {import('customer-accountapi.generated').OrderItemFragment} OrderItemFragment */
 /** @typedef {ReturnType<typeof useLoaderData<typeof loader>>} LoaderReturnData */

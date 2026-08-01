@@ -16,7 +16,7 @@ export function shouldRevalidate() {
  */
 export async function loader({request, context}) {
   // Redirects to /account/login (preserving the destination) if there's no
-  // valid customerAccessToken in the session.
+  // logged-in customerId in our own session (see app/lib/customer.js).
   const customer = await requireCustomer(context, request);
 
   return remixData(

@@ -48,6 +48,9 @@ type Pages = {
   "/account/register": {
     params: {};
   };
+  "/account/recover": {
+    params: {};
+  };
   "/policies/:handle": {
     params: {
       "handle": string;
@@ -68,6 +71,21 @@ type Pages = {
     params: {};
   };
   "/account/login": {
+    params: {};
+  };
+  "/account/login/google": {
+    params: {};
+  };
+  "/account/login/google/callback": {
+    params: {};
+  };
+  "/account/login/apple": {
+    params: {};
+  };
+  "/account/login/apple/callback": {
+    params: {};
+  };
+  "/account/reset": {
     params: {};
   };
   "/discount/:code": {
@@ -147,7 +165,7 @@ type Pages = {
 type RouteFiles = {
   "root.jsx": {
     id: "root";
-    page: "/" | "/blogs/:blogHandle/:articleHandle" | "/sitemap/:type/:page.xml" | "/blogs/:blogHandle" | "/admin/fix-collections" | "/collections/:handle" | "/pages/accessibility" | "/collections" | "/account/register" | "/policies/:handle" | "/products/:handle" | "/account/logout" | "/collections/all" | "/policies" | "/account/login" | "/discount/:code" | "/pages/about-us" | "/sitemap.xml" | "/pages/:handle" | "/pages/contact" | "/robots.txt" | "/blogs" | "/account" | "/account/orders" | "/account/orders/:id" | "/account/addresses" | "/account/profile" | "/account/*" | "/search" | "/cart" | "/cart/:lines" | "/*" | "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json";
+    page: "/" | "/blogs/:blogHandle/:articleHandle" | "/sitemap/:type/:page.xml" | "/blogs/:blogHandle" | "/admin/fix-collections" | "/collections/:handle" | "/pages/accessibility" | "/collections" | "/account/register" | "/account/recover" | "/policies/:handle" | "/products/:handle" | "/account/logout" | "/collections/all" | "/policies" | "/account/login" | "/account/login/google" | "/account/login/google/callback" | "/account/login/apple" | "/account/login/apple/callback" | "/account/reset" | "/discount/:code" | "/pages/about-us" | "/sitemap.xml" | "/pages/:handle" | "/pages/contact" | "/robots.txt" | "/blogs" | "/account" | "/account/orders" | "/account/orders/:id" | "/account/addresses" | "/account/profile" | "/account/*" | "/search" | "/cart" | "/cart/:lines" | "/*" | "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json";
   };
   "routes/blogs.$blogHandle.$articleHandle.jsx": {
     id: "routes/blogs.$blogHandle.$articleHandle";
@@ -181,6 +199,10 @@ type RouteFiles = {
     id: "routes/account_.register";
     page: "/account/register";
   };
+  "routes/account_.recover.jsx": {
+    id: "routes/account_.recover";
+    page: "/account/recover";
+  };
   "routes/policies.$handle.jsx": {
     id: "routes/policies.$handle";
     page: "/policies/:handle";
@@ -203,7 +225,27 @@ type RouteFiles = {
   };
   "routes/account_.login.jsx": {
     id: "routes/account_.login";
-    page: "/account/login";
+    page: "/account/login" | "/account/login/google" | "/account/login/google/callback" | "/account/login/apple" | "/account/login/apple/callback";
+  };
+  "routes/account_.login.google.jsx": {
+    id: "routes/account_.login.google";
+    page: "/account/login/google" | "/account/login/google/callback";
+  };
+  "routes/account_.login.google.callback.jsx": {
+    id: "routes/account_.login.google.callback";
+    page: "/account/login/google/callback";
+  };
+  "routes/account_.login.apple.jsx": {
+    id: "routes/account_.login.apple";
+    page: "/account/login/apple" | "/account/login/apple/callback";
+  };
+  "routes/account_.login.apple.callback.jsx": {
+    id: "routes/account_.login.apple.callback";
+    page: "/account/login/apple/callback";
+  };
+  "routes/account_.reset.jsx": {
+    id: "routes/account_.reset";
+    page: "/account/reset";
   };
   "routes/discount.$code.jsx": {
     id: "routes/discount.$code";
@@ -313,12 +355,18 @@ type RouteModules = {
   "routes/pages.accessibility": typeof import("./app/routes/pages.accessibility.jsx");
   "routes/collections._index": typeof import("./app/routes/collections._index.jsx");
   "routes/account_.register": typeof import("./app/routes/account_.register.jsx");
+  "routes/account_.recover": typeof import("./app/routes/account_.recover.jsx");
   "routes/policies.$handle": typeof import("./app/routes/policies.$handle.jsx");
   "routes/products.$handle": typeof import("./app/routes/products.$handle.jsx");
   "routes/account_.logout": typeof import("./app/routes/account_.logout.jsx");
   "routes/collections.all": typeof import("./app/routes/collections.all.jsx");
   "routes/policies._index": typeof import("./app/routes/policies._index.jsx");
   "routes/account_.login": typeof import("./app/routes/account_.login.jsx");
+  "routes/account_.login.google": typeof import("./app/routes/account_.login.google.jsx");
+  "routes/account_.login.google.callback": typeof import("./app/routes/account_.login.google.callback.jsx");
+  "routes/account_.login.apple": typeof import("./app/routes/account_.login.apple.jsx");
+  "routes/account_.login.apple.callback": typeof import("./app/routes/account_.login.apple.callback.jsx");
+  "routes/account_.reset": typeof import("./app/routes/account_.reset.jsx");
   "routes/discount.$code": typeof import("./app/routes/discount.$code.jsx");
   "routes/pages.about-us": typeof import("./app/routes/pages.about-us.jsx");
   "routes/[sitemap.xml]": typeof import("./app/routes/[sitemap.xml].jsx");

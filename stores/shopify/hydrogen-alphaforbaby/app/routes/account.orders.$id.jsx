@@ -1,51 +1,39 @@
 import {redirect, useLoaderData} from 'react-router';
 import {Money, Image} from '@shopify/hydrogen';
-import {CUSTOMER_ORDER_QUERY} from '~/graphql/customer/CustomerOrderQuery';
-import {requireCustomer, getCustomerAccessToken} from '~/lib/customer';
+import {requireCustomer, getOrderById} from '~/lib/customer';
 
 /**
  * @type {Route.MetaFunction}
  */
 export const meta = ({data}) => {
-  return [{title: `Order ${data?.order?.name}`}];
+  return [{title: `Order ${data?.order?.name ?? ''}`}];
 };
 
 /**
  * @param {Route.LoaderArgs}
  */
 export async function loader({request, params, context}) {
-  await requireCustomer(context, request);
+  const customer = await requireCustomer(context, request);
   if (!params.id) {
     return redirect('/account/orders');
   }
 
   const orderId = atob(params.id);
-  const customerAccessToken = getCustomerAccessToken(context.session);
-  const data = await context.storefront.query(CUSTOMER_ORDER_QUERY, {
-    variables: {
-      customerAccessToken,
-      language: context.storefront.i18n?.language,
-    },
-  });
-
-  // The classic Storefront API has no "order by id" query — orders are only
-  // reachable through the authenticated customer's own order list, which is
-  // what we fetched above. Find the match here.
-  const order = data?.customer?.orders?.nodes?.find((o) => o.id === orderId);
+  // getOrderById fetches by Admin GID directly (Admin API has a top-level
+  // `order(id:)` query, unlike the classic Storefront API which only ever
+  // exposed orders through the authenticated customer's own order list) and
+  // internally verifies order.customer.id === customer.id, so one signed-in
+  // customer can never view another's order by editing this URL.
+  const order = await getOrderById(context.env, orderId, customer.id);
 
   if (!order) {
-    throw new Error('Order not found');
+    throw new Response('Order not found', {status: 404});
   }
-
-  // Extract line items directly from nodes array
-  const lineItems = order.lineItems.nodes;
-
-  const fulfillmentStatus = order.fulfillmentStatus ?? 'N/A';
 
   return {
     order,
-    lineItems,
-    fulfillmentStatus,
+    lineItems: order.lineItems.nodes,
+    fulfillmentStatus: order.displayFulfillmentStatus ?? 'N/A',
   };
 }
 
@@ -78,33 +66,24 @@ export default function OrderRoute() {
               <th scope="row" colSpan={3}>
                 <p>Subtotal</p>
               </th>
-              <th scope="row">
-                <p>Subtotal</p>
-              </th>
               <td>
-                <Money data={order.currentSubtotalPrice} />
+                <Money data={order.currentSubtotalPriceSet.shopMoney} />
               </td>
             </tr>
             <tr>
               <th scope="row" colSpan={3}>
                 Tax
               </th>
-              <th scope="row">
-                <p>Tax</p>
-              </th>
               <td>
-                <Money data={order.currentTotalTax} />
+                <Money data={order.currentTotalTaxSet.shopMoney} />
               </td>
             </tr>
             <tr>
               <th scope="row" colSpan={3}>
                 Total
               </th>
-              <th scope="row">
-                <p>Total</p>
-              </th>
               <td>
-                <Money data={order.currentTotalPrice} />
+                <Money data={order.currentTotalPriceSet.shopMoney} />
               </td>
             </tr>
           </tfoot>
@@ -114,13 +93,11 @@ export default function OrderRoute() {
           {order?.shippingAddress ? (
             <address>
               <p>{order.shippingAddress.name}</p>
-              {order.shippingAddress.formatted ? (
-                <p>{order.shippingAddress.formatted}</p>
-              ) : (
-                ''
-              )}
-              {order.shippingAddress.formattedArea ? (
-                <p>{order.shippingAddress.formattedArea}</p>
+              {order.shippingAddress.formatted?.length ? (
+                order.shippingAddress.formatted.map((line, i) => (
+                  // eslint-disable-next-line react/no-array-index-key
+                  <p key={i}>{line}</p>
+                ))
               ) : (
                 ''
               )}
@@ -136,7 +113,7 @@ export default function OrderRoute() {
       </div>
       <br />
       <p>
-        <a target="_blank" href={order.statusUrl} rel="noreferrer">
+        <a target="_blank" href={order.statusPageUrl} rel="noreferrer">
           View Order Status →
         </a>
       </p>
@@ -144,9 +121,6 @@ export default function OrderRoute() {
   );
 }
 
-/**
- * @param {{lineItem: OrderLineItemFullFragment}}
- */
 function OrderLineRow({lineItem}) {
   return (
     <tr>
@@ -164,11 +138,11 @@ function OrderLineRow({lineItem}) {
         </div>
       </td>
       <td>
-        <Money data={lineItem.originalTotalPrice} />
+        <Money data={lineItem.originalTotalSet.shopMoney} />
       </td>
       <td>{lineItem.quantity}</td>
       <td>
-        <Money data={lineItem.discountedTotalPrice} />
+        <Money data={lineItem.discountedTotalSet.shopMoney} />
       </td>
     </tr>
   );

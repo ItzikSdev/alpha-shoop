@@ -3,11 +3,17 @@ import {
   data,
   Form,
   useActionData,
+  useLoaderData,
   useNavigation,
   useSearchParams,
 } from 'react-router';
 import {useState} from 'react';
-import {loginWithPassword, isLoggedIn, setCustomerAccessToken} from '~/lib/customer';
+import {
+  findCustomerByEmail,
+  verifyCustomerPassword,
+  isLoggedIn,
+  setSessionCustomerId,
+} from '~/lib/customer';
 import {Input, Button, Typography, Alert} from '@material-tailwind/react';
 
 function GoogleIcon() {
@@ -63,17 +69,24 @@ export const meta = () => {
 };
 
 /**
- * Custom Storefront API login — replaces the hosted OAuth Customer Account
- * API flow, which redirected through the Online Store channel's domain
- * instead of staying on alphaforbaby.com. This form never leaves the site.
+ * Independent, Admin-API-backed login — replaces the hosted OAuth Customer
+ * Account API flow (redirected through the Online Store channel's domain)
+ * AND the classic Storefront customerAccessTokenCreate flow that came after
+ * it (this shop has Classic customer accounts DISABLED, so even that
+ * ultimately redirected off-domain through shopify.com/authentication/...
+ * for activation). This form never leaves the site: we verify the password
+ * ourselves against a hash we store in a private Admin API metafield, and
+ * set our own session cookie — see app/lib/customer.js for the full
+ * rationale and data model.
  * @param {Route.LoaderArgs}
  */
 export async function loader({request, context}) {
+  const url = new URL(request.url);
   if (isLoggedIn(context.session)) {
-    const redirectTo = new URL(request.url).searchParams.get('redirect');
-    return redirect(redirectTo || '/account');
+    return redirect(url.searchParams.get('redirect') || '/account');
   }
-  return {};
+  // Google/Apple OAuth callbacks bounce failures back here with ?error=...
+  return {oauthError: url.searchParams.get('error')};
 }
 
 /**
@@ -89,15 +102,22 @@ export async function action({request, context}) {
     return data({error: 'Please enter both email and password.'}, {status: 400});
   }
 
+  // Deliberately generic error message on any failure path below — never
+  // reveal whether the email exists or the password was wrong.
+  const genericError = 'Invalid email or password.';
+
   try {
-    const token = await loginWithPassword(context, {email, password});
-    setCustomerAccessToken(context.session, token);
+    const customer = await findCustomerByEmail(context.env, email);
+    const passwordOk = await verifyCustomerPassword(customer, password);
+    if (!customer || !passwordOk) {
+      return data({error: genericError}, {status: 401});
+    }
+
+    setSessionCustomerId(context.session, customer.id);
     return redirect(redirectTo);
   } catch (error) {
-    return data(
-      {error: error instanceof Error ? error.message : 'Sign-in failed.'},
-      {status: 401},
-    );
+    console.error('[account.login] failed', error);
+    return data({error: genericError}, {status: 401});
   }
 }
 
@@ -107,6 +127,8 @@ export default function Login() {
   const {state} = useNavigation();
   /** @type {ActionReturnData} */
   const action = useActionData();
+  /** @type {LoaderReturnData} */
+  const {oauthError} = useLoaderData();
   const [showEmailForm, setShowEmailForm] = useState(false);
 
   return (
@@ -120,6 +142,12 @@ export default function Login() {
             Sign in to track orders, save addresses, and check out faster.
           </Typography>
         </div>
+
+        {oauthError ? (
+          <Alert color="red" variant="ghost">
+            {oauthError}
+          </Alert>
+        ) : null}
 
         <div className="flex flex-col gap-3">
           <SocialButton provider="google" redirectTo={redirectTo}>
