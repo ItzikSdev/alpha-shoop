@@ -239,6 +239,35 @@ export async function createCustomerAccount(env, {email, password, firstName, la
 }
 
 /**
+ * Handles the guest-checkout-then-register case: Shopify auto-creates a
+ * Customer record for the email used at checkout, so a later registration
+ * attempt with that same email would otherwise hit "account already
+ * exists" — a dead end, since that record has no password set and the
+ * shopper has no way to log into it. If the existing customer genuinely
+ * has no password_hash yet, this "claims" it by setting one (and filling
+ * in any missing name) instead of treating it as a conflict. If it DOES
+ * already have a password, this is a real conflict and the caller should
+ * still refuse.
+ * @param {Env} env
+ * @param {ReturnType<typeof shapeCustomer>} existingCustomer
+ * @param {{password: string, firstName?: string, lastName?: string}} input
+ */
+export async function claimGuestCustomerAccount(env, existingCustomer, {password, firstName, lastName}) {
+  const passwordHash = await hashPassword(password);
+
+  const fields = {};
+  if (firstName && !existingCustomer.firstName) fields.firstName = firstName;
+  if (lastName && !existingCustomer.lastName) fields.lastName = lastName;
+  if (Object.keys(fields).length) {
+    await updateCustomerProfile(env, existingCustomer.id, fields);
+  }
+
+  await setAuthMetafields(env, existingCustomer.id, {password_hash: passwordHash});
+
+  return getCustomerById(env, existingCustomer.id);
+}
+
+/**
  * @param {{_auth: {passwordHash: string | null}} | null} customer
  * @param {string} password
  */

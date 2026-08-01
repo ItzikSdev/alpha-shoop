@@ -9,6 +9,7 @@ import {
 import {
   findCustomerByEmail,
   createCustomerAccount,
+  claimGuestCustomerAccount,
   isLoggedIn,
   setSessionCustomerId,
 } from '~/lib/customer';
@@ -55,19 +56,34 @@ export async function action({request, context}) {
 
   try {
     const existing = await findCustomerByEmail(context.env, email);
+
+    let customer;
     if (existing) {
-      return data(
-        {error: 'An account with this email already exists.'},
-        {status: 400},
-      );
+      // A Shopify Customer record already exists for this email — most
+      // commonly because they checked out as a guest before ever creating
+      // an account here. If it has no password set yet, "claim" it rather
+      // than blocking registration on a record they have no way to log
+      // into. If it DOES have a password, it's a genuine existing account.
+      if (existing._auth?.passwordHash) {
+        return data(
+          {error: 'An account with this email already exists.'},
+          {status: 400},
+        );
+      }
+      customer = await claimGuestCustomerAccount(context.env, existing, {
+        password,
+        firstName,
+        lastName,
+      });
+    } else {
+      customer = await createCustomerAccount(context.env, {
+        email,
+        password,
+        firstName,
+        lastName,
+      });
     }
 
-    const customer = await createCustomerAccount(context.env, {
-      email,
-      password,
-      firstName,
-      lastName,
-    });
     setSessionCustomerId(context.session, customer.id);
     return redirect(redirectTo);
   } catch (error) {
