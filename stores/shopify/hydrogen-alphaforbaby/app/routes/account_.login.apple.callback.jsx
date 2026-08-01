@@ -4,6 +4,31 @@ import {findOrCreateCustomerForOAuth, setSessionCustomerId} from '~/lib/customer
 
 const APPLE_JWKS = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
 
+// Always cleared once read — see account_.login.apple.jsx for why this is a
+// dedicated SameSite=None cookie rather than the main session.
+const CLEAR_APPLE_OAUTH_COOKIE = 'apple_oauth=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0';
+
+/**
+ * @param {Request} request
+ */
+function readAppleOAuthCookie(request) {
+  const cookieHeader = request.headers.get('Cookie') || '';
+  const match = cookieHeader.match(/(?:^|;\s*)apple_oauth=([^;]+)/);
+  if (!match) return null;
+  try {
+    return JSON.parse(decodeURIComponent(match[1]));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string} location
+ */
+function redirectClearingAppleCookie(location) {
+  return redirect(location, {headers: {'Set-Cookie': CLEAR_APPLE_OAUTH_COOKIE}});
+}
+
 /**
  * Generates Apple's required `client_secret` ourselves: a short-lived ES256
  * JWT signed with our Apple private key (APPLE_PRIVATE_KEY), NOT a static
@@ -48,18 +73,17 @@ export async function action({request, context}) {
   const errorParam = form.get('error');
   const userJson = form.get('user');
 
-  const redirectTo = context.session.get('oauthRedirect') || '/account';
-  const expectedState = context.session.get('oauthState');
-  context.session.unset('oauthState');
-  context.session.unset('oauthRedirect');
+  const stored = readAppleOAuthCookie(request);
+  const redirectTo = stored?.redirectTo || '/account';
+  const expectedState = stored?.state;
 
   if (errorParam) {
-    return redirect(
+    return redirectClearingAppleCookie(
       `/account/login?error=${encodeURIComponent('Apple sign-in was cancelled.')}`,
     );
   }
-  if (!code || !state || state !== expectedState) {
-    return redirect(
+  if (!code || !state || !expectedState || state !== expectedState) {
+    return redirectClearingAppleCookie(
       `/account/login?error=${encodeURIComponent('Apple sign-in failed (invalid state). Please try again.')}`,
     );
   }
@@ -121,10 +145,10 @@ export async function action({request, context}) {
     });
 
     setSessionCustomerId(context.session, customer.id);
-    return redirect(redirectTo);
+    return redirectClearingAppleCookie(redirectTo);
   } catch (error) {
     console.error('[account.login.apple.callback] failed', error);
-    return redirect(
+    return redirectClearingAppleCookie(
       `/account/login?error=${encodeURIComponent('Apple sign-in failed. Please try again or use email.')}`,
     );
   }

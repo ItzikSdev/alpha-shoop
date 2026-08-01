@@ -21,9 +21,16 @@ export async function loader({request, context}) {
     );
   }
 
+  // NOTE: deliberately NOT using context.session (SameSite=Lax) for the
+  // CSRF state here. Apple's callback is a cross-site POST
+  // (response_mode=form_post below), and browsers do not send SameSite=Lax
+  // cookies on cross-site POST requests (only top-level GET navigations) —
+  // so anything stored in the main session would already be gone by the
+  // time the callback runs. This dedicated cookie uses SameSite=None
+  // (scoped ONLY to this one short-lived value, not the real session) so it
+  // actually survives the round trip to appleid.apple.com and back.
   const state = crypto.randomUUID();
-  context.session.set('oauthState', state);
-  context.session.set('oauthRedirect', redirectTo);
+  const cookieValue = encodeURIComponent(JSON.stringify({state, redirectTo}));
 
   const redirectUri = `${url.origin}/account/login/apple/callback`;
 
@@ -36,7 +43,11 @@ export async function loader({request, context}) {
     state,
   });
 
-  return redirect(`https://appleid.apple.com/auth/authorize?${params.toString()}`);
+  return redirect(`https://appleid.apple.com/auth/authorize?${params.toString()}`, {
+    headers: {
+      'Set-Cookie': `apple_oauth=${cookieValue}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=600`,
+    },
+  });
 }
 
 /** @typedef {import('./+types/account_.login.apple').Route} Route */
