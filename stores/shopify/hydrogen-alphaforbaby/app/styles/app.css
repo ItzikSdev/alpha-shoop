@@ -2255,10 +2255,17 @@ img { max-width:100%; }
   gap: 30px;
 }
 .tob .tob-flogo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-weight: 800;
   letter-spacing: 0.05em;
   font-size: var(--tob-fs-logo, 1.4rem);
   margin-bottom: 12px;
+}
+.tob .tob-flogo-icon {
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 .tob .tob-fbrand p {
   color: #aaa;
@@ -2392,13 +2399,20 @@ img { max-width:100%; }
   grid-template-columns: 1.1fr 0.9fr;
   gap: 48px;
 }
+.tob .tobp > * {
+  /* Grid items default to min-width:auto (their content's intrinsic size),
+     which lets a wide child (carousel track, swatch row) blow out past its
+     1fr column instead of wrapping/shrinking - the actual cause of the
+     horizontal mobile overflow. */
+  min-width: 0;
+}
 .tob .tobp-gallery {
   position: static;
   align-self: start;
 }
 .tob .tobp-gallery img {
   width: 100%;
-  aspect-ratio: 4/5;
+  aspect-ratio: 1/1;
   object-fit: cover;
   background: var(--soft);
   display: block;
@@ -2466,6 +2480,11 @@ img { max-width:100%; }
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  max-width: 100%;
+}
+.tob .product-form,
+.tob .product-main {
+  min-width: 0;
 }
 .tob .product-options-item {
   min-width: 60px;
@@ -3021,4 +3040,51 @@ img { max-width:100%; }
   padding:11px 22px;border-radius:8px;border:none;background:var(--tob-ink,#161616);
   color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;transition:background .15s ease;
 }
+
+/* ── Product page: Ratings & Reviews (Material Tailwind Rating component,
+   https://www.material-tailwind.com/docs/html/rating "Rating with Comment") ── */
+.product-reviews{margin:40px 0 0;padding-top:28px;border-top:1px solid var(--tob-line,#eee)}
+.product-reviews-heading{font-family:var(--font-display,"Newsreader",Georgia,serif);font-size:1.4rem;font-weight:600;margin:0 0 12px;color:var(--tob-ink,#161616)}
+.product-reviews-summary-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.product-reviews-summary-text{font-size:0.9rem;color:var(--tob-muted,#8d8d8d)}
+.product-reviews-empty{font-size:0.9rem;color:var(--tob-muted,#8d8d8d);margin:0}
+
+.product-reviews-list{list-style:none;margin:24px 0 0;padding:0;display:grid;gap:16px}
+.review-card{padding:16px 18px;border:1px solid var(--tob-line,#eee);border-radius:12px;background:var(--tob-soft,#f6f4f1)}
+.review-card-comment{margin:8px 0 10px!important;font-size:0.95rem!important;line-height:1.6!important;color:var(--tob-ink,#161616)!important}
+.review-card-meta{display:flex;align-items:baseline;gap:8px;font-size:0.8rem;color:var(--tob-muted,#8d8d8d)}
+.review-card-name{font-weight:700;color:var(--tob-ink,#161616)}
+
+.review-form{margin:28px 0 0;padding:20px;border:1px solid var(--tob-line,#eee);border-radius:14px;max-width:480px}
+.review-form-heading{font-family:var(--font-display,"Newsreader",Georgia,serif);font-size:1.05rem;font-weight:600;margin:0 0 14px;color:var(--tob-ink,#161616)}
+.review-form-rating{display:flex;align-items:center;gap:10px;margin:0 0 16px}
+.review-form-rating-label{font-size:0.85rem;color:var(--tob-muted,#8d8d8d)}
+.review-form-row{margin:0 0 18px}
+.review-form-honeypot{position:absolute!important;left:-9999px;width:1px;height:1px;opacity:0}
+.review-form-error{color:#c0392b;font-size:0.85rem;margin:0 0 12px}
+.review-form-success{color:#2e7d32;font-size:0.85rem;margin:0 0 12px}
+.review-form-submit{background:var(--tob-ink,#161616)!important;font-size:0.85rem!important}
 .fbt-add-btn:hover{background:#000}
+
+.policies-page{max-width:640px;margin:0 auto;padding:64px 24px 96px}
+.policies-page h1{font-family:var(--font-display,"Newsreader",Georgia,serif);font-size:2rem;font-weight:600;color:var(--tob-ink,#161616);margin:0 0 32px}
+.policies-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--tob-line,#eee)}
+.policies-list li{border-bottom:1px solid var(--tob-line,#eee)}
+.policies-list a{display:flex;align-items:center;justify-content:space-between;padding:18px 4px;font-size:1rem;color:var(--tob-ink,#161616);text-decoration:underline}
+.policies-list a:hover{color:var(--tob-muted,#8d8d8d)}
+.policies-list a::after{content:"→";font-size:0.9rem;color:var(--tob-muted,#8d8d8d)}
+
+.policy-page{max-width:720px;margin:0 auto;padding:64px 24px 96px}
+.policy-page-back{display:inline-block;margin-bottom:24px;font-size:0.9rem;color:var(--tob-muted,#8d8d8d);text-decoration:none}
+.policy-page-back:hover{color:var(--tob-ink,#161616)}
+.policy-page h1{font-family:var(--font-display,"Newsreader",Georgia,serif);font-size:2rem;font-weight:600;color:var(--tob-ink,#161616);margin:0 0 28px}
+.policy-body{font-size:0.98rem;line-height:1.75;color:var(--tob-ink,#161616)}
+.policy-body p{margin:0 0 18px}
+.policy-body h2,.policy-body h3{font-family:var(--font-display,"Newsreader",Georgia,serif);font-weight:600;margin:32px 0 14px;color:var(--tob-ink,#161616)}
+.policy-body ul,.policy-body ol{margin:0 0 18px;padding-left:22px}
+.policy-body li{margin:0 0 8px}
+.policy-body a{color:var(--tob-ink,#161616);text-decoration:underline}
+.policy-body strong{font-weight:600}
+
+a.login-underline-link{text-decoration:underline}
+a.login-underline-link:hover{color:var(--tob-ink,#161616)}

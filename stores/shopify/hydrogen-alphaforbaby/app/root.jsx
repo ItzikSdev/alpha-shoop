@@ -14,6 +14,7 @@ import resetStyles from './styles/reset.css?url';
 import appStyles from './styles/app.css?url';
 import {themeCss, config} from './lib/theme';
 import {PageLayout} from './components/PageLayout';
+import {isLoggedIn} from './lib/customer';
 
 /**
  * This is important to avoid re-fetching root queries on sub-navigations
@@ -116,10 +117,13 @@ async function loadCriticalData({context}) {
  * @param {Route.LoaderArgs}
  */
 function loadDeferredData({context}) {
-  const {customerAccount, cart} = context;
+  const {session, cart} = context;
   return {
     cart: cart.get(),
-    isLoggedIn: customerAccount.isLoggedIn(),
+    // Session-only check (no Storefront API round trip) — just used to pick
+    // which account icon/label to render. Account routes independently
+    // verify the token against the Storefront API via requireCustomer().
+    isLoggedIn: Promise.resolve(isLoggedIn(session)),
   };
 }
 

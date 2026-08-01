@@ -1,12 +1,9 @@
 import {redirect} from 'react-router';
 
-// fallback wild card for all unauthenticated routes in account section
-/**
- * @param {Route.LoaderArgs}
- */
-export async function loader({context}) {
-  await context.customerAccount.handleAuthStatus();
-
+// Fallback catch-all for any unmatched /account/* path (e.g. a stale bookmark
+// to the old OAuth /account/authorize callback). Just bounces to /account,
+// whose own loader enforces the login redirect if needed.
+export async function loader() {
   return redirect('/account');
 }
 

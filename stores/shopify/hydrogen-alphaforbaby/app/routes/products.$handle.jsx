@@ -1,4 +1,5 @@
 import {useLoaderData} from 'react-router';
+import {data as jsonData} from 'react-router';
 import {
   getSelectedProductOptions,
   getSeoMeta,
@@ -12,9 +13,11 @@ import {ProductPrice} from '~/components/ProductPrice';
 import {ProductGallery} from '~/components/ProductGallery';
 import {ProductForm} from '~/components/ProductForm';
 import {FrequentlyBoughtTogether} from '~/components/FrequentlyBoughtTogether';
+import {ProductReviews, parseReviews} from '~/components/ProductReviews';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {config} from '~/lib/theme';
 import {normalizeSizeLabel} from '~/lib/sizeLabels';
+import {shopifyAdminQuery} from '~/lib/shopifyAdmin';
 
 // Same COMPLEMENTARY→RELATED fallback pattern as the cart page (see cart.jsx) —
 // COMPLEMENTARY needs Shopify ML/sales-history data this store doesn't have yet.
@@ -224,7 +227,92 @@ async function loadCriticalData({context, params, request}) {
     product,
     url: `${config.brand.canonicalDomain}/products/${product.handle}`,
     boughtTogether,
+    reviews: parseReviews(product.reviews?.value),
   };
+}
+
+// NOTE: no leading `#graphql` pragma on these two — they're Admin API
+// documents (MetafieldsSetInput, metafieldsSet), and the `#graphql` comment
+// makes graphql-codegen validate the string against the Storefront schema
+// (see .graphqlrc.js), which doesn't have these Admin-only types. Same reason
+// admin.fix-collections.jsx's queries skip the pragma too.
+const REVIEWS_METAFIELD_QUERY = `
+  query ProductReviewsMetafield($id: ID!) {
+    product(id: $id) {
+      metafield(namespace: "custom", key: "reviews") { value }
+    }
+  }
+`;
+
+const REVIEWS_METAFIELD_SET_MUTATION = `
+  mutation SetProductReviews($metafields: [MetafieldsSetInput!]!) {
+    metafieldsSet(metafields: $metafields) {
+      userErrors { field message }
+    }
+  }
+`;
+
+// Reviews are appended into a single JSON metafield rather than a real reviews
+// app/table (this store has no reviews app installed) — cap the array so a
+// popular product's metafield never approaches Shopify's per-metafield size
+// limit. Newest reviews are kept; oldest are dropped once the cap is hit.
+const MAX_STORED_REVIEWS = 100;
+
+/**
+ * Handles the "Write a review" form submission (see ProductReviews.jsx).
+ * Writes directly to Shopify's Admin API using a private (non-PUBLIC_) env
+ * var — this never touches the local orchestrator backend, so it works the
+ * same in production (Oxygen) as in local dev.
+ * @param {Route.ActionArgs} args
+ */
+export async function action({request, context}) {
+  if (request.method !== 'POST') {
+    return jsonData({error: 'Method not allowed'}, {status: 405});
+  }
+
+  const form = await request.formData();
+
+  // Honeypot: real customers never see or fill this field.
+  if (String(form.get('website') || '').length > 0) {
+    return jsonData({ok: true});
+  }
+
+  const productId = String(form.get('productId') || '');
+  const name = String(form.get('name') || '').trim().slice(0, 80);
+  const comment = String(form.get('comment') || '').trim().slice(0, 1000);
+  const rating = Math.round(Number(form.get('rating')));
+
+  if (!productId || !name || !comment || !Number.isFinite(rating) || rating < 1 || rating > 5) {
+    return jsonData({error: 'Please add your name, a rating, and a review.'}, {status: 400});
+  }
+
+  try {
+    const existing = await shopifyAdminQuery(context.env, REVIEWS_METAFIELD_QUERY, {id: productId});
+    const reviews = parseReviews(existing?.product?.metafield?.value);
+
+    reviews.unshift({
+      id: crypto.randomUUID(),
+      name,
+      rating,
+      comment,
+      createdAt: new Date().toISOString(),
+    });
+
+    await shopifyAdminQuery(context.env, REVIEWS_METAFIELD_SET_MUTATION, {
+      metafields: [{
+        ownerId: productId,
+        namespace: 'custom',
+        key: 'reviews',
+        type: 'json',
+        value: JSON.stringify(reviews.slice(0, MAX_STORED_REVIEWS)),
+      }],
+    });
+
+    return jsonData({ok: true});
+  } catch (error) {
+    console.error('[ProductReviews] failed to save review', error);
+    return jsonData({error: "Sorry, we couldn't save your review — please try again."}, {status: 500});
+  }
 }
 
 /**
@@ -242,7 +330,7 @@ function loadDeferredData({context, params}) {
 
 export default function Product() {
   /** @type {LoaderReturnData} */
-  const {product, boughtTogether} = useLoaderData();
+  const {product, boughtTogether, reviews} = useLoaderData();
 
   // Optimistically selects a variant with given available variant information
   const selectedVariant = useOptimisticVariant(
@@ -295,6 +383,7 @@ export default function Product() {
         className="tobp-desc"
         dangerouslySetInnerHTML={{__html: descriptionHtml}}
       />
+      <ProductReviews productId={product.id} reviews={reviews} />
       <Analytics.ProductView
         data={{
           products: [
@@ -405,6 +494,9 @@ const PRODUCT_FRAGMENT = `#graphql
       title
     }
     sizeGuide: metafield(namespace: "custom", key: "size_guide") {
+      value
+    }
+    reviews: metafield(namespace: "custom", key: "reviews") {
       value
     }
   }

@@ -9,7 +9,9 @@ import {
   UPDATE_ADDRESS_MUTATION,
   DELETE_ADDRESS_MUTATION,
   CREATE_ADDRESS_MUTATION,
-} from '~/graphql/customer-account/CustomerAddressMutations';
+  UPDATE_DEFAULT_ADDRESS_MUTATION,
+} from '~/graphql/customer/CustomerAddressMutations';
+import {requireCustomer, getCustomerAccessToken} from '~/lib/customer';
 
 /**
  * @type {Route.MetaFunction}
@@ -21,8 +23,8 @@ export const meta = () => {
 /**
  * @param {Route.LoaderArgs}
  */
-export async function loader({context}) {
-  await context.customerAccount.handleAuthStatus();
+export async function loader({request, context}) {
+  await requireCustomer(context, request);
 
   return {};
 }
@@ -31,7 +33,7 @@ export async function loader({context}) {
  * @param {Route.ActionArgs}
  */
 export async function action({request, context}) {
-  const {customerAccount} = context;
+  const {storefront, session} = context;
 
   try {
     const form = await request.formData();
@@ -44,8 +46,8 @@ export async function action({request, context}) {
     }
 
     // this will ensure redirecting to login never happen for mutatation
-    const isLoggedIn = await customerAccount.isLoggedIn();
-    if (!isLoggedIn) {
+    const customerAccessToken = getCustomerAccessToken(session);
+    if (!customerAccessToken) {
       return data(
         {error: {[addressId]: 'Unauthorized'}},
         {
@@ -57,24 +59,45 @@ export async function action({request, context}) {
     const defaultAddress = form.has('defaultAddress')
       ? String(form.get('defaultAddress')) === 'on'
       : false;
+    // Classic Storefront API's MailingAddressInput uses `country`/`province`/
+    // `phone` (free-text country/province name, not the territoryCode/
+    // zoneCode 2-letter codes the old Customer Account API input used).
     const address = {};
-    const keys = [
-      'address1',
-      'address2',
-      'city',
-      'company',
-      'territoryCode',
-      'firstName',
-      'lastName',
-      'phoneNumber',
-      'zoneCode',
-      'zip',
-    ];
+    const fieldMap = {
+      address1: 'address1',
+      address2: 'address2',
+      city: 'city',
+      company: 'company',
+      territoryCode: 'country',
+      firstName: 'firstName',
+      lastName: 'lastName',
+      phoneNumber: 'phone',
+      zoneCode: 'province',
+      zip: 'zip',
+    };
 
-    for (const key of keys) {
-      const value = form.get(key);
+    for (const [formKey, inputKey] of Object.entries(fieldMap)) {
+      const value = form.get(formKey);
       if (typeof value === 'string') {
-        address[key] = value;
+        address[inputKey] = value;
+      }
+    }
+
+    // Sets the given address as the customer's default address, if requested.
+    // (Classic Storefront API doesn't accept `defaultAddress` on create/update
+    // mutations — it's a separate mutation.)
+    async function applyDefaultAddress(resolvedAddressId) {
+      if (!defaultAddress || !resolvedAddressId) return;
+      const result = await storefront.mutate(UPDATE_DEFAULT_ADDRESS_MUTATION, {
+        variables: {
+          customerAccessToken,
+          addressId: resolvedAddressId,
+          language: storefront.i18n?.language,
+        },
+      });
+      const userErrors = result?.customerDefaultAddressUpdate?.customerUserErrors;
+      if (userErrors?.length) {
+        throw new Error(userErrors[0].message);
       }
     }
 
@@ -82,32 +105,29 @@ export async function action({request, context}) {
       case 'POST': {
         // handle new address creation
         try {
-          const {data, errors} = await customerAccount.mutate(
-            CREATE_ADDRESS_MUTATION,
-            {
-              variables: {
-                address,
-                defaultAddress,
-                language: customerAccount.i18n.language,
-              },
+          const result = await storefront.mutate(CREATE_ADDRESS_MUTATION, {
+            variables: {
+              customerAccessToken,
+              address,
+              language: storefront.i18n?.language,
             },
-          );
+          });
 
-          if (errors?.length) {
-            throw new Error(errors[0].message);
+          const userErrors = result?.customerAddressCreate?.customerUserErrors;
+          if (userErrors?.length) {
+            throw new Error(userErrors[0].message);
           }
 
-          if (data?.customerAddressCreate?.userErrors?.length) {
-            throw new Error(data?.customerAddressCreate?.userErrors[0].message);
-          }
-
-          if (!data?.customerAddressCreate?.customerAddress) {
+          const createdAddress = result?.customerAddressCreate?.customerAddress;
+          if (!createdAddress) {
             throw new Error('Customer address create failed.');
           }
 
+          await applyDefaultAddress(createdAddress.id);
+
           return {
             error: null,
-            createdAddress: data?.customerAddressCreate?.customerAddress,
+            createdAddress,
             defaultAddress,
           };
         } catch (error) {
@@ -131,29 +151,25 @@ export async function action({request, context}) {
       case 'PUT': {
         // handle address updates
         try {
-          const {data, errors} = await customerAccount.mutate(
-            UPDATE_ADDRESS_MUTATION,
-            {
-              variables: {
-                address,
-                addressId: decodeURIComponent(addressId),
-                defaultAddress,
-                language: customerAccount.i18n.language,
-              },
+          const result = await storefront.mutate(UPDATE_ADDRESS_MUTATION, {
+            variables: {
+              customerAccessToken,
+              address,
+              id: decodeURIComponent(addressId),
+              language: storefront.i18n?.language,
             },
-          );
+          });
 
-          if (errors?.length) {
-            throw new Error(errors[0].message);
+          const userErrors = result?.customerAddressUpdate?.customerUserErrors;
+          if (userErrors?.length) {
+            throw new Error(userErrors[0].message);
           }
 
-          if (data?.customerAddressUpdate?.userErrors?.length) {
-            throw new Error(data?.customerAddressUpdate?.userErrors[0].message);
-          }
-
-          if (!data?.customerAddressUpdate?.customerAddress) {
+          if (!result?.customerAddressUpdate?.customerAddress) {
             throw new Error('Customer address update failed.');
           }
+
+          await applyDefaultAddress(decodeURIComponent(addressId));
 
           return {
             error: null,
@@ -181,25 +197,20 @@ export async function action({request, context}) {
       case 'DELETE': {
         // handles address deletion
         try {
-          const {data, errors} = await customerAccount.mutate(
-            DELETE_ADDRESS_MUTATION,
-            {
-              variables: {
-                addressId: decodeURIComponent(addressId),
-                language: customerAccount.i18n.language,
-              },
+          const result = await storefront.mutate(DELETE_ADDRESS_MUTATION, {
+            variables: {
+              customerAccessToken,
+              id: decodeURIComponent(addressId),
+              language: storefront.i18n?.language,
             },
-          );
+          });
 
-          if (errors?.length) {
-            throw new Error(errors[0].message);
+          const userErrors = result?.customerAddressDelete?.customerUserErrors;
+          if (userErrors?.length) {
+            throw new Error(userErrors[0].message);
           }
 
-          if (data?.customerAddressDelete?.userErrors?.length) {
-            throw new Error(data?.customerAddressDelete?.userErrors[0].message);
-          }
-
-          if (!data?.customerAddressDelete?.deletedAddressId) {
+          if (!result?.customerAddressDelete?.deletedCustomerAddressId) {
             throw new Error('Customer address delete failed.');
           }
 
@@ -284,12 +295,12 @@ function NewAddressForm() {
     address2: '',
     city: '',
     company: '',
-    territoryCode: '',
+    country: '',
     firstName: '',
     id: 'new',
     lastName: '',
-    phoneNumber: '',
-    zoneCode: '',
+    phone: '',
+    province: '',
     zip: '',
   };
 
@@ -440,7 +451,7 @@ export function AddressForm({addressId, address, defaultAddress, children}) {
         <input
           aria-label="State/Province"
           autoComplete="address-level1"
-          defaultValue={address?.zoneCode ?? ''}
+          defaultValue={address?.province ?? ''}
           id="zoneCode"
           name="zoneCode"
           placeholder="State / Province"
@@ -458,23 +469,22 @@ export function AddressForm({addressId, address, defaultAddress, children}) {
           required
           type="text"
         />
-        <label htmlFor="territoryCode">Country Code*</label>
+        <label htmlFor="territoryCode">Country*</label>
         <input
-          aria-label="Country code"
-          autoComplete="country"
-          defaultValue={address?.territoryCode ?? ''}
+          aria-label="Country"
+          autoComplete="country-name"
+          defaultValue={address?.country ?? ''}
           id="territoryCode"
           name="territoryCode"
-          placeholder="Country"
+          placeholder="Country (e.g. United States)"
           required
           type="text"
-          maxLength={2}
         />
         <label htmlFor="phoneNumber">Phone</label>
         <input
           aria-label="Phone Number"
           autoComplete="tel"
-          defaultValue={address?.phoneNumber ?? ''}
+          defaultValue={address?.phone ?? ''}
           id="phoneNumber"
           name="phoneNumber"
           placeholder="+16135551111"

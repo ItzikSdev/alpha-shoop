@@ -1,6 +1,7 @@
 import {redirect} from 'react-router';
+import {clearCustomerAccessToken} from '~/lib/customer';
 
-// if we don't implement this, /account/logout will get caught by account.$.tsx to do login
+// if we don't implement this, /account/logout will get caught by account.$.jsx to do login
 
 export async function loader() {
   return redirect('/');
@@ -10,7 +11,8 @@ export async function loader() {
  * @param {Route.ActionArgs}
  */
 export async function action({context}) {
-  return context.customerAccount.logout();
+  clearCustomerAccessToken(context.session);
+  return redirect('/');
 }
 
 /** @typedef {import('./+types/account_.logout').Route} Route */

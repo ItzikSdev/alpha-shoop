@@ -5,18 +5,15 @@ import {
   useSearchParams,
 } from 'react-router';
 import {useRef} from 'react';
-import {
-  Money,
-  getPaginationVariables,
-  flattenConnection,
-} from '@shopify/hydrogen';
+import {Money, getPaginationVariables} from '@shopify/hydrogen';
 import {
   buildOrderSearchQuery,
   parseOrderFilters,
   ORDER_FILTER_FIELDS,
 } from '~/lib/orderFilters';
-import {CUSTOMER_ORDERS_QUERY} from '~/graphql/customer-account/CustomerOrdersQuery';
+import {CUSTOMER_ORDERS_QUERY} from '~/graphql/customer/CustomerOrdersQuery';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
+import {requireCustomer, getCustomerAccessToken} from '~/lib/customer';
 
 /**
  * @type {Route.MetaFunction}
@@ -29,7 +26,7 @@ export const meta = () => {
  * @param {Route.LoaderArgs}
  */
 export async function loader({request, context}) {
-  const {customerAccount} = context;
+  await requireCustomer(context, request);
   const paginationVariables = getPaginationVariables(request, {
     pageBy: 20,
   });
@@ -38,15 +35,16 @@ export async function loader({request, context}) {
   const filters = parseOrderFilters(url.searchParams);
   const query = buildOrderSearchQuery(filters);
 
-  const {data, errors} = await customerAccount.query(CUSTOMER_ORDERS_QUERY, {
+  const data = await context.storefront.query(CUSTOMER_ORDERS_QUERY, {
     variables: {
+      customerAccessToken: getCustomerAccessToken(context.session),
       ...paginationVariables,
       query,
-      language: customerAccount.i18n.language,
+      language: context.storefront.i18n?.language,
     },
   });
 
-  if (errors?.length || !data?.customer) {
+  if (!data?.customer) {
     throw Error('Customer orders not found');
   }
 
@@ -203,20 +201,16 @@ function OrderSearchForm({currentFilters}) {
  * @param {{order: OrderItemFragment}}
  */
 function OrderItem({order}) {
-  const fulfillmentStatus = flattenConnection(order.fulfillments)[0]?.status;
   return (
     <>
       <fieldset>
         <Link to={`/account/orders/${btoa(order.id)}`}>
-          <strong>#{order.number}</strong>
+          <strong>#{order.orderNumber}</strong>
         </Link>
         <p>{new Date(order.processedAt).toDateString()}</p>
-        {order.confirmationNumber && (
-          <p>Confirmation: {order.confirmationNumber}</p>
-        )}
         <p>{order.financialStatus}</p>
-        {fulfillmentStatus && <p>{fulfillmentStatus}</p>}
-        <Money data={order.totalPrice} />
+        {order.fulfillmentStatus && <p>{order.fulfillmentStatus}</p>}
+        <Money data={order.currentTotalPrice} />
         <Link to={`/account/orders/${btoa(order.id)}`}>View Order →</Link>
       </fieldset>
       <br />

@@ -5,7 +5,7 @@ import {
   Outlet,
   useLoaderData,
 } from 'react-router';
-import {CUSTOMER_DETAILS_QUERY} from '~/graphql/customer-account/CustomerDetailsQuery';
+import {requireCustomer} from '~/lib/customer';
 
 export function shouldRevalidate() {
   return true;
@@ -14,20 +14,13 @@ export function shouldRevalidate() {
 /**
  * @param {Route.LoaderArgs}
  */
-export async function loader({context}) {
-  const {customerAccount} = context;
-  const {data, errors} = await customerAccount.query(CUSTOMER_DETAILS_QUERY, {
-    variables: {
-      language: customerAccount.i18n.language,
-    },
-  });
-
-  if (errors?.length || !data?.customer) {
-    throw new Error('Customer not found');
-  }
+export async function loader({request, context}) {
+  // Redirects to /account/login (preserving the destination) if there's no
+  // valid customerAccessToken in the session.
+  const customer = await requireCustomer(context, request);
 
   return remixData(
-    {customer: data.customer},
+    {customer},
     {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',

@@ -63,7 +63,7 @@ export function ProductGallery({images, selectedVariantImage}) {
   return (
     <div className="tobp-carousel">
       {gallery.length === 1 && (
-        <Image alt={gallery[0].altText || ''} aspectRatio="4/5" data={gallery[0]} sizes="(min-width: 45em) 50vw, 100vw" />
+        <Image alt={gallery[0].altText || ''} aspectRatio="1/1" data={gallery[0]} sizes="(min-width: 45em) 50vw, 100vw" />
       )}
       {gallery.length > 1 && (
         <div className="tobp-carousel-nav">
@@ -73,7 +73,7 @@ export function ProductGallery({images, selectedVariantImage}) {
                 <div key={img.id} className="tobp-carousel-slide">
                   <Image
                     alt={img.altText || ''}
-                    aspectRatio="4/5"
+                    aspectRatio="1/1"
                     data={img}
                     sizes="100vw"
                   />

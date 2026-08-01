@@ -208,8 +208,35 @@ function HeaderCtas({isLoggedIn, cart}) {
       >
         <IconMenu />
       </button>
+      <AccountLink isLoggedIn={isLoggedIn} />
       <CartToggle cart={cart} />
     </nav>
+  );
+}
+
+/**
+ * @param {{isLoggedIn: Promise<boolean>}}
+ */
+function AccountLink({isLoggedIn}) {
+  return (
+    <Suspense fallback={<AccountLinkResolved loggedIn={false} />}>
+      <Await resolve={isLoggedIn}>
+        {(loggedIn) => <AccountLinkResolved loggedIn={loggedIn} />}
+      </Await>
+    </Suspense>
+  );
+}
+
+function AccountLinkResolved({loggedIn}) {
+  return (
+    <Link
+      to={loggedIn ? '/account' : '/account/login'}
+      prefetch="intent"
+      className="tob-hcart reset"
+      aria-label={loggedIn ? 'Account' : 'Sign in'}
+    >
+      <IconAccount />
+    </Link>
   );
 }
 
@@ -253,6 +280,14 @@ function IconBag() {
     <svg className="tob-ic" viewBox="0 0 20 20" aria-hidden="true">
       <path d="M5 6h10l1 11H4L5 6z" />
       <path d="M7.5 6V5a2.5 2.5 0 0 1 5 0v1" />
+    </svg>
+  );
+}
+function IconAccount() {
+  return (
+    <svg className="tob-ic" viewBox="0 0 20 20" aria-hidden="true">
+      <circle cx="10" cy="6.5" r="3.5" />
+      <path d="M3 17c1.2-3.5 4-5.2 7-5.2s5.8 1.7 7 5.2" />
     </svg>
   );
 }

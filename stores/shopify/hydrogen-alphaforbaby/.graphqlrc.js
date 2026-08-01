@@ -17,8 +17,10 @@ const graphqlConfig = {
     },
 
     customer: {
-      schema: getSchema('customer-account'),
-      documents: ['./app/graphql/customer-account/*.{ts,tsx,js,jsx}'],
+      // Classic Storefront API customer auth (customerAccessTokenCreate),
+      // not the OAuth Customer Account API — see app/lib/customer.js.
+      schema: getSchema('storefront'),
+      documents: ['./app/graphql/customer/*.{ts,tsx,js,jsx}'],
     },
 
     // Add your own GraphQL projects here for CMS, Shopify Admin API, etc.

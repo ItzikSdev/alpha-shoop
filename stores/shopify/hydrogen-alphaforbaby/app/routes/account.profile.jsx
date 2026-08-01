@@ -1,4 +1,4 @@
-import {CUSTOMER_UPDATE_MUTATION} from '~/graphql/customer-account/CustomerUpdateMutation';
+import {CUSTOMER_UPDATE_MUTATION} from '~/graphql/customer/CustomerUpdateMutation';
 import {
   data,
   Form,
@@ -6,6 +6,7 @@ import {
   useNavigation,
   useOutletContext,
 } from 'react-router';
+import {requireCustomer, getCustomerAccessToken} from '~/lib/customer';
 
 /**
  * @type {Route.MetaFunction}
@@ -17,8 +18,8 @@ export const meta = () => {
 /**
  * @param {Route.LoaderArgs}
  */
-export async function loader({context}) {
-  await context.customerAccount.handleAuthStatus();
+export async function loader({request, context}) {
+  await requireCustomer(context, request);
 
   return {};
 }
@@ -27,10 +28,15 @@ export async function loader({context}) {
  * @param {Route.ActionArgs}
  */
 export async function action({request, context}) {
-  const {customerAccount} = context;
+  const {storefront, session} = context;
 
   if (request.method !== 'PUT') {
     return data({error: 'Method not allowed'}, {status: 405});
+  }
+
+  const customerAccessToken = getCustomerAccessToken(session);
+  if (!customerAccessToken) {
+    return data({error: 'Unauthorized', customer: null}, {status: 401});
   }
 
   const form = await request.formData();
@@ -47,28 +53,26 @@ export async function action({request, context}) {
       }
     }
 
-    // update customer and possibly password
-    const {data, errors} = await customerAccount.mutate(
-      CUSTOMER_UPDATE_MUTATION,
-      {
-        variables: {
-          customer,
-          language: customerAccount.i18n.language,
-        },
+    const result = await storefront.mutate(CUSTOMER_UPDATE_MUTATION, {
+      variables: {
+        customerAccessToken,
+        customer,
+        language: storefront.i18n?.language,
       },
-    );
+    });
 
-    if (errors?.length) {
-      throw new Error(errors[0].message);
+    const userErrors = result?.customerUpdate?.customerUserErrors;
+    if (userErrors?.length) {
+      throw new Error(userErrors[0].message);
     }
 
-    if (!data?.customerUpdate?.customer) {
+    if (!result?.customerUpdate?.customer) {
       throw new Error('Customer profile update failed.');
     }
 
     return {
       error: null,
-      customer: data?.customerUpdate?.customer,
+      customer: result?.customerUpdate?.customer,
     };
   } catch (error) {
     return data(

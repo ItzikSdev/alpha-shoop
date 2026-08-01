@@ -1,6 +1,7 @@
 import {redirect, useLoaderData} from 'react-router';
 import {Money, Image} from '@shopify/hydrogen';
-import {CUSTOMER_ORDER_QUERY} from '~/graphql/customer-account/CustomerOrderQuery';
+import {CUSTOMER_ORDER_QUERY} from '~/graphql/customer/CustomerOrderQuery';
+import {requireCustomer, getCustomerAccessToken} from '~/lib/customer';
 
 /**
  * @type {Route.MetaFunction}
@@ -12,73 +13,49 @@ export const meta = ({data}) => {
 /**
  * @param {Route.LoaderArgs}
  */
-export async function loader({params, context}) {
-  const {customerAccount} = context;
+export async function loader({request, params, context}) {
+  await requireCustomer(context, request);
   if (!params.id) {
     return redirect('/account/orders');
   }
 
   const orderId = atob(params.id);
-  const {data, errors} = await customerAccount.query(CUSTOMER_ORDER_QUERY, {
+  const customerAccessToken = getCustomerAccessToken(context.session);
+  const data = await context.storefront.query(CUSTOMER_ORDER_QUERY, {
     variables: {
-      orderId,
-      language: customerAccount.i18n.language,
+      customerAccessToken,
+      language: context.storefront.i18n?.language,
     },
   });
 
-  if (errors?.length || !data?.order) {
+  // The classic Storefront API has no "order by id" query — orders are only
+  // reachable through the authenticated customer's own order list, which is
+  // what we fetched above. Find the match here.
+  const order = data?.customer?.orders?.nodes?.find((o) => o.id === orderId);
+
+  if (!order) {
     throw new Error('Order not found');
   }
-
-  const {order} = data;
 
   // Extract line items directly from nodes array
   const lineItems = order.lineItems.nodes;
 
-  // Extract discount applications directly from nodes array
-  const discountApplications = order.discountApplications.nodes;
-
-  // Get fulfillment status from first fulfillment node
-  const fulfillmentStatus = order.fulfillments.nodes[0]?.status ?? 'N/A';
-
-  // Get first discount value with proper type checking
-  const firstDiscount = discountApplications[0]?.value;
-
-  // Type guard for MoneyV2 discount
-  const discountValue =
-    firstDiscount?.__typename === 'MoneyV2' ? firstDiscount : null;
-
-  // Type guard for percentage discount
-  const discountPercentage =
-    firstDiscount?.__typename === 'PricingPercentageValue'
-      ? firstDiscount.percentage
-      : null;
+  const fulfillmentStatus = order.fulfillmentStatus ?? 'N/A';
 
   return {
     order,
     lineItems,
-    discountValue,
-    discountPercentage,
     fulfillmentStatus,
   };
 }
 
 export default function OrderRoute() {
   /** @type {LoaderReturnData} */
-  const {
-    order,
-    lineItems,
-    discountValue,
-    discountPercentage,
-    fulfillmentStatus,
-  } = useLoaderData();
+  const {order, lineItems, fulfillmentStatus} = useLoaderData();
   return (
     <div className="account-order">
       <h2>Order {order.name}</h2>
       <p>Placed on {new Date(order.processedAt).toDateString()}</p>
-      {order.confirmationNumber && (
-        <p>Confirmation: {order.confirmationNumber}</p>
-      )}
       <br />
       <div>
         <table>
@@ -97,24 +74,6 @@ export default function OrderRoute() {
             ))}
           </tbody>
           <tfoot>
-            {((discountValue && discountValue.amount) ||
-              discountPercentage) && (
-              <tr>
-                <th scope="row" colSpan={3}>
-                  <p>Discounts</p>
-                </th>
-                <th scope="row">
-                  <p>Discounts</p>
-                </th>
-                <td>
-                  {discountPercentage ? (
-                    <span>-{discountPercentage}% OFF</span>
-                  ) : (
-                    discountValue && <Money data={discountValue} />
-                  )}
-                </td>
-              </tr>
-            )}
             <tr>
               <th scope="row" colSpan={3}>
                 <p>Subtotal</p>
@@ -123,7 +82,7 @@ export default function OrderRoute() {
                 <p>Subtotal</p>
               </th>
               <td>
-                <Money data={order.subtotal} />
+                <Money data={order.currentSubtotalPrice} />
               </td>
             </tr>
             <tr>
@@ -134,7 +93,7 @@ export default function OrderRoute() {
                 <p>Tax</p>
               </th>
               <td>
-                <Money data={order.totalTax} />
+                <Money data={order.currentTotalTax} />
               </td>
             </tr>
             <tr>
@@ -145,7 +104,7 @@ export default function OrderRoute() {
                 <p>Total</p>
               </th>
               <td>
-                <Money data={order.totalPrice} />
+                <Money data={order.currentTotalPrice} />
               </td>
             </tr>
           </tfoot>
@@ -177,7 +136,7 @@ export default function OrderRoute() {
       </div>
       <br />
       <p>
-        <a target="_blank" href={order.statusPageUrl} rel="noreferrer">
+        <a target="_blank" href={order.statusUrl} rel="noreferrer">
           View Order Status →
         </a>
       </p>
@@ -190,32 +149,30 @@ export default function OrderRoute() {
  */
 function OrderLineRow({lineItem}) {
   return (
-    <tr key={lineItem.id}>
+    <tr>
       <td>
         <div>
-          {lineItem?.image && (
+          {lineItem?.variant?.image && (
             <div>
-              <Image data={lineItem.image} width={96} height={96} />
+              <Image data={lineItem.variant.image} width={96} height={96} />
             </div>
           )}
           <div>
             <p>{lineItem.title}</p>
-            <small>{lineItem.variantTitle}</small>
+            <small>{lineItem.variant?.title}</small>
           </div>
         </div>
       </td>
       <td>
-        <Money data={lineItem.price} />
+        <Money data={lineItem.originalTotalPrice} />
       </td>
       <td>{lineItem.quantity}</td>
       <td>
-        <Money data={lineItem.totalDiscount} />
+        <Money data={lineItem.discountedTotalPrice} />
       </td>
     </tr>
   );
 }
 
 /** @typedef {import('./+types/account.orders.$id').Route} Route */
-/** @typedef {import('customer-accountapi.generated').OrderLineItemFullFragment} OrderLineItemFullFragment */
-/** @typedef {import('customer-accountapi.generated').OrderQuery} OrderQuery */
 /** @typedef {ReturnType<typeof useLoaderData<typeof loader>>} LoaderReturnData */

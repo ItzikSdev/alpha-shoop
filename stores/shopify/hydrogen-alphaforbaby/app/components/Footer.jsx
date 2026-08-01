@@ -10,7 +10,17 @@ export function Footer() {
     <footer className="tob-footer">
       <div className="tob-wrap tob-fcols">
         <div className="tob-fbrand">
-          <div className="tob-flogo">{name}</div>
+          <div className="tob-flogo">
+            <img
+              src={config.brand.logoImage}
+              alt={name}
+              width="28"
+              height="28"
+              className="tob-flogo-icon"
+              loading="lazy"
+            />
+            {name}
+          </div>
           <p>{tagline}</p>
         </div>
 

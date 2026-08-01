@@ -42,10 +42,10 @@ type Pages = {
   "/pages/accessibility": {
     params: {};
   };
-  "/account/authorize": {
+  "/collections": {
     params: {};
   };
-  "/collections": {
+  "/account/register": {
     params: {};
   };
   "/policies/:handle": {
@@ -147,7 +147,7 @@ type Pages = {
 type RouteFiles = {
   "root.jsx": {
     id: "root";
-    page: "/" | "/blogs/:blogHandle/:articleHandle" | "/sitemap/:type/:page.xml" | "/blogs/:blogHandle" | "/admin/fix-collections" | "/collections/:handle" | "/pages/accessibility" | "/account/authorize" | "/collections" | "/policies/:handle" | "/products/:handle" | "/account/logout" | "/collections/all" | "/policies" | "/account/login" | "/discount/:code" | "/pages/about-us" | "/sitemap.xml" | "/pages/:handle" | "/pages/contact" | "/robots.txt" | "/blogs" | "/account" | "/account/orders" | "/account/orders/:id" | "/account/addresses" | "/account/profile" | "/account/*" | "/search" | "/cart" | "/cart/:lines" | "/*" | "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json";
+    page: "/" | "/blogs/:blogHandle/:articleHandle" | "/sitemap/:type/:page.xml" | "/blogs/:blogHandle" | "/admin/fix-collections" | "/collections/:handle" | "/pages/accessibility" | "/collections" | "/account/register" | "/policies/:handle" | "/products/:handle" | "/account/logout" | "/collections/all" | "/policies" | "/account/login" | "/discount/:code" | "/pages/about-us" | "/sitemap.xml" | "/pages/:handle" | "/pages/contact" | "/robots.txt" | "/blogs" | "/account" | "/account/orders" | "/account/orders/:id" | "/account/addresses" | "/account/profile" | "/account/*" | "/search" | "/cart" | "/cart/:lines" | "/*" | "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json";
   };
   "routes/blogs.$blogHandle.$articleHandle.jsx": {
     id: "routes/blogs.$blogHandle.$articleHandle";
@@ -173,13 +173,13 @@ type RouteFiles = {
     id: "routes/pages.accessibility";
     page: "/pages/accessibility";
   };
-  "routes/account_.authorize.jsx": {
-    id: "routes/account_.authorize";
-    page: "/account/authorize";
-  };
   "routes/collections._index.jsx": {
     id: "routes/collections._index";
     page: "/collections";
+  };
+  "routes/account_.register.jsx": {
+    id: "routes/account_.register";
+    page: "/account/register";
   };
   "routes/policies.$handle.jsx": {
     id: "routes/policies.$handle";
@@ -311,8 +311,8 @@ type RouteModules = {
   "routes/admin.fix-collections": typeof import("./app/routes/admin.fix-collections.jsx");
   "routes/collections.$handle": typeof import("./app/routes/collections.$handle.jsx");
   "routes/pages.accessibility": typeof import("./app/routes/pages.accessibility.jsx");
-  "routes/account_.authorize": typeof import("./app/routes/account_.authorize.jsx");
   "routes/collections._index": typeof import("./app/routes/collections._index.jsx");
+  "routes/account_.register": typeof import("./app/routes/account_.register.jsx");
   "routes/policies.$handle": typeof import("./app/routes/policies.$handle.jsx");
   "routes/products.$handle": typeof import("./app/routes/products.$handle.jsx");
   "routes/account_.logout": typeof import("./app/routes/account_.logout.jsx");

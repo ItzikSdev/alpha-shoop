@@ -13,3 +13,4 @@ node_modules
 
 # per-store deploy secrets
 store-profiles/*/store.env
+/secrets
