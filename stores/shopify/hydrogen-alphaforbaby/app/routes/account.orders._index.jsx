@@ -6,6 +6,7 @@ import {
 } from 'react-router';
 import {useRef} from 'react';
 import {Money, getPaginationVariables} from '@shopify/hydrogen';
+import {Card, CardBody, Input, Button, Typography, Chip} from '@material-tailwind/react';
 import {
   buildOrderSearchQuery,
   parseOrderFilters,
@@ -46,7 +47,7 @@ export default function Orders() {
   const {orders, filters} = useLoaderData();
 
   return (
-    <div className="orders">
+    <div className="flex flex-col gap-6">
       <OrderSearchForm currentFilters={filters} />
       <OrdersTable orders={orders} filters={filters} />
     </div>
@@ -57,7 +58,7 @@ function OrdersTable({orders, filters}) {
   const hasFilters = !!(filters.name || filters.confirmationNumber);
 
   return (
-    <div className="acccount-orders" aria-live="polite">
+    <div aria-live="polite">
       {orders?.nodes?.length ? (
         <PaginatedResourceSection connection={orders}>
           {({node: order}) => <OrderItem key={order.id} order={order} />}
@@ -71,22 +72,20 @@ function OrdersTable({orders, filters}) {
 
 function EmptyOrders({hasFilters = false}) {
   return (
-    <div>
+    <div className="flex flex-col items-center gap-2 py-12 text-center">
       {hasFilters ? (
         <>
-          <p>No orders found matching your search.</p>
-          <br />
-          <p>
-            <Link to="/account/orders">Clear filters →</Link>
-          </p>
+          <Typography color="gray">No orders found matching your search.</Typography>
+          <Link to="/account/orders" className="login-underline-link">
+            Clear filters →
+          </Link>
         </>
       ) : (
         <>
-          <p>You haven&apos;t placed any orders yet.</p>
-          <br />
-          <p>
-            <Link to="/collections">Start Shopping →</Link>
-          </p>
+          <Typography color="gray">You haven&apos;t placed any orders yet.</Typography>
+          <Link to="/collections" className="login-underline-link">
+            Start Shopping →
+          </Link>
         </>
       )}
     </div>

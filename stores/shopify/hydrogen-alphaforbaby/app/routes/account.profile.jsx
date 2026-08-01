@@ -5,6 +5,7 @@ import {
   useNavigation,
   useOutletContext,
 } from 'react-router';
+import {Input, Button, Typography, Alert} from '@material-tailwind/react';
 import {requireCustomer, updateCustomerProfile} from '~/lib/customer';
 
 /**
@@ -65,47 +66,45 @@ export default function AccountProfile() {
   const customer = action?.customer ?? account?.customer;
 
   return (
-    <div className="account-profile">
-      <h2>My profile</h2>
-      <br />
-      <Form method="PUT">
-        <legend>Personal information</legend>
-        <fieldset>
-          <label htmlFor="firstName">First name</label>
-          <input
-            id="firstName"
-            name="firstName"
-            type="text"
-            autoComplete="given-name"
-            placeholder="First name"
-            aria-label="First name"
-            defaultValue={customer?.firstName ?? ''}
-            minLength={2}
-          />
-          <label htmlFor="lastName">Last name</label>
-          <input
-            id="lastName"
-            name="lastName"
-            type="text"
-            autoComplete="family-name"
-            placeholder="Last name"
-            aria-label="Last name"
-            defaultValue={customer?.lastName ?? ''}
-            minLength={2}
-          />
-        </fieldset>
+    <div className="max-w-md flex flex-col gap-6">
+      <Typography variant="h4" color="blue-gray">
+        My profile
+      </Typography>
+      <Form method="PUT" className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="w-full">
+            <Input
+              id="firstName"
+              name="firstName"
+              type="text"
+              label="First name"
+              autoComplete="given-name"
+              defaultValue={customer?.firstName ?? ''}
+              minLength={2}
+              crossOrigin=""
+            />
+          </div>
+          <div className="w-full">
+            <Input
+              id="lastName"
+              name="lastName"
+              type="text"
+              label="Last name"
+              autoComplete="family-name"
+              defaultValue={customer?.lastName ?? ''}
+              minLength={2}
+              crossOrigin=""
+            />
+          </div>
+        </div>
         {action?.error ? (
-          <p>
-            <mark>
-              <small>{action.error}</small>
-            </mark>
-          </p>
-        ) : (
-          <br />
-        )}
-        <button type="submit" disabled={state !== 'idle'}>
-          {state !== 'idle' ? 'Updating' : 'Update'}
-        </button>
+          <Alert color="red" variant="ghost">
+            {action.error}
+          </Alert>
+        ) : null}
+        <Button type="submit" disabled={state !== 'idle'} className="self-start">
+          {state !== 'idle' ? 'Updating…' : 'Update'}
+        </Button>
       </Form>
     </div>
   );

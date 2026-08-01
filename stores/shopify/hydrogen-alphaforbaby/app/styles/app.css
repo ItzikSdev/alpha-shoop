@@ -3088,3 +3088,12 @@ img { max-width:100%; }
 
 a.login-underline-link{text-decoration:underline}
 a.login-underline-link:hover{color:var(--tob-ink,#161616)}
+
+.collections-page{max-width:1200px;margin:0 auto;padding:48px 24px 96px}
+.collections-page h1{font-family:var(--font-display,"Newsreader",Georgia,serif);font-size:2rem;font-weight:600;color:var(--tob-ink,#161616);margin:0 0 32px}
+.collections-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:28px 20px}
+.collection-item{display:flex;flex-direction:column;gap:12px;text-decoration:none;color:var(--tob-ink,#161616)}
+.collection-item img{border-radius:12px;background:var(--tob-soft,#f6f4f1);width:100%;height:auto}
+.collection-item h5{font-family:var(--font-display,"Newsreader",Georgia,serif);font-size:1.05rem;font-weight:600;margin:0;text-align:center}
+.collections-page a:not(.collection-item){display:block;width:max-content;margin:32px auto 0;font-size:0.9rem;color:var(--tob-muted,#8d8d8d);text-decoration:underline}
+.collections-page a:not(.collection-item):hover{color:var(--tob-ink,#161616)}
