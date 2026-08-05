@@ -18,6 +18,7 @@ import {ProductForm} from '~/components/ProductForm';
 import {AddToCartButton} from '~/components/AddToCartButton';
 import {FrequentlyBoughtTogether} from '~/components/FrequentlyBoughtTogether';
 import {ProductReviews, parseReviews} from '~/components/ProductReviews';
+import {PromoBanner} from '~/components/PromoBanner';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {config} from '~/lib/theme';
 import {normalizeSizeLabel} from '~/lib/sizeLabels';
@@ -435,6 +436,10 @@ export default function Product() {
             <section className="px-4 md:px-0 pt-6">
               <ProductForm productOptions={productOptions} selectedVariant={selectedVariant} />
             </section>
+
+            <div className="mt-6 px-4 md:px-0">
+              <PromoBanner full />
+            </div>
 
             {trustBadges.length > 0 && (
               <section className="flex flex-col gap-4 px-4 md:px-0 pt-6">

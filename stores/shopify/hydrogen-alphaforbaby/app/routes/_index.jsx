@@ -2,6 +2,7 @@ import {useLoaderData, Link} from 'react-router';
 import {useEffect, useRef, useState} from 'react';
 import {Image, Money} from '@shopify/hydrogen';
 import {config} from '~/lib/theme';
+import {PromoBanner} from '~/components/PromoBanner';
 
 /**
  * @type {Route.MetaFunction}
@@ -116,6 +117,9 @@ function Hero() {
               {hero.secondaryText}
             </Link>
           )}
+        </div>
+        <div className="mt-6">
+          <PromoBanner />
         </div>
         {hero.stats?.length ? (
           <div className="tob-eh-stats">
