@@ -91,6 +91,9 @@ async def get_stores() -> list[dict]:
             "has_hype_credentials": bool((s.integrations.get("hype") or {}).get("api_key")),
             "has_max_credentials": bool((s.integrations.get("max") or {}).get("api_key")),
             "has_meta_ads_credentials": bool((s.integrations.get("meta_ads") or {}).get("access_token")),
+            "has_paypal": bool((s.integrations.get("paypal") or {}).get("enabled")),
+            "google_signin_status": (s.integrations.get("google_signin") or {}).get("status"),
+            "apple_signin_status": (s.integrations.get("apple_signin") or {}).get("status"),
         }
         for s in stores
     ]
@@ -137,6 +140,9 @@ async def get_store_detail(store_id: str) -> dict:
         "support_email": store.support_email,
         "has_supplier_credentials": bool(store.supplier_credentials),
         "has_email_credentials": bool(store.email_credentials),
+        "has_paypal": bool((store.integrations.get("paypal") or {}).get("enabled")),
+        "google_signin_status": (store.integrations.get("google_signin") or {}).get("status"),
+        "apple_signin_status": (store.integrations.get("apple_signin") or {}).get("status"),
     }
 
 

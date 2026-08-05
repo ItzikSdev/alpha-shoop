@@ -6,6 +6,7 @@ export function Footer() {
   const {name, tagline, supportEmail, copyright} = config.brand;
   const legalLinks = config.legalLinks || [];
   const payIcons = config.paymentIcons || [];
+  const nameParts = name.match(/^(.*) FOR (.*)$/);
   return (
     <footer className="tob-footer">
       <div className="tob-wrap tob-fcols">
@@ -19,7 +20,13 @@ export function Footer() {
               className="tob-flogo-icon"
               loading="lazy"
             />
-            {name}
+            {nameParts ? (
+              <span>
+                {nameParts[1]} <span className="tob-hlogo-accent">FOR</span> {nameParts[2]}
+              </span>
+            ) : (
+              name
+            )}
           </div>
           <p>{tagline}</p>
         </div>

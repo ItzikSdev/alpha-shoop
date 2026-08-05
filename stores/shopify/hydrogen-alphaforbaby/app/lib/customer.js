@@ -126,6 +126,7 @@ function shapeCustomer(customer) {
     appleSub,
     resetTokenHash,
     resetTokenExpires,
+    cartId,
     addressesV2,
     ...rest
   } = customer;
@@ -134,6 +135,8 @@ function shapeCustomer(customer) {
     // Admin API's paginated `addressesV2` connection flattened into a plain
     // array — matches the shape the (already-built) addresses UI expects.
     addresses: addressesV2?.nodes ?? [],
+    // Storefront API cart id this customer last had — see app/lib/cartSync.js.
+    savedCartId: cartId?.value ?? null,
     _auth: {
       passwordHash: passwordHash?.value ?? null,
       googleSub: googleSub?.value ?? null,
@@ -175,14 +178,15 @@ export async function getCustomerById(env, customerGid) {
  * @param {Env} env
  * @param {string} customerGid
  * @param {Record<string, string | null | undefined>} fields keys are the
- *   metafield `key` under the `custom_auth` namespace, e.g. `{password_hash: '...'}`
+ *   metafield `key` under `namespace`, e.g. `{password_hash: '...'}`
+ * @param {string} [namespace]
  */
-async function setAuthMetafields(env, customerGid, fields) {
+async function setAuthMetafields(env, customerGid, fields, namespace = 'custom_auth') {
   const metafields = Object.entries(fields)
     .filter(([, value]) => value != null)
     .map(([key, value]) => ({
       ownerId: customerGid,
-      namespace: 'custom_auth',
+      namespace,
       key,
       type: 'single_line_text_field',
       value: String(value),
@@ -397,6 +401,24 @@ export async function findOrCreateCustomerForOAuth(
   }
 
   return customer;
+}
+
+/**
+ * Best-effort: remembers which Storefront API cart belongs to this customer
+ * so app/lib/cartSync.js can restore/merge it into another device's browser
+ * at their next login. Unlike custom_auth.* this isn't security-sensitive,
+ * so failures are swallowed here rather than thrown — a cart-sync save must
+ * never break the add-to-cart/checkout flow that triggered it.
+ * @param {Env} env
+ * @param {string} customerGid
+ * @param {string} cartId
+ */
+export async function saveCustomerCartId(env, customerGid, cartId) {
+  try {
+    await setAuthMetafields(env, customerGid, {cart_id: cartId}, 'custom_cart');
+  } catch (error) {
+    console.error('[saveCustomerCartId] failed', error);
+  }
 }
 
 /**

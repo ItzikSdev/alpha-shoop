@@ -3,11 +3,373 @@
 @tailwind utilities;
 
 /* ============================================================================
+   "CLASSICAL" DESIGN SYSTEM (2026-08-02 handoff) — the real component layer
+   from the provided reference/classical-styles.css, ported 1:1 onto this
+   site's existing token pipeline (--ink/--line/--soft come from
+   theme.config.json via .tob{...} below) instead of a second set of
+   variables, plus the two client-approved deviations baked in as the actual
+   values: cream ground (#ffffff bg / #ffffff surface) and FbTubicSans-Light
+   (falling back to Assistant) for BOTH heading and body — see
+   reference/classical-readme.md + the inline override block in
+   reference/ProductPage.dc.html for the source of this exact substitution.
+   Scoped under .tob (the app-wide wrapper) so it governs every page, the
+   same way the rest of this stylesheet already does.
+   ========================================================================== */
+.tob {
+  --accent: #b68235;
+  --accent-100: #fff3e4;
+  --accent-200: #ffe3bf;
+  --accent-300: #facb8d;
+  --accent-400: #e1ad66;
+  --accent-500: #c28d41;
+  --accent-600: #a06f24;
+  --accent-700: #7d5411;
+  --accent-800: #5a3b0a;
+  --accent-900: #3a270d;
+  --neutral-100: #f8f4f4;
+  --neutral-200: #eae7e7;
+  --neutral-300: #d7d3d3;
+  --neutral-400: #bab6b6;
+  --neutral-500: #9b9797;
+  --neutral-600: #7d7979;
+  --neutral-700: #605d5d;
+  --neutral-800: #444141;
+  --neutral-900: #2d2b2b;
+  --heading-weight: 600;
+  --space-1: 4.6px;
+  --space-2: 9.2px;
+  --space-3: 13.8px;
+  --space-4: 18.4px;
+  --space-6: 27.6px;
+  --space-8: 36.8px;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 7px;
+  --shadow-sm: 0 1px 2px rgba(45, 43, 43, 0.14);
+  --shadow-md: 0 3px 10px rgba(45, 43, 43, 0.16);
+  --shadow-lg: 0 12px 32px rgba(45, 43, 43, 0.22);
+}
+
+/* — hairline rule — */
+.tob .hr {
+  height: 1px;
+  border: 0;
+  margin: var(--space-4) 0;
+  background: var(--line);
+}
+
+/* — image plate: every content photograph goes through this — */
+.tob .plate {
+  box-sizing: border-box;
+  filter: sepia(0.22) saturate(0.82) contrast(1.05);
+  border: 12px solid var(--soft);
+  outline: 2px solid var(--accent);
+  box-shadow: var(--shadow-md);
+}
+.tob .plate-sm {
+  border-width: 3px;
+}
+.tob .tnum {
+  font-feature-settings: 'tnum';
+}
+
+/* — buttons: outlined, never filled — */
+.tob .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: var(--font-body);
+  font-weight: var(--heading-weight);
+  font-size: 14px;
+  line-height: 1.2;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid transparent;
+  padding: var(--space-2) calc(var(--space-3) * 1.2);
+  border-radius: var(--radius-md);
+  transition: background 0.16s ease;
+}
+.tob .btn svg {
+  display: block;
+}
+.tob .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.tob .btn-primary {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.tob .btn-primary:hover {
+  background: rgba(182, 130, 53, 0.12);
+}
+.tob .btn-primary:active {
+  background: rgba(182, 130, 53, 0.22);
+}
+.tob .btn-secondary {
+  border-color: var(--line);
+}
+.tob .btn-secondary:hover {
+  background: rgba(32, 31, 29, 0.07);
+}
+.tob .btn-secondary:active {
+  background: rgba(32, 31, 29, 0.14);
+}
+.tob .btn-ghost {
+  color: var(--accent);
+  padding-inline: var(--space-1);
+}
+.tob .btn-ghost:hover {
+  background: rgba(182, 130, 53, 0.1);
+}
+.tob .btn-ghost:active {
+  background: rgba(182, 130, 53, 0.18);
+}
+.tob .btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+.tob .btn-block {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+/* — form fields — */
+.tob .field > label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 5px;
+  color: var(--muted);
+}
+.tob .input {
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  caret-color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.tob .input:hover {
+  border-color: rgba(32, 31, 29, 0.45);
+}
+.tob .input:focus-visible {
+  border-color: var(--accent);
+  outline-offset: 0;
+}
+.tob textarea.input {
+  min-height: 90px;
+  resize: vertical;
+}
+.tob .radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.tob .radio input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.tob .radio .dot {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+}
+.tob .radio:hover .dot {
+  border-color: var(--accent);
+}
+.tob .radio input:checked + .dot {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 4px var(--bg, #ffffff);
+}
+.tob .radio input:focus-visible + .dot {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* — cards: bordered, unfilled — */
+.tob .card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1px solid var(--line);
+}
+.tob .card-kicker {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.tob .card-title {
+  font-family: var(--font-body);
+  font-weight: var(--heading-weight);
+  font-size: 17px;
+  line-height: 1.2;
+}
+.tob .card-body {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.8;
+  flex: 1;
+}
+.tob .card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.tob .elev-sm {
+  box-shadow: var(--shadow-sm);
+}
+.tob .elev-md {
+  box-shadow: var(--shadow-md);
+}
+.tob .elev-lg {
+  box-shadow: var(--shadow-lg);
+}
+
+/* — tags — */
+.tob .tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 3px 10px;
+  border-radius: 3px;
+}
+.tob .tag-accent {
+  background: var(--accent-100);
+  color: var(--accent-800);
+}
+.tob .tag-neutral {
+  background: var(--neutral-100);
+  color: var(--neutral-800);
+}
+.tob .tag-outline {
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+/* — tables — */
+.tob .table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.tob .table th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--line);
+}
+.tob .table td {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--line);
+}
+.tob .table tbody tr:hover {
+  background: rgba(32, 31, 29, 0.04);
+}
+
+/* — dialog — */
+.tob .dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: rgba(45, 43, 43, 0.5);
+}
+.tob .dialog {
+  width: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--soft);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--line);
+}
+.tob .dialog-title {
+  font-family: var(--font-body);
+  font-weight: var(--heading-weight);
+  font-size: 20px;
+}
+.tob .dialog-body {
+  font-size: 14px;
+  opacity: 0.85;
+}
+.tob .dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* Hide the scrollbar on horizontal scroll-snap galleries without hiding overflow. */
+.tob .no-scrollbar {
+  scrollbar-width: none;
+}
+.tob .no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Material Tailwind's Card/Input/Dialog/Button components (account pages,
+   reviews, cart upsell) ship their own literal white / blue-gray Tailwind
+   fills baked into the component — they don't read the site's --tob-* vars
+   at all. Override those specific utility classes so every page sits on
+   the same cream ground as the product page, not white. */
+.tob .bg-white {
+  background-color: #ffffff !important;
+}
+.tob .bg-blue-gray-50,
+.tob .bg-blue-gray-50\/50 {
+  background-color: #ffffff !important;
+}
+.tob .border-blue-gray-100,
+.tob .border-blue-gray-200 {
+  border-color: rgba(32, 31, 29, 0.16) !important;
+}
+.tob .text-blue-gray-700,
+.tob .text-blue-gray-900 {
+  color: #201f1d !important;
+}
+.tob .text-blue-gray-500,
+.tob .text-blue-gray-400 {
+  color: #807d76 !important;
+}
+.tob .hover\:bg-blue-gray-50:hover {
+  background-color: #ffffff !important;
+}
+
+/* ============================================================================
    ALPHA FOR BABY — Hydrogen storefront styles (variable-driven template)
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
-body { background:#fff; }
+body { background:#ffffff; }
 img { max-width:100%; }
 
 /* ── About Us page ── */
@@ -114,399 +476,6 @@ img { max-width:100%; }
     padding: 24px 20px;
   }
 }
-
-/* ── Product page — .tobp lives inside .tob ── */
-.tob .tobp {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 48px 56px;
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 48px 28px 80px;
-}
-.tob .tobp-gallery {
-  position: sticky;
-  top: 90px;
-  align-self: start;
-}
-/* Product info sits in the LEFT column, under the gallery — right column
-   (title/price/form/FBT/trust) stays exactly as-is, spanning both rows.
-   Desktop-only (2-col grid) — mobile stacks everything in DOM order via its
-   own single-column media query below, so no explicit placement there. */
-@media (min-width: 821px) {
-  .tob .tobp-gallery { grid-column: 1; grid-row: 1; }
-  .tob .tobp-desc { grid-column: 1; grid-row: 2; }
-  .tob .product-main { grid-column: 2; grid-row: 1 / 3; }
-}
-.tob .product-image {
-  width: 100%;
-  border-radius: 16px;
-  overflow: hidden;
-  background: var(--tob-soft, #f6f4f1);
-  aspect-ratio: 1/1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.tob .product-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.tob .tobp-brand {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--tob-muted, #8d8d8d);
-  margin-bottom: 8px;
-}
-.tob .tobp-title {
-  font-family: var(--font-display);
-  font-size: var(--tob-fs-product-title, 2rem);
-  font-weight: 700;
-  line-height: 1.2;
-  margin: 0 0 16px;
-  color: var(--ink);
-}
-.tob .tobp-trust {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 20px 0;
-}
-.tob .tobp-trust span {
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  padding: 6px 12px;
-  border: 1px solid var(--tob-line, #eee);
-  border-radius: 20px;
-  color: var(--tob-muted, #8d8d8d);
-}
-.tob .tobp-desc {
-  margin-top: 28px;
-  font-size: var(--tob-fs-description, 1rem);
-  line-height: 1.7;
-  color: var(--ink);
-}
-.tob .tobp-desc p {
-  margin: 0 0 12px;
-}
-@media (max-width: 820px) {
-  .tob .tobp {
-    grid-template-columns: 1fr;
-    gap: 24px;
-    padding: 24px 16px 60px;
-  }
-  .tob .tobp-gallery {
-    position: static;
-  }
-}
-
-/* ── Product-page cart buttons — ONE shared button language ──
-   Add to cart = solid dark (primary). Buy it now = matching outline (secondary).
-   Same height / radius / font so they read as a set (not mismatched). */
-.tob .product-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 22px;
-}
-.tob .product-form form {
-  margin: 0;
-}
-.tob .tob-atc-btn,
-.tob .tob-buynow-btn {
-  width: 100%;
-  min-height: 54px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 15px 20px;
-  border-radius: 12px;
-  font-family: var(--font-body);
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition:
-    background 0.18s ease,
-    color 0.18s ease,
-    transform 0.05s ease,
-    opacity 0.18s ease;
-}
-/* PRIMARY — solid dark, matches hero CTA / other store buttons */
-.tob .tob-atc-btn {
-  border: 1.5px solid var(--tob-ink, #161616);
-  background: var(--tob-ink, #161616);
-  color: #fff;
-}
-.tob .tob-atc-btn:hover:not(:disabled) {
-  background: #000;
-  border-color: #000;
-}
-.tob .tob-atc-btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
-.tob .tob-atc-btn:focus-visible {
-  outline: 3px solid var(--hero-accent, #b07a5f);
-  outline-offset: 2px;
-}
-.tob .tob-atc-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-/* SECONDARY — outline in the SAME shape/size; fills on hover */
-.tob .tob-buynow {
-  margin: 0;
-}
-.tob .tob-buynow form {
-  margin: 0;
-}
-.tob .tob-buynow-btn {
-  border: 1.5px solid var(--tob-ink, #161616);
-  background: #fff;
-  color: var(--tob-ink, #161616);
-}
-.tob .tob-buynow-btn:hover:not(:disabled) {
-  background: var(--tob-ink, #161616);
-  color: #fff;
-}
-.tob .tob-buynow-btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
-.tob .tob-buynow-btn:focus-visible {
-  outline: 3px solid var(--hero-accent, #b07a5f);
-  outline-offset: 2px;
-}
-.tob .tob-buynow-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-.tobp-carousel-nav {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 16px;
-  width: 100%;
-}
-
-.tobp-carousel-viewport {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-}
-
-.tobp-carousel-track {
-  display: flex;
-  width: 100%;
-  transition: transform 0.4s ease-in-out;
-}
-
-.tobp-carousel-slide {
-  flex: 0 0 100%;
-}
-
-.tobp-carousel-slide img {
-  width: 100%;
-  display: block;
-  object-fit: cover;
-}
-
-.tobp-carousel-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
-  background: var(--tob-ink, #161616);
-  color: #fff;
-  font-size: 1.3rem;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.85;
-  transition: opacity 0.2s ease;
-  z-index: 2;
-}
-
-.tobp-carousel-arrow:hover {
-  opacity: 1;
-}
-
-.tobp-carousel-arrow-prev {
-  left: 8px;
-}
-
-.tobp-carousel-arrow-next {
-  right: 8px;
-}
-
-@media (max-width: 820px) {
-  .tobp-carousel-arrow {
-    width: 30px;
-    height: 30px;
-    font-size: 1.1rem;
-  }
-}
-
-.tobp-carousel-dots {
-  display: flex;
-  margin-top: 12px;
-}
-
-.tobp-carousel-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: var(--tob-muted, #8d8d8d);
-  margin: 0 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.tobp-carousel-dot.active {
-  background-color: var(--tob-ink, #161616);
-}
-
-/* Hover pause on desktop */
-.tobp-carousel-track:hover {
-  animation-play-state: paused;
-}
-
-/* Mobile touch support */
-@media (hover: none) {
-  .tobp-carousel-track {
-    animation: carouselSlide 4s infinite;
-  }
-}
-
-.tob .tob-buynow-note {
-  margin: 8px 0 0;
-  text-align: center;
-  font-size: 0.76rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--tob-muted, #8d8d8d);
-}
-
-/* ── Category tiles — button mode + inline expand panel ── */
-/* Make the tile a button (no underline, no default button look) */
-.tob-tile-btn {
-  appearance: none;
-  border: none;
-  padding: 0;
-  background: none;
-  cursor: pointer;
-  text-align: left;
-  display: block;
-  width: 100%;
-  /* keep the same look as the old <Link> tile */
-  position: relative;
-  border-radius: 18px;
-  overflow: hidden;
-  transition:
-    transform 0.22s ease,
-    box-shadow 0.22s ease;
-}
-.tob-tile-btn:hover,
-.tob-tile-btn:focus-visible {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.13);
-  outline: none;
-}
-.tob-tile-btn:focus-visible {
-  outline: 3px solid var(--hero-accent, #b07a5f);
-  outline-offset: 2px;
-}
-
-/* Chevron icon inside the tile label */
-.tob-tile-chevron {
-  width: 18px;
-  height: 18px;
-  display: inline-block;
-  vertical-align: middle;
-  margin-left: 6px;
-  transition: transform 0.25s ease;
-  flex-shrink: 0;
-}
-.tob-tile-open .tob-tile-chevron {
-  transform: rotate(180deg);
-}
-
-/* Tile label row — flex so chevron sits right */
-.tob-tile-btn span {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-
-/* Active tile gets a subtle accent ring */
-.tob-tile-open {
-  box-shadow:
-    0 0 0 3px var(--hero-accent, #b07a5f),
-    0 8px 24px rgba(0, 0, 0, 0.1);
-}
-
-/* ── Inline category product panel ── */
-.tob-catpanel {
-  overflow: hidden;
-  max-height: 0;
-  opacity: 0;
-  transition:
-    max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.3s ease;
-  /* sits between tiles and the main product grid */
-  margin: 0 0 0;
-}
-.tob-catpanel-open {
-  max-height: 2400px; /* large enough for 12 cards */
-  opacity: 1;
-  margin: 0 0 40px;
-}
-.tob-catpanel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24px 0 16px;
-  font-family: var(--font-display);
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--tob-ink, #161616);
-  border-bottom: 1px solid var(--tob-line, #eee);
-  margin-bottom: 20px;
-}
-.tob-catpanel-viewall {
-  font-family: var(--font-body);
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--tob-muted, #8d8d8d);
-  text-decoration: none;
-  letter-spacing: 0.04em;
-  transition: color 0.18s;
-}
-.tob-catpanel-viewall:hover {
-  color: var(--tob-ink, #161616);
-}
-.tob-catpanel-empty {
-  color: var(--tob-muted, #8d8d8d);
-  padding: 24px 0;
-  text-align: center;
-}
-/* The grid inside the panel uses the same .tob-grid layout */
-.tob-catpanel-grid {
-  margin-top: 0;
-}
-
 /* ── Header search field (always visible on desktop) + live predictive dropdown ── */
 .tob .tob-hsearch-wrap {
   position: relative;
@@ -561,7 +530,7 @@ img { max-width:100%; }
   max-height: 70vh;
   overflow-y: auto;
   z-index: 60;
-  background: #fff;
+  background: #ffffff;
   border: 1px solid var(--tob-line, #eee);
   border-radius: 14px;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.14);
@@ -612,7 +581,7 @@ img { max-width:100%; }
   position: sticky;
   top: 0;
   z-index: 50;
-  background: #fff;
+  background: #ffffff;
   transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform;
 }
@@ -847,13 +816,13 @@ img { max-width:100%; }
   flex: 0 0 auto;
   height: 42px;
   padding: 0 16px;
-  border: 1px solid var(--tob-ink, #161616);
-  border-radius: 10px;
-  background: #fff;
-  color: var(--tob-ink, #161616);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--accent);
   font-family: var(--font-body);
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition:
     background 0.16s ease,
@@ -861,8 +830,7 @@ img { max-width:100%; }
 }
 .tob .cart-main section[aria-label='Discounts'] > div > button:hover,
 .tob .cart-main section[aria-label='Gift cards'] > div > button:hover {
-  background: var(--tob-ink, #161616);
-  color: #fff;
+  background: rgba(182, 130, 53, 0.12);
 }
 /* kill stray &nbsp; whitespace between input and button */
 .tob .cart-main section[aria-label='Discounts'] br,
@@ -885,18 +853,19 @@ img { max-width:100%; }
   gap: 8px;
   height: 52px;
   padding: 0 20px;
-  background: var(--tob-ink, #161616);
-  color: #fff;
-  border-radius: 12px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--radius-md);
   font-family: var(--font-body);
   font-size: 0.98rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.02em;
   transition: background 0.16s ease;
 }
 .tob .cart-main .cart-summary-aside a[href]:hover p,
 .tob .cart-main .cart-summary-page a[href]:hover p {
-  background: #000;
+  background: rgba(182, 130, 53, 0.12);
 }
 .tob .cart-main .cart-summary-aside a[href] + br,
 .tob .cart-main .cart-summary-page a[href] + br {
@@ -1118,18 +1087,19 @@ img { max-width:100%; }
   gap: 8px;
   min-height: 52px;
   padding: 14px 20px;
-  background: var(--ink);
-  color: #fff;
-  border-radius: 12px;
-  font-weight: 700;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--radius-md);
+  font-weight: 600;
   letter-spacing: 0.01em;
-  transition: opacity 0.18s ease;
+  transition: background 0.18s ease;
 }
 .tob .cart-summary-aside a[href]:hover p {
-  opacity: 0.88;
+  background: rgba(182, 130, 53, 0.12);
 }
 .tob .cart-summary-aside a[href]:focus-visible {
-  outline: 3px solid var(--hero-accent, #b07a5f);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 .tob .cart-summary-aside br {
@@ -1332,20 +1302,21 @@ img { max-width:100%; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--ink);
-  color: #fff;
-  border-radius: 12px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--radius-md);
   padding: 15px 20px;
   margin: 0;
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  transition: opacity 0.15s;
+  transition: background 0.15s;
 }
 .tob .cart-summary-aside a[target='_self']:hover p,
 .tob .cart-summary-page a[target='_self']:hover p {
-  opacity: 0.85;
+  background: rgba(182, 130, 53, 0.12);
   text-decoration: none;
 }
 
@@ -1468,7 +1439,7 @@ img { max-width:100%; }
   position: sticky;
   top: 0;
   z-index: 50;
-  background: #fff;
+  background: #ffffff;
   border-bottom: 1px solid var(--line);
 }
 .tob .tob-hrow {
@@ -1602,6 +1573,15 @@ img { max-width:100%; }
     flex-wrap: wrap;
     justify-content: space-between;
   }
+  /* Smaller breathing room than desktop's 32px, but not zero — account/cart
+     now sit on the right with the hamburger, not next to the logo, so there's
+     no more crowding to protect against here. */
+  .tob .tob-hlogo {
+    padding-left: 16px;
+  }
+  .tob .tob-hcta {
+    flex-shrink: 0;
+  }
 }
 
 /* ── Mobile menu drawer (Aside overlay) ── */
@@ -1640,7 +1620,7 @@ img { max-width:100%; }
   z-index: 1;
   width: min(340px, 90vw);
   height: 100%;
-  background: #fff;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
@@ -1742,7 +1722,7 @@ img { max-width:100%; }
   z-index: 1;
   width: min(320px, 88vw);
   height: 100%;
-  background: #fff;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
@@ -1813,46 +1793,10 @@ img { max-width:100%; }
 .tob .tob-mob-link:hover {
   background: var(--tob-soft, #f6f4f1);
 }
-/* Account + Cart icon row pinned to the top of the burger drawer */
-.tob .tob-mob-icons {
-  display: flex;
-  gap: 12px;
-  padding: 12px 24px 16px;
-  border-bottom: 1px solid var(--tob-line, #eee);
-}
-.tob .tob-mob-icons .tob-mob-ico {
-  flex: 1 1 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 12px 8px;
-  border: 1px solid var(--tob-line, #eee);
-  border-radius: 12px;
-  background: none;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--tob-ink, #161616);
-  text-decoration: none;
-  transition: background 0.15s ease;
-}
-.tob .tob-mob-icons .tob-mob-ico:hover {
-  background: var(--tob-soft, #f6f4f1);
-}
-.tob .tob-mob-icons .tob-mob-ico .tob-ic {
-  width: 22px;
-  height: 22px;
-}
-/* On mobile, account + cart live in the burger menu, not the header CTA row */
-@media (max-width: 820px) {
-  .tob .tob-hcta a[aria-label='Account'],
-  .tob .tob-hcta .tob-hcart {
-    display: none;
-  }
+/* Account + cart render with the hamburger on the right (.tob-hcta),
+   always visible at every breakpoint — not duplicated in the burger drawer. */
+.tob .tob-hlogo-accent {
+  color: var(--hero-accent, #b68235);
 }
 .tob .tob-mob-link--active {
   color: var(--tob-hero-accent, #b07a5f);
@@ -1926,19 +1870,20 @@ img { max-width:100%; }
   align-items: center;
   gap: 12px;
   padding: 15px 32px;
-  background: var(--hero-ink);
-  color: var(--hero-bg);
+  background: transparent;
+  border: 1px solid var(--hero-accent);
+  color: var(--hero-accent);
   font-size: var(--tob-fs-button, 0.82rem);
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  border-radius: 2px;
+  border-radius: var(--radius-md);
   transition:
     transform 0.25s ease,
     background 0.25s ease;
 }
 .tob .tob-eh-btn:hover {
-  background: var(--hero-accent);
+  background: rgba(182, 130, 53, 0.12);
   transform: translateY(-2px);
 }
 .tob .tob-eh-link {
@@ -2023,6 +1968,102 @@ img { max-width:100%; }
 .tob .tob-eh-dot.active {
   width: 22px;
   background: var(--hero-ink);
+}
+.tob .tob-eh-video {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: #000;
+  transform: translateX(100%);
+  pointer-events: none;
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.tob .tob-eh-video-open {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+.tob .tob-eh-video-el {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.tob .tob-eh-video-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 5;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.tob .tob-eh-video-close:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+.tob .tob-eh-video-close svg {
+  width: 16px;
+  height: 16px;
+}
+.tob .tob-eh-video-mute {
+  position: absolute;
+  top: 16px;
+  right: 64px;
+  z-index: 5;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.tob .tob-eh-video-mute:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+.tob .tob-eh-video-mute svg {
+  width: 18px;
+  height: 18px;
+}
+.tob .tob-eh-video-play {
+  position: absolute;
+  left: 24px;
+  bottom: 26px;
+  z-index: 3;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+.tob .tob-eh-video-play:hover {
+  transform: scale(1.08);
+  background: #fff;
+}
+.tob .tob-eh-video-play svg {
+  width: 20px;
+  height: 20px;
+  color: var(--hero-ink);
+  margin-left: 2px;
 }
 @media (max-width: 860px) {
   .tob .tob-eh {
@@ -2165,6 +2206,10 @@ img { max-width:100%; }
   overflow: hidden;
   background: var(--soft);
   aspect-ratio: 3/4;
+  box-sizing: border-box;
+  border: 6px solid var(--soft);
+  outline: 1px solid var(--line);
+  filter: sepia(0.22) saturate(0.82) contrast(1.05);
 }
 .tob .tob-imgwrap img {
   width: 100%;
@@ -2177,12 +2222,13 @@ img { max-width:100%; }
   transform: scale(1.06);
 }
 .tob .tob-card h3 {
+  font-family: var(--font-body);
   font-size: var(--tob-fs-card-title, 0.95rem);
-  font-weight: 500;
+  font-weight: 600;
   margin: 14px 2px 4px;
 }
 .tob .tob-price {
-  font-weight: 700;
+  font-weight: 600;
   font-size: var(--tob-fs-card-price, 1rem);
   color: var(--ink);
 }
@@ -2212,7 +2258,9 @@ img { max-width:100%; }
   margin-top: 24px;
 }
 .tob .tob-tcard {
-  background: var(--soft);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
   padding: 28px 26px;
 }
 .tob .tob-stars {
@@ -2224,7 +2272,7 @@ img { max-width:100%; }
 .tob .tob-tcard p {
   font-size: var(--tob-fs-testimonial, 1rem);
   line-height: 1.6;
-  color: #333;
+  color: var(--ink);
   margin: 0 0 16px;
 }
 .tob .tob-tname {
@@ -2267,8 +2315,14 @@ img { max-width:100%; }
   border-radius: 50%;
   flex-shrink: 0;
 }
+/* Footer sits on the light cream ground (--tob-footer-bg: #fff3e4) — "FOR" in
+   the wordmark and the column titles read in the accent brown; body copy uses
+   the page's normal --ink/--muted tokens. */
+.tob .tob-footer .tob-hlogo-accent {
+  color: var(--hero-accent, #b68235);
+}
 .tob .tob-fbrand p {
-  color: #aaa;
+  color: var(--muted);
   font-size: var(--tob-fs-footer, 0.9rem);
   max-width: 320px;
   line-height: 1.6;
@@ -2279,28 +2333,30 @@ img { max-width:100%; }
   letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-bottom: 16px;
+  font-weight: 600;
+  color: var(--hero-accent, #b68235);
 }
 .tob .tob-fcol a {
   display: block;
-  color: #bbb;
+  color: var(--muted);
   font-size: var(--tob-fs-footer, 0.9rem);
   margin-bottom: 11px;
   transition: color 0.2s;
 }
 .tob .tob-fcol a:hover {
-  color: #fff;
+  color: var(--ink);
 }
 .tob .tob-fchoices {
   margin-top: 36px;
 }
 .tob .tob-dns {
-  color: #bbb;
+  color: var(--muted);
   font-size: 0.82rem;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 .tob .tob-dns:hover {
-  color: #fff;
+  color: var(--ink);
 }
 .tob .tob-fpay {
   display: flex;
@@ -2314,13 +2370,13 @@ img { max-width:100%; }
   width: auto;
   display: block;
   border-radius: 4px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+  box-shadow: 0 0 0 1px rgba(32, 31, 29, 0.14);
 }
 .tob .tob-fbottom {
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--line);
   margin-top: 20px;
   padding-top: 22px;
-  color: #888;
+  color: var(--muted);
   font-size: 0.82rem;
 }
 @media (max-width: 820px) {
@@ -2331,7 +2387,7 @@ img { max-width:100%; }
 
 /* ── legal / policy pages (template pages .tobp-legal + Shopify-pulled .policy) ── */
 .tob .tob-legal {
-  background: #fff;
+  background: #ffffff;
 }
 .tob .tobp-legal,
 .tob .policy {
@@ -2353,7 +2409,7 @@ img { max-width:100%; }
 .tob .tobp-legal .legal-intro {
   font-size: 1.1rem;
   line-height: 1.6;
-  color: #444;
+  color: var(--ink);
   margin: 0 0 28px;
 }
 .tob .tobp-legal h2,
@@ -2367,7 +2423,7 @@ img { max-width:100%; }
 .tob .policy div {
   font-size: 1rem;
   line-height: 1.7;
-  color: #333;
+  color: var(--ink);
   margin: 0 0 12px;
 }
 .tob .tobp-legal ul,
@@ -2380,7 +2436,7 @@ img { max-width:100%; }
 .tob .policy li {
   font-size: 1rem;
   line-height: 1.7;
-  color: #333;
+  color: var(--ink);
   margin-bottom: 8px;
 }
 .tob .policy a[href='/policies'] {
@@ -2388,213 +2444,13 @@ img { max-width:100%; }
   font-size: 0.9rem;
 }
 
-/* ============================================================================
-   PRODUCT PAGE (.tobp)
-   ========================================================================== */
-.tob .tobp {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 34px 28px;
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 48px;
-}
-.tob .tobp > * {
-  /* Grid items default to min-width:auto (their content's intrinsic size),
-     which lets a wide child (carousel track, swatch row) blow out past its
-     1fr column instead of wrapping/shrinking - the actual cause of the
-     horizontal mobile overflow. */
-  min-width: 0;
-}
-.tob .tobp-gallery {
-  position: static;
-  align-self: start;
-}
-.tob .tobp-gallery img {
-  width: 100%;
-  aspect-ratio: 1/1;
-  object-fit: cover;
-  background: var(--soft);
-  display: block;
-}
-.tobp-carousel {
-  max-width: 92%;
-  margin: 0 auto;
-}
-.tob .product-main {
-  display: flex;
-  flex-direction: column;
-}
-@media (min-width: 821px) {
-  .tob .tobp-gallery { grid-column: 1; grid-row: 1; }
-  .tob .product-main { grid-column: 2; grid-row: 1 / 3; }
-}
-.tob .tobp-brand {
-  text-transform: uppercase;
-  color: var(--muted);
-  font-size: 0.82rem;
-  letter-spacing: 0.12em;
-  font-weight: 600;
-}
-.tob .tobp-title {
-  font-size: var(--tob-fs-product-title, 2rem);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  margin: 8px 0 14px;
-}
-.tob .product-price {
-  font-size: var(--tob-fs-product-price, 1.7rem);
-  font-weight: 700;
-  margin: 6px 0 4px;
-}
-/* <Money> renders its own wrapping <div> (block), so the sale price and the
-   struck-through compare-at price stack unless forced into a row here. */
-.tob .product-price-on-sale {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
-.tob .product-price-on-sale > div {
-  display: inline;
-}
-.tob .product-price s {
-  color: var(--muted);
-  font-weight: 400;
-  font-size: 1rem;
-}
-.tob .product-price s > div {
-  display: inline;
-}
-.tob .product-form {
-  margin-top: 18px;
-}
-.tob .product-options {
-  margin: 22px 0;
-}
-.tob .product-options h5 {
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin: 0 0 12px;
-}
-.tob .product-options-grid {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  max-width: 100%;
-}
-.tob .product-form,
-.tob .product-main {
-  min-width: 0;
-}
-.tob .product-options-item {
-  min-width: 60px;
-  padding: 11px 15px;
-  border: 1px solid var(--ink) !important;
-  background: #fff;
-  color: var(--ink);
-  font-size: var(--tob-fs-option, 0.9rem);
-  cursor: pointer;
-  text-align: center;
-  transition: 0.15s;
-  font-family: inherit;
-}
-.tob .product-options-item[style*='1px solid black'] {
-  background: var(--ink);
-  color: #fff;
-}
-.tob .product-options-item[disabled] {
-  cursor: not-allowed;
-}
-.tob .product-form button[type='submit'] {
-  display: block;
-  width: 100%;
-  padding: 17px;
-  background: var(--ink);
-  color: #fff;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: var(--tob-fs-button, 0.82rem);
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-  margin-top: 14px;
-}
-.tob .product-form button[type='submit'][disabled] {
-  background: var(--muted);
-  cursor: not-allowed;
-}
-.tob .product-option-label-swatch {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  display: inline-block;
-}
-.tob .product-option-label-swatch img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-/* CJ-style COLOR THUMBNAILS — when the option value has a variant photo, render a
-   larger square thumbnail button (picking it swaps the main gallery image). */
-.tob .product-option-label-swatch.has-image {
-  width: 58px;
-  height: 58px;
-  border-radius: 8px;
-  display: block;
-}
-.tob .product-option-label-swatch.has-image img {
-  border-radius: 8px;
-}
-.tob .product-options-item:has(.has-image) {
-  min-width: 0;
-  padding: 3px;
-  border: 1px solid var(--tob-line, #eee) !important;
-  border-radius: 11px;
-  background: #fff;
-  overflow: hidden;
-}
-.tob .product-options-item:has(.has-image)[style*='1px solid black'] {
-  border: 2px solid var(--tob-ink, #161616) !important;
-  background: #fff !important;
-  padding: 2px;
-}
-.tob .product-options-item:has(.has-image):hover {
-  border-color: var(--tob-muted, #8d8d8d) !important;
-}
-.tob .tobp-trust {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  padding: 18px 0;
-  margin: 24px 0;
-  color: var(--muted);
-  font-size: 0.95rem;
-}
-.tob .tobp-desc {
-  font-size: var(--tob-fs-desc, 1rem);
-  line-height: 1.7;
-}
-@media (min-width: 821px) {
-  .tob .tobp-desc { grid-column: 1; grid-row: 2; }
-}
-.tob .tobp-desc * {
-  max-width: 100%;
-}
 @media (max-width: 820px) {
-  .tob .tobp {
-    grid-template-columns: 1fr;
-    gap: 22px;
-    padding: 16px 16px 48px;
-  }
-  .tob .tobp-gallery {
-    position: static;
-  }
-  .tob .tobp-gallery img {
-    aspect-ratio: 1/1;
-    max-height: 60vh;
+  /* .product-reviews is the last child on mobile, carrying the section's
+     bottom breathing room. */
+  .tob .product-reviews {
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 48px;
   }
 }
 
@@ -2740,23 +2596,37 @@ img { max-width:100%; }
 }
 .tob .cart-summary-page section button[type='submit'] {
   padding: 8px 14px;
-  border: 1px solid var(--ink);
-  background: #fff;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--accent);
   cursor: pointer;
   font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.16s ease;
+}
+.tob .cart-summary-page section button[type='submit']:hover {
+  background: rgba(182, 130, 53, 0.12);
 }
 .tob .cart-summary-page a[href*='checkout'],
 .tob .cart-summary-page a[target] {
   display: block;
   margin-top: 16px;
-  background: var(--ink);
-  color: #fff;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--radius-md);
   text-align: center;
   padding: 16px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: var(--tob-fs-button, 0.82rem);
-  font-weight: 700;
+  font-weight: 600;
+  transition: background 0.16s ease;
+}
+.tob .cart-summary-page a[href*='checkout']:hover,
+.tob .cart-summary-page a[target]:hover {
+  background: rgba(182, 130, 53, 0.12);
 }
 .tob .cart-summary-page a[target] p {
   margin: 0;
@@ -2793,17 +2663,28 @@ img { max-width:100%; }
   flex: 1;
   padding: 13px 16px;
   border: 1px solid var(--line);
+  border-radius: var(--radius-md);
   font-size: 1rem;
+}
+.tob .search input[name='q']:focus-visible {
+  outline: none;
+  border-color: var(--accent);
 }
 .tob .search form button {
   padding: 13px 26px;
-  background: var(--ink);
-  color: #fff;
-  border: none;
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  color: var(--accent);
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.82rem;
+  font-weight: 600;
+  transition: background 0.16s ease;
+}
+.tob .search form button:hover {
+  background: rgba(182, 130, 53, 0.12);
 }
 .tob .search-results-item a {
   display: flex;
@@ -2849,13 +2730,16 @@ img { max-width:100%; }
 }
 .cart-summary-aside a {
   display: block;
-  background: #161616;
-  color: #fff;
+  background: transparent;
+  border: 1px solid #b68235;
+  border-radius: 4px;
+  color: #b68235;
   text-align: center;
   padding: 14px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.82rem;
+  font-weight: 600;
   margin-top: 12px;
 }
 .predictive-search {
@@ -2951,9 +2835,9 @@ img { max-width:100%; }
   letter-spacing: 0.02em;
 }
 .size-guide-unit-toggle .size-guide-toggle-active {
-  background: var(--tob-ink, #161616) !important;
-  color: #fff !important;
-  border-color: var(--tob-ink, #161616) !important;
+  background: transparent !important;
+  color: var(--tob-hero-accent, #b68235) !important;
+  border-color: var(--tob-hero-accent, #b68235) !important;
 }
 
 .size-guide-table-wrap {
@@ -3009,7 +2893,7 @@ img { max-width:100%; }
   margin: 0 0 10px;
   font-size: 0.9rem;
   line-height: 1.5;
-  color: #3a3a3a;
+  color: var(--tob-ink, #201f1d);
 }
 .size-guide-howto li:last-child {
   margin-bottom: 0;
@@ -3024,22 +2908,6 @@ img { max-width:100%; }
 .cart-recommendations-heading{font-family:var(--font-display,"Newsreader",Georgia,serif)!important;margin:0 0 16px!important}
 .cart-recommendations-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
 
-/* ── Product page: Amazon-style "Frequently bought together" bundle ─────────── */
-.fbt{margin:24px 0;padding:20px;border:1px solid var(--tob-line,#eee);border-radius:14px;background:var(--tob-soft,#f6f4f1)}
-.fbt-heading{font-family:var(--font-display,"Newsreader",Georgia,serif);font-size:1.1rem;font-weight:600;margin:0 0 16px}
-.fbt-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.fbt-item{display:flex;flex-direction:column;align-items:center;width:96px;text-align:center;gap:6px;flex-shrink:0}
-.fbt-item img{width:88px!important;height:88px!important;object-fit:cover!important;border-radius:10px;background:#fff;display:block;border:1px solid var(--tob-line,#eee)}
-.fbt-item-label{font-size:0.78rem;color:var(--tob-ink,#161616);margin:0;line-height:1.3;height:2.6em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.fbt-plus{font-size:1.4rem;color:var(--tob-muted,#8d8d8d);flex-shrink:0;line-height:1}
-.fbt-checkbox{position:relative;cursor:pointer;display:block}
-.fbt-checkbox input{position:absolute;top:4px;left:4px;width:16px;height:16px;z-index:1;margin:0}
-.fbt-summary{display:flex;align-items:center;gap:16px;margin-top:20px;padding-top:16px;border-top:1px solid var(--tob-line,#eee);flex-wrap:wrap}
-.fbt-total{font-size:1.05rem;font-weight:700;margin:0}
-.fbt-add-btn{
-  padding:11px 22px;border-radius:8px;border:none;background:var(--tob-ink,#161616);
-  color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;transition:background .15s ease;
-}
 
 /* ── Product page: Ratings & Reviews (Material Tailwind Rating component,
    https://www.material-tailwind.com/docs/html/rating "Rating with Comment") ── */
@@ -3050,12 +2918,12 @@ img { max-width:100%; }
 .product-reviews-empty{font-size:0.9rem;color:var(--tob-muted,#8d8d8d);margin:0}
 
 .product-reviews-list{list-style:none;margin:24px 0 0;padding:0;display:grid;gap:16px}
-.review-card{padding:16px 18px;border:1px solid var(--tob-line,#eee);border-radius:12px;background:var(--tob-soft,#f6f4f1)}
+.review-card{padding:16px 18px;border:1px solid var(--tob-line,#eee);border-radius:4px;background:var(--tob-soft,#f6f4f1)}
 .review-card-comment{margin:8px 0 10px!important;font-size:0.95rem!important;line-height:1.6!important;color:var(--tob-ink,#161616)!important}
 .review-card-meta{display:flex;align-items:baseline;gap:8px;font-size:0.8rem;color:var(--tob-muted,#8d8d8d)}
 .review-card-name{font-weight:700;color:var(--tob-ink,#161616)}
 
-.review-form{margin:28px 0 0;padding:20px;border:1px solid var(--tob-line,#eee);border-radius:14px;max-width:480px}
+.review-form{margin:28px 0 0;padding:20px;border:1px solid var(--tob-line,#eee);border-radius:4px;max-width:480px}
 .review-form-heading{font-family:var(--font-display,"Newsreader",Georgia,serif);font-size:1.05rem;font-weight:600;margin:0 0 14px;color:var(--tob-ink,#161616)}
 .review-form-rating{display:flex;align-items:center;gap:10px;margin:0 0 16px}
 .review-form-rating-label{font-size:0.85rem;color:var(--tob-muted,#8d8d8d)}
@@ -3063,8 +2931,7 @@ img { max-width:100%; }
 .review-form-honeypot{position:absolute!important;left:-9999px;width:1px;height:1px;opacity:0}
 .review-form-error{color:#c0392b;font-size:0.85rem;margin:0 0 12px}
 .review-form-success{color:#2e7d32;font-size:0.85rem;margin:0 0 12px}
-.review-form-submit{background:var(--tob-ink,#161616)!important;font-size:0.85rem!important}
-.fbt-add-btn:hover{background:#000}
+.review-form-submit{background:transparent!important;border:1px solid var(--tob-hero-accent,#b68235)!important;color:var(--tob-hero-accent,#b68235)!important;font-size:0.85rem!important}
 
 .policies-page{max-width:640px;margin:0 auto;padding:64px 24px 96px}
 .policies-page h1{font-family:var(--font-display,"Newsreader",Georgia,serif);font-size:2rem;font-weight:600;color:var(--tob-ink,#161616);margin:0 0 32px}

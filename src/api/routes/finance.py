@@ -20,7 +20,7 @@ from src.mcp_tools.finance import (
     integrations_status,
     max_connect_facebook_instagram,
 )
-from src.org.slack import read_agent_messages
+from src.org.agent_feed import read_agent_messages
 from src.finance.costs_store import create_cost, delete_cost, list_costs, update_cost
 
 router = APIRouter()

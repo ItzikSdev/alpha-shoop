@@ -123,8 +123,8 @@ async def escalate_shopify_401(shop: str = "") -> str:
     instead of the store silently staying broken. Returns the authorize URL."""
     url = build_authorize_url(shop)
     try:
-        from src.org.slack import post_to_slack
-        await post_to_slack(
+        from src.org.telegram import post_to_telegram
+        await post_to_telegram(
             ":lock: *Shopify token invalid (401).* I can't edit the store until it's "
             f"re-authorized. One click fixes it (approve once):\n{url}"
         )

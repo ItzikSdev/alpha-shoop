@@ -1,6 +1,7 @@
 import {redirect} from 'react-router';
 import {jwtVerify, createRemoteJWKSet, importPKCS8, SignJWT} from 'jose';
 import {findOrCreateCustomerForOAuth, setSessionCustomerId} from '~/lib/customer';
+import {reconcileCustomerCart, mergeHeaders} from '~/lib/cartSync';
 
 const APPLE_JWKS = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
 
@@ -24,9 +25,12 @@ function readAppleOAuthCookie(request) {
 
 /**
  * @param {string} location
+ * @param {Headers} [extraHeaders] e.g. a cart-id cookie from reconcileCustomerCart
+ *   — merged in (not overwritten) since both are `Set-Cookie` headers.
  */
-function redirectClearingAppleCookie(location) {
-  return redirect(location, {headers: {'Set-Cookie': CLEAR_APPLE_OAUTH_COOKIE}});
+function redirectClearingAppleCookie(location, extraHeaders) {
+  const headers = mergeHeaders(new Headers({'Set-Cookie': CLEAR_APPLE_OAUTH_COOKIE}), extraHeaders);
+  return redirect(location, {headers});
 }
 
 /**
@@ -145,7 +149,8 @@ export async function action({request, context}) {
     });
 
     setSessionCustomerId(context.session, customer.id);
-    return redirectClearingAppleCookie(redirectTo);
+    const {headers: cartHeaders} = await reconcileCustomerCart({context, customer});
+    return redirectClearingAppleCookie(redirectTo, cartHeaders);
   } catch (error) {
     console.error('[account.login.apple.callback] failed', error);
     return redirectClearingAppleCookie(

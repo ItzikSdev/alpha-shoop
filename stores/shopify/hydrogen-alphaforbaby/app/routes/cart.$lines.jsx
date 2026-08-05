@@ -1,4 +1,5 @@
 import {redirect} from 'react-router';
+import {persistCartForLoggedInCustomer} from '~/lib/cartSync';
 
 /**
  * Automatically creates a new cart based on the URL and redirects straight to checkout.
@@ -53,6 +54,8 @@ export async function loader({request, context, params}) {
       status: 410,
     });
   }
+
+  await persistCartForLoggedInCustomer(context, cartResult.id);
 
   // Update cart id in cookie
   const headers = cart.setCartId(cartResult.id);

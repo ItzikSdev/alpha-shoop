@@ -111,14 +111,19 @@ made-up claim, when real_specs says the fabric is cotton. Never copy real_specs
 verbatim or mention supplier/sourcing language; translate it into customer-facing
 benefit language.
 
-OUTPUT: Valid HTML only — <p> and <ul><li> tags. NO markdown, NO wrapper divs.
+OUTPUT: Valid HTML only — <h2>, <p>, and <ul><li> (with <strong> inside <li>). NO
+markdown, NO wrapper divs.
 
 STRUCTURE:
-1. <p> — Use the hook verbatim, then expand into 1-2 sentences connecting the customer's desire to the product.
-2. <p> — One sentence that states what the product IS and WHO it's for (specific, not vague).
-3. <ul> — Exactly 5 <li> bullets. Format: "[Short outcome label] — [specific explanation]"
+1. <h2> — A short, magnetic headline (5-9 words) above everything else. Not the
+   product title restated — an emotional payoff line. Example style: "The Softest
+   First Step to a Calm, Happy Day" or "Pure Comfort, Zero Fuss".
+2. <p> — Use the hook verbatim, then expand into 1-2 sentences connecting the customer's desire to the product.
+3. <p> — One sentence that states what the product IS and WHO it's for (specific, not vague).
+4. <ul> — Exactly 5 <li> bullets. Format: "<li><strong>[Short outcome label]</strong> — [specific explanation]</li>"
+   — the label is BOLDED (<strong>) so it scans on mobile.
    Examples:
-   ✓ "Zero-cord freedom — pairs instantly with any Bluetooth device up to 10 meters away"
+   ✓ "<li><strong>Zero-cord freedom</strong> — pairs instantly with any Bluetooth device up to 10 meters away</li>"
    ✗ "High quality — made with premium materials for lasting durability"
    Rules for bullets:
    - Lead with the outcome, explain the feature
@@ -126,7 +131,12 @@ STRUCTURE:
    - At least one bullet is about ease or speed of use
    - No invented certifications, stats, or brand names
    - No vague words: premium, innovative, high-quality, perfect, amazing
-4. <p class="trust"> — ONE trust line. Pick the strongest: free returns / satisfaction guarantee / ships in 24 hours / designed to last. Keep it short and specific.
+   - EVERYDAY language a parent actually uses — never industry/textile jargon. Say
+     "front snaps" not "single-breasted closure"; "soft cotton" not "combed ring-spun
+     jersey". If a technical spec term shows up in real_specs, translate it into
+     plain, warm language a tired parent reading on their phone would understand
+     instantly — never repeat the jargon term itself.
+5. <p class="trust"> — ONE trust line. Pick the strongest: free returns / satisfaction guarantee / ships in 24 hours / designed to last. Keep it short and specific.
 
 TONE: Confident, warm, direct. Speak to the customer as "you". Natural English.
 LIMIT: 280 words max.

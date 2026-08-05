@@ -45,13 +45,19 @@ async def _patch(path: str, body: dict) -> dict:
 
 @mcp.tool()
 async def sol_run_task(
-    task: str, store_slug: str = "alphaforbaby", max_steps: int = 25, ticket_id: str | None = None
+    task: str, store_slug: str = "alphaforbaby", max_steps: int = 25,
+    ticket_id: str | None = None, max_minutes: float = 0,
 ) -> dict:
-    """Fire Sol's tool-use loop on a task (code/build/deploy/CJ sourcing). Returns a run_id
-    immediately — the run itself continues in the background and narrates to Slack."""
+    """Fire Sol's tool-use loop on a task (CJ sourcing + copywriting + Shopify push). Returns
+    a run_id immediately — the run itself continues in the background and narrates to Slack.
+    `max_minutes` (0 = no cap) is the real wall-clock budget for scheduled/cron-triggered runs —
+    since this tool returns immediately, a cron job's own timeout never bounds the real work;
+    pass max_minutes to actually cap it (e.g. 30 for a "30 minutes every 2 hours" schedule)."""
     body = {"task": task, "store_slug": store_slug, "max_steps": max_steps}
     if ticket_id:
         body["ticket_id"] = ticket_id
+    if max_minutes:
+        body["max_minutes"] = max_minutes
     return await _post("/org/sol", body)
 
 
@@ -65,6 +71,13 @@ async def sol_get_run(run_id: str) -> dict:
 async def sol_list_runs(limit: int = 20) -> list[dict]:
     """Sol's most recent runs, newest first."""
     return await _get("/org/agents/runs", agent="Sol", limit=limit)
+
+
+@mcp.tool()
+async def list_all_agent_runs(limit: int = 20) -> list[dict]:
+    """Recent runs across EVERY agent, not just Sol — for a manager/monitor checking
+    on multiple agents' scheduled work, not a specific one."""
+    return await _get("/org/agents/runs", limit=limit)
 
 
 @mcp.tool()

@@ -31,6 +31,9 @@ interface Store {
   has_hype_credentials?: boolean;
   has_max_credentials?: boolean;
   has_meta_ads_credentials?: boolean;
+  has_paypal?: boolean;
+  google_signin_status?: string;
+  apple_signin_status?: string;
 }
 
 const EMPTY_EMAIL_FORM = { support_email: '', client_id: '', client_secret: '', refresh_token: '' };
@@ -481,26 +484,52 @@ export function StoresPage() {
                         No theme installed
                       </span>
                     )}
-                    {store.has_payplus ? (
-                      <span className="px-2 py-0.5 rounded text-xs bg-teal-900/40 text-teal-300 border border-teal-800">
-                        PayPlus ✓
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded text-xs text-gray-600 border border-gray-800">
-                        No PayPlus
-                      </span>
-                    )}
                     <span className="px-2 py-0.5 rounded text-xs bg-sky-900/40 text-sky-300 border border-sky-800 font-mono">
                       Supplier: {(store.supplier || 'cj').toUpperCase()}
                       {store.has_supplier_credentials ? ' ✓' : ' (using global .env)'}
                     </span>
-                    {store.has_email_credentials ? (
+                    {store.support_email ? (
                       <span className="px-2 py-0.5 rounded text-xs bg-emerald-900/40 text-emerald-300 border border-emerald-800">
-                        ✉️ {store.support_email || 'email configured'}
+                        ✉️ {store.support_email}
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded text-xs text-gray-600 border border-gray-800">
                         No customer email configured
+                      </span>
+                    )}
+                    {store.has_paypal ? (
+                      <span className="px-2 py-0.5 rounded text-xs bg-emerald-900/40 text-emerald-300 border border-emerald-800">
+                        💳 PayPal ✓
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-xs text-gray-600 border border-gray-800">
+                        PayPal not enabled
+                      </span>
+                    )}
+                    {store.google_signin_status === 'live' ? (
+                      <span className="px-2 py-0.5 rounded text-xs bg-emerald-900/40 text-emerald-300 border border-emerald-800">
+                        Google sign-in: live
+                      </span>
+                    ) : store.google_signin_status ? (
+                      <span className="px-2 py-0.5 rounded text-xs bg-amber-900/40 text-amber-300 border border-amber-800">
+                        Google sign-in: {store.google_signin_status.replace(/_/g, ' ')}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-xs text-gray-600 border border-gray-800">
+                        Google sign-in not configured
+                      </span>
+                    )}
+                    {store.apple_signin_status === 'live' ? (
+                      <span className="px-2 py-0.5 rounded text-xs bg-emerald-900/40 text-emerald-300 border border-emerald-800">
+                        Apple sign-in: live
+                      </span>
+                    ) : store.apple_signin_status ? (
+                      <span className="px-2 py-0.5 rounded text-xs bg-amber-900/40 text-amber-300 border border-amber-800">
+                        Apple sign-in: {store.apple_signin_status.replace(/_/g, ' ')}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-xs text-gray-600 border border-gray-800">
+                        Apple sign-in not configured
                       </span>
                     )}
                     <button

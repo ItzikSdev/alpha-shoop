@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from src.api.deps import get_current_operator
-from src.org.conversation import agents_respond, fetch_and_respond, two_way_enabled
+from src.org.conversation import agents_respond, two_way_enabled
 from src.org.daemon import run_org_cycle
 from src.org.models import (
     get_company,
@@ -180,9 +180,9 @@ async def post_org_fulfill_latest(body: dict | None = None) -> dict:
     return out
 
 
-@router.post("/org/announce", summary="Founder announcement: post to Slack + record as a company lesson the agents act on")
+@router.post("/org/announce", summary="Founder announcement: post to Telegram + record as a company lesson the agents act on")
 async def post_org_announce(body: dict) -> dict:
-    from src.org.slack import post_to_slack
+    from src.org.telegram import post_to_telegram
     message = (body or {}).get("message", "").strip()
     if not message:
         return {"note": "Provide a non-empty 'message'."}
@@ -190,7 +190,7 @@ async def post_org_announce(body: dict) -> dict:
     company.lessons.append(f"📣 Founder update: {message}")
     company.lessons = company.lessons[-40:]
     save_company(company)
-    await post_to_slack(f":loudspeaker: *Itzik (Founder):* {message}")
+    await post_to_telegram(f":loudspeaker: *Itzik (Founder):* {message}")
     return {"posted": True, "lessons_now": company.lessons[-3:]}
 
 
@@ -203,7 +203,7 @@ async def get_proposals(status: str = "pending") -> list[dict]:
 @router.post("/org/proposals/{pid}/approve", summary="Approve a proposal → it executes on Shopify")
 async def approve_proposal(pid: str) -> dict:
     from src.org.proposals import execute_shopify, get_proposal, set_proposal
-    from src.org.slack import post_as
+    from src.org.telegram import post_as
     p = get_proposal(pid)
     if not p or p["status"] != "pending":
         return {"error": "not found or not pending"}
@@ -319,7 +319,7 @@ async def post_org_rename(body: dict) -> dict:
     return {"note": f"no active agent matching {match!r}"}
 
 
-@router.post("/org/heartbeat", summary="Advance one agent's proactive turn now (works + posts to Slack)")
+@router.post("/org/heartbeat", summary="Advance one agent's proactive turn now (works + posts to Telegram)")
 async def post_org_heartbeat(body: dict | None = None) -> dict:
     from src.org.heartbeat import agent_heartbeat, run_specific
     role = (body or {}).get("role")
@@ -329,7 +329,7 @@ async def post_org_heartbeat(body: dict | None = None) -> dict:
 
 @router.post("/org/assign", summary="Linus (CTO) assigns a task to an agent (flows through the CTO)")
 async def post_org_assign(body: dict) -> dict:
-    from src.org.slack import post_as
+    from src.org.telegram import post_as
     role = (body.get("role") or "Developer")
     task = (body.get("task") or "").strip()
     by = body.get("by", "Linus")
@@ -342,11 +342,13 @@ async def post_org_assign(body: dict) -> dict:
     return {"error": f"no active agent with role {role!r}"}
 
 
-@router.post("/org/sol", summary="Run Sol autonomously on a task (codes/builds/deploys/CJ; narrates to Slack)")
+@router.post("/org/sol", summary="Run Sol autonomously on a task (CJ sourcing + copywriting + Shopify push; narrates to Telegram)")
 async def post_org_sol(body: dict) -> dict:
     """Fire Sol's tool-use loop in the background and return immediately with a run_id.
-    Body: {task, store_slug?, max_steps?, ticket_id?}. Requires the litellm proxy up.
-    Everything is narrated to Slack as Sol AND recorded live to agent_runs/agent_steps —
+    Body: {task, store_slug?, max_steps?, ticket_id?, max_minutes?}. Requires the litellm proxy up.
+    `max_minutes` (0 = no cap, only max_steps) matters for scheduled/cron-triggered runs —
+    this endpoint returns immediately, so a caller's own timeout never bounds the real loop.
+    Everything is narrated to Telegram as Sol AND recorded live to agent_runs/agent_steps —
     watch it (and any other agent's runs) at GET /org/agents/runs/{run_id}/stream, used by
     the platform-app `/agents/live` live activity page."""
     from src.org.agent_loop import run_sol_task
@@ -360,6 +362,7 @@ async def post_org_sol(body: dict) -> dict:
         max_steps=int(body.get("max_steps", 25)),
         run_id=run_id,
         ticket_id=body.get("ticket_id"),
+        max_minutes=float(body.get("max_minutes", 0)),
     ))
     return {"run_id": run_id, "status": "running"}
 
@@ -459,7 +462,7 @@ async def post_org_delegate(body: dict | None = None) -> dict:
     return result or {"note": "Grace is mid-task — pass {\"force\": true} to rotate her now."}
 
 
-@router.post("/org/respond", summary="Every agent replies in-persona to a message (posts to Slack)")
+@router.post("/org/respond", summary="Every agent replies in-persona to a message (posts to Telegram)")
 async def post_org_respond(body: dict) -> dict:
     seed_founding_team()
     message = (body or {}).get("message", "").strip()
@@ -470,15 +473,15 @@ async def post_org_respond(body: dict) -> dict:
     return {"replies": replies}
 
 
-@router.post("/org/slack/poll", summary="Read the latest Slack message and have agents answer it")
+@router.post("/org/slack/poll", summary="[legacy no-op] Telegram delivers messages live; nothing left to poll")
 async def post_org_slack_poll() -> dict:
-    if not two_way_enabled():
-        return {
-            "replies": [],
-            "note": "Two-way reading needs SLACK_BOT_TOKEN + SLACK_CHANNEL in .env "
-                    "(a webhook can only post). Until then use POST /org/respond.",
-        }
-    return {"replies": await fetch_and_respond()}
+    return {
+        "replies": [],
+        "note": "Two-way chat moved from Slack (poll-based) to Telegram (push-based) — "
+                "src/org/telegram.py's bot answers each message the moment it arrives, "
+                "so there's nothing to poll anymore. Use POST /org/respond to trigger a "
+                "reply manually, or check two_way_enabled(): " + str(two_way_enabled()),
+    }
 
 
 @router.get("/org/daemon", summary="Get org daemon config")

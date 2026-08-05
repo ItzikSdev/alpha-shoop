@@ -18,7 +18,7 @@ import uuid
 
 from src.org.health import cancel_stuck_runs, pipeline_run_active
 from src.org.lifecycle import fold_teambuilding_into_culture, onboard_agent, train_agent
-from src.org.slack import post_hire, post_to_slack
+from src.org.telegram import post_hire, post_to_telegram
 from src.org.models import (
     Company,
     Meeting,
@@ -201,7 +201,7 @@ async def execute_decisions(meeting: Meeting) -> list[str]:
                 save_company(company)
                 actions.append(f"flag_blocker: {issue[:50]}")
                 agent_log(f"🚩 Blocker flagged: {issue}", "warning")
-                await post_to_slack(
+                await post_to_telegram(
                     f":triangular_flag_on_post: *Blocker flagged by the team:* {issue}\n"
                     "_The agents are routing around this — a human may need to resolve the root cause._"
                 )

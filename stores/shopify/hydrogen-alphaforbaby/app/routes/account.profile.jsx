@@ -70,6 +70,7 @@ export default function AccountProfile() {
       <Typography variant="h4" color="blue-gray">
         My profile
       </Typography>
+      <SignInMethods customer={customer} />
       <Form method="PUT" className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="w-full">
@@ -106,6 +107,36 @@ export default function AccountProfile() {
           {state !== 'idle' ? 'Updating…' : 'Update'}
         </Button>
       </Form>
+    </div>
+  );
+}
+
+/**
+ * Shows which method(s) this account can sign in with, and the account email
+ * — informational only, sourced from the `_auth` presence flags already on
+ * the customer object (never the password hash itself). Since OAuth
+ * find-or-create matches strictly by email (see app/lib/customer.js), every
+ * linked method shares the same one account email, so it's shown once.
+ * @param {{customer: object | null}} props
+ */
+function SignInMethods({customer}) {
+  if (!customer) return null;
+  const methods = [
+    customer._auth?.passwordHash ? 'Email & password' : null,
+    customer._auth?.googleSub ? 'Google' : null,
+    customer._auth?.appleSub ? 'Apple' : null,
+  ].filter(Boolean);
+
+  if (!methods.length) return null;
+
+  return (
+    <div className="rounded-lg border border-blue-gray-100 bg-blue-gray-50/50 px-4 py-3">
+      <Typography variant="small" color="blue-gray" className="font-medium">
+        Signed in with {methods.join(' + ')}
+      </Typography>
+      <Typography variant="small" color="gray">
+        {customer.email}
+      </Typography>
     </div>
   );
 }

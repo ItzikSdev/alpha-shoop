@@ -1,4 +1,5 @@
 import {CartForm} from '@shopify/hydrogen';
+import {Loader2} from 'lucide-react';
 
 /**
  * @param {{
@@ -37,9 +38,19 @@ export function AddToCartButton({
             className={className}
             onClick={onClick}
             disabled={disabled || fetcher.state !== 'idle'}
-            // TODO: Add loading state spinner when disabled
+            aria-busy={fetcher.state !== 'idle'}
           >
-            {children}
+            {fetcher.state !== 'idle' ? (
+              <>
+                <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                {/* redirectTo is what's actually navigating away (to /cart or
+                    /checkout) — everything else is just the cart mutation,
+                    which resolves almost instantly. */}
+                <span>{redirectTo ? 'Redirecting…' : 'Adding…'}</span>
+              </>
+            ) : (
+              children
+            )}
           </button>
         </>
       )}

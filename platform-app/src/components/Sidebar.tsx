@@ -13,6 +13,7 @@ const NAV: { path: string; icon: string; label: string; highlight?: boolean }[] 
   { path: '/agent-logs', icon: '💬', label: 'Agent Logs' },
   { path: '/agents/live', icon: '🛰️', label: 'Agent Activity', highlight: true },
   { path: '/stores', icon: '🏪', label: 'My Stores' },
+  { path: '/videos', icon: '🎬', label: 'Videos', highlight: true },
   { path: '/rag', icon: '🧠', label: 'RAG Data' },
   { path: '/tickets', icon: '🎫', label: 'Tickets', highlight: true },
   { path: '/tools', icon: '🧩', label: 'MCP Tools' },

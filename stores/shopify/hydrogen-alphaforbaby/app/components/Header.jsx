@@ -9,6 +9,10 @@ import {config} from '~/lib/theme';
 
 // Brand + nav come from app/theme.config.json (clone-friendly).
 const LOGO = config.brand.logoText;
+// "FOR" reads in the accent brown, matching the Classical wordmark treatment
+// (ALPHA <span accent>FOR</span> BABY). Falls back to the plain string for
+// any brand name that doesn't contain " FOR ".
+const LOGO_PARTS = LOGO.match(/^(.*) FOR (.*)$/);
 
 /**
  * @param {{cart: Promise<CartApiQueryFragment|null>, isLoggedIn: Promise<boolean>}}\
@@ -18,7 +22,13 @@ export function Header({cart, isLoggedIn}) {
     <header className="tob-header">
       <div className="tob-wrap tob-hrow">
         <NavLink prefetch="intent" to="/" end className="tob-hlogo">
-          <span>{LOGO}</span>
+          {LOGO_PARTS ? (
+            <span>
+              {LOGO_PARTS[1]} <span className="tob-hlogo-accent">FOR</span> {LOGO_PARTS[2]}
+            </span>
+          ) : (
+            <span>{LOGO}</span>
+          )}
         </NavLink>
 
         {/* Desktop nav — visible on screens ≥ 820 px */}
@@ -193,6 +203,7 @@ function DesktopNav() {
   );
 }
 
+/** Hamburger only — account + cart now live next to the logo (see Header()). */
 /**
  * @param {{isLoggedIn: Promise<boolean>, cart: Promise<CartApiQueryFragment|null>}}
  */
@@ -200,7 +211,8 @@ function HeaderCtas({isLoggedIn, cart}) {
   const {open} = useAside();
   return (
     <nav className="tob-hcta" role="navigation" aria-label="Header actions">
-      {/* Hamburger — always visible, opens the slide-in menu with nav links */}
+      <AccountLink isLoggedIn={isLoggedIn} />
+      <CartToggle cart={cart} />
       <button
         className="tob-hmob reset"
         aria-label="Open menu"
@@ -208,8 +220,6 @@ function HeaderCtas({isLoggedIn, cart}) {
       >
         <IconMenu />
       </button>
-      <AccountLink isLoggedIn={isLoggedIn} />
-      <CartToggle cart={cart} />
     </nav>
   );
 }

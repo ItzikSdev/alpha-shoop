@@ -38,7 +38,7 @@ from src.org.models import (
     save_company,
 )
 from src.org.seed import seed_founding_team
-from src.org.slack import post_as
+from src.org.telegram import post_as
 from src.tracing import agent_log, trace_store
 from src.tracing.context import current_node
 
@@ -372,7 +372,7 @@ async def _agent_take_turn(agent: Agent, company: Company) -> dict:
     # Sol is a real tool-using agent (src/org/agent_loop.py's run_sol_task), not the
     # old sandboxed "propose only, no tools" persona _dev_turn was built for — his
     # actual heartbeat work (sourcing, email) already ran in _sourcing_tick/
-    # _poll_inboxes above, both of which narrate to Slack themselves. Skip the
+    # _poll_inboxes above, both of which narrate to Telegram themselves. Skip the
     # legacy JSON-proposal roleplay for him entirely (no separate LLM call, no
     # confusing double narration).
     if agent.name == "Sol":

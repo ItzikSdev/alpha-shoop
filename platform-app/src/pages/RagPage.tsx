@@ -12,6 +12,10 @@ interface RagEntry {
   source_path?: string;
   doc_title?: string;
   section?: string;
+  title?: string;
+  price?: string;
+  handle?: string;
+  store_id?: string;
 }
 interface RagResp { corpus: string; count: number; entries: RagEntry[] }
 
@@ -26,6 +30,7 @@ interface RedisValueResp { key: string; type: string; ttl: number; value: unknow
 const CORPORA: { id: string; label: string; icon: string }[] = [
   { id: 'cj_catalog', label: 'CJ Catalog', icon: '📦' },
   { id: 'playbook', label: 'Playbook', icon: '📖' },
+  { id: 'store_products', label: 'Store Products', icon: '🛍️' },
 ];
 
 const VIEWS: { id: 'rag' | 'sqlite' | 'redis'; label: string; icon: string }[] = [
@@ -119,8 +124,9 @@ function RagCorporaView() {
         <div className="p-4 rounded-lg bg-red-900/40 border border-red-700 text-red-300 text-sm">{error}</div>
       ) : !data || data.count === 0 ? (
         <div className="p-8 text-center text-gray-500">
-          No entries yet in <code>{corpus}</code> — it fills as Sol sources products (cj_catalog) or
-          when <code>refresh_playbook</code> runs (playbook).
+          No entries yet in <code>{corpus}</code> — it fills as Sol sources products (cj_catalog),
+          when <code>refresh_playbook</code> runs (playbook), or when Nora's daily catalog sync runs
+          (store_products, src/mcp_tools/support_inbox.py::refresh_store_products_rag).
         </div>
       ) : (
         <>
@@ -143,6 +149,13 @@ function RagCorporaView() {
                           </div>
                           <div className="text-xs text-gray-500 mt-0.5">
                             pid {e.pid} {e.category ? `· ${e.category}` : ''}
+                          </div>
+                        </>
+                      ) : corpus === 'store_products' ? (
+                        <>
+                          <div className="font-medium text-gray-100 truncate">{e.title || e.id}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {e.price} {e.handle ? `· /${e.handle}` : ''}
                           </div>
                         </>
                       ) : (

@@ -137,3 +137,80 @@ class ProductTitleAlias(Base):
 
     def __repr__(self) -> str:
         return f"ProductTitleAlias({self.original_title!r} -> {self.current_title!r})"
+
+
+class ProductVideo(Base):
+    """
+    One row per generated UGC ad video (src/video/pipeline.py). Lifecycle:
+      1. Created with status=pending_review when the pipeline finishes rendering
+         and the video is posted to Slack for the owner's approval.
+      2. approve_video()/reject_video() (src/api/routes/videos.py) move it to
+         published (uploaded to Shopify as product media) or rejected.
+    """
+
+    __tablename__ = "product_videos"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, comment="uuid4 hex")
+    store_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    shopify_product_id: Mapped[str] = mapped_column(
+        String(255), nullable=False, index=True, comment="Shopify product GID"
+    )
+    product_title: Mapped[str] = mapped_column(String(500), nullable=False)
+    file_path: Mapped[str] = mapped_column(String(1000), nullable=False, comment="Path to the rendered mp4")
+    script_json: Mapped[str] = mapped_column(
+        String, nullable=False, default="", comment="The VideoScript used to render this, as JSON"
+    )
+    status: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        default="pending_review",
+        comment="pending_review | approved | rejected | published | failed",
+    )
+    slack_ts: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    error: Mapped[str] = mapped_column(String(2000), nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    def __repr__(self) -> str:
+        return f"ProductVideo({self.product_title!r}, status={self.status!r})"
+
+
+class ProductImage(Base):
+    """
+    One row per generated baby-outfit-swap image (src/video/image_pipeline.py).
+    Lifecycle:
+      1. Created with status=pending_review when the pipeline finishes rendering
+         and the (original + generated) photo pair is posted to Telegram as an
+         album for the owner's approval.
+      2. approve_image()/reject_image() (src/api/routes/images.py) move it to
+         published (uploaded to Shopify as product media, RAG updated) or rejected.
+    """
+
+    __tablename__ = "product_images"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, comment="uuid4 hex")
+    store_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    shopify_product_id: Mapped[str] = mapped_column(
+        String(255), nullable=False, index=True, comment="Shopify product GID"
+    )
+    product_title: Mapped[str] = mapped_column(String(500), nullable=False)
+    source_image_url: Mapped[str] = mapped_column(String(1000), nullable=False, comment="The original product photo used")
+    file_path: Mapped[str] = mapped_column(String(1000), nullable=False, comment="Path to the generated baby image")
+    garment_description: Mapped[str] = mapped_column(String(1000), nullable=False, default="")
+    status: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        default="pending_review",
+        comment="pending_review | approved | rejected | published | failed",
+    )
+    telegram_message_id: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    error: Mapped[str] = mapped_column(String(2000), nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    def __repr__(self) -> str:
+        return f"ProductImage({self.product_title!r}, status={self.status!r})"

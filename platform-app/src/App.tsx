@@ -12,6 +12,7 @@ import { IntegrationsPage } from './pages/IntegrationsPage';
 import { AgentLogsPage } from './pages/AgentLogsPage';
 import { AgentActivityPage } from './pages/AgentActivityPage';
 import { StoresPage } from './pages/StoresPage';
+import { VideosPage } from './pages/VideosPage';
 import { RagPage } from './pages/RagPage';
 import { TicketsPage } from './pages/TicketsPage';
 import { Company } from './pages/Company';
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="/agent-logs" element={<AgentLogsPage />} />
             <Route path="/agents/live" element={<AgentActivityPage />} />
             <Route path="/stores" element={<StoresPage />} />
+            <Route path="/videos" element={<VideosPage />} />
             <Route path="/rag" element={<RagPage />} />
             <Route path="/tickets" element={<TicketsPage />} />
             <Route path="/tools" element={<MCPTools />} />

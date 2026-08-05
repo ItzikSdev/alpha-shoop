@@ -4,7 +4,7 @@ Sol's autonomous tool-use loop.
 The org's normal path is a FIXED pipeline of worker nodes; this module adds a real
 agentic loop so the single agent (Sol) can freely READ/WRITE code, run the build +
 deploy scripts, source from CJ, and manage Shopify — iterating with tool-use until the
-task is done, and narrating every step to Slack.
+task is done, and narrating every step to Telegram.
 
 Entry point:  await run_sol_task("build a new hero for the store", store_slug="alphaforbaby")
 
@@ -29,6 +29,7 @@ import json
 import re
 import logging
 import subprocess
+import time
 import uuid
 from pathlib import Path
 
@@ -64,10 +65,10 @@ AGENT_NAME = "Sol"
 
 
 def _model_label() -> str:
-    """Human-readable model tag for Slack, derived from the LIVE role→alias mapping
+    """Human-readable model tag for Telegram, derived from the LIVE role→alias mapping
     (src/llm/client.py._ROLE_MODEL['builder']) instead of a hand-written string —
     a hardcoded "· Sonnet" label previously went stale for days after the model was
-    switched to local qwen3 in client.py, silently lying in every Slack message."""
+    switched to local qwen3 in client.py, silently lying in every Telegram message."""
     try:
         from src.llm.client import _ROLE_MODEL
         alias = _ROLE_MODEL.get("builder", "")
@@ -81,7 +82,7 @@ def _model_label() -> str:
     return names.get(alias, alias or "unknown model")
 
 
-# Role shown in Slack next to Sol's name — includes his model so it's always visible.
+# Role shown in Telegram next to Sol's name — includes his model so it's always visible.
 AGENT_ROLE = f"Full-Stack Store Builder · {_model_label()}"
 
 # shell allow-list: only these command prefixes may run, and only inside the app dir.
@@ -441,8 +442,33 @@ async def cj_add_product(pid: str, title: str = "", collection: str = "", store_
         return {"error": "CJ returned no product/variants for that pid"}
     imgs = [i for i in (d.get("productImageSet") or []) if i]
     imgs = await _dedupe_images(imgs)
+    # Product-only images, never a human model — CJ listings often mix a product
+    # shot with a photo of someone wearing the item. Plain face detection (OpenCV
+    # Haar cascade, src/mcp_tools/image_person.py), not an AI model — no GPU/
+    # Ollama memory involved.
+    from src.mcp_tools.image_person import strip_person_images
+    imgs = await strip_person_images(imgs)
     if len(imgs) < 3:
-        return {"error": f"only {len(imgs)} distinct images after de-duplication — store rule needs >=3, skipped"}
+        return {"error": f"only {len(imgs)} distinct product-only images (after removing any with a "
+                          f"person) — store rule needs >=3, skipped"}
+
+    # Stock guard: never list a product with zero real inventory anywhere — a
+    # sale with no stock behind it is a broken order Milo can't fulfill. Checked
+    # via the REAL CJ MCP client (cj_product_inventory's own backend), not REST,
+    # since REST doesn't expose per-warehouse stock at all. get_product_inventory
+    # returns a STRING (a human-readable note + an embedded JSON block with
+    # "inventories" — per-country totals — and "variantInventories" — per-vid
+    # stock), NOT a plain dict — confirmed against a live call before trusting this.
+    try:
+        from src.cj_mcp import get_product_inventory
+        raw = await get_product_inventory(pid, "US")
+        m = re.search(r"\{.*\}", raw, re.DOTALL) if isinstance(raw, str) else None
+        inv = json.loads(m.group(0)) if m else (raw if isinstance(raw, dict) else {})
+        total_stock = sum(int(w.get("totalInventoryNum") or 0) for w in (inv.get("inventories") or []))
+    except Exception as exc:  # noqa: BLE001
+        return {"error": f"couldn't verify CJ stock before listing, skipped: {exc}"}
+    if total_stock <= 0:
+        return {"error": "CJ shows zero stock for this product (all warehouses) — refusing to list an out-of-stock item"}
 
     # Niche guard: CJ's search/category resolution is known to leak off-niche junk
     # (electronics, home goods, etc.) even for baby-specific keywords — a wireless
@@ -612,6 +638,22 @@ async def cj_add_product(pid: str, title: str = "", collection: str = "", store_
             )
         except Exception:  # noqa: BLE001
             pass  # non-fatal — worst case a $0 phantom variant lingers, not silently corrupting the create
+
+    # Color/collection sanity check: CJ listing titles say "Boys"/"Girls" but the
+    # actual PHOTO can disagree (e.g. a pink outfit titled "Newborn Boys
+    # Embroidered Outfit") — reads the real image's dominant color (plain pixel
+    # analysis, no AI model) and corrects the collection if they clash, matching
+    # this store's own existing color convention rather than trusting CJ's title.
+    if collection and imgs:
+        from src.mcp_tools.image_color import collection_mismatch, dominant_color
+        color = await dominant_color(imgs[0])
+        corrected = collection_mismatch(collection, color["label"])
+        if corrected:
+            logger.info(
+                "cj_add_product: collection %r clashes with dominant color %r for %r — using %r instead",
+                collection, color["label"], final_title, corrected,
+            )
+            collection = corrected
 
     if collection:
         try:
@@ -931,19 +973,34 @@ def _system_prompt(store_slug: str) -> str:
     ))
 
 
+# Sentinel distinguishing "no reply_thread_id given" (say() uses Sol's own default
+# Telegram topic) from an explicit `None` (which means General specifically, per
+# post_as's thread_override contract) — see run_sol_task's `reply_thread_id` param.
+_NO_THREAD = object()
+
+
 # ── The loop ─────────────────────────────────────────────────────────────────
 async def run_sol_task(task: str, store_slug: str = "alphaforbaby", max_steps: int = 40,
                        narrate: bool = True, images: list[str] | None = None,
-                       run_id: str | None = None, ticket_id: str | None = None) -> dict:
-    """Run Sol autonomously on `task` until done (or max_steps). Narrates each step to Slack
-    AND records it live to data/traces.db (agent_runs/agent_steps) for the platform-app
-    `/agents/live` live activity page — see src/org/agent_runs.py.
-    `images` = list of data: URLs (e.g. a Slack screenshot) — Sol sees them and fixes accordingly.
+                       run_id: str | None = None, ticket_id: str | None = None,
+                       max_minutes: float = 0, reply_thread_id=_NO_THREAD) -> dict:
+    """Run Sol autonomously on `task` until done (or max_steps, or max_minutes wall-clock
+    elapses — whichever comes first; max_minutes=0 means no time cap, only max_steps).
+    Narrates each step to Telegram AND records it live to data/traces.db (agent_runs/agent_steps)
+    for the platform-app `/agents/live` live activity page — see src/org/agent_runs.py.
+    `images` = list of data: URLs (e.g. a Telegram screenshot) — Sol sees them and fixes accordingly.
     `run_id` — pass to correlate with a caller-known id (e.g. from POST /org/sol); auto-generated
     if omitted, so every call path (heartbeat, chat, tickets) still gets a live-recorded run.
     `ticket_id` — if set, the ticket flips to 'doing' at start and 'done' on a clean finish.
+    `max_minutes` matters for scheduled/cron-triggered runs: POST /org/sol fires this loop in
+    the BACKGROUND and returns immediately, so a caller's own timeout (e.g. a cron job's
+    --timeout-seconds) never actually bounds this loop's real runtime — only max_steps did,
+    until this param existed.
+    `reply_thread_id` — the Telegram topic the triggering message came from (e.g. General);
+    when given, Sol's narration lands there instead of his own default topic. Omit for
+    non-chat callers (heartbeat, tickets, POST /org/sol) to keep the old default-topic behavior.
     Returns {steps, final, transcript_len}."""
-    from src.org.slack import post_as
+    from src.org.telegram import post_as
     from src.org.agent_runs import start_run, finish_run
     from src.org.tickets import update_ticket
 
@@ -953,7 +1010,10 @@ async def run_sol_task(task: str, store_slug: str = "alphaforbaby", max_steps: i
     async def say(text: str) -> None:
         if narrate and text:
             try:
-                await post_as(AGENT_NAME, AGENT_ROLE, text)
+                if reply_thread_id is _NO_THREAD:
+                    await post_as(AGENT_NAME, AGENT_ROLE, text)
+                else:
+                    await post_as(AGENT_NAME, AGENT_ROLE, text, thread_override=reply_thread_id)
             except Exception:  # noqa: BLE001
                 pass
 
@@ -981,12 +1041,22 @@ async def run_sol_task(task: str, store_slug: str = "alphaforbaby", max_steps: i
     llm = get_llm("shopify_dev", temperature=0.2, max_tokens=8000, timeout=180).bind_tools(_TOOLS)
     messages = [SystemMessage(content=_system_prompt(store_slug)), human]
     opener = f":hammer_and_wrench: On it — *{task}* (חנות: {store_slug})"
-    await say(opener)  # full text to Slack — only the live-timeline copy is capped
+    await say(opener)  # full text to Telegram — only the live-timeline copy is capped
     await record("status", text=opener[:600])
 
     steps = 0
+    start_time = time.monotonic()
     try:
         for _ in range(max_steps):
+            if max_minutes and (time.monotonic() - start_time) > max_minutes * 60:
+                await say(f":alarm_clock: Reached the {max_minutes}-minute time budget — stopping.")
+                await asyncio.to_thread(finish_run, run_id, "max_minutes", f"{max_minutes}-minute budget reached")
+                if ticket_id:
+                    try:
+                        await asyncio.to_thread(update_ticket, ticket_id, status="doing")
+                    except Exception:  # noqa: BLE001
+                        pass
+                return {"steps": steps, "final": "max_minutes reached", "transcript_len": len(messages)}
             resp: AIMessage = await llm.ainvoke(messages)
             messages.append(resp)
             calls = getattr(resp, "tool_calls", None) or []

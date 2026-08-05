@@ -1,6 +1,7 @@
 import {redirect} from 'react-router';
 import {jwtVerify, createRemoteJWKSet} from 'jose';
 import {findOrCreateCustomerForOAuth, setSessionCustomerId} from '~/lib/customer';
+import {reconcileCustomerCart} from '~/lib/cartSync';
 
 // Cached across requests within the same isolate — jose fetches Google's
 // JWKS lazily and re-fetches on `kid` cache misses / expiry.
@@ -81,7 +82,8 @@ export async function loader({request, context}) {
     });
 
     setSessionCustomerId(context.session, customer.id);
-    return redirect(redirectTo);
+    const {headers: cartHeaders} = await reconcileCustomerCart({context, customer});
+    return redirect(redirectTo, {headers: cartHeaders});
   } catch (error) {
     console.error('[account.login.google.callback] failed', error);
     return redirect(

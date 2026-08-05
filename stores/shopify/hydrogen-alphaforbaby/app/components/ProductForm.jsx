@@ -1,7 +1,13 @@
 import {Link, useNavigate} from 'react-router';
+import {Lock, ChevronDown} from 'lucide-react';
 import {AddToCartButton} from './AddToCartButton';
-import {SizeGuide} from './SizeGuide';
 import {getDisplaySizeLabels} from '~/lib/sizeLabels';
+import {config} from '~/lib/theme';
+
+// Real "Classical" component classes (app.css) — .btn/.btn-primary/.btn-secondary
+// are the design system's actual button component, not a Tailwind approximation.
+const BTN_PRIMARY = 'btn btn-primary btn-block w-full min-h-[52px] text-[15px] tracking-[.08em]';
+const BTN_SECONDARY = 'btn btn-secondary btn-block w-full min-h-[52px] text-[15px] tracking-[.08em]';
 
 /**
  * @param {{
@@ -17,7 +23,7 @@ export function ProductForm({productOptions, selectedVariant}) {
   // renders two "Color" sections.
   const hasRealColorOption = productOptions.some((o) => o.name.toLowerCase() === 'color');
   return (
-    <div className="product-form">
+    <div className="flex min-w-0 flex-col gap-1">
       {productOptions.map((option) => {
         // If there is only a single value in the option values, don't display the option
         if (option.optionValues.length === 1) return null;
@@ -40,14 +46,66 @@ export function ProductForm({productOptions, selectedVariant}) {
         const sizeLabels = isSizeOption && !sizeOptionIsActuallyColor
           ? getDisplaySizeLabels(option.optionValues.map((v) => v.name))
           : null;
+        const isColorLike = isColorOption || sizeOptionIsActuallyColor;
+        // Real cm-based Size options render as a dropdown (age + cm per row)
+        // instead of a button grid — Color (or a mislabeled color axis) keeps
+        // the swatch buttons.
+        const isDropdownSize = isSizeOption && !sizeOptionIsActuallyColor;
+
+        if (isDropdownSize) {
+          const selectedValue = option.optionValues.find((v) => v.selected) || option.optionValues[0];
+          return (
+            <div className="min-w-0 pt-4" key={option.name}>
+              <h6 className="m-0 text-kicker uppercase tracking-[.08em] text-accent-700">{option.name}</h6>
+              <div className="relative mt-2 w-full min-w-0">
+                <select
+                  value={selectedValue?.name}
+                  style={{width: '100%', maxWidth: '100%', boxSizing: 'border-box'}}
+                  className="block w-full appearance-none rounded border border-divider bg-transparent py-3 pl-[10px] pr-[38px] text-[14px] min-h-[50px] text-ink hover:border-ink/45 focus-visible:border-accent"
+                  onChange={(e) => {
+                    const value = option.optionValues.find((v) => v.name === e.target.value);
+                    if (!value || value.selected) return;
+                    if (value.isDifferentProduct) {
+                      void navigate(`/products/${value.handle}?${value.variantUriQuery}`, {
+                        preventScrollReset: true,
+                      });
+                    } else {
+                      void navigate(`?${value.variantUriQuery}`, {
+                        replace: true,
+                        preventScrollReset: true,
+                      });
+                    }
+                  }}
+                >
+                  {option.optionValues.map((value) => {
+                    const displayName = sizeLabels?.get(value.name) || value.name;
+                    const cmMatch = value.name.match(/^(\d+)cm$/i);
+                    const isOutOfRange = !!cmMatch && parseInt(cmMatch[1], 10) > 104;
+                    const label = cmMatch ? `${displayName} · ${value.name}` : displayName;
+                    return (
+                      <option
+                        key={option.name + value.name}
+                        value={value.name}
+                        disabled={!value.exists || !value.available || isOutOfRange}
+                      >
+                        {label}
+                        {isOutOfRange ? ' — unavailable' : !value.available ? ' — sold out' : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+                <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-classical-600" />
+              </div>
+            </div>
+          );
+        }
 
         return (
-          <div className="product-options" key={option.name}>
-            <h5>
+          <div className="pt-4" key={option.name}>
+            <h6 className="m-0 text-kicker uppercase tracking-[.08em] text-accent-700">
               {sizeOptionIsActuallyColor ? 'Color' : option.name}
-              {isSizeOption && !sizeOptionIsActuallyColor && <SizeGuide />}
-            </h5>
-            <div className="product-options-grid">
+            </h6>
+            <div className="mt-2 flex flex-wrap gap-2">
               {option.optionValues.map((value) => {
                 const {
                   name,
@@ -76,16 +134,19 @@ export function ProductForm({productOptions, selectedVariant}) {
                 const isSizeButtonOutOfRange = !!cmMatch && parseInt(cmMatch[1], 10) > 104;
                 const canPick = available && !isSizeButtonOutOfRange;
 
+                const shapeClass = isColorLike
+                  ? 'h-[58px] w-[58px] overflow-hidden rounded p-[3px]'
+                  : 'min-w-[60px] rounded px-[15px] py-[11px] text-center text-[14px]';
+
                 if (isDifferentProduct && isSizeButtonOutOfRange) {
                   // Out-of-age-range combined-listing child — never link to it.
                   return (
                     <span
-                      className="product-options-item"
+                      className={`${shapeClass} border border-divider opacity-30 cursor-not-allowed transition-colors`}
                       key={option.name + name}
                       title="Not available — outside this store's age range (up to 4 years)"
-                      style={{border: '1px solid transparent', opacity: 0.3, cursor: 'not-allowed'}}
                     >
-                      <ProductOptionSwatch swatch={swatch} name={displayName} image={variantImage} />
+                      <ProductOptionSwatch swatch={swatch} name={displayName} image={variantImage} isColorLike={isColorLike} />
                     </span>
                   );
                 } else if (isDifferentProduct) {
@@ -95,20 +156,18 @@ export function ProductForm({productOptions, selectedVariant}) {
                   // as an anchor tag
                   return (
                     <Link
-                      className="product-options-item"
+                      className={`${shapeClass} border transition-colors ${
+                        selected
+                          ? 'border-accent ring-2 ring-accent ring-offset-2 ring-offset-bg'
+                          : 'border-divider hover:border-ink/45'
+                      } ${available ? '' : 'opacity-30'}`}
                       key={option.name + name}
                       prefetch="intent"
                       preventScrollReset
                       replace
                       to={`/products/${handle}?${variantUriQuery}`}
-                      style={{
-                        border: selected
-                          ? '1px solid black'
-                          : '1px solid transparent',
-                        opacity: available ? 1 : 0.3,
-                      }}
                     >
-                      <ProductOptionSwatch swatch={swatch} name={displayName} image={variantImage} />
+                      <ProductOptionSwatch swatch={swatch} name={displayName} image={variantImage} isColorLike={isColorLike} />
                     </Link>
                   );
                 } else {
@@ -120,16 +179,15 @@ export function ProductForm({productOptions, selectedVariant}) {
                   return (
                     <button
                       type="button"
-                      className={`product-options-item${exists && !selected ? ' link' : ''}`}
+                      className={`${shapeClass} border transition-colors ${
+                        selected
+                          ? isColorLike
+                            ? 'border-accent ring-2 ring-accent ring-offset-2 ring-offset-bg'
+                            : 'border-accent text-accent'
+                          : 'border-divider text-ink hover:border-ink/45'
+                      } ${canPick ? '' : 'opacity-30'} ${isSizeButtonOutOfRange ? 'cursor-not-allowed' : ''}`}
                       key={option.name + name}
                       title={isSizeButtonOutOfRange ? "Not available — outside this store's age range (up to 4 years)" : undefined}
-                      style={{
-                        border: selected
-                          ? '1px solid black'
-                          : '1px solid transparent',
-                        opacity: canPick ? 1 : 0.3,
-                        cursor: isSizeButtonOutOfRange ? 'not-allowed' : undefined,
-                      }}
                       disabled={!exists || isSizeButtonOutOfRange}
                       onClick={() => {
                         if (!selected) {
@@ -140,20 +198,19 @@ export function ProductForm({productOptions, selectedVariant}) {
                         }
                       }}
                     >
-                      <ProductOptionSwatch swatch={swatch} name={displayName} image={variantImage} />
+                      <ProductOptionSwatch swatch={swatch} name={displayName} image={variantImage} isColorLike={isColorLike} />
                     </button>
                   );
                 }
               })}
             </div>
-            <br />
           </div>
         );
       })}
       <AddToCartButton
         disabled={!selectedVariant || !selectedVariant.availableForSale}
         redirectTo="/cart"
-        className="tob-atc-btn"
+        className={`${BTN_PRIMARY} mt-4`}
         lines={
           selectedVariant
             ? [
@@ -166,18 +223,22 @@ export function ProductForm({productOptions, selectedVariant}) {
             : []
         }
       >
-        {selectedVariant?.availableForSale ? 'Add to cart' : 'Sold out'}
+        {selectedVariant?.availableForSale ? 'ADD TO CART' : 'SOLD OUT'}
       </AddToCartButton>
 
-      {/* Express / accelerated checkout — adds the selected variant and jumps
-          straight to Shopify checkout, where PayPal + dynamic checkout buttons
-          appear once enabled in admin (Settings → Payments). */}
+      {/* Both buttons add the selected variant and jump straight to Shopify
+          checkout. PayPal isn't a separate bypass flow — there's no custom
+          PayPal integration wired up (that needs a PayPal Business account,
+          which this store doesn't have). Enable PayPal in Shopify admin →
+          Settings → Payments and it appears automatically on that checkout
+          screen; this button is just a shortcut labeled for shoppers who
+          look for it specifically. */}
       {selectedVariant?.availableForSale && (
-        <div className="tob-buynow">
+        <div className="mt-2 flex flex-col gap-2">
           <AddToCartButton
             disabled={!selectedVariant || !selectedVariant.availableForSale}
             redirectTo="checkout"
-            className="tob-buynow-btn"
+            className={BTN_SECONDARY}
             lines={[
               {
                 merchandiseId: selectedVariant.id,
@@ -186,9 +247,31 @@ export function ProductForm({productOptions, selectedVariant}) {
               },
             ]}
           >
-            Buy it now
+            BUY IT NOW
           </AddToCartButton>
-          <p className="tob-buynow-note">Express checkout · secure payment</p>
+          <AddToCartButton
+            disabled={!selectedVariant || !selectedVariant.availableForSale}
+            redirectTo="checkout"
+            className={BTN_SECONDARY}
+            lines={[
+              {
+                merchandiseId: selectedVariant.id,
+                quantity: 1,
+                selectedVariant,
+              },
+            ]}
+          >
+            PayPal
+          </AddToCartButton>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[11px] text-ink/50">
+            <Lock size={13} />
+            {/* Real accepted-payment-method logos (same assets as the header
+                marquee) — legitimate trust signal, not a fabricated security
+                certification badge. */}
+            {config.paymentIcons?.map((p) => (
+              <img key={p.src} src={p.src} alt={p.alt} loading="lazy" width="28" height="18" className="rounded-sm border border-divider" />
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -201,7 +284,7 @@ export function ProductForm({productOptions, selectedVariant}) {
  *   name: string;
  * }}
  */
-function ProductOptionSwatch({swatch, name, image}) {
+function ProductOptionSwatch({swatch, name, image, isColorLike}) {
   // Prefer a native Shopify swatch image; fall back to the option value's own
   // variant photo (CJ-style color thumbnails). Only text if neither exists.
   const swatchImage = swatch?.image?.previewImage?.url;
@@ -209,19 +292,17 @@ function ProductOptionSwatch({swatch, name, image}) {
   const thumb = swatchImage || image;
 
   if (!thumb && !color) {
-    return <span className="tob-swatch-text">{name}</span>;
+    return <span className="text-[13px]">{name}</span>;
   }
 
   return (
     <div
       aria-label={name}
       title={name}
-      className={`product-option-label-swatch${thumb ? ' has-image' : ''}`}
-      style={{
-        backgroundColor: color || 'transparent',
-      }}
+      className={isColorLike ? 'h-full w-full overflow-hidden rounded-sm' : 'inline-block h-[18px] w-[18px] rounded-full align-middle'}
+      style={{backgroundColor: color || 'transparent'}}
     >
-      {!!thumb && <img src={thumb} alt={name} loading="lazy" />}
+      {!!thumb && <img src={thumb} alt={name} loading="lazy" className="h-full w-full object-cover" />}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import {ThemeProvider} from '@material-tailwind/react';
 import {Analytics, getShopAnalytics, useNonce} from '@shopify/hydrogen';
 import {
+  data,
   Outlet,
   useRouteError,
   isRouteErrorResponse,
@@ -14,7 +15,8 @@ import resetStyles from './styles/reset.css?url';
 import appStyles from './styles/app.css?url';
 import {themeCss, config} from './lib/theme';
 import {PageLayout} from './components/PageLayout';
-import {isLoggedIn} from './lib/customer';
+import {isLoggedIn, getSessionCustomerId, getCustomerById} from './lib/customer';
+import {reconcileCustomerCart} from './lib/cartSync';
 
 /**
  * This is important to avoid re-fetching root queries on sub-navigations
@@ -59,6 +61,16 @@ export function links() {
   return [
     {rel: 'preconnect', href: 'https://cdn.shopify.com'},
     {rel: 'preconnect', href: 'https://shop.app'},
+    // Assistant (Google Fonts) — the approved fallback for the "Classical"
+    // theme's FbTubicSans-Light face (licensed, not bundled here). Keep this
+    // fallback rather than substituting a different font if FbTubicSans is
+    // ever added later — see stores/shopify design handoff README.
+    {rel: 'preconnect', href: 'https://fonts.googleapis.com'},
+    {rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous'},
+    {
+      rel: 'stylesheet',
+      href: 'https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap',
+    },
     ...icons,
   ];
 }
@@ -67,36 +79,63 @@ export function links() {
  * @param {Route.LoaderArgs} args
  */
 export async function loader(args) {
+  const {context} = args;
+  const {session, env, cart} = context;
+
+  // Resolve the cart BEFORE the deferred/streamed data, so a logged-in
+  // customer's saved cart (added on another device) can be reconciled here
+  // — this is what feeds BOTH the header cart badge AND the slide-out cart
+  // drawer (PageLayout's CartAside), which is how most shoppers actually
+  // check their cart, not by navigating to the full /cart page (which has
+  // its own independent reconciliation in routes/cart.jsx). Reconciling
+  // needs an Admin API customer lookup, so this only adds latency for
+  // logged-in requests — guests keep the original fully-deferred cart.get().
+  let cartHeaders = new Headers();
+  let cartData;
+  if (isLoggedIn(session)) {
+    const customerId = getSessionCustomerId(session);
+    const customer = customerId ? await getCustomerById(env, customerId) : null;
+    if (customer) {
+      const reconciled = await reconcileCustomerCart({context, customer});
+      cartHeaders = reconciled.headers;
+      cartData = reconciled.cart;
+    }
+  }
+  const cartPromise = cartData ? Promise.resolve(cartData) : cart.get();
+
   // Start fetching non-critical data without blocking time to first byte
-  const deferredData = loadDeferredData(args);
+  const deferredData = loadDeferredData(args, cartPromise);
 
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
 
-  const {storefront, env} = args.context;
+  const {storefront} = context;
 
-  return {
-    ...deferredData,
-    ...criticalData,
-    publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
-    shop: getShopAnalytics({
-      storefront,
-      publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
-    }),
-    consent: {
-      // Fallback to the store domain so a missing PUBLIC_CHECKOUT_DOMAIN in Oxygen
-      // env doesn't crash the Analytics.Provider (which broke cart/menu clicks).
-      checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN || env.PUBLIC_STORE_DOMAIN,
-      storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
-      // OFF: the privacy banner requires Customer-Privacy config in Oxygen env and was
-      // crashing Analytics.Provider on hydration → dead cart/menu clicks. Re-enable only
-      // after configuring admin → Settings → Customer privacy + PUBLIC_CHECKOUT_DOMAIN.
-      withPrivacyBanner: false,
-      // localize the privacy banner
-      country: args.context.storefront.i18n.country,
-      language: args.context.storefront.i18n.language,
+  return data(
+    {
+      ...deferredData,
+      ...criticalData,
+      publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
+      shop: getShopAnalytics({
+        storefront,
+        publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
+      }),
+      consent: {
+        // Fallback to the store domain so a missing PUBLIC_CHECKOUT_DOMAIN in Oxygen
+        // env doesn't crash the Analytics.Provider (which broke cart/menu clicks).
+        checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN || env.PUBLIC_STORE_DOMAIN,
+        storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
+        // OFF: the privacy banner requires Customer-Privacy config in Oxygen env and was
+        // crashing Analytics.Provider on hydration → dead cart/menu clicks. Re-enable only
+        // after configuring admin → Settings → Customer privacy + PUBLIC_CHECKOUT_DOMAIN.
+        withPrivacyBanner: false,
+        // localize the privacy banner
+        country: storefront.i18n.country,
+        language: storefront.i18n.language,
+      },
     },
-  };
+    {headers: cartHeaders},
+  );
 }
 
 /**
@@ -114,12 +153,13 @@ async function loadCriticalData({context}) {
  * Load data for rendering content below the fold. This data is deferred and will be
  * fetched after the initial page load. If it's unavailable, the page should still 200.
  * Make sure to not throw any errors here, as it will cause the page to 500.
- * @param {Route.LoaderArgs}
+ * @param {Route.LoaderArgs} args
+ * @param {Promise<object|null>} cartPromise resolved (possibly reconciled) in loader() above
  */
-function loadDeferredData({context}) {
-  const {session, cart} = context;
+function loadDeferredData({context}, cartPromise) {
+  const {session} = context;
   return {
-    cart: cart.get(),
+    cart: cartPromise,
     // Session-only check (no Storefront API round trip) — just used to pick
     // which account icon/label to render. Account routes independently
     // verify the token against the Storefront API via requireCustomer().

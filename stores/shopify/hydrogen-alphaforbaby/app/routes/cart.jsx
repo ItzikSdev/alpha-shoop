@@ -2,6 +2,8 @@ import {useLoaderData, data} from 'react-router';
 import {CartForm} from '@shopify/hydrogen';
 import {CartMain} from '~/components/CartMain';
 import {CartRecommendations} from '~/components/CartRecommendations';
+import {persistCartForLoggedInCustomer, reconcileCustomerCart, mergeHeaders} from '~/lib/cartSync';
+import {isLoggedIn, getSessionCustomerId, getCustomerById} from '~/lib/customer';
 
 // COMPLEMENTARY needs Shopify's ML/sales-history data a newer store may not have
 // yet, so it can come back empty even when there are perfectly good products to
@@ -40,7 +42,7 @@ export const meta = () => {
 /**
  * @type {HeadersFunction}
  */
-export const headers = ({actionHeaders}) => actionHeaders;
+export const headers = ({loaderHeaders, actionHeaders}) => mergeHeaders(loaderHeaders, actionHeaders);
 
 /**
  * @param {Route.ActionArgs}
@@ -106,6 +108,9 @@ export async function action({request, context}) {
 
   const cartId = result?.cart?.id;
   const headers = cartId ? cart.setCartId(result.cart.id) : new Headers();
+  if (cartId) {
+    await persistCartForLoggedInCustomer(context, cartId);
+  }
   const {cart: cartResult, errors, warnings} = result;
 
   let redirectTo = formData.get('redirectTo') ?? null;
@@ -138,8 +143,28 @@ export async function action({request, context}) {
  * @param {Route.LoaderArgs}
  */
 export async function loader({context}) {
-  const {cart, storefront} = context;
-  const cartResult = await cart.get();
+  const {cart, storefront, session, env} = context;
+
+  // Reconcile against the logged-in customer's saved cart on every /cart
+  // load (not just at login) — covers the common case where the shopper was
+  // ALREADY logged in on both devices before adding something on one of
+  // them, so no login event ever fired to trigger a sync. See
+  // reconcileCustomerCart's docstring for why this can't just be a cookie
+  // swap — it needs to actually re-fetch cart data for THIS response.
+  let cartResult;
+  let headers = new Headers();
+  if (isLoggedIn(session)) {
+    const customerId = getSessionCustomerId(session);
+    const customer = customerId ? await getCustomerById(env, customerId) : null;
+    if (customer) {
+      const reconciled = await reconcileCustomerCart({context, customer});
+      headers = reconciled.headers;
+      cartResult = reconciled.cart;
+    }
+  }
+  if (!cartResult) {
+    cartResult = await cart.get();
+  }
 
   // Complementary-product upsell — Shopify's own recommendation intent, based
   // on whatever's already in the cart. Best-effort: an empty cart or a query
@@ -157,7 +182,7 @@ export async function loader({context}) {
     }
   }
 
-  return {...cartResult, recommendations};
+  return data({...cartResult, recommendations}, {headers});
 }
 
 export default function Cart() {

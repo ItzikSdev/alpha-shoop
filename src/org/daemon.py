@@ -24,7 +24,7 @@ from src.org.executor import execute_decisions
 from src.org.meeting import hold_meeting
 from src.org.models import Company, get_company, save_company
 from src.org.seed import seed_founding_team
-from src.org.slack import post_meeting
+from src.org.telegram import post_meeting
 from src.tracing import trace_store, TraceCallback, current_thread_id, current_trace_callback
 from src.tracing.persist import save_all
 
@@ -67,8 +67,8 @@ async def run_org_cycle(kind: str | None = None) -> dict:
         else:
             actions = await execute_decisions(meeting)  # real actions (incl. _spawn_run)
 
-        # Narrate the meeting into the shared Slack channel (best-effort no-op
-        # if SLACK_WEBHOOK_URL is unset) — you + the agents in one feed.
+        # Narrate the meeting into the shared Telegram chat (best-effort no-op
+        # if TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID is unset) — you + the agents in one feed.
         await post_meeting(meeting.kind, meeting.notes, meeting.decisions, actions)
 
         # Advance daemon bookkeeping.

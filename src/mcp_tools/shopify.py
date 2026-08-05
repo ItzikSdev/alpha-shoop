@@ -816,6 +816,180 @@ async def list_shopify_products() -> list[dict]:
         return []
 
 
+_GQL_PRODUCTS_FOR_VIDEO = """
+query productsForVideo {
+  products(first: 50, sortKey: CREATED_AT, query: "status:active") {
+    nodes {
+      id
+      title
+      description
+      images(first: 1) { nodes { url } }
+    }
+  }
+}
+"""
+
+
+async def get_products_for_video() -> list[dict]:
+    """Live product content for the video pipeline: id, title, description, and the
+    primary image URL — everything `src/video/pipeline.py` needs to render an ad.
+    Products with no image are skipped (Wan2.2 needs a source image to animate)."""
+    try:
+        data = await _shopify_gql(_GQL_PRODUCTS_FOR_VIDEO, {})
+        nodes = data.get("products", {}).get("nodes", [])
+    except Exception:
+        return []
+
+    out = []
+    for n in nodes:
+        images = n.get("images", {}).get("nodes", [])
+        if not images:
+            continue
+        out.append({
+            "id": n["id"],
+            "title": n["title"],
+            "description": n.get("description", ""),
+            "image_url": images[0]["url"],
+        })
+    return out
+
+
+_GQL_PRODUCTS_ALL_IMAGES = """
+query productsAllImages {
+  products(first: 50, sortKey: CREATED_AT, query: "status:active") {
+    nodes {
+      id
+      title
+      description
+      images(first: 10) { nodes { url } }
+    }
+  }
+}
+"""
+
+
+async def get_products_with_all_images() -> list[dict]:
+    """Live product content for Reel's image pipeline: id, title, description, and
+    EVERY product photo (not just the primary one, unlike `get_products_for_video`) —
+    the person-detection step needs to check every photo, not just the first.
+    Products with no images are skipped. This is the live-Shopify fallback used when
+    the store_products RAG corpus has no `images` metadata yet for a product."""
+    try:
+        data = await _shopify_gql(_GQL_PRODUCTS_ALL_IMAGES, {})
+        nodes = data.get("products", {}).get("nodes", [])
+    except Exception:
+        return []
+
+    out = []
+    for n in nodes:
+        image_urls = [i["url"] for i in n.get("images", {}).get("nodes", []) if i.get("url")]
+        if not image_urls:
+            continue
+        out.append({
+            "id": n["id"],
+            "title": n["title"],
+            "description": n.get("description", ""),
+            "image_urls": image_urls,
+        })
+    return out
+
+
+async def attach_local_image_to_product(product_gid: str, file_path: str, alt: str = "") -> bool:
+    """Upload a locally-generated image (Reel's baby-outfit-swap or 3D-showcase still)
+    to Shopify via the staged-upload flow and attach it as product media. Same shape as
+    `attach_local_video_to_product` below, but resource/content type IMAGE."""
+    import mimetypes
+    from pathlib import Path
+
+    path = Path(file_path)
+    if not path.is_file():
+        logger.warning("attach_local_image_to_product: %s not found", file_path)
+        return False
+
+    content = path.read_bytes()
+    mime_type = mimetypes.guess_type(path.name)[0] or "image/png"
+    try:
+        staged = await _shopify_gql(_GQL_STAGED_UPLOADS_CREATE, {
+            "input": [{
+                "resource": "IMAGE",
+                "filename": path.name,
+                "mimeType": mime_type,
+                "httpMethod": "POST",
+                "fileSize": str(len(content)),
+            }]
+        })
+        targets = staged.get("stagedUploadsCreate", {}).get("stagedTargets", [])
+        if not targets or staged.get("stagedUploadsCreate", {}).get("userErrors"):
+            logger.warning("stagedUploadsCreate (image) failed: %s", staged)
+            return False
+        target = targets[0]
+
+        form = {p["name"]: p["value"] for p in target["parameters"]}
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.post(target["url"], data=form, files={"file": (path.name, content, mime_type)})
+            resp.raise_for_status()
+
+        result = await _shopify_gql(_GQL_CREATE_MEDIA, {
+            "productId": product_gid,
+            "media": [{"originalSource": target["resourceUrl"], "mediaContentType": "IMAGE", "alt": alt}],
+        })
+        errors = result.get("productCreateMedia", {}).get("mediaUserErrors", [])
+        if errors:
+            logger.warning("productCreateMedia (image) failed: %s", errors)
+        return not errors
+    except Exception as exc:
+        logger.warning("attach_local_image_to_product failed: %s", exc)
+        return False
+
+
+async def attach_local_video_to_product(product_gid: str, file_path: str, alt: str = "") -> bool:
+    """Upload a locally-rendered mp4 (from the video pipeline) to Shopify via the
+    staged-upload flow and attach it as product media. Same staged-upload mechanism
+    as `upload_local_file_as_shopify_file`, but for VIDEO product media instead of a
+    theme asset — Shopify's `productCreateMedia` needs a Shopify-hosted URL, and our
+    render lives on this machine, so it has to go through staged uploads first."""
+    from pathlib import Path
+
+    path = Path(file_path)
+    if not path.is_file():
+        logger.warning("attach_local_video_to_product: %s not found", file_path)
+        return False
+
+    content = path.read_bytes()
+    try:
+        staged = await _shopify_gql(_GQL_STAGED_UPLOADS_CREATE, {
+            "input": [{
+                "resource": "VIDEO",
+                "filename": path.name,
+                "mimeType": "video/mp4",
+                "httpMethod": "POST",
+                "fileSize": str(len(content)),
+            }]
+        })
+        targets = staged.get("stagedUploadsCreate", {}).get("stagedTargets", [])
+        if not targets or staged.get("stagedUploadsCreate", {}).get("userErrors"):
+            logger.warning("stagedUploadsCreate (video) failed: %s", staged)
+            return False
+        target = targets[0]
+
+        form = {p["name"]: p["value"] for p in target["parameters"]}
+        async with httpx.AsyncClient(timeout=120) as client:
+            resp = await client.post(target["url"], data=form, files={"file": (path.name, content, "video/mp4")})
+            resp.raise_for_status()
+
+        result = await _shopify_gql(_GQL_CREATE_MEDIA, {
+            "productId": product_gid,
+            "media": [{"originalSource": target["resourceUrl"], "mediaContentType": "VIDEO", "alt": alt}],
+        })
+        errors = result.get("productCreateMedia", {}).get("mediaUserErrors", [])
+        if errors:
+            logger.warning("productCreateMedia (video) failed: %s", errors)
+        return not errors
+    except Exception as exc:
+        logger.warning("attach_local_video_to_product failed: %s", exc)
+        return False
+
+
 async def delete_shopify_product(product_gid: str) -> bool:
     """Permanently delete a Shopify product by GID."""
     try:
@@ -1032,6 +1206,185 @@ async def fix_zero_prices(dry_run: bool = True) -> dict:
         else:
             break
     return {"repriced": repriced, "deleted": deleted, "dry_run": dry_run, "fixed": fixed[:50]}
+
+
+_GQL_STOCK_AUDIT = """
+query($cursor: String) {
+  products(first: 100, after: $cursor) {
+    pageInfo { hasNextPage endCursor }
+    nodes {
+      id title totalInventory
+      variants(first: 100) {
+        nodes { id inventoryPolicy inventoryQuantity inventoryItem { tracked } }
+      }
+    }
+  }
+}
+"""
+
+
+async def cleanup_out_of_stock_products(dry_run: bool = True) -> dict:
+    """Remove products that are OUT OF STOCK and cannot be purchased at all: every
+    variant TRACKS inventory, is at 0 (or negative) quantity, AND has inventory policy
+    DENY (no backorder/overselling allowed) — a customer literally cannot check out.
+    Variants with inventory tracking OFF are always purchasable regardless of quantity
+    (Shopify ignores quantity/policy for untracked items — the norm for this dropship
+    catalog, where CJ fulfills without Shopify-side stock counts), so they're never
+    flagged. Products with any variant that still has stock, allows backorder
+    (CONTINUE), or isn't tracked, are left alone. dry_run=True only reports. Owner
+    rule, runnable by the agents."""
+    bad: list[dict] = []
+    cursor = None
+    scanned = 0
+    while True:
+        data = await _shopify_gql(_GQL_STOCK_AUDIT, {"cursor": cursor})
+        conn = data.get("products", {})
+        for n in conn.get("nodes", []):
+            scanned += 1
+            variants = n.get("variants", {}).get("nodes", [])
+            if not variants:
+                continue
+            purchasable = any(
+                not v.get("inventoryItem", {}).get("tracked")
+                or v.get("inventoryPolicy") == "CONTINUE"
+                or (v.get("inventoryQuantity") or 0) > 0
+                for v in variants
+            )
+            if not purchasable:
+                bad.append({
+                    "id": n["id"], "title": (n.get("title") or "")[:60],
+                    "reason": "out of stock, no backorder allowed",
+                    "total_inventory": n.get("totalInventory"),
+                })
+        if conn.get("pageInfo", {}).get("hasNextPage"):
+            cursor = conn["pageInfo"]["endCursor"]
+        else:
+            break
+    deleted = 0
+    if not dry_run:
+        for b in bad:
+            if await delete_shopify_product(b["id"]):
+                deleted += 1
+    return {"scanned": scanned, "bad_count": len(bad), "deleted": deleted,
+            "dry_run": dry_run, "bad": bad[:50]}
+
+
+_GQL_AGE_AUDIT = """
+query($cursor: String) {
+  products(first: 100, after: $cursor) {
+    pageInfo { hasNextPage endCursor }
+    nodes { id title createdAt productType descriptionHtml }
+  }
+}
+"""
+
+
+async def audit_stale_products(max_age_years: float = 3.0) -> dict:
+    """READ-ONLY audit for the owner's 'no non-baby product older than 3 years' rule.
+    Age is a hard, deterministic filter (createdAt), but whether a product is still a
+    baby item isn't a data field on Shopify — that needs a human/agent to read the
+    title+description and judge. Returns candidates (id/title/type/description/age);
+    does NOT delete. Pair with `delete_shopify_product(id)` per item after review."""
+    import datetime as _dt
+    cutoff = _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(days=max_age_years * 365.25)
+    cursor = None
+    candidates: list[dict] = []
+    scanned = 0
+    while True:
+        data = await _shopify_gql(_GQL_AGE_AUDIT, {"cursor": cursor})
+        conn = data.get("products", {})
+        for n in conn.get("nodes", []):
+            scanned += 1
+            created = n.get("createdAt")
+            if not created:
+                continue
+            created_dt = _dt.datetime.fromisoformat(created.replace("Z", "+00:00"))
+            if created_dt < cutoff:
+                desc = _re.sub("<[^>]+>", " ", n.get("descriptionHtml") or "")[:200]
+                candidates.append({
+                    "id": n["id"], "title": (n.get("title") or "")[:80],
+                    "product_type": n.get("productType") or "",
+                    "description": desc.strip(),
+                    "created_at": created,
+                    "age_years": round((_dt.datetime.now(_dt.timezone.utc) - created_dt).days / 365.25, 1),
+                })
+        if conn.get("pageInfo", {}).get("hasNextPage"):
+            cursor = conn["pageInfo"]["endCursor"]
+        else:
+            break
+    return {"scanned": scanned, "max_age_years": max_age_years,
+            "candidate_count": len(candidates), "candidates": candidates}
+
+
+_GQL_SIZE_AUDIT = """
+query($cursor: String) {
+  products(first: 100, after: $cursor) {
+    pageInfo { hasNextPage endCursor }
+    nodes {
+      id title
+      variants(first: 50) { nodes { selectedOptions { name value } } }
+    }
+  }
+}
+"""
+
+# ~2-3 years — this store's baby/toddler niche; a size at or under this always counts
+# as baby-appropriate. Sourced from the EU cm size chart CJ suppliers use (see the
+# month-labeled sizes already in the catalog, e.g. "12-24 months (90cm)").
+_BABY_SIZE_CM_MAX = 98
+
+
+def _is_baby_size(value: str) -> bool | None:
+    """True = a baby/toddler size, False = clearly too big for a baby, None =
+    unrecognized format (caller should treat as 'can't tell', not as a match either
+    way)."""
+    v = (value or "").strip().lower()
+    if not v:
+        return None
+    if "newborn" in v:
+        return True
+    if _re.search(r"\d+\s*m\b", v) or "month" in v:
+        return True
+    m = _re.search(r"(\d{2,3})\s*cm\b", v) or _re.fullmatch(r"(\d{2,3})", v)
+    if m:
+        return int(m.group(1)) <= _BABY_SIZE_CM_MAX
+    if _re.search(r"\d+\s*y(ears?)?\b", v):
+        return False  # an explicit "...Y" year-size (e.g. "8Y", "10-11Y") is a kids size
+    return None
+
+
+async def audit_size_mismatched_products() -> dict:
+    """READ-ONLY. Flags products whose Size variants are ALL clearly too big for a
+    baby/toddler — no size <= ~98cm / month-labeled / newborn is offered at all. This
+    is what caught 'Toddler Cozy Crewneck Set' (sizes 130-150cm, i.e. ages 8-12) and
+    "Girls' Sleeveless Vest & Shorts Set" (110-140cm, ages 4+) on 2026-08-01 — CJ
+    listing titles say 'Toddler'/'Baby' but the actual size chart is for older kids.
+    More reliable than reading title/description text, since the real signal is the
+    size chart, not the marketing copy. Products with at least one baby-appropriate
+    size, or with unparseable/no size data, are intentionally left alone (not
+    flagged) — this only catches the unambiguous case: literally zero baby-fit sizes."""
+    cursor = None
+    flagged: list[dict] = []
+    scanned = 0
+    while True:
+        data = await _shopify_gql(_GQL_SIZE_AUDIT, {"cursor": cursor})
+        conn = data.get("products", {})
+        for n in conn.get("nodes", []):
+            scanned += 1
+            sizes = [
+                opt["value"] for v in n.get("variants", {}).get("nodes", [])
+                for opt in v.get("selectedOptions", []) if opt.get("name", "").lower() == "size"
+            ]
+            if not sizes:
+                continue
+            verdicts = [_is_baby_size(s) for s in sizes]
+            if verdicts and all(v is False for v in verdicts):
+                flagged.append({"id": n["id"], "title": (n.get("title") or "")[:60], "sizes": sizes})
+        if conn.get("pageInfo", {}).get("hasNextPage"):
+            cursor = conn["pageInfo"]["endCursor"]
+        else:
+            break
+    return {"scanned": scanned, "flagged_count": len(flagged), "flagged": flagged[:50]}
 
 
 async def update_inventory(

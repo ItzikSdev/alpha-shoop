@@ -1,34 +1,32 @@
 """
-Two-way Slack: each agent answers in their own voice.
+Two-way chat: each agent answers in their own voice, over Telegram.
 
 `agents_respond(message)` takes a message (yours) and has EVERY active agent
 reply in-persona — using their role, skill, recent lessons, and the company
-culture — then posts each reply to the Slack channel as that agent. So you ask
-one thing and see Ada (CEO), Linus (CTO), Maya (HR)… each answer.
+culture — then posts each reply as that agent (src/org/telegram.py). So you
+ask one thing and see Ada (CEO), Linus (CTO), Maya (HR)… each answer.
 
-Reading your Slack message automatically needs a bot token (a webhook can only
-post). If SLACK_BOT_TOKEN + SLACK_CHANNEL are set, `fetch_and_respond()` pulls
-new channel messages and answers them; otherwise call `agents_respond(text)`
-directly (e.g. via POST /org/respond) with the text.
+`route_and_respond(message)` is the normal path: it picks only the relevant
+teammate(s) instead of the whole chorus, and is what src/org/telegram.py's
+bot calls directly the moment one of your Telegram messages arrives (push-
+based — no polling involved, unlike the old Slack integration).
 
 All LLM calls are best-effort: if the proxy/model is down, the agent falls back
-to a short canned line so the channel still gets a reply.
+to a short canned line so the chat still gets a reply.
 """
 from __future__ import annotations
 
 import asyncio
-import base64
 import json
 import logging
 import os
 import re
 
-import httpx
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.llm import get_llm
 from src.org.models import Agent, get_company, list_agents, save_company
-from src.org.slack import post_as, post_to_slack
+from src.org.telegram import post_as, post_to_telegram, show_typing_as, telegram_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -114,31 +112,22 @@ def _human_content(text: str, images: list[str] | None):
         parts.append({"type": "image_url", "image_url": {"url": url}})
     return parts
 
-# Remember the last Slack message timestamp we answered — persisted in
-# company.daemon["slack_last_ts"] (src/org/models, same SQLite-backed store as
-# last_sourcing_run_at), NOT an in-memory dict. A plain in-memory dict here was
-# a real bug: it reset to empty on every process restart, so the poller would
-# re-find the last human message and re-run Sol's FULL tool loop on stale input
-# after every restart/redeploy — confirmed 2026-07-08 (a restart mid-session
-# caused Sol to re-execute an old message twice, producing duplicate "On it"/
-# generic-greeting Slack posts).
-
-# Guards against the fast poll firing a second round while one is still posting
-# (a full 3-agent reply takes a few seconds; the poll runs every ~4s).
-_responding = asyncio.Lock()
-
 
 async def _recent_transcript(exclude_msg: str = "", limit: int = 12) -> str:
-    """Recent channel conversation as a labelled transcript (oldest first), so any
-    reply path can feed the agent its memory of what was said. '' on failure."""
+    """Recent conversation as a labelled transcript (oldest first), so any reply
+    path can feed the agent its memory of what was said. Reads the local message
+    feed (src/org/agent_feed.py) rather than a chat API — unlike Slack's REST
+    history endpoint, Telegram bots can't fetch arbitrary past channel messages,
+    so this is now the single source of truth for "what was said" regardless of
+    transport. '' on failure."""
     try:
-        from src.org.slack import fetch_channel_history
-        hist = await fetch_channel_history(limit)
+        from src.org.agent_feed import read_agent_messages
+        hist = read_agent_messages(limit + 1)
         if hist and exclude_msg and hist[-1]["text"].strip() == exclude_msg.strip():
             hist = hist[:-1]  # drop a trailing echo of the message we're answering
         # Cap each line so a giant JSON dump (e.g. an applied site.json) can't
         # dominate the context window.
-        return "\n".join(f"{h['author']}: {h['text'][:300]}" for h in hist[-limit:])
+        return "\n".join(f"{h['name']}: {h['text'][:300]}" for h in hist[-limit:])
     except Exception:
         return ""
 
@@ -189,13 +178,15 @@ async def _agent_reply(agent: Agent, message: str, author: str, company,
     return f"(On it — {agent.role} here. {agent.skill.split('.')[0]}.)"
 
 
-async def _post_replies(items: list[tuple[Agent, str]]) -> list[dict]:
-    """Post each (agent, text) AS that agent, spaced for Slack's rate limit."""
+async def _post_replies(items: list[tuple[Agent, str]], reply_thread_id: int | None = None) -> list[dict]:
+    """Post each (agent, text) AS that agent, spaced for Telegram's rate limit.
+    `reply_thread_id` forces the topic these land in (the topic you asked
+    from) instead of each agent's own default topic — see post_as."""
     out: list[dict] = []
     for i, (agent, text) in enumerate(items):
         if i > 0:
             await asyncio.sleep(1.1)
-        await post_as(agent.name, agent.role, text)
+        await post_as(agent.name, agent.role, text, thread_override=reply_thread_id)
         out.append({"agent": agent.name, "role": agent.role, "reply": text})
     return out
 
@@ -220,20 +211,21 @@ the roster, decide WHO should answer — usually ONE teammate (the single most
 relevant person), occasionally two, and ALL of them only if the message is
 clearly addressed to everyone (e.g. a group greeting).
 
-The team is 5 agents — ALWAYS pick the SPECIALIST whose domain the message is
+The team is 4 agents — ALWAYS pick the SPECIALIST whose domain the message is
 about; do NOT funnel everything to the CEO. Use the EXACT role string:
-- "Product Hunter" (Hunter)  → ANY mention of CJ / sourcing / finding products /
-  prices / margins / "get products" / "add products" / "push products to the store".
-  Hunter actually runs the CJ search himself.
-- "UX & Content" (Remy)      → the store's LOOK, design, theme, announcement bar,
-  colors, fonts, hero, copy, branding. Remy actually edits the design himself.
-- "Shopify Developer" (Devon) → low-level Shopify API ops: variants, SEO metadata,
-  collections, theme/liquid plumbing, reading store files, listing folders.
-- "Growth Marketer" (Max)    → ads, Facebook/Instagram, traffic, campaigns.
+- "Product Sourcer & Copywriter" (Sol) → ANY mention of CJ / sourcing / finding
+  products / prices / margins / "get products" / "add products" / "push products
+  to the store" / product copywriting / SEO titles+descriptions. Sol runs his own
+  tool loop — actually sources from CJ and pushes to Shopify himself.
+- "Video Producer" (Reel)    → ad video generation/status, product video ideas,
+  the video review/approve-reject queue.
+- "Customer Support" (Nora)  → customer emails/tickets, support inbox questions,
+  refund/complaint handling status.
 - "CEO" (Ava)                → ONLY strategy/direction/money/vision, a build-or-
   launch decision, or a genuinely ambiguous greeting. NOT the default dumping ground.
-If the message NAMES a person (e.g. "Devon, ..."), THAT person answers. When in
-doubt between the CEO and a specialist, pick the specialist.
+If the message NAMES a person (e.g. "Sol, ..."), THAT person answers. When in
+doubt between the CEO and a specialist, pick the specialist. For a group greeting
+("hi all", "hey team") ALL FOUR must answer, one per line in "responders".
 
 EVERY agent has FULL repo + Shopify access — never route to "ask the owner for
 permission". The chosen person reads/does it themselves.
@@ -244,13 +236,15 @@ Write each chosen person's reply in FIRST PERSON, 1-3 sentences, ALWAYS in Engli
 
 
 # Agents allowed to execute Shopify directly (full freedom, no approval gate).
-# The new roster: Devon owns the Shopify API; Ava (CEO) orchestrates + can act.
+# Current roster: Sol pushes products via his own tool loop (agent_loop.py) and never
+# reaches this path; Ava (CEO) is the one who can act here. Kept as a set (not just a
+# single name check) so Devon/a future Shopify-Developer role slots back in for free.
 _SHOPIFY_DOERS = {"Shopify Developer", "CEO", "Developer", "CTO"}
 
 
 async def _agent_act_shopify(agent: Agent, message: str, company) -> str:
-    """Let a Shopify doer (Devon/Ava) actually RUN a Shopify call in chat (no
-    approval) and report the result, instead of only talking about it."""
+    """Let a Shopify doer (currently just Ava/CEO) actually RUN a Shopify call in
+    chat (no approval) and report the result, instead of only talking about it."""
     system = (
         f"You are {agent.name} ({agent.role}) at Alpha. You have FULL DIRECT "
         "Shopify Admin API + repo/store-file access — NO approval needed, you act "
@@ -298,12 +292,46 @@ Operations you can run:
                   and product page (product.json) so design/JSON edits take effect.
 - "fix_prices":   fix products priced $0 — re-price each $0 variant from its mapped
                   retail price (or remove it if there's no price). Use for "$0 in store".
+- "remove_out_of_stock": remove products that are OUT OF STOCK and cannot be purchased
+                  (no backorder allowed) — dead listings customers can't check out on.
+- "remove_stale": remove products older than 3 years that are NOT baby items — reads
+                  each product's title/description to judge relevance before removing.
 - "ticket":       CREATE, ADVANCE, or CLOSE a ticket. Create a NEW ticket for a problem/task
                   ("open a ticket to ...", "תפתח טיקט ל..."); or advance/close an EXISTING one
                   ("close the ticket ...", "סגור את הטיקט", "קדם את", "mark X done/doing/blocked").
 
 Pick "none" unless the message clearly asks for one of these (in any language).
-Output ONLY JSON: {"op":"dedupe|cleanup|apply_design|fix_prices|ticket|none","reply":"<short first-person line in %s>","ticket_action":"create|update","ticket_title":"<title, when creating>","ticket_query":"<words identifying an existing ticket, when updating>","ticket_status":"todo|doing|blocked|done"}"""
+Output ONLY JSON: {"op":"dedupe|cleanup|apply_design|fix_prices|remove_out_of_stock|remove_stale|ticket|none","reply":"<short first-person line in %s>","ticket_action":"create|update","ticket_title":"<title, when creating>","ticket_query":"<words identifying an existing ticket, when updating>","ticket_status":"todo|doing|blocked|done"}"""
+
+
+async def _classify_non_baby(candidates: list[dict]) -> list[str]:
+    """LLM judgment pass for the 'remove non-baby products older than 3 years' rule.
+    Age is already a hard, deterministic filter applied by the caller (audit_stale_products);
+    this only judges baby-relevance from title/type/description — there's no data field
+    for that on Shopify, so it needs a read of the actual product copy. Conservative:
+    ambiguous/baby-adjacent items are kept."""
+    if not candidates:
+        return []
+    listing = "\n".join(
+        f"{i}. id={c['id']} title={c['title']!r} type={c['product_type']!r} desc={c['description'][:120]!r}"
+        for i, c in enumerate(candidates)
+    )
+    system = (
+        "You are auditing a BABY products store's catalog. Each numbered item below is "
+        "a product older than 3 years. Decide which are CLEARLY NOT baby/infant/toddler "
+        "items (e.g. unrelated adult goods, generic non-baby gadgets) and should be "
+        "removed. When in doubt, KEEP the product — do not remove anything baby-adjacent "
+        "or ambiguous.\n"
+        'Output ONLY JSON: {"remove_ids": ["<id>", ...]}'
+    )
+    try:
+        llm = get_llm("executive", temperature=0.0, max_tokens=1000)
+        resp = await llm.ainvoke([SystemMessage(content=system), HumanMessage(content=listing)])
+        parsed = _parse_json(str(resp.content))
+        valid_ids = {c["id"] for c in candidates}
+        return [i for i in parsed.get("remove_ids", []) if i in valid_ids]
+    except Exception:
+        return []
 
 
 async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
@@ -328,7 +356,8 @@ async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
         ticket_status = str(parsed.get("ticket_status", "done")).strip()
     except Exception:
         return None
-    if op not in {"dedupe", "cleanup", "apply_design", "fix_prices", "ticket"}:
+    if op not in {"dedupe", "cleanup", "apply_design", "fix_prices",
+                  "remove_out_of_stock", "remove_stale", "ticket"}:
         return None
     # Ticket ops — ANY agent can create / advance / close. No Shopify context needed.
     if op == "ticket":
@@ -368,6 +397,20 @@ async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
             from src.mcp_tools.shopify import fix_zero_prices
             res = await fix_zero_prices(dry_run=False)
             note = f"תיקנתי מחירי $0: תמחרתי מחדש {res['repriced']} מוצרים, הסרתי {res['deleted']} ללא מחיר."
+        elif op == "remove_out_of_stock":
+            from src.mcp_tools.shopify import cleanup_out_of_stock_products
+            res = await cleanup_out_of_stock_products(dry_run=False)
+            note = f"הסרתי {res['deleted']} מוצרים שאזלו מהמלאי ולא ניתנים לרכישה (מתוך {res['scanned']} שנבדקו)."
+        elif op == "remove_stale":
+            from src.mcp_tools.shopify import audit_stale_products, delete_shopify_product
+            audit = await audit_stale_products(max_age_years=3)
+            to_remove = await _classify_non_baby(audit["candidates"])
+            removed = 0
+            for gid in to_remove:
+                if await delete_shopify_product(gid):
+                    removed += 1
+            note = (f"בדקתי {audit['candidate_count']} מוצרים בני 3+ שנים; "
+                    f"הסרתי {removed} שאינם מוצרי תינוקות.")
         else:  # apply_design
             from src.mcp_tools.shopify_design import apply_site_design, apply_product_design
             r1 = await apply_site_design(slug)
@@ -455,6 +498,100 @@ async def _agent_act_sourcing(agent: Agent, message: str, company) -> str:
         except Exception as exc:
             out += f"\n\n(Couldn't start the publish run: {exc})"
     return out
+
+
+async def _agent_act_video(agent: Agent, message: str, company) -> str:
+    """Reel ACTS in chat: when asked to make/create/render an ad video OR a
+    baby-outfit image, picks a product and kicks off a REAL render (the same
+    pipelines as POST /videos/generate and POST /images/generate) instead of just
+    talking about it — this was the actual bug: Reel kept replying "I'll select a
+    product..." forever without ever starting anything, because no _agent_act_*
+    was wired for his role. One intent-classification call decides media type
+    (video vs image) plus video style, then delegates to the matching starter."""
+    system = (
+        f"You are {agent.name} ({agent.role}) at Alpha — Video Producer, and you also "
+        "generate baby-outfit-swap product IMAGES. You have FULL access to the store's "
+        "products and both pipelines; NEVER say you lack access or ask which product — "
+        "if the owner didn't name one, YOU pick it.\n"
+        f"Answer in {company_language()}. From the owner's message decide: (1) do they "
+        "want you to START something NOW (e.g. 'make a video', 'create an ad', 'make an "
+        "image', 'try 10 seconds', 'just take one/any product') versus just chatting; "
+        "(2) if starting, is it a VIDEO or an IMAGE (baby wearing the outfit).\n"
+        "For video, two formats — pick PRODUCT_3D_SHOWCASE only if the owner clearly "
+        "asks for a 3D/product-only/no-face/cinematic style, else default AVATAR_UGC:\n"
+        "- AVATAR_UGC: an avatar talks to camera, benefit captions alongside.\n"
+        "- PRODUCT_3D_SHOWCASE: no face, rotating/macro product render, floating title cards.\n"
+        "Output ONLY JSON:\n"
+        '{"reply":"<short first-person line>","start_render":true|false,'
+        '"media":"video"|"image","style":"AVATAR_UGC"|"PRODUCT_3D_SHOWCASE"}'
+    )
+    transcript = await _recent_transcript(message)
+    human = (f"Recent conversation (oldest first):\n{transcript}\n\n" if transcript else "") + author_q(message)
+    try:
+        llm = get_llm("video_producer", temperature=0.2, max_tokens=300)
+        resp = await llm.ainvoke([SystemMessage(content=system), HumanMessage(content=human)])
+        parsed = _parse_json(str(resp.content))
+        reply = str(parsed.get("reply", "")).strip()
+        start = bool(parsed.get("start_render"))
+        media = str(parsed.get("media", "video")).strip().lower()
+        style = str(parsed.get("style", "AVATAR_UGC")).strip().upper()
+        if style not in ("AVATAR_UGC", "PRODUCT_3D_SHOWCASE"):
+            style = "AVATAR_UGC"
+    except Exception:
+        return await _agent_reply(agent, message, "You", company)
+    if not start:
+        return reply or "Got it."
+    if media == "image":
+        return await _agent_act_image(reply)
+    return await _agent_act_video_render(reply, style)
+
+
+async def _agent_act_video_render(reply: str, style: str) -> str:
+    """Starts a real ad-video render (POST /videos/generate) for the store's first
+    eligible product — the video half of _agent_act_video's dispatch."""
+    from src.mcp_tools.shopify import get_products_for_video
+    from src.api.routes.videos import post_generate_video
+    from src.stores import list_stores
+    try:
+        store = next(iter(list_stores()), None)
+        if not store:
+            return (reply + "\n" if reply else "") + "⚠️ No active store to pick a product from."
+        products = await get_products_for_video()
+    except Exception as exc:
+        return (reply + "\n" if reply else "") + f"⚠️ Couldn't read the store's products: {exc}"
+    if not products:
+        return (reply + "\n" if reply else "") + "Every eligible product already has a video queued/rendered — nothing new to make one for."
+    product = products[0]
+    res = await post_generate_video({"store_id": store.store_id, "product_id": product["id"], "style": style})
+    if res.get("error"):
+        return (reply + "\n" if reply else "") + f"⚠️ Couldn't start rendering: {res['error']}"
+    pretty_style = style.replace("_", " ").title()
+    return (reply + "\n" if reply else "") + f"🎬 Picked *{product['title']}* — rendering a {pretty_style} ad now (script → Wan2.2 scenes → voiceover → assembly). I'll post it here for approval when it's done."
+
+
+async def _agent_act_image(reply: str) -> str:
+    """Starts a real baby-outfit-swap image render (POST /images/generate) for the
+    store's first eligible product — the image half of _agent_act_video's
+    dispatch. If the picked product's photos don't show an adult person, the
+    background task fails fast with a clear reason (see src/api/routes/images.py)
+    rather than silently producing nothing."""
+    from src.mcp_tools.shopify import get_products_with_all_images
+    from src.api.routes.images import post_generate_image
+    from src.stores import list_stores
+    try:
+        store = next(iter(list_stores()), None)
+        if not store:
+            return (reply + "\n" if reply else "") + "⚠️ No active store to pick a product from."
+        products = await get_products_with_all_images()
+    except Exception as exc:
+        return (reply + "\n" if reply else "") + f"⚠️ Couldn't read the store's products: {exc}"
+    if not products:
+        return (reply + "\n" if reply else "") + "Every eligible product already has an image queued/rendered — nothing new to make one for."
+    product = products[0]
+    res = await post_generate_image({"store_id": store.store_id, "product_id": product["id"]})
+    if res.get("error"):
+        return (reply + "\n" if reply else "") + f"⚠️ Couldn't start rendering: {res['error']}"
+    return (reply + "\n" if reply else "") + f"🖼️ Picked *{product['title']}* — checking its photos and rendering a baby-outfit image now. I'll post the original + generated photo here for approval when it's done."
 
 
 def _apply_site_changes(changes: list[dict]) -> tuple[bool, list[str]]:
@@ -561,10 +698,13 @@ async def _agent_act_design(agent: Agent, message: str, company) -> str:
 
 
 async def route_and_respond(message: str, author: str = "You",
-                            images: list[str] | None = None) -> list[dict]:
+                            images: list[str] | None = None,
+                            reply_thread_id: int | None = None) -> list[dict]:
     """Route the message to the RIGHT teammate(s) — not the whole chorus — and
-    have only them answer, each as their own Slack identity. If images are
-    attached, the responder actually looks at them (Claude vision)."""
+    have only them answer, each as their own Telegram identity. If images are
+    attached, the responder actually looks at them (Claude vision).
+    `reply_thread_id` (the Telegram topic the message came from) makes every
+    reply land there too, instead of each agent's own default topic."""
     company = get_company()
     agents = list_agents(active_only=True)
     by_role = {a.role: a for a in agents}
@@ -612,24 +752,33 @@ async def route_and_respond(message: str, author: str = "You",
         if ceo:
             items.append((ceo, await _agent_reply(ceo, message, author, company, images)))
 
+    # Show "<agent> is typing…" AS EACH responder right now, using their own bot
+    # identity — so you see who received your message and is composing a reply
+    # BEFORE their (possibly slower — a tool call, a real Shopify/CJ round trip)
+    # answer is actually ready, not just a flash right before it lands.
+    for agent, _ in items:
+        try:
+            await show_typing_as(agent.name, reply_thread_id)
+        except Exception:
+            pass
+
     # Each specialist actually EXECUTES in their domain (full freedom) — not just
     # talk. Devon/Ava → Shopify; Hunter → CJ sourcing; Remy → store design edits.
     # (Skipped when images are attached — then they react to the picture.)
     final: list[tuple[Agent, str]] = []
     for agent, reply in items:
         # Sol (the sole autonomous builder) runs the FULL tool-use loop — codes,
-        # builds, deploys, sources from CJ — narrating each step to Slack itself.
+        # builds, deploys, sources from CJ — narrating each step to Telegram itself.
         # Passes any attached image (e.g. a mobile-bug screenshot) so he sees + fixes it.
         if agent.name == "Sol":
             from src.org.agent_loop import run_sol_task
             try:
                 # narrate=True → Sol posts every step AND its final summary to
-                # Slack itself (say(resp.content)). Do NOT append to `final` —
+                # Telegram itself (say(resp.content)). Do NOT append to `final` —
                 # _post_replies would post the summary a SECOND time. That double
                 # post was the "Sol replies twice" bug.
-                await run_sol_task(message, narrate=True, images=images)
+                await run_sol_task(message, narrate=True, images=images, reply_thread_id=reply_thread_id)
             except Exception as exc:  # noqa: BLE001
-                from src.org.slack import post_as
                 await post_as(agent.name, agent.role, f"Got stuck: {exc}")
             continue
         if not images:
@@ -647,124 +796,16 @@ async def route_and_respond(message: str, author: str = "You",
                 reply = await _agent_act_sourcing(agent, message, company)
             elif agent.role == "UX & Content":
                 reply = await _agent_act_design(agent, message, company)
+            elif agent.role == "Video Producer":
+                reply = await _agent_act_video(agent, message, company)
         final.append((agent, reply))
-    return await _post_replies(final)
+    return await _post_replies(final, reply_thread_id=reply_thread_id)
 
 
-async def _download_image(url: str, token: str) -> str | None:
-    """Download a Slack file (needs the bot token + files:read scope) and return
-    it as a base64 data URL for the vision model. None if it can't be read."""
-    try:
-        async with httpx.AsyncClient(timeout=20) as client:
-            r = await client.get(url, headers={"Authorization": f"Bearer {token}"})
-        ctype = r.headers.get("content-type", "")
-        if r.status_code == 200 and ctype.startswith("image/"):
-            return f"data:{ctype};base64,{base64.b64encode(r.content).decode()}"
-        logger.warning("Image not readable (status %s, type %s) — is files:read granted?", r.status_code, ctype)
-    except Exception as exc:
-        logger.warning("Image download failed: %s", exc)
-    return None
-
-
-async def _extract_images(msg: dict, token: str, max_images: int = 3) -> list[str]:
-    """Base64 data URLs for image files attached to a Slack message."""
-    out: list[str] = []
-    for f in (msg.get("files") or [])[:max_images]:
-        if str(f.get("mimetype", "")).startswith("image/"):
-            url = f.get("url_private_download") or f.get("url_private")
-            if url:
-                data = await _download_image(url, token)
-                if data:
-                    out.append(data)
-    return out
-
-
-# ── Optional: read the channel via a bot token (true two-way) ─────────────────
-
-def _bot_token() -> str:
-    return os.environ.get("SLACK_BOT_TOKEN", "").strip()
-
-
-def _channel_id() -> str:
-    """The channel ID. Tolerates a pasted Slack URL by extracting the C… id —
-    confirmed real: a channel *link* in SLACK_CHANNEL gives `channel_not_found`."""
-    raw = os.environ.get("SLACK_CHANNEL", "").strip()
-    m = re.search(r"(C[A-Z0-9]{8,})", raw)
-    return m.group(1) if m else raw
-
-
+# ── Two-way status ───────────────────────────────────────────────────────────
+# Under Slack, two-way chat meant POLLING conversations.history for new human
+# messages. Telegram is push-based instead: src/org/telegram.py's Application
+# gets each of your messages handed to it directly and calls route_and_respond()
+# itself the moment it arrives — there is nothing left to poll.
 def two_way_enabled() -> bool:
-    return bool(_bot_token() and _channel_id())
-
-
-async def fetch_and_respond(limit: int = 15) -> list[dict]:
-    """Pull the latest human messages from the channel and have agents answer.
-
-    No-op unless SLACK_BOT_TOKEN + SLACK_CHANNEL are configured and the bot is a
-    member of that channel (Slack scopes: channels:history, chat:write).
-    """
-    token, channel = _bot_token(), _channel_id()
-    if not (token and channel):
-        return []
-    if _responding.locked():
-        return []  # a reply round is already in flight — let it finish
-    async with _responding:
-        return await _fetch_and_respond_locked(token, channel, limit)
-
-
-async def _fetch_and_respond_locked(token: str, channel: str, limit: int) -> list[dict]:
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                "https://slack.com/api/conversations.history",
-                headers={"Authorization": f"Bearer {token}"},
-                params={"channel": channel, "limit": limit},
-            )
-        data = resp.json()
-    except Exception as exc:
-        logger.warning("Slack history fetch failed: %s", exc)
-        return []
-    if not data.get("ok"):
-        logger.warning("Slack history error: %s", data.get("error"))
-        return []
-
-    company = get_company()
-    last_ts_by_channel: dict = (company.daemon.get("slack_last_ts") if company else None) or {}
-
-    # Newest first → find the most recent real human message. Skip bot posts and
-    # system messages, but KEEP image uploads (subtype "file_share") — those were
-    # being dropped, which is why an image looked like an "empty message".
-    for msg in data.get("messages", []):
-        if msg.get("bot_id"):
-            continue
-        subtype = msg.get("subtype")
-        if subtype and subtype != "file_share":
-            continue
-        text = msg.get("text", "")
-        has_files = bool(msg.get("files"))
-        if not text and not has_files:
-            continue
-        ts = msg.get("ts", "")
-        if ts and last_ts_by_channel.get(channel) == ts:
-            return []  # already answered the latest one
-        images = await _extract_images(msg, token) if has_files else []
-        if has_files and not images:
-            # An image was sent but we couldn't open it — tell the agent so it
-            # gives a useful answer (usually: the bot needs the files:read scope).
-            text = (text + "\n" if text else "") + (
-                "[The user attached an image, but the team could not open it — the "
-                "Slack bot is likely missing the 'files:read' scope. Politely say you "
-                "can see an image was sent but can't open it yet, and ask them to add "
-                "that scope.]"
-            )
-        replies = await route_and_respond(text, author="You", images=images)
-        # Mark as answered only AFTER a successful round, so a mid-failure
-        # (e.g. litellm not ready yet) doesn't permanently skip the message.
-        # Persisted immediately (not just held in memory) so a restart mid-session
-        # doesn't cause this same message to be re-run through Sol's tool loop.
-        if replies and company:
-            last_ts_by_channel[channel] = ts
-            company.daemon["slack_last_ts"] = last_ts_by_channel
-            save_company(company)
-        return replies
-    return []
+    return telegram_enabled()

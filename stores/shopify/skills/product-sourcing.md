@@ -137,7 +137,42 @@ Fill each bucket to the minimum below. Every product must pass the §3 checklist
 
 ---
 
-## 5. After publishing (required)
+## 5. Catalog cleanup rules (standing, owner rules)
+
+Two more products must NEVER stay live:
+
+- **Out of stock, no backorder.** A product where every variant is at 0 (or
+  negative) inventory AND inventory policy is DENY (no overselling) can't be
+  checked out — it's a dead listing. Audit + delete with
+  `cleanup_out_of_stock_products(dry_run=True/False)` (`src/mcp_tools/shopify.py`).
+  Products that still have stock, or allow backorder (CONTINUE), are left alone.
+- **Older than 3 years AND not a baby item.** Age alone isn't the trigger — only
+  age combined with no longer being baby-relevant. There's no Shopify field for
+  "is this a baby product," so it needs a real read of the title/description, not
+  a keyword guess. `audit_stale_products(max_age_years=3)` is READ-ONLY and returns
+  candidates (title/type/description/age) for review; judge each one and delete
+  with `delete_shopify_product(id)` — keep anything baby-adjacent or ambiguous.
+- **Sized for older kids, not babies (regardless of listing age).** CJ titles lie —
+  "Toddler Cozy Crewneck Set" turned out to be sized 130-150cm (ages 8-12) and
+  "Girls' Sleeveless Vest & Shorts Set" was 110-140cm (ages 4+); both deleted
+  2026-08-01. The real signal is the Size variant chart, not the title/description.
+  `audit_size_mismatched_products()` (READ-ONLY) flags any product where **every**
+  size option is above the baby/toddler cutoff (~98cm / no month-labeled or newborn
+  size) — deterministic size-chart parsing, not LLM guessing. If a product has even
+  one baby-appropriate size it's left alone. Delete flagged ones with
+  `delete_shopify_product(id)`. When sourcing NEW products, check the CJ variant
+  size chart the same way before publishing — don't trust a "baby"/"toddler" title.
+
+Both rules also run as part of the periodic quality scan
+(`scan_and_open_tickets` in `src/org/tickets.py`) — it opens a ticket per problem
+found (dry-run only, no auto-delete) so nothing silently disappears. The owner can
+also trigger either rule directly in Telegram chat (`src/org/conversation.py`
+ops `remove_out_of_stock` / `remove_stale`); `remove_stale` runs an LLM judgment
+pass over title/description before deleting anything.
+
+---
+
+## 6. After publishing (required)
 
 Follow `docs/AGENT_WORKFLOW.md`:
 - Each new product: main + **≥3 images**, real price (not $0, not absurd), unique

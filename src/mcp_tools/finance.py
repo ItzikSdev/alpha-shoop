@@ -248,7 +248,7 @@ async def max_connect_facebook_instagram() -> dict:
     """Agent Max ATTEMPTS the Facebook & Instagram connection, then reports in Slack
     as himself. The 'attempt' is the real Shopify channel verification above (we don't
     fake a success). Returns {connected, detail}."""
-    from src.org.slack import post_as_role
+    from src.org.telegram import post_as_role
     connected, detail = await facebook_instagram_status()
     if connected:
         msg = (":mega: ניסיתי להתחבר ל-Facebook & Instagram — ✅ הערוץ מותקן בחנות והקטלוג מסונכרן ל-Meta Shop. "

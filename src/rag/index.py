@@ -60,6 +60,20 @@ _CORPUS_SCHEMAS: dict[str, dict[str, Any]] = {
             {"name": "section", "type": "text"},
         ],
     },
+    "store_products": {
+        "prefix": "store_products",
+        "fields": [
+            {"name": "store_id", "type": "tag"},   # scopes search to ONE store's catalog
+            {"name": "product_id", "type": "tag"},
+            {"name": "title", "type": "text"},
+            {"name": "price", "type": "text"},
+            {"name": "handle", "type": "text"},   # storefront URL slug
+            {"name": "images", "type": "text"},   # JSON list of image URLs (Reel's image pipeline)
+            {"name": "has_baby_image", "type": "tag"},   # "true" once a baby-outfit image is approved
+            {"name": "baby_image_url", "type": "text"},
+            {"name": "garment_description", "type": "text"},  # vision-extracted, reused for prompts
+        ],
+    },
 }
 
 # Cache of created/connected AsyncSearchIndex objects, one per corpus.
@@ -149,6 +163,38 @@ async def upsert(corpus: str, doc_id: str, text: str, metadata: dict) -> bool:
     except Exception as exc:
         logger.warning("RAG upsert failed corpus=%s doc_id=%s: %s", corpus, doc_id, exc)
         return False
+
+
+async def get(corpus: str, doc_id: str) -> dict | None:
+    """Fetch one doc's metadata (never the vector bytes) by id, or None if it
+    doesn't exist / on any error. For merge-safe upserts: read the existing
+    fields, merge in the ones you're changing, then call upsert() with the
+    full merged metadata — upsert() replaces the whole hash at that key, so a
+    partial-field upsert would silently drop everything else."""
+    if corpus not in _CORPUS_SCHEMAS:
+        logger.warning("Unknown RAG corpus %r, skipping get", corpus)
+        return None
+
+    import redis.asyncio as aredis
+
+    settings = get_settings()
+    prefix = _CORPUS_SCHEMAS[corpus]["prefix"]
+    field_names = ["text"] + [f["name"] for f in _CORPUS_SCHEMAS[corpus]["fields"]]
+    client = aredis.from_url(settings.redis_url, decode_responses=True)
+    try:
+        values = await client.hmget(f"{prefix}:{doc_id}", field_names)
+        if all(v is None for v in values):
+            return None
+        entry: dict[str, Any] = {"id": doc_id}
+        for name, value in zip(field_names, values):
+            if value is not None:
+                entry[name] = value
+        return entry
+    except Exception as exc:
+        logger.warning("RAG get failed corpus=%s doc_id=%s: %s", corpus, doc_id, exc)
+        return None
+    finally:
+        await client.aclose()
 
 
 async def list_all(corpus: str, limit: int = 200) -> list[dict]:

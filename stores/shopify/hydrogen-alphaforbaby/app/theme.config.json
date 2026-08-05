@@ -91,24 +91,25 @@
       "url": "/pages/contact"
     }
   ],
+  "_tokens_note": "2026-08-02: retextured to the 'Classical' cream/accent design system from the product-page handoff (see tailwind.config.js + app/styles/app.css .pdp block for the fuller token set). ink/muted/line/soft/heroAccent map onto Classical's ink/muted(derived)/divider/surface/accent so the whole site (header, footer, cart, account) re-themes through the existing --tob-* pipeline, not just the product page.",
   "tokens": {
     "colors": {
-      "ink": "#161616",
-      "muted": "#8d8d8d",
-      "line": "#eeeeee",
-      "soft": "#f6f4f1",
-      "heroBg": "#f3efe9",
-      "heroInk": "#2e2722",
-      "heroAccent": "#b07a5f",
-      "heroEyebrow": "#9a7a6a",
-      "footerBg": "#161616",
-      "footerText": "#ffffff",
-      "star": "#e0a93b",
+      "ink": "#201f1d",
+      "muted": "#807d76",
+      "line": "rgba(32,31,29,0.16)",
+      "soft": "#ffffff",
+      "heroBg": "#ffffff",
+      "heroInk": "#201f1d",
+      "heroAccent": "#b68235",
+      "heroEyebrow": "#7d5411",
+      "footerBg": "#fff3e4",
+      "footerText": "#201f1d",
+      "star": "#b68235",
       "verified": "#3a9d5a"
     },
     "fonts": {
-      "body": "-apple-system, 'Helvetica Neue', Inter, Arial, sans-serif",
-      "display": "'Newsreader', Georgia, serif"
+      "body": "FbTubicSans-Light, FbTubicSans-Light-en, Assistant, system-ui, sans-serif",
+      "display": "FbTubicSans-Light, FbTubicSans-Light-en, Assistant, system-ui, sans-serif"
     },
     "fontSizes": {
       "logo": "1.4rem",
@@ -125,10 +126,10 @@
       "pill": "0.8rem",
       "testimonial": "1rem",
       "footer": "0.9rem",
-      "productTitle": "2rem",
-      "productPrice": "1.7rem",
+      "productTitle": "34px",
+      "productPrice": "30px",
       "optionButton": "0.9rem",
-      "description": "1rem"
+      "description": "15.5px"
     }
   },
   "announcement": [
@@ -174,10 +175,6 @@
     "secondaryText": "Our story",
     "secondaryLink": "/pages/about-us",
     "stats": [
-      {
-        "num": "100%",
-        "label": "GOTS organic"
-      },
       {
         "num": "1,000+",
         "label": "Happy parents"
@@ -270,9 +267,9 @@
   ],
   "productPage": {
     "trustBadges": [
-      "✓ Free shipping on all orders",
+      "✓ Free shipping (7–25 business days)",
       "✓ 30-day easy returns",
-      "✓ Satisfaction guaranteed"
+      "✓ Guaranteed Safe & Secure Checkout"
     ]
   }
 }

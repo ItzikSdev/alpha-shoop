@@ -29,6 +29,16 @@ export const CUSTOMER_AUTH_METAFIELDS_FRAGMENT = `
   }
 `;
 
+// custom_cart.cart_id — the Storefront API cart id this customer's cart
+// currently lives under; used to restore/merge their cart across devices at
+// login (see app/lib/cartSync.js). App state, not a secret — kept in its own
+// namespace separate from custom_auth for clarity.
+export const CUSTOMER_CART_METAFIELD_FRAGMENT = `
+  fragment CustomerCartMetafield on Customer {
+    cartId: metafield(namespace: "custom_cart", key: "cart_id") { value }
+  }
+`;
+
 export const CUSTOMER_ADDRESS_ADMIN_FRAGMENT = `
   fragment CustomerAddressAdmin on MailingAddress {
     id
@@ -64,9 +74,11 @@ export const CUSTOMER_PROFILE_FRAGMENT = `
       }
     }
     ...CustomerAuthMetafields
+    ...CustomerCartMetafield
   }
   ${CUSTOMER_ADDRESS_ADMIN_FRAGMENT}
   ${CUSTOMER_AUTH_METAFIELDS_FRAGMENT}
+  ${CUSTOMER_CART_METAFIELD_FRAGMENT}
 `;
 
 // `customerByIdentifier` is an exact-match lookup (unlike the fuzzy

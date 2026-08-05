@@ -149,13 +149,18 @@ def update_ticket(ticket_id: str, **fields) -> bool:
 
 async def scan_and_open_tickets(store_id: str = "alphaforbaby") -> list[dict]:
     """Quality scan → open a ticket for each real problem found on the live store
-    (duplicates, $0-priced products, bad/no-image products). Reuses the existing
-    dry-run checks. Idempotent via dedupe_key. Returns the tickets opened."""
+    (duplicates, $0-priced products, bad/no-image products, out-of-stock/unpurchasable
+    products, products older than 3 years to review for baby-relevance). Reuses the
+    existing dry-run checks. Idempotent via dedupe_key. Returns the tickets opened."""
     from src.stores import get_store, _current_store
     _current_store.set(get_store(store_id))
     opened: list[Ticket] = []
     try:
-        from src.mcp_tools.shopify import dedupe_products, fix_zero_prices, cleanup_bad_products
+        from src.mcp_tools.shopify import (
+            dedupe_products, fix_zero_prices, cleanup_bad_products,
+            cleanup_out_of_stock_products, audit_stale_products,
+            audit_size_mismatched_products,
+        )
         dup = await dedupe_products(dry_run=True)
         if dup.get("duplicate_count", 0) > 0:
             t = open_ticket(f"Remove {dup['duplicate_count']} duplicate product(s)",
@@ -174,6 +179,25 @@ async def scan_and_open_tickets(store_id: str = "alphaforbaby") -> list[dict]:
             t = open_ticket(f"Remove {bad['bad_count']} product(s) with no image / bad title",
                             "Quality scan found products with no image or a foreign-language title.",
                             source="quality_scan", created_by="quality_scan", store_id=store_id, dedupe_key="scan:bad_products")
+            if t: opened.append(t)
+        oos = await cleanup_out_of_stock_products(dry_run=True)
+        if oos.get("bad_count", 0) > 0:
+            t = open_ticket(f"Remove {oos['bad_count']} out-of-stock product(s)",
+                            "Quality scan found products that are out of stock and cannot be purchased (no backorder allowed).",
+                            source="quality_scan", created_by="quality_scan", store_id=store_id, dedupe_key="scan:out_of_stock")
+            if t: opened.append(t)
+        stale = await audit_stale_products(max_age_years=3)
+        if stale.get("candidate_count", 0) > 0:
+            t = open_ticket(f"Review {stale['candidate_count']} product(s) older than 3 years",
+                            "Quality scan found products older than 3 years old — review and remove any that are not baby items (owner rule).",
+                            source="quality_scan", created_by="quality_scan", store_id=store_id, dedupe_key="scan:stale_products")
+            if t: opened.append(t)
+        sized = await audit_size_mismatched_products()
+        if sized.get("flagged_count", 0) > 0:
+            titles = ", ".join(f["title"] for f in sized["flagged"][:10])
+            t = open_ticket(f"Remove {sized['flagged_count']} product(s) sized for older kids, not babies",
+                            f"Quality scan found products with NO baby/toddler-sized variant (size chart only fits older kids): {titles}",
+                            source="quality_scan", created_by="quality_scan", store_id=store_id, dedupe_key="scan:size_mismatch")
             if t: opened.append(t)
     except Exception as exc:
         open_ticket("Quality scan failed", f"scan_and_open_tickets error: {exc}",

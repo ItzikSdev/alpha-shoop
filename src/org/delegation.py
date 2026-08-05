@@ -34,7 +34,7 @@ from src.org.models import (
     save_agent,
 )
 from src.org.seed import seed_founding_team
-from src.org.slack import post_as
+from src.org.telegram import post_as
 from src.stores import list_stores
 from src.tracing import agent_log
 

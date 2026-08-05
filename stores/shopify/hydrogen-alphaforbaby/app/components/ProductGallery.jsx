@@ -1,116 +1,85 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useRef} from 'react';
 import {Image} from '@shopify/hydrogen';
-
+import {ChevronLeft, ChevronRight} from 'lucide-react';
 
 /**
- * Main image + clickable thumbnail strip. Defaults to the selected variant's
- * photo (so a Color swap in ProductForm still updates the hero image), but
- * lets the shopper click through the product's full image set independently.
+ * Horizontal scroll-snap gallery — "Classical" theme (2026-08-02 handoff).
+ * Every slide sits inside a `.plate` frame (surface mat + accent outline).
+ * Touch/trackpad swipe already works natively; the left/right arrows are for
+ * desktop/PC mouse users (md+ only — mobile relies on swipe, no arrows there).
  * @param {{
  *   images: Array<{id: string; url: string; altText?: string | null; width?: number; height?: number}>;
  *   selectedVariantImage?: {id: string; url: string; altText?: string | null; width?: number; height?: number} | null;
+ *   discountPercent?: number;
  * }}
  */
-export function ProductGallery({images, selectedVariantImage}) {
+export function ProductGallery({images, selectedVariantImage, discountPercent}) {
   const gallery = images?.length ? images : [];
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [autoPlay, setAutoPlay] = useState(true);
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
+  const trackRef = useRef(null);
+
   useEffect(() => {
-    if (!selectedVariantImage) return;
+    if (!selectedVariantImage || !trackRef.current) return;
     const idx = gallery.findIndex((img) => img.id === selectedVariantImage.id);
-    if (idx !== -1) {
-      setCurrentIndex(idx);
-      setAutoPlay(false);
-    }
+    if (idx === -1) return;
+    const track = trackRef.current;
+    const slide = track.children[idx];
+    slide?.scrollIntoView({behavior: 'smooth', inline: 'center', block: 'nearest'});
   }, [selectedVariantImage?.id]);
 
-  useEffect(() => {
-    if (!autoPlay || gallery.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentIndex(prev => (prev + 1) % gallery.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [autoPlay, gallery.length]);
+  if (!gallery.length) return null;
 
-  useEffect(() => {
-    const handleMouseEnter = () => setAutoPlay(false);
-    const handleMouseLeave = () => setAutoPlay(true);
-
-    const handleTouchStart = (e) => setTouchStart(e.touches[0].clientX);
-    const handleTouchEnd = (e) => {
-      const end = e.changedTouches[0].clientX;
-      setTouchEnd(end);
-      const diff = touchStart - end;
-      if (diff > 50) setCurrentIndex(prev => (prev + 1) % gallery.length);
-      if (diff < -50) setCurrentIndex(prev => (prev - 1 + gallery.length) % gallery.length);
-    };
-
-    document.addEventListener('mouseenter', handleMouseEnter);
-    document.addEventListener('mouseleave', handleMouseLeave);
-    document.addEventListener('touchstart', handleTouchStart);
-    document.addEventListener('touchend', handleTouchEnd);
-
-    return () => {
-      document.removeEventListener('mouseenter', handleMouseEnter);
-      document.removeEventListener('mouseleave', handleMouseLeave);
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [autoPlay, touchStart, touchEnd, gallery.length]);
+  const scrollByOne = (direction) => {
+    const track = trackRef.current;
+    if (!track) return;
+    track.scrollBy({left: direction * track.clientWidth, behavior: 'smooth'});
+  };
 
   return (
-    <div className="tobp-carousel">
-      {gallery.length === 1 && (
-        <Image alt={gallery[0].altText || ''} aspectRatio="1/1" data={gallery[0]} sizes="(min-width: 45em) 50vw, 100vw" />
-      )}
-      {gallery.length > 1 && (
-        <div className="tobp-carousel-nav">
-          <div className="tobp-carousel-viewport">
-            <div className="tobp-carousel-track" style={{transform: `translateX(-${currentIndex * 100}%)`}}>
-              {gallery.map((img, index) => (
-                <div key={img.id} className="tobp-carousel-slide">
-                  <Image
-                    alt={img.altText || ''}
-                    aspectRatio="1/1"
-                    data={img}
-                    sizes="100vw"
-                  />
-                </div>
-              ))}
+    <div className="relative">
+      <div
+        ref={trackRef}
+        className="no-scrollbar flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-3 pt-4"
+      >
+        {gallery.map((img, index) => (
+          <figure key={img.id} className="relative w-full flex-none snap-center">
+            <div className="plate rounded">
+              <Image
+                alt={img.altText || ''}
+                aspectRatio="1/1"
+                data={img}
+                sizes="(min-width: 430px) 430px, 100vw"
+                loading={index === 0 ? 'eager' : 'lazy'}
+                className="aspect-square w-full object-cover"
+              />
             </div>
-            <button
-              type="button"
-              className="tobp-carousel-arrow tobp-carousel-arrow-prev"
-              aria-label="Previous image"
-              onClick={() => setCurrentIndex((prev) => (prev - 1 + gallery.length) % gallery.length)}
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className="tobp-carousel-arrow tobp-carousel-arrow-next"
-              aria-label="Next image"
-              onClick={() => setCurrentIndex((prev) => (prev + 1) % gallery.length)}
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 6 15 12 9 18" />
-              </svg>
-            </button>
-          </div>
-          <div className="tobp-carousel-dots">
-            {gallery.map((img, index) => (
-              <button
-                key={img.id}
-                className={`tobp-carousel-dot ${index === currentIndex ? 'active' : ''}`}
-                onClick={() => setCurrentIndex(index)}
-              ></button>
-            ))}
-          </div>
-        </div>
+            {index === 0 && discountPercent > 0 && (
+              <span className="tag tag-outline tnum absolute left-3 top-3 bg-bg">
+                SAVE {discountPercent}%
+              </span>
+            )}
+          </figure>
+        ))}
+      </div>
+
+      {gallery.length > 1 && (
+        <>
+          <button
+            type="button"
+            aria-label="Previous image"
+            onClick={() => scrollByOne(-1)}
+            className="btn btn-primary btn-icon absolute left-6 top-1/2 z-10 hidden -translate-y-1/2 bg-bg md:flex"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            aria-label="Next image"
+            onClick={() => scrollByOne(1)}
+            className="btn btn-primary btn-icon absolute right-6 top-1/2 z-10 hidden -translate-y-1/2 bg-bg md:flex"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import {useLoaderData, Link} from 'react-router';
-import {useEffect, useState, useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {Image, Money} from '@shopify/hydrogen';
 import {config} from '~/lib/theme';
 
@@ -22,53 +22,34 @@ export async function loader(args) {
 }
 
 async function loadCriticalData({context}) {
-  // Load featured products + all 3 category collections in parallel
-  const [
-    {products},
-    boysData,
-    girlsData,
-    unisexData,
-  ] = await Promise.all([
-    context.storefront.query(HOMEPAGE_PRODUCTS_QUERY, {
-      cache: context.storefront.CacheShort(),
-      variables: {first: config.productGridLimit ?? 12},
-    }),
-    context.storefront.query(COLLECTION_PRODUCTS_QUERY, {
-      cache: context.storefront.CacheShort(),
-      variables: {handle: 'baby-boys', first: 12},
-    }),
-    context.storefront.query(COLLECTION_PRODUCTS_QUERY, {
-      cache: context.storefront.CacheShort(),
-      variables: {handle: 'baby-girls', first: 12},
-    }),
-    context.storefront.query(COLLECTION_PRODUCTS_QUERY, {
-      cache: context.storefront.CacheShort(),
-      variables: {handle: 'unisex', first: 12},
-    }),
-  ]);
+  const products = [];
+  let cursor = null;
+  let hasNextPage = true;
 
-  return {
-    products,
-    collectionProducts: {
-      'baby-boys':  boysData?.collection?.products?.nodes   ?? [],
-      'baby-girls': girlsData?.collection?.products?.nodes  ?? [],
-      'unisex':     unisexData?.collection?.products?.nodes ?? [],
-    },
-  };
+  while (hasNextPage) {
+    const {products: page} = await context.storefront.query(HOMEPAGE_PRODUCTS_QUERY, {
+      cache: context.storefront.CacheShort(),
+      variables: {first: 250, after: cursor},
+    });
+    products.push(...page.nodes);
+    hasNextPage = page.pageInfo.hasNextPage;
+    cursor = page.pageInfo.endCursor;
+  }
+
+  return {products};
 }
 
 export default function Homepage() {
   /** @type {LoaderReturnData} */
   const data = useLoaderData();
-  const products = data.products?.nodes ?? [];
-  const collectionProducts = data.collectionProducts ?? {};
+  const products = data.products ?? [];
 
   return (
     <div className="tob-home">
       <Hero />
       <Pills />
       <div className="tob-wrap">
-        <CategoryTiles collectionProducts={collectionProducts} />
+        <CategoryTiles />
         <ProductGrid products={products} />
       </div>
       <Testimonials />
@@ -80,6 +61,10 @@ function Hero() {
   const {hero} = config;
   const images = hero.images ?? [];
   const [active, setActive] = useState(0);
+  const [videoOpen, setVideoOpen] = useState(true);
+  const [videoMuted, setVideoMuted] = useState(true);
+  const videoRef = useRef(null);
+
   useEffect(() => {
     if (images.length < 2) return;
     const id = setInterval(
@@ -88,6 +73,28 @@ function Hero() {
     );
     return () => clearInterval(id);
   }, [images.length]);
+
+  useEffect(() => {
+    if (!videoOpen || !videoRef.current) return;
+    videoRef.current.currentTime = 0;
+    videoRef.current.play().catch(() => {});
+  }, [videoOpen]);
+
+  function closeVideo() {
+    videoRef.current?.pause();
+    setVideoOpen(false);
+  }
+
+  function playVideo() {
+    // A real click is a user gesture, so audio is allowed to play.
+    setVideoMuted(false);
+    setVideoOpen(true);
+  }
+
+  function toggleMute() {
+    setVideoMuted((m) => !m);
+  }
+
   return (
     <section className="tob-eh" aria-label="Featured">
       <div className="tob-eh-copy">
@@ -147,6 +154,77 @@ function Hero() {
             ))}
           </div>
         )}
+
+        <div className={`tob-eh-video${videoOpen ? ' tob-eh-video-open' : ''}`}>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption -- no caption track available for this clip */}
+          <video
+            ref={videoRef}
+            className="tob-eh-video-el"
+            src="/videos/hero-showcase.mp4"
+            muted={videoMuted}
+            playsInline
+            onEnded={closeVideo}
+          />
+          <button
+            type="button"
+            className="tob-eh-video-mute"
+            onClick={toggleMute}
+            aria-label={videoMuted ? 'Unmute video' : 'Mute video'}
+          >
+            {videoMuted ? (
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path
+                  d="M3 8v4h3l4 3V5L6 8H3Z"
+                  fill="currentColor"
+                />
+                <path
+                  d="M13.5 7.5L17 11M17 7.5L13.5 11"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M3 8v4h3l4 3V5L6 8H3Z" fill="currentColor" />
+                <path
+                  d="M13 6.5a5 5 0 0 1 0 7M15 4.5a8 8 0 0 1 0 11"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+              </svg>
+            )}
+          </button>
+          <button
+            type="button"
+            className="tob-eh-video-close"
+            onClick={closeVideo}
+            aria-label="Close video"
+          >
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path
+                d="M5 5L15 15M15 5L5 15"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {!videoOpen && (
+          <button
+            type="button"
+            className="tob-eh-video-play"
+            onClick={playVideo}
+            aria-label="Play video"
+          >
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M7 5L15 10L7 15V5Z" fill="currentColor" />
+            </svg>
+          </button>
+        )}
       </div>
     </section>
   );
@@ -162,113 +240,27 @@ function Pills() {
   );
 }
 
-/* ─── Category Tiles with inline product expand ─────────────────────────── */
-function CategoryTiles({collectionProducts}) {
-  const [openKey, setOpenKey] = useState(null); // handle of the open tile
-  const panelRef = useRef(null);
-
-  // derive the handle from the tile URL  e.g. "/collections/baby-boys" → "baby-boys"
-  function handleFromUrl(url) {
-    return url.split('/').pop();
-  }
-
-  function toggle(handle) {
-    setOpenKey((prev) => (prev === handle ? null : handle));
-  }
-
-  // scroll the panel into view when it opens
-  useEffect(() => {
-    if (openKey && panelRef.current) {
-      panelRef.current.scrollIntoView({behavior: 'smooth', block: 'nearest'});
-    }
-  }, [openKey]);
-
+/* ─── Category Tiles ──────────────────────────────────────────────────────── */
+function CategoryTiles() {
   return (
     <>
       <div className="tob-sec-head">
         <h2>{config.categoryHeading}</h2>
       </div>
 
-      {/* Tiles row */}
       <div className="tob-tiles">
-        {config.tiles.map((t) => {
-          const handle = handleFromUrl(t.link);
-          const isOpen = openKey === handle;
-          return (
-            <button
-              key={t.link}
-              className={`tob-tile tob-tile-btn${isOpen ? ' tob-tile-open' : ''}`}
-              onClick={() => toggle(handle)}
-              aria-expanded={isOpen}
-              aria-controls={`tob-catpanel-${handle}`}
-            >
-              <img
-                className="tob-tile-img"
-                src={t.image}
-                alt={t.label}
-                loading="lazy"
-              />
-              <span>
-                {t.label}
-                <svg
-                  className="tob-tile-chevron"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M5 7.5L10 12.5L15 7.5"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-            </button>
-          );
-        })}
+        {config.tiles.map((t) => (
+          <Link key={t.link} to={t.link} prefetch="intent" className="tob-tile">
+            <img
+              className="tob-tile-img"
+              src={t.image}
+              alt={t.label}
+              loading="lazy"
+            />
+            <span>{t.label}</span>
+          </Link>
+        ))}
       </div>
-
-      {/* Inline product panel — renders BELOW the tiles row */}
-      {config.tiles.map((t) => {
-        const handle = handleFromUrl(t.link);
-        const isOpen = openKey === handle;
-        const items = collectionProducts[handle] ?? [];
-        return (
-          <div
-            key={handle}
-            id={`tob-catpanel-${handle}`}
-            ref={isOpen ? panelRef : null}
-            className={`tob-catpanel${isOpen ? ' tob-catpanel-open' : ''}`}
-            aria-hidden={!isOpen}
-          >
-            {isOpen && (
-              <>
-                <div className="tob-catpanel-head">
-                  <span>{t.label}</span>
-                  <Link to={t.link} prefetch="intent" className="tob-catpanel-viewall">
-                    View all →
-                  </Link>
-                </div>
-                {items.length === 0 ? (
-                  <p className="tob-catpanel-empty">No products found.</p>
-                ) : (
-                  <div className="tob-grid tob-catpanel-grid">
-                    {items.map((product, i) => (
-                      <HomeProductCard
-                        key={product.id}
-                        product={product}
-                        index={i}
-                      />
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        );
-      })}
     </>
   );
 }
@@ -279,7 +271,6 @@ function ProductGrid({products}) {
     <>
       <div className="tob-sec-head">
         <h2>{config.productGridHeading}</h2>
-        <Link to="/collections/all">View all</Link>
       </div>
       <div className="tob-grid">
         {products.map((product, i) => (
@@ -362,20 +353,10 @@ const PRODUCT_FRAGMENT = `#graphql
 
 const HOMEPAGE_PRODUCTS_QUERY = `#graphql
   ${PRODUCT_FRAGMENT}
-  query HomepageProducts($first: Int!) {
-    products(first: $first, sortKey: BEST_SELLING) {
+  query HomepageProducts($first: Int!, $after: String) {
+    products(first: $first, after: $after, sortKey: BEST_SELLING) {
       nodes { ...HomeProduct }
-    }
-  }
-`;
-
-const COLLECTION_PRODUCTS_QUERY = `#graphql
-  ${PRODUCT_FRAGMENT}
-  query CollectionProducts($handle: String!, $first: Int!) {
-    collection(handle: $handle) {
-      products(first: $first) {
-        nodes { ...HomeProduct }
-      }
+      pageInfo { hasNextPage endCursor }
     }
   }
 `;

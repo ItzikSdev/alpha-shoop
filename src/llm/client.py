@@ -49,6 +49,8 @@ _ROLE_MODEL: dict[str, str] = {
     "shopify_dev":     "alpha/worker-fast",   # Haiku — GraphQL push, tags/SEO/variants
     "growth_marketer": "alpha/worker-fast",   # Haiku — ad copy, hooks, targeting
     "builder":         "alpha/local-coder",    # local Ollama qwen3.6:35b — free, no budget cap risk
+    "video_producer":  "alpha/worker-fast",   # Haiku — Reel's chat replies (video generation itself already runs local: qwen3 script + Wan2.2)
+    "support_email":   "alpha/worker-fast",   # Haiku — Nora's drafted customer replies
 }
 
 # ── Sensible defaults per role ────────────────────────────────────────────────
@@ -66,6 +68,8 @@ _ROLE_DEFAULTS: dict[str, dict] = {
     "shopify_dev":     {"temperature": 0.1, "max_tokens": 4096},
     "growth_marketer": {"temperature": 0.5, "max_tokens": 3072},
     "builder":         {"temperature": 0.2, "max_tokens": 8000},
+    "video_producer":  {"temperature": 0.4, "max_tokens": 3072},
+    "support_email":   {"temperature": 0.3, "max_tokens": 500},
 }
 
 # Org roles that the ORG_LOCAL_LLM=1 toggle reroutes to the local model to save
@@ -74,7 +78,8 @@ _ROLE_DEFAULTS: dict[str, dict] = {
 # local model once the monthly Claude budget cap is hit — protecting the $100 ceiling.
 _ORG_ROLES = {
     "executive", "standup", "developer", "builder",
-    "ceo", "product_hunter", "ux_content", "shopify_dev", "growth_marketer",
+    "ceo", "product_hunter", "ux_content", "shopify_dev", "growth_marketer", "video_producer",
+    "support_email", "fulfillment",
 }
 _LOCAL_ALIAS = "alpha/local-fast"
 

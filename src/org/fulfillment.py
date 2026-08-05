@@ -17,10 +17,21 @@ import logging
 from src.mcp_tools.email import send_email
 from src.mcp_tools.fulfillment import fulfill_shopify_order, place_supplier_order
 from src.models.requests import ShopifyOrderWebhook
+from src.org.telegram import post_as
 from src.org.tickets import open_ticket
 from src.stores import StoreConfig, _current_store
 
 logger = logging.getLogger(__name__)
+
+AGENT_NAME = "Milo"
+AGENT_ROLE = "Fulfillment"
+
+
+async def _say(text: str) -> None:
+    try:
+        await post_as(AGENT_NAME, AGENT_ROLE, text)
+    except Exception:  # noqa: BLE001
+        pass  # never let Telegram narration break a real fulfillment
 
 
 async def process_order(payload: ShopifyOrderWebhook, store: StoreConfig) -> dict:
@@ -28,6 +39,7 @@ async def process_order(payload: ShopifyOrderWebhook, store: StoreConfig) -> dic
     (ContextVar) for the duration so `place_supplier_order`/`fulfill_shopify_order`/
     `send_email` all use THIS store's supplier/Shopify/email credentials."""
     token = _current_store.set(store)
+    await _say(f"📦 New order #{payload.id} ({store.name}) — placing with CJ Dropshipping…")
     try:
         address = payload.shipping_address or {}
         country_code = (address.get("country_code") or address.get("countryCode") or "").strip()
@@ -70,6 +82,8 @@ async def process_order(payload: ShopifyOrderWebhook, store: StoreConfig) -> dic
                     + f"\n\nThanks for shopping with us!\n{store.name} Support"
                 ),
             )
+        await _say(f"✅ Order #{payload.id} shipped — {len(results)} item(s)"
+                    + (f", tracking {tracking}" if tracking else "") + ".")
         return {"ok": True, "fulfilled": len(results), "tracking": tracking}
     finally:
         _current_store.reset(token)
@@ -80,6 +94,7 @@ async def _escalate(payload: ShopifyOrderWebhook, store: StoreConfig, errors: li
     ticket and hand the specific failure to Sol's LLM loop so it can investigate,
     retry with judgment, and email the customer about the delay if warranted."""
     desc = f"Order {payload.id} ({payload.email}) fulfillment error(s): " + "; ".join(errors)
+    await _say(f"⚠️ Order #{payload.id} ({store.name}) hit a problem: {'; '.join(errors)[:300]} — opening a ticket for Sol to investigate.")
     open_ticket(
         title=f"Fulfillment failed for order {payload.id}",
         description=desc, source="order_failure", store_id=store.store_id,
@@ -90,9 +105,10 @@ async def _escalate(payload: ShopifyOrderWebhook, store: StoreConfig, errors: li
         await run_sol_task(
             f"Fulfillment failed for order {payload.id}: {'; '.join(errors)}. Investigate "
             "(check cj_product_inventory / search_local_catalog for the sku, retry "
-            "place_supplier_order via shopify_admin if it looks transient), and email the "
-            f"customer at {payload.email} about the delay via send_customer_email if it can't "
-            "be resolved quickly.",
+            "place_supplier_order via shopify_admin if it looks transient) and post what you "
+            f"find. If it can't be resolved quickly, flag that this order's customer "
+            f"({payload.email}) needs a delay email — Milo/Nora will send it; you have no "
+            "customer-email tool yourself.",
             store_slug=store.store_id,
         )
     except Exception as exc:  # noqa: BLE001

@@ -70,6 +70,25 @@ class Settings(BaseSettings):
     ollama_embed_model: str = "nomic-embed-text"
     chroma_path: str = "./data/chroma"
 
+    # Video pipeline — local ComfyUI (Wan2.2) + Ollama (qwen3), both on this machine
+    comfyui_url: str = "http://127.0.0.1:8188"
+    comfyui_dir: str = "~/ComfyUI"  # where LoadImage reads from / SaveVideo writes to
+    video_script_model: str = "qwen3:14b"
+    video_output_dir: str = "./data/videos"
+
+    # Image pipeline (Reel) — person-detection + baby-outfit-swap / 3D-showcase generation.
+    # No global image_output_dir: generated images are saved per-store under
+    # stores/shopify/<slug>/generated_images/ (see src/mcp_tools/design_files.py's
+    # _store_dir), not a shared folder — same "store owns its own data" rule the
+    # style/readme/changelog folders already follow.
+    reel_image_scan_hours: int = 3
+    reel_vision_model: str = "qwen3-vl:8b"
+    # Paused 2026-08-05: local ComfyUI/Wan2.2 on this machine is too slow/memory-
+    # constrained for an unattended background loop (OOM'd mid-render, multi-minute
+    # renders). Flip to True once the local setup is faster or a different backend
+    # is in place — no code change needed, just this flag.
+    reel_image_scan_enabled: bool = False
+
     # Guardrails
     max_ad_spend_daily_usd: float = 500.0
     max_order_value_usd: float = 200.0

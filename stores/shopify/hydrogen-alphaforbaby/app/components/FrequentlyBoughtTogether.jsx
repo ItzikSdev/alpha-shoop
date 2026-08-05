@@ -35,36 +35,75 @@ export function FrequentlyBoughtTogether({mainProduct, extras}) {
   ];
 
   return (
-    <div className="fbt">
-      <h4 className="fbt-heading">Frequently bought together</h4>
-      <div className="fbt-row">
-        <div className="fbt-item">
-          <Link to={mainProduct.handle ? `/products/${mainProduct.handle}` : '#'} prefetch="intent">
-            {mainProduct.image && <img src={mainProduct.image.url} alt={mainProduct.image.altText || mainProduct.title} />}
-            <p className="fbt-item-label">This item: {mainProduct.title}</p>
+    <div className="card mt-6">
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="m-0 text-ch3 font-normal">Build the set</h3>
+        <span className="tag tag-accent tnum">{lines.length} items</span>
+      </div>
+      <div className="flex flex-col">
+        <div className="flex w-full items-center gap-3 border-b border-divider py-2">
+          <span className="flex h-[18px] w-[18px] flex-none items-center justify-center rounded-sm border border-accent text-accent">
+            ✓
+          </span>
+          <Link
+            to={mainProduct.handle ? `/products/${mainProduct.handle}` : '#'}
+            prefetch="intent"
+            className="plate plate-sm block h-[46px] w-[46px] flex-none overflow-hidden rounded-sm"
+          >
+            {mainProduct.image && (
+              <img src={mainProduct.image.url} alt={mainProduct.image.altText || mainProduct.title} className="h-full w-full object-cover" />
+            )}
           </Link>
-          <Money data={mainProduct.variant.price} />
+          <Link
+            to={mainProduct.handle ? `/products/${mainProduct.handle}` : '#'}
+            prefetch="intent"
+            className="flex-1 text-[13px] leading-snug text-ink"
+          >
+            This item: {mainProduct.title}
+          </Link>
+          <span className="tnum text-[13px]">
+            <Money data={mainProduct.variant.price} />
+          </span>
         </div>
         {items.map((p, i) => (
-          <div className="fbt-item" key={p.id}>
-            <span className="fbt-plus">+</span>
-            <label className="fbt-checkbox">
-              <input type="checkbox" checked={checked.has(i)} onChange={() => toggle(i)} />
-              {p.featuredImage && <img src={p.featuredImage.url} alt={p.featuredImage.altText || p.title} />}
-            </label>
-            <Link to={`/products/${p.handle}`} prefetch="intent">
-              <p className="fbt-item-label">{p.title}</p>
-            </Link>
-            <Money data={p.selectedOrFirstAvailableVariant.price} />
-          </div>
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => toggle(i)}
+            className="flex w-full items-center gap-3 border-b border-divider py-2 text-left last:border-b-0"
+          >
+            <span
+              className={`flex h-[18px] w-[18px] flex-none items-center justify-center rounded-sm border text-accent ${
+                checked.has(i) ? 'border-accent' : 'border-divider'
+              }`}
+            >
+              {checked.has(i) ? '✓' : ''}
+            </span>
+            <span className="plate plate-sm block h-[46px] w-[46px] flex-none overflow-hidden rounded-sm">
+              {p.featuredImage && (
+                <img src={p.featuredImage.url} alt={p.featuredImage.altText || p.title} className="h-full w-full object-cover" />
+              )}
+            </span>
+            <span className="flex-1 text-[13px] leading-snug">{p.title}</span>
+            <span className="tnum text-[13px]">
+              <Money data={p.selectedOrFirstAvailableVariant.price} />
+            </span>
+          </button>
         ))}
       </div>
-      <div className="fbt-summary">
-        <p className="fbt-total">
-          Total: <Money data={{amount: String(total), currencyCode: currency}} />
-        </p>
-        <AddToCartButton className="fbt-add-btn" lines={lines} redirectTo="/cart">
-          Add {lines.length} to Cart
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-[10px] uppercase tracking-[.1em] text-accent">Total</div>
+          <div className="tnum text-[24px] leading-tight">
+            <Money data={{amount: String(total), currencyCode: currency}} />
+          </div>
+        </div>
+        <AddToCartButton
+          className="btn btn-primary min-h-[44px] px-4 tracking-[.08em]"
+          lines={lines}
+          redirectTo="/cart"
+        >
+          ADD {lines.length} TO CART
         </AddToCartButton>
       </div>
     </div>

@@ -14,6 +14,7 @@ import {
   isLoggedIn,
   setSessionCustomerId,
 } from '~/lib/customer';
+import {reconcileCustomerCart} from '~/lib/cartSync';
 import {Input, Button, Typography, Alert} from '@material-tailwind/react';
 
 function GoogleIcon() {
@@ -114,7 +115,8 @@ export async function action({request, context}) {
     }
 
     setSessionCustomerId(context.session, customer.id);
-    return redirect(redirectTo);
+    const {headers: cartHeaders} = await reconcileCustomerCart({context, customer});
+    return redirect(redirectTo, {headers: cartHeaders});
   } catch (error) {
     console.error('[account.login] failed', error);
     return data({error: genericError}, {status: 401});

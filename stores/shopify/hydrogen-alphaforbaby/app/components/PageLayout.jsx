@@ -11,10 +11,6 @@ import {
 import {SearchResultsPredictive} from '~/components/SearchResultsPredictive';
 import {config} from '~/lib/theme';
 
-// Dark scrolling announcement bar — from theme.config.json
-const MARQUEE = config.announcement;
-const PAY_ICONS = config.paymentIcons || [];
-
 /**
  * Show the chrome (marquee + header) when at the top or scrolling UP; hide it
  * when scrolling DOWN. Returns 'up' | 'down'. Mobile-first: keeps the header
@@ -56,9 +52,8 @@ export function PageLayout({cart, children = null, isLoggedIn}) {
   return (
     <Aside.Provider>
       <div className={`tob tob-chrome-${dir}`}>
-        <AnnouncementMarquee />
         {/* All drawers rendered here so they're inside .tob and get the CSS vars */}
-        <MobileMenuAside isLoggedIn={isLoggedIn} />
+        <MobileMenuAside />
         <CartAside cart={cart} />
         <SearchAside />
         <Header cart={cart} isLoggedIn={isLoggedIn} />
@@ -66,43 +61,6 @@ export function PageLayout({cart, children = null, isLoggedIn}) {
         <Footer />
       </div>
     </Aside.Provider>
-  );
-}
-
-function AnnouncementMarquee() {
-  // one "unit" = all messages + the payment icons; duplicate it so the -50% loop is seamless
-  const payGroup = PAY_ICONS.length ? (
-    <span className="tob-ann-pay">
-      {PAY_ICONS.map((p) => (
-        <img
-          key={p.src}
-          src={p.src}
-          alt={p.alt}
-          className="tob-ann-pay-ico"
-          width="34"
-          height="23"
-          loading="lazy"
-        />
-      ))}
-    </span>
-  ) : null;
-
-  const unit = (
-    <>
-      {MARQUEE.map((t, i) => (
-        <span key={i}>{t}</span>
-      ))}
-      {payGroup}
-    </>
-  );
-
-  return (
-    <div className="tob-ann" role="complementary" aria-label="Announcements">
-      <div className="tob-ann-track">
-        {unit}
-        {unit}
-      </div>
-    </div>
   );
 }
 
@@ -205,32 +163,20 @@ function SearchAside() {
   );
 }
 
-function MobileMenuAside({isLoggedIn}) {
+function MobileMenuAside() {
   return (
     <Aside type="mobile" heading="MENU">
-      <MobileMenuNav isLoggedIn={isLoggedIn} />
+      <MobileMenuNav />
     </Aside>
   );
 }
 
 /** Nav links inside the hamburger drawer — NavLink so active state works, close on click */
-function MobileMenuNav({isLoggedIn}) {
-  const {close, open} = useAside();
+function MobileMenuNav() {
+  const {close} = useAside();
   return (
     <nav className="tob-mob-nav" role="navigation" aria-label="Main navigation">
-      {/* Cart + Account pinned to the top of the drawer (moved off the header) */}
-      <div className="tob-mob-icons">
-        <button
-          type="button"
-          className="tob-mob-ico reset"
-          aria-label="Cart"
-          onClick={() => open('cart')}
-        >
-          <MobileBagIcon />
-          <span>Cart</span>
-        </button>
-        <MobileAccountLink isLoggedIn={isLoggedIn} onNavigate={close} />
-      </div>
+      {/* Cart + Account now live in the header next to the logo, not here. */}
       <NavLink
         to="/"
         end
@@ -250,53 +196,6 @@ function MobileMenuNav({isLoggedIn}) {
         </NavLink>
       ))}
     </nav>
-  );
-}
-
-/**
- * @param {{isLoggedIn: Promise<boolean>, onNavigate: () => void}}
- */
-function MobileAccountLink({isLoggedIn, onNavigate}) {
-  return (
-    <Suspense fallback={<MobileAccountLinkResolved loggedIn={false} onNavigate={onNavigate} />}>
-      <Await resolve={isLoggedIn}>
-        {(loggedIn) => (
-          <MobileAccountLinkResolved loggedIn={loggedIn} onNavigate={onNavigate} />
-        )}
-      </Await>
-    </Suspense>
-  );
-}
-
-function MobileAccountLinkResolved({loggedIn, onNavigate}) {
-  return (
-    <Link
-      to={loggedIn ? '/account' : '/account/login'}
-      prefetch="intent"
-      className="tob-mob-ico reset"
-      aria-label={loggedIn ? 'Account' : 'Sign in'}
-      onClick={onNavigate}
-    >
-      <MobileUserIcon />
-      <span>{loggedIn ? 'Account' : 'Sign in'}</span>
-    </Link>
-  );
-}
-
-function MobileUserIcon() {
-  return (
-    <svg className="tob-ic" viewBox="0 0 20 20" aria-hidden="true">
-      <circle cx="10" cy="6.5" r="3.2" />
-      <path d="M4 17c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" />
-    </svg>
-  );
-}
-function MobileBagIcon() {
-  return (
-    <svg className="tob-ic" viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M5 6h10l1 11H4L5 6z" />
-      <path d="M7.5 6V5a2.5 2.5 0 0 1 5 0v1" />
-    </svg>
   );
 }
 

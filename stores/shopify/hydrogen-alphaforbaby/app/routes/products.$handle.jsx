@@ -1,6 +1,9 @@
+import {useEffect, useState} from 'react';
 import {useLoaderData} from 'react-router';
 import {data as jsonData} from 'react-router';
+import {Package, RotateCcw, Lock} from 'lucide-react';
 import {
+  Money,
   getSelectedProductOptions,
   getSeoMeta,
   Analytics,
@@ -9,15 +12,46 @@ import {
   getAdjacentAndFirstAvailableVariants,
   useSelectedOptionInUrlParam,
 } from '@shopify/hydrogen';
-import {ProductPrice} from '~/components/ProductPrice';
+import {ProductPrice, discountPercent} from '~/components/ProductPrice';
 import {ProductGallery} from '~/components/ProductGallery';
 import {ProductForm} from '~/components/ProductForm';
+import {AddToCartButton} from '~/components/AddToCartButton';
 import {FrequentlyBoughtTogether} from '~/components/FrequentlyBoughtTogether';
 import {ProductReviews, parseReviews} from '~/components/ProductReviews';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {config} from '~/lib/theme';
 import {normalizeSizeLabel} from '~/lib/sizeLabels';
 import {shopifyAdminQuery} from '~/lib/shopifyAdmin';
+
+// Evergreen, product-agnostic value props (no per-product material/fit claims —
+// this store's catalog is too varied across CJ suppliers for a single blanket
+// "100% cotton" style claim to be true for every product).
+const BENEFITS = [
+  ['Gentle by design', 'Fabrics and fits chosen with sensitive baby skin in mind.'],
+  ['Easy to dress', 'Simple closures made for wriggly mornings, not fights.'],
+  ['Room to grow', 'A relaxed cut that keeps up with the next growth spurt.'],
+  ['Built for play', 'Machine washable and made to survive a busy day.'],
+];
+
+const TRUST_ICONS = [Package, RotateCcw, Lock];
+
+/** Counts down to local midnight — the daily sale-price reset shown under the price. */
+function useMidnightCountdown(active) {
+  const [left, setLeft] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    const tick = () => {
+      const end = new Date();
+      end.setHours(24, 0, 0, 0);
+      setLeft(Math.max(0, Math.floor((end - Date.now()) / 1000)));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [active]);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${p(Math.floor(left / 3600))}:${p(Math.floor(left / 60) % 60)}:${p(left % 60)}`;
+}
 
 // Same COMPLEMENTARY→RELATED fallback pattern as the cart page (see cart.jsx) —
 // COMPLEMENTARY needs Shopify ML/sales-history data this store doesn't have yet.
@@ -147,6 +181,10 @@ export const meta = ({data}) => {
       name: product.title,
       description: product.seo?.description || product.description,
       image: firstImage?.url,
+      brand: {
+        '@type': 'Brand',
+        name: config.brand.name,
+      },
       offers: product.selectedOrFirstAvailableVariant?.price
         ? {
             '@type': 'Offer',
@@ -348,42 +386,138 @@ export default function Product() {
     selectedOrFirstAvailableVariant: selectedVariant,
   });
 
-  const {title, descriptionHtml, vendor} = product;
+  const {title, descriptionHtml} = product;
+  const price = selectedVariant?.price;
+  const compareAtPrice = selectedVariant?.compareAtPrice;
+  const off = discountPercent(price, compareAtPrice);
+  const timer = useMidnightCountdown(!!compareAtPrice);
+  const kicker = product.collections?.nodes?.[0]?.title || product.vendor || config.brand.name;
+  const trustBadges = config.productPage?.trustBadges || [];
+
+  const captionParts = (selectedVariant?.selectedOptions || []).map((o) =>
+    /^\d+cm$/i.test(o.value) ? normalizeSizeLabel(o.value) : o.value,
+  );
 
   return (
-    <div className="tobp product">
-      <div className="tobp-gallery">
-        <ProductGallery
-          images={product.images?.nodes}
-          selectedVariantImage={selectedVariant?.image}
-        />
-      </div>
-      <div className="product-main">
-        <div className="tobp-brand">{vendor || config.brand.name}</div>
-        <h1 className="tobp-title">{title}</h1>
-        <ProductPrice
-          price={selectedVariant?.price}
-          compareAtPrice={selectedVariant?.compareAtPrice}
-        />
-        <ProductForm
-          productOptions={productOptions}
-          selectedVariant={selectedVariant}
-        />
-        <FrequentlyBoughtTogether
-          mainProduct={{title, handle: product.handle, image: selectedVariant?.image, variant: selectedVariant}}
-          extras={boughtTogether}
-        />
-        <div className="tobp-trust">
-          {config.productPage.trustBadges.map((b) => (
-            <span key={b}>{b}</span>
-          ))}
+    <div className="pdp bg-surface font-classical text-ink text-cbody">
+      <div className="relative mx-auto w-full max-w-phone md:max-w-5xl bg-bg shadow-cmd">
+        {/* promise strip — verified brand-level facts only (no fabricated claims) */}
+        <div className="flex flex-wrap items-center justify-center gap-2 border-b border-divider px-4 py-2 text-[11px] uppercase tracking-[.08em] text-accent-700">
+          <span>Free shipping</span>
+          <span className="opacity-40">·</span>
+          <span>30-day returns</span>
+          <span className="opacity-40">·</span>
+          <span>Secure checkout</span>
+        </div>
+
+        {/* Mobile: single column, phone-width (the approved handoff spec).
+            Tablet/desktop (md+): gallery and buy-box sit side by side instead
+            of staying pinned to a 430px column on a wide viewport. */}
+        <div className="md:grid md:grid-cols-2 md:gap-10 md:px-6 md:pt-6 md:items-start">
+          <div className="md:sticky md:top-24">
+            <ProductGallery
+              images={product.images?.nodes}
+              selectedVariantImage={selectedVariant?.image}
+              discountPercent={off}
+            />
+          </div>
+
+          <div className="md:min-w-0">
+            <section className="px-4 md:px-0">
+              <h6 className="m-0 text-kicker uppercase tracking-[.08em] text-accent-700">{kicker}</h6>
+              <h1 className="mt-2 text-ch1 font-normal">{title}</h1>
+              <ProductPrice price={price} compareAtPrice={compareAtPrice} />
+              {compareAtPrice && (
+                <div className="tnum mt-[5px] text-[11.5px] text-ink/55">Sale price ends in {timer}</div>
+              )}
+            </section>
+
+            <section className="px-4 md:px-0 pt-6">
+              <ProductForm productOptions={productOptions} selectedVariant={selectedVariant} />
+            </section>
+
+            {trustBadges.length > 0 && (
+              <section className="flex flex-col gap-4 px-4 md:px-0 pt-6">
+                {trustBadges.map((badge, i) => {
+                  const Icon = TRUST_ICONS[i % TRUST_ICONS.length];
+                  return (
+                    <div key={badge} className="flex items-start gap-3">
+                      <Icon size={18} className="mt-[2px] flex-none text-accent" />
+                      <p className="m-0 text-[13px] text-ink/70">{badge.replace(/^✓\s*/, '')}</p>
+                    </div>
+                  );
+                })}
+              </section>
+            )}
+          </div>
+        </div>
+
+        <div className="px-4 md:px-6 md:mt-6">
+          <hr className="hr" />
+        </div>
+
+        <section className="px-4 md:px-6">
+          <h6 className="m-0 text-kicker uppercase tracking-[.08em] text-accent-700">Description</h6>
+          <div
+            className="mt-2 text-[15.5px] leading-[1.55] [&_p]:mb-3 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-5"
+            dangerouslySetInnerHTML={{__html: descriptionHtml}}
+          />
+        </section>
+
+        <section className="px-4 md:px-6 pt-6">
+          <h2 className="m-0 text-ch2 font-normal">Why parents pick us</h2>
+          <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+            {BENEFITS.map(([heading, body]) => (
+              <div key={heading} className="card">
+                <span className="card-title">{heading}</span>
+                <p className="card-body">{body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="px-4 md:px-6">
+          <FrequentlyBoughtTogether
+            mainProduct={{title, handle: product.handle, image: selectedVariant?.image, variant: selectedVariant}}
+            extras={boughtTogether}
+          />
+        </div>
+
+        <section className="px-4 md:px-6 pt-6 pb-[100px]">
+          <ProductReviews productId={product.id} reviews={reviews} />
+        </section>
+
+        {/* sticky add-to-cart — mobile only; the desktop 2-col layout already
+            keeps the buy box on screen without scrolling. */}
+        <div className="sticky bottom-0 z-40 flex items-center gap-3 border-t border-divider bg-bg px-4 py-2 md:hidden">
+          <div className="flex-none">
+            <div className="tnum text-[16px] leading-snug">{price ? <Money data={price} /> : null}</div>
+            <div className="text-[10.5px] text-ink/50">{captionParts.join(' · ')}</div>
+          </div>
+          <AddToCartButton
+            disabled={!selectedVariant || !selectedVariant.availableForSale}
+            redirectTo="/cart"
+            className="btn btn-primary flex-1 min-w-0 min-h-[48px] tracking-[.08em]"
+            lines={
+              selectedVariant
+                ? [{merchandiseId: selectedVariant.id, quantity: 1, selectedVariant}]
+                : []
+            }
+          >
+            {selectedVariant?.availableForSale ? 'ADD TO CART' : 'SOLD OUT'}
+          </AddToCartButton>
+          {selectedVariant?.availableForSale && (
+            <AddToCartButton
+              disabled={!selectedVariant || !selectedVariant.availableForSale}
+              redirectTo="checkout"
+              className="btn btn-secondary flex-none w-[84px] min-h-[48px] text-[13px] tracking-[.04em]"
+              lines={[{merchandiseId: selectedVariant.id, quantity: 1, selectedVariant}]}
+            >
+              PayPal
+            </AddToCartButton>
+          )}
         </div>
       </div>
-      <div
-        className="tobp-desc"
-        dangerouslySetInnerHTML={{__html: descriptionHtml}}
-      />
-      <ProductReviews productId={product.id} reviews={reviews} />
       <Analytics.ProductView
         data={{
           products: [

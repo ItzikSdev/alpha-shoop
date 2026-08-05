@@ -35,7 +35,7 @@ from src.agents.workers.trend_scraper import trend_scraper_node
 from src.embeddings import query_store_knowledge
 from src.mcp_tools.shopify import list_shopify_products
 from src.mcp_tools.shopify_analytics import get_sales_summary
-from src.org.slack import post_as_role, post_to_slack
+from src.org.telegram import post_as_role, post_to_telegram
 from src.tracing import agent_log
 from src.tracing.context import current_node
 
@@ -49,7 +49,7 @@ _MAX_STEPS = 60
 
 # Evaluator self-correction cap (docs/prompt.md §2 `max_loops=3`): how many times
 # the Hunter → Evaluator margin loop may reject-and-retry before the run gives up
-# and escalates to the human Slack channel.
+# and escalates to the human Telegram channel.
 _MAX_EVAL_LOOPS = 3
 
 
@@ -191,7 +191,7 @@ async def _catalog_fill_loop(state: AgentState, budget_ok) -> AsyncIterator[dict
     only an APPROVED batch reaches ecommerce_manager (Devon) to be listed. A
     rejected batch loops back to the Hunter with feedback, up to `_MAX_EVAL_LOOPS`
     (== prompt's max_loops=3); on the 3rd reject the run gives up and pings the
-    human Slack channel.
+    human Telegram channel.
 
     Both Hunter and Devon also enforce their own retry/circuit-breaker limits
     internally (sourcing_attempts maxes out at 3, then sets `error` directly).
@@ -225,7 +225,7 @@ async def _catalog_fill_loop(state: AgentState, budget_ok) -> AsyncIterator[dict
                 )
                 state["workflow_status"] = "failed"
                 agent_log(f"🛑 {state['error']}", "warning")
-                await post_to_slack(
+                await post_to_telegram(
                     ":triangular_flag_on_post: *Evaluator hit max self-correction loops "
                     f"({_MAX_EVAL_LOOPS}).* No product cluster cleared the "
                     f"{thr:.0%} net-margin target (best {best:.1%} after 18% VAT + fees).\n"
@@ -234,7 +234,7 @@ async def _catalog_fill_loop(state: AgentState, budget_ok) -> AsyncIterator[dict
                 return
             continue  # re-loop to the Hunter with the rejection feedback
 
-        # APPROVED — Slack HITL gate: announce going live with the real numbers,
+        # APPROVED — Telegram HITL gate: announce going live with the real numbers,
         # as the Shopify Developer, then list. Notify-and-proceed (the owner
         # watches the channel + can hit the kill-switch).
         await _post_going_live_gate(state, pricing)
@@ -244,7 +244,7 @@ async def _catalog_fill_loop(state: AgentState, budget_ok) -> AsyncIterator[dict
 
 
 async def _post_going_live_gate(state: AgentState, pricing: dict) -> None:
-    """Slack HITL gate before products go live — posted as the Shopify Developer."""
+    """Telegram HITL gate before products go live — posted as the Shopify Developer."""
     bd = pricing.get("best_breakdown", {}) or {}
     best = pricing.get("best_net_margin", 0.0)
     title = pricing.get("best_title", "")
@@ -258,11 +258,11 @@ async def _post_going_live_gate(state: AgentState, pricing: dict) -> None:
             "_Going live now — shout in-channel or hit the kill-switch to stop._",
         )
     except Exception:
-        pass  # Slack is best-effort; never block the pipeline on it
+        pass  # Telegram is best-effort; never block the pipeline on it
 
 
 async def _post_ad_spend_gate(state: AgentState) -> None:
-    """Slack HITL gate before any ad spend — posted as the Growth Marketer."""
+    """Telegram HITL gate before any ad spend — posted as the Growth Marketer."""
     n = len(state.get("shopify_products_created", []) or [])
     try:
         await post_as_role(
@@ -272,4 +272,4 @@ async def _post_ad_spend_gate(state: AgentState) -> None:
             "the run's max spend.\n_Say stop in-channel or hit the kill-switch to hold._",
         )
     except Exception:
-        pass  # Slack is best-effort; never block the pipeline on it
+        pass  # Telegram is best-effort; never block the pipeline on it

@@ -26,6 +26,9 @@ mcp[cli]>=1.3.0
 httpx>=0.27.0
 aiohttp>=3.11.0
 
+# ── Chat interface ─────────────────────────────────────────────────────────
+python-telegram-bot>=20.0
+
 # ── Database ───────────────────────────────────────────────────────────────
 # Single shared DB is SQLite (aiosqlite). asyncpg kept only for optional Postgres.
 aiosqlite>=0.20.0
@@ -37,6 +40,13 @@ chromadb>=0.5.20
 
 # ── Task Queue ─────────────────────────────────────────────────────────────
 arq>=0.26.1
+
+# ── Image processing (product dominant-color / person detection) ───────────
+# Pillow: dominant-color detection, pure pixel analysis, no model.
+# mediapipe: BlazeFace face detector (~230KB model, CPU-only) — replaced an
+# OpenCV Haar cascade that missed real cases (see image_person.py docstring).
+Pillow>=10.4.0
+mediapipe>=0.10.0
 
 # ── Testing ────────────────────────────────────────────────────────────────
 pytest>=8.3.0
