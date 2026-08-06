@@ -655,7 +655,7 @@ img { max-width:100%; }
     margin: 0;
   }
   .tob .tob-hlogo span {
-    font-size: 1.15rem;
+    font-size: 0.95rem;
   }
   /* pull the search + actions closer to the logo (less dead space) */
   .tob .tob-hsearch-wrap {
@@ -1581,6 +1581,11 @@ img { max-width:100%; }
   }
   .tob .tob-hcta {
     flex-shrink: 0;
+    /* When the row is too narrow for logo + icons on one line, .tob-hcta
+       wraps onto its own line as the sole flex item — `space-between` on
+       .tob-hrow has nothing to space between at that point and collapses
+       to flex-start (left-aligned). Push it right explicitly instead. */
+    margin-left: auto;
   }
 }
 
