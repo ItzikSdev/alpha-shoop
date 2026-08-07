@@ -14,3 +14,8 @@ node_modules
 # per-store deploy secrets
 store-profiles/*/store.env
 /secrets
+
+# Reel's generated media — already uploaded to Shopify CDN once approved, no
+# need to version-control the local render artifacts.
+/generated_images
+/generated_videos

@@ -79,8 +79,32 @@ mutation productOptionsCreate($productId: ID!, $options: [OptionCreateInput!]!, 
 _GQL_CREATE_MEDIA = """
 mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
   productCreateMedia(productId: $productId, media: $media) {
-    media { mediaContentType }
+    media { id mediaContentType }
     mediaUserErrors { field message }
+  }
+}
+"""
+
+_GQL_REORDER_MEDIA = """
+mutation productReorderMedia($id: ID!, $moves: [MoveInput!]!) {
+  productReorderMedia(id: $id, moves: $moves) {
+    mediaUserErrors { field message }
+  }
+}
+"""
+
+_GQL_FIRST_VARIANT = """
+query($id: ID!) {
+  product(id: $id) {
+    variants(first: 1) { edges { node { id } } }
+  }
+}
+"""
+
+_GQL_VARIANT_APPEND_MEDIA = """
+mutation productVariantAppendMedia($productId: ID!, $variantMedia: [ProductVariantAppendMediaInput!]!) {
+  productVariantAppendMedia(productId: $productId, variantMedia: $variantMedia) {
+    userErrors { field message }
   }
 }
 """
@@ -742,7 +766,6 @@ async def upload_local_file_as_shopify_file(file_path: str, alt: str = "") -> st
                 "resource": "FILE",
                 "filename": path.name,
                 "mimeType": mime_type,
-                "httpMethod": "POST",
                 "fileSize": str(len(content)),
             }]
         })
@@ -752,13 +775,8 @@ async def upload_local_file_as_shopify_file(file_path: str, alt: str = "") -> st
             return ""
         target = targets[0]
 
-        form = {p["name"]: p["value"] for p in target["parameters"]}
         async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post(
-                target["url"],
-                data=form,
-                files={"file": (path.name, content, mime_type)},
-            )
+            resp = await client.put(target["url"], content=content, headers={"Content-Type": mime_type})
             resp.raise_for_status()
 
         result = await _shopify_gql(_GQL_FILE_CREATE, {
@@ -894,10 +912,12 @@ async def get_products_with_all_images() -> list[dict]:
     return out
 
 
-async def attach_local_image_to_product(product_gid: str, file_path: str, alt: str = "") -> bool:
-    """Upload a locally-generated image (Reel's baby-outfit-swap or 3D-showcase still)
-    to Shopify via the staged-upload flow and attach it as product media. Same shape as
-    `attach_local_video_to_product` below, but resource/content type IMAGE."""
+async def attach_local_image_to_product(product_gid: str, file_path: str, alt: str = "", make_featured: bool = True) -> bool:
+    """Upload a locally-generated image (Reel's baby-outfit-swap, 3D-showcase, or Gemini
+    lifestyle still) to Shopify via the staged-upload flow and attach it as product media.
+    `make_featured=True` (default) reorders it to position 0 so it becomes the product's
+    root/primary display image — that's the whole point of Reel's lifestyle photo pipeline.
+    Same shape as `attach_local_video_to_product` below, but resource/content type IMAGE."""
     import mimetypes
     from pathlib import Path
 
@@ -914,7 +934,6 @@ async def attach_local_image_to_product(product_gid: str, file_path: str, alt: s
                 "resource": "IMAGE",
                 "filename": path.name,
                 "mimeType": mime_type,
-                "httpMethod": "POST",
                 "fileSize": str(len(content)),
             }]
         })
@@ -924,9 +943,10 @@ async def attach_local_image_to_product(product_gid: str, file_path: str, alt: s
             return False
         target = targets[0]
 
-        form = {p["name"]: p["value"] for p in target["parameters"]}
+        # This store's staged-upload target is a GCS V4 signed URL for a raw PUT,
+        # NOT a multipart POST — a POST with the form fields gets SignatureDoesNotMatch.
         async with httpx.AsyncClient(timeout=60) as client:
-            resp = await client.post(target["url"], data=form, files={"file": (path.name, content, mime_type)})
+            resp = await client.put(target["url"], content=content, headers={"Content-Type": mime_type})
             resp.raise_for_status()
 
         result = await _shopify_gql(_GQL_CREATE_MEDIA, {
@@ -936,7 +956,28 @@ async def attach_local_image_to_product(product_gid: str, file_path: str, alt: s
         errors = result.get("productCreateMedia", {}).get("mediaUserErrors", [])
         if errors:
             logger.warning("productCreateMedia (image) failed: %s", errors)
-        return not errors
+            return False
+
+        if make_featured:
+            # NOTE: position 1, not 0. The storefront's color swatches jump to
+            # whichever gallery image is tied to the SELECTED VARIANT's legacy
+            # `image` field (by media id) — a Shopify system separate from, and not
+            # editable through, the modern Media API's append/detach mutations (both
+            # error on this store: "already has attached media" / "does not exist on
+            # the specified product"). Forcing the new image to position 0 broke the
+            # default color's on-load photo since it wasn't the variant-linked image.
+            # Position 1 keeps it prominent without fighting variant.image.
+            media_list = result.get("productCreateMedia", {}).get("media", [])
+            new_media_id = media_list[0]["id"] if media_list else None
+            if new_media_id:
+                reorder = await _shopify_gql(_GQL_REORDER_MEDIA, {
+                    "id": product_gid,
+                    "moves": [{"id": new_media_id, "newPosition": "1"}],
+                })
+                reorder_errors = reorder.get("productReorderMedia", {}).get("mediaUserErrors", [])
+                if reorder_errors:
+                    logger.warning("productReorderMedia failed (image still attached, just not featured): %s", reorder_errors)
+        return True
     except Exception as exc:
         logger.warning("attach_local_image_to_product failed: %s", exc)
         return False
@@ -962,7 +1003,6 @@ async def attach_local_video_to_product(product_gid: str, file_path: str, alt: s
                 "resource": "VIDEO",
                 "filename": path.name,
                 "mimeType": "video/mp4",
-                "httpMethod": "POST",
                 "fileSize": str(len(content)),
             }]
         })
@@ -972,9 +1012,13 @@ async def attach_local_video_to_product(product_gid: str, file_path: str, alt: s
             return False
         target = targets[0]
 
-        form = {p["name"]: p["value"] for p in target["parameters"]}
+        # UNLIKE images/files, Shopify's VIDEO staged-upload target is a classic GCS
+        # POST-policy upload (GoogleAccessId/key/policy/signature form fields), not a
+        # V4-signed PUT URL — the form fields must come first, 'file' must be last.
+        files = [(p["name"], (None, p["value"])) for p in target["parameters"]]
+        files.append(("file", (path.name, content, "video/mp4")))
         async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.post(target["url"], data=form, files={"file": (path.name, content, "video/mp4")})
+            resp = await client.post(target["url"], files=files)
             resp.raise_for_status()
 
         result = await _shopify_gql(_GQL_CREATE_MEDIA, {

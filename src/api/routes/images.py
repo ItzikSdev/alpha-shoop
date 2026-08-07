@@ -22,6 +22,7 @@ from src.mcp_tools.shopify import get_products_with_all_images, attach_local_ima
 from src.org.telegram import post_photo_group_as
 from src.rag.index import get as rag_get, upsert as rag_upsert
 from src.video.image_pipeline import NoAdultPersonError, generate_baby_outfit_image, store_generated_images_dir
+from src.video.gemini_images import GeminiImageError, generate_gemini_ad_image
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -52,20 +53,34 @@ async def get_image_candidates(store_id: str) -> list[dict]:
     return [p for p in products if p["id"] not in already_has_image]
 
 
-async def _run_pipeline(image_id: str, store_id: str, store_slug: str, product: dict, source_image_url: str) -> None:
+async def _run_pipeline(image_id: str, store_id: str, store_slug: str, product: dict, source_image_url: str, engine: str = "baby_swap", style: str = "lifestyle") -> None:
     _use_store(store_id)
     try:
-        result = await generate_baby_outfit_image(
-            product_title=product["title"],
-            product_description=product.get("description", ""),
-            source_image_url=source_image_url,
-            store_slug=store_slug,
-        )
-        caption = (
-            f"*{product['title']}* — baby-outfit image ready for review\n"
-            f"Garment: {result.garment_description}\n"
-            f"Original vs generated — approve/reject via the dashboard's Images page."
-        )
+        if engine == "gemini":
+            result = await generate_gemini_ad_image(
+                product_title=product["title"],
+                product_description=product.get("description", ""),
+                source_image_url=source_image_url,
+                store_slug=store_slug,
+                style=style,
+            )
+            kind = "3D showcase render" if style == "3d_showcase" else "baby-lifestyle photo"
+            caption = (
+                f"*{product['title']}* — Gemini {kind} ready for review\n"
+                f"Original vs generated — approve/reject via the dashboard's Images page."
+            )
+        else:
+            result = await generate_baby_outfit_image(
+                product_title=product["title"],
+                product_description=product.get("description", ""),
+                source_image_url=source_image_url,
+                store_slug=store_slug,
+            )
+            caption = (
+                f"*{product['title']}* — baby-outfit image ready for review\n"
+                f"Garment: {result.garment_description}\n"
+                f"Original vs generated — approve/reject via the dashboard's Images page."
+            )
         telegram_message_id = await post_photo_group_as(
             "Reel", "Video Producer", [str(result.source_path), str(result.image_path)], caption
         )
@@ -85,6 +100,13 @@ async def _run_pipeline(image_id: str, store_id: str, store_slug: str, product: 
             row.error = "no adult person detected — route this product through the PRODUCT_3D_SHOWCASE video branch instead"
             row.updated_at = datetime.now(timezone.utc)
             session.add(row)
+    except GeminiImageError as exc:
+        async with get_session() as session:
+            row = await session.get(ProductImage, image_id)
+            row.status = "failed"
+            row.error = f"Gemini: {exc}"[:2000]
+            row.updated_at = datetime.now(timezone.utc)
+            session.add(row)
     except Exception as exc:
         logger.exception("image pipeline failed for %s", image_id)
         async with get_session() as session:
@@ -95,11 +117,17 @@ async def _run_pipeline(image_id: str, store_id: str, store_slug: str, product: 
             session.add(row)
 
 
-@router.post("/images/generate", summary="Render a new baby-outfit image for one product (runs in the background)")
+@router.post("/images/generate", summary="Render a new product image for one product (runs in the background). engine: 'baby_swap' (Wan2.2) or 'gemini' (default — text-free photo/render); style (gemini only): 'lifestyle' (default, baby wearing it) or '3d_showcase' (product-only 3D render)")
 async def post_generate_image(body: dict) -> dict:
     store_id = body.get("store_id", "")
     product_id = body.get("product_id", "")
     source_image_url = body.get("source_image_url", "")
+    engine = body.get("engine", "gemini")
+    style = body.get("style", "lifestyle")
+    if engine not in ("baby_swap", "gemini"):
+        return {"error": f"unknown engine {engine!r} — use 'baby_swap' or 'gemini'"}
+    if style not in ("lifestyle", "3d_showcase"):
+        return {"error": f"unknown style {style!r} — use 'lifestyle' or '3d_showcase'"}
     if not (store_id and product_id):
         return {"error": "missing 'store_id' or 'product_id'"}
     store = _use_store(store_id)
@@ -129,7 +157,7 @@ async def post_generate_image(body: dict) -> dict:
 
     store_slug = store.storefront_slug or store.store_id
     import asyncio
-    asyncio.create_task(_run_pipeline(image_id, store_id, store_slug, product, source_image_url))
+    asyncio.create_task(_run_pipeline(image_id, store_id, store_slug, product, source_image_url, engine=engine, style=style))
     return {"image_id": image_id, "status": "rendering"}
 
 
@@ -174,7 +202,7 @@ async def get_image_media(store_id: str, filename: str):
     return FileResponse(path)
 
 
-@router.post("/images/{image_id}/approve", summary="Approve a pending image — uploads it to Shopify + writes back to RAG")
+@router.post("/images/{image_id}/approve", summary="Approve a pending image — Sol uploads it to Shopify + writes back to RAG")
 async def approve_image(image_id: str) -> dict:
     async with get_session() as session:
         row = await session.get(ProductImage, image_id)
@@ -186,6 +214,8 @@ async def approve_image(image_id: str) -> dict:
         if not _use_store(row.store_id):
             return {"error": f"unknown store_id {row.store_id!r}"}
 
+        # Reel generates, Sol owns the actual Shopify push — matches the org's
+        # division of labor (see src/org/seed.py's charters).
         ok = await attach_local_image_to_product(row.shopify_product_id, row.file_path, alt=row.product_title)
         row.status = "published" if ok else "approved"
         if not ok:
@@ -211,6 +241,16 @@ async def approve_image(image_id: str) -> dict:
             "garment_description": row.garment_description,
         }
         await rag_upsert("store_products", row.shopify_product_id, text, metadata)
+        try:
+            from src.mcp_tools.design_files import append_changelog
+            append_changelog(
+                title=f"Sol: uploaded {row.product_title!r} image to Shopify + indexed in RAG",
+                changed=f"Published image {image_id} (generated by Reel) to Shopify product {row.shopify_product_id} and updated the RAG entry.",
+                by="Sol",
+                context="Reel generates media, Sol pushes it live and indexes it — owner-approved via the Images dashboard.",
+            )
+        except Exception:
+            pass
 
     return result
 

@@ -1,6 +1,7 @@
 import {useLoaderData, Link} from 'react-router';
 import {useEffect, useRef, useState} from 'react';
 import {Image, Money} from '@shopify/hydrogen';
+import {RotateCw} from 'lucide-react';
 import {config} from '~/lib/theme';
 import {PromoBanner} from '~/components/PromoBanner';
 
@@ -286,7 +287,14 @@ function ProductGrid({products}) {
 }
 
 function HomeProductCard({product, index}) {
-  const image = product.featuredImage;
+  // Reel's generated lifestyle photo is uploaded to gallery position 1 (position
+  // 0 stays the supplier's photo, tied to color selection) — see
+  // src/mcp_tools/shopify.py's attach_local_image_to_product.
+  const galleryImages = product.images?.nodes ?? [];
+  const image = galleryImages[1] || product.featuredImage;
+  const videoSource = (product.media?.nodes ?? [])
+    .flatMap((n) => n.sources ?? []).find((s) => s.mimeType === 'video/mp4');
+  const [playingVideo, setPlayingVideo] = useState(false);
   return (
     <Link
       to={`/products/${product.handle}`}
@@ -294,7 +302,7 @@ function HomeProductCard({product, index}) {
       prefetch="intent"
       style={{animationDelay: `${Math.min(index, 8) * 60}ms`}}
     >
-      <div className="tob-imgwrap">
+      <div className="tob-imgwrap relative">
         {image && (
           <Image
             data={image}
@@ -303,6 +311,36 @@ function HomeProductCard({product, index}) {
             sizes="(min-width: 820px) 300px, 45vw"
             loading={index < 4 ? 'eager' : 'lazy'}
           />
+        )}
+        {videoSource && playingVideo && (
+          <video
+            src={videoSource.url}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 h-full w-full object-cover"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setPlayingVideo(false);
+            }}
+          />
+        )}
+        {videoSource && (
+          <button
+            type="button"
+            aria-label={playingVideo ? 'Show photo' : 'Play 360° video'}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setPlayingVideo((v) => !v);
+            }}
+            className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[11px] font-semibold shadow"
+          >
+            <RotateCw size={12} />
+            360°
+          </button>
         )}
       </div>
       <h3>{product.title}</h3>
@@ -351,6 +389,15 @@ const PRODUCT_FRAGMENT = `#graphql
     handle
     availableForSale
     featuredImage { url altText width height }
+    images(first: 2) { nodes { url altText width height } }
+    media(first: 20) {
+      nodes {
+        ... on Video {
+          id
+          sources { url mimeType }
+        }
+      }
+    }
     priceRange { minVariantPrice { amount currencyCode } }
   }
 `;

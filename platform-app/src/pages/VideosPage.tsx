@@ -18,10 +18,10 @@ interface VideoRow {
   store_id: string;
   shopify_product_id: string;
   product_title: string;
-  status: 'rendering' | 'pending_review' | 'approved' | 'rejected' | 'published' | 'failed';
+  status: 'awaiting_cost_approval' | 'rendering' | 'pending_review' | 'approved' | 'rejected' | 'published' | 'failed';
   error: string;
   video_url: string;
-  script: VideoScript | null;
+  script: (VideoScript & { engine?: string }) | Record<string, unknown> | null;
   created_at: string | null;
 }
 
@@ -29,7 +29,11 @@ interface VideoRow {
 // under /api/v1 — apiGet's BASE has the /api/v1 suffix, so build this separately.
 const MEDIA_BASE = `${window.location.protocol}//${window.location.hostname}:8000`;
 
+// Veo 3.1 Fast, 4s @ 720p — see src/video/veo_video.py's ESTIMATED_COST_USD.
+const VEO_ESTIMATED_COST_USD = 0.4;
+
 const STATUS_STYLE: Record<VideoRow['status'], string> = {
+  awaiting_cost_approval: 'bg-purple-500/15 text-purple-400',
   rendering: 'bg-amber-500/15 text-amber-400',
   pending_review: 'bg-sky-500/15 text-sky-400',
   approved: 'bg-emerald-500/15 text-emerald-400',
@@ -45,6 +49,16 @@ function VideoCard({ video, onDecision }: { video: VideoRow; onDecision: () => v
     setBusy(true);
     try {
       await apiPost(`/videos/${video.id}/${action}`, {});
+      onDecision();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function approveRender() {
+    setBusy(true);
+    try {
+      await apiPost(`/videos/${video.id}/approve-render`, {});
       onDecision();
     } finally {
       setBusy(false);
@@ -75,6 +89,31 @@ function VideoCard({ video, onDecision }: { video: VideoRow; onDecision: () => v
       )}
 
       {video.error && <div className="mt-2 text-sm text-rose-400">{video.error}</div>}
+
+      {video.status === 'awaiting_cost_approval' && (
+        <div className="mt-3">
+          <div className="mb-2 text-sm text-purple-300">
+            This is a real, billed Veo render — not free tier. Approving charges roughly
+            ${VEO_ESTIMATED_COST_USD.toFixed(2)} to your Google account, only if it succeeds.
+          </div>
+          <div className="flex gap-2">
+            <button
+              disabled={busy}
+              onClick={approveRender}
+              className="rounded-lg bg-purple-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-50"
+            >
+              Approve render (~${VEO_ESTIMATED_COST_USD.toFixed(2)})
+            </button>
+            <button
+              disabled={busy}
+              onClick={() => decide('reject')}
+              className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm font-medium text-gray-300 hover:bg-gray-800 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {video.status === 'pending_review' && (
         <div className="mt-3 flex gap-2">

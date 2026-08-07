@@ -510,20 +510,38 @@ async def _agent_act_video(agent: Agent, message: str, company) -> str:
     (video vs image) plus video style, then delegates to the matching starter."""
     system = (
         f"You are {agent.name} ({agent.role}) at Alpha — Video Producer, and you also "
-        "generate baby-outfit-swap product IMAGES. You have FULL access to the store's "
-        "products and both pipelines; NEVER say you lack access or ask which product — "
-        "if the owner didn't name one, YOU pick it.\n"
+        "generate product IMAGES two ways. You have FULL access to the store's products "
+        "and all pipelines; NEVER say you lack access or ask which product — if the owner "
+        "didn't name one, YOU pick it.\n"
         f"Answer in {company_language()}. From the owner's message decide: (1) do they "
         "want you to START something NOW (e.g. 'make a video', 'create an ad', 'make an "
         "image', 'try 10 seconds', 'just take one/any product') versus just chatting; "
-        "(2) if starting, is it a VIDEO or an IMAGE (baby wearing the outfit).\n"
-        "For video, two formats — pick PRODUCT_3D_SHOWCASE only if the owner clearly "
-        "asks for a 3D/product-only/no-face/cinematic style, else default AVATAR_UGC:\n"
+        "(2) if starting, is it a full AD VIDEO, a short ROTATION VIDEO, or an IMAGE, and "
+        "if an image, which kind.\n"
+        "Full ad video (media=video), two formats — pick PRODUCT_3D_SHOWCASE only if the "
+        "owner clearly asks for a 3D/product-only/no-face/cinematic style, else default "
+        "AVATAR_UGC:\n"
         "- AVATAR_UGC: an avatar talks to camera, benefit captions alongside.\n"
         "- PRODUCT_3D_SHOWCASE: no face, rotating/macro product render, floating title cards.\n"
+        "Rotation video (media=rotation_video): a short (~4s) 360-degree turntable clip of "
+        "JUST the product (no person, no text) — pick this when the owner asks to 'see it "
+        "from every angle', 'spin it around', 'rotate', or a short product-only video. "
+        "IMPORTANT: this uses a PAID API (Veo, ~$0.40/clip, NOT the free tier) — you must "
+        "say so plainly in your reply and make clear you're only QUEUING it for the owner's "
+        "cost approval (dashboard Videos page), not actually spending money yet.\n"
+        "For images, pick ONE of three: LIFESTYLE (default — a real, text-free photo of a "
+        "baby/toddler actually wearing/using the product, no headline or overlay of any "
+        "kind), THREED (a text-free stylized 3D render of the product alone, no person — "
+        "pick this when the owner asks for a '3D version', 'product-only', 'no person/face' "
+        "image), or BABY_SWAP (the older pipeline that face-swaps a baby into an existing "
+        "adult-model photo — only pick this if the owner explicitly asks to reuse/transform "
+        "an existing photo with a person already in it, not for a fresh photo). Every image "
+        "style is TEXT-FREE — never add a headline, logo, or callouts unless the owner "
+        "explicitly asks for an ad banner with text.\n"
         "Output ONLY JSON:\n"
         '{"reply":"<short first-person line>","start_render":true|false,'
-        '"media":"video"|"image","style":"AVATAR_UGC"|"PRODUCT_3D_SHOWCASE"}'
+        '"media":"video"|"rotation_video"|"image","style":"AVATAR_UGC"|"PRODUCT_3D_SHOWCASE",'
+        '"image_style":"LIFESTYLE"|"THREED"|"BABY_SWAP"}'
     )
     transcript = await _recent_transcript(message)
     human = (f"Recent conversation (oldest first):\n{transcript}\n\n" if transcript else "") + author_q(message)
@@ -537,12 +555,21 @@ async def _agent_act_video(agent: Agent, message: str, company) -> str:
         style = str(parsed.get("style", "AVATAR_UGC")).strip().upper()
         if style not in ("AVATAR_UGC", "PRODUCT_3D_SHOWCASE"):
             style = "AVATAR_UGC"
+        image_style = str(parsed.get("image_style", "LIFESTYLE")).strip().upper()
+        if image_style == "BABY_SWAP":
+            engine, gemini_style = "baby_swap", "lifestyle"
+        elif image_style == "THREED":
+            engine, gemini_style = "gemini", "3d_showcase"
+        else:
+            engine, gemini_style = "gemini", "lifestyle"
     except Exception:
         return await _agent_reply(agent, message, "You", company)
     if not start:
         return reply or "Got it."
     if media == "image":
-        return await _agent_act_image(reply)
+        return await _agent_act_image(reply, engine=engine, style=gemini_style)
+    if media == "rotation_video":
+        return await _agent_act_rotation_video(reply)
     return await _agent_act_video_render(reply, style)
 
 
@@ -569,12 +596,48 @@ async def _agent_act_video_render(reply: str, style: str) -> str:
     return (reply + "\n" if reply else "") + f"🎬 Picked *{product['title']}* — rendering a {pretty_style} ad now (script → Wan2.2 scenes → voiceover → assembly). I'll post it here for approval when it's done."
 
 
-async def _agent_act_image(reply: str) -> str:
-    """Starts a real baby-outfit-swap image render (POST /images/generate) for the
-    store's first eligible product — the image half of _agent_act_video's
-    dispatch. If the picked product's photos don't show an adult person, the
-    background task fails fast with a clear reason (see src/api/routes/images.py)
-    rather than silently producing nothing."""
+async def _agent_act_rotation_video(reply: str) -> str:
+    """Queues a Veo 360-rotation video for the store's first eligible product —
+    COST GATE: this only creates an awaiting_cost_approval row (POST
+    /videos/generate, engine='veo_rotation'), it never spends money on its own.
+    The owner must separately approve via POST /videos/{id}/approve-render or the
+    dashboard's Videos page before the paid Veo call actually fires."""
+    from src.mcp_tools.shopify import get_products_for_video
+    from src.api.routes.videos import post_generate_video
+    from src.video.veo_video import ESTIMATED_COST_USD
+    from src.stores import list_stores
+    try:
+        store = next(iter(list_stores()), None)
+        if not store:
+            return (reply + "\n" if reply else "") + "⚠️ No active store to pick a product from."
+        products = await get_products_for_video()
+    except Exception as exc:
+        return (reply + "\n" if reply else "") + f"⚠️ Couldn't read the store's products: {exc}"
+    if not products:
+        return (reply + "\n" if reply else "") + "Every eligible product already has a video queued/rendered — nothing new to make one for."
+    product = products[0]
+    res = await post_generate_video({"store_id": store.store_id, "product_id": product["id"], "engine": "veo_rotation"})
+    if res.get("error"):
+        return (reply + "\n" if reply else "") + f"⚠️ Couldn't queue it: {res['error']}"
+    return (
+        (reply + "\n" if reply else "")
+        + f"🔄 Picked *{product['title']}* for a 4s 360° rotation video — but this uses Veo, "
+        f"a PAID API (~${ESTIMATED_COST_USD}, not the free tier). I've queued it, nothing "
+        f"charged yet. Approve it on the dashboard's Videos page (or POST "
+        f"/videos/{res['video_id']}/approve-render) to actually render it."
+    )
+
+
+async def _agent_act_image(reply: str, engine: str = "gemini", style: str = "lifestyle") -> str:
+    """Starts a real product image render (POST /images/generate) for the store's
+    first eligible product — the image half of _agent_act_video's dispatch.
+    `engine='gemini'` (default) is the Gemini pipeline (src/video/gemini_images.py)
+    — a clean, text-free photo generated directly from the product's real photo,
+    either `style='lifestyle'` (a baby wearing/using it) or `style='3d_showcase'`
+    (product-only 3D render, no person). `engine='baby_swap'` is the older Wan2.2
+    baby-wearing-the-outfit pipeline. If the picked product's photos don't show an
+    adult person (baby_swap only), the background task fails fast with a clear
+    reason (see src/api/routes/images.py) rather than silently producing nothing."""
     from src.mcp_tools.shopify import get_products_with_all_images
     from src.api.routes.images import post_generate_image
     from src.stores import list_stores
@@ -588,10 +651,14 @@ async def _agent_act_image(reply: str) -> str:
     if not products:
         return (reply + "\n" if reply else "") + "Every eligible product already has an image queued/rendered — nothing new to make one for."
     product = products[0]
-    res = await post_generate_image({"store_id": store.store_id, "product_id": product["id"]})
+    res = await post_generate_image({"store_id": store.store_id, "product_id": product["id"], "engine": engine, "style": style})
     if res.get("error"):
         return (reply + "\n" if reply else "") + f"⚠️ Couldn't start rendering: {res['error']}"
-    return (reply + "\n" if reply else "") + f"🖼️ Picked *{product['title']}* — checking its photos and rendering a baby-outfit image now. I'll post the original + generated photo here for approval when it's done."
+    if engine == "gemini":
+        kind = "3D showcase render" if style == "3d_showcase" else "baby-lifestyle photo"
+    else:
+        kind = "baby-outfit image"
+    return (reply + "\n" if reply else "") + f"🖼️ Picked *{product['title']}* — rendering a {kind} now. I'll post the original + generated photo here for approval when it's done."
 
 
 def _apply_site_changes(changes: list[dict]) -> tuple[bool, list[str]]:

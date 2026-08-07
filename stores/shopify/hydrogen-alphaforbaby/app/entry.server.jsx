@@ -22,6 +22,11 @@ export default async function handleRequest(
       checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
       storeDomain: context.env.PUBLIC_STORE_DOMAIN,
     },
+    // Reel's product-rotation videos are served from Shopify's own video CDN
+    // (cdn.shopify.com/.../videos/...), which isn't covered by the default
+    // policy — without this, the browser silently blocks the <video> element
+    // ("media-src" falls back to "default-src 'self'" and refuses the load).
+    mediaSrc: ["'self'", 'https://cdn.shopify.com', 'https://*.myshopify.com'],
   });
 
   const body = await renderToReadableStream(

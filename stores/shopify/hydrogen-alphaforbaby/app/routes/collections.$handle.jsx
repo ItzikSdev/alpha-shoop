@@ -132,6 +132,23 @@ const PRODUCT_ITEM_FRAGMENT = `#graphql
       width
       height
     }
+    images(first: 2) {
+      nodes {
+        id
+        altText
+        url
+        width
+        height
+      }
+    }
+    media(first: 20) {
+      nodes {
+        ... on Video {
+          id
+          sources { url mimeType }
+        }
+      }
+    }
     priceRange {
       minVariantPrice {
         ...MoneyProductItem
