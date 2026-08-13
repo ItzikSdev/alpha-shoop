@@ -399,6 +399,19 @@ export default function Product() {
     /^\d+cm$/i.test(o.value) ? normalizeSizeLabel(o.value) : o.value,
   );
 
+  // Reel's generated lifestyle photo is always uploaded to gallery position 1
+  // (position 0 stays the supplier's own photo, tied to color selection — see
+  // src/mcp_tools/shopify.py's attach_local_image_to_product). Lead the
+  // carousel with it so shoppers see the AI baby photo first.
+  const rawImages = product.images?.nodes ?? [];
+  const galleryImages =
+    rawImages.length > 1
+      ? [rawImages[1], ...rawImages.filter((_, i) => i !== 1)]
+      : rawImages;
+  const videoSource = (product.media?.nodes ?? [])
+    .flatMap((n) => n.sources ?? [])
+    .find((s) => s.mimeType === 'video/mp4');
+
   return (
     <div className="pdp bg-surface font-classical text-ink text-cbody">
       <div className="relative mx-auto w-full max-w-phone md:max-w-5xl bg-bg shadow-cmd">
@@ -417,9 +430,10 @@ export default function Product() {
         <div className="md:grid md:grid-cols-2 md:gap-10 md:px-6 md:pt-6 md:items-start">
           <div className="md:sticky md:top-24">
             <ProductGallery
-              images={product.images?.nodes}
+              images={galleryImages}
               selectedVariantImage={selectedVariant?.image}
               discountPercent={off}
+              videoSource={videoSource}
             />
           </div>
 
@@ -603,6 +617,14 @@ const PRODUCT_FRAGMENT = `#graphql
         altText
         width
         height
+      }
+    }
+    media(first: 20) {
+      nodes {
+        ... on Video {
+          id
+          sources { url mimeType }
+        }
       }
     }
     options {

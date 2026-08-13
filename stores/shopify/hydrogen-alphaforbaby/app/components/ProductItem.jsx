@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {Link} from 'react-router';
 import {Image, Money} from '@shopify/hydrogen';
 import {RotateCw} from 'lucide-react';
@@ -25,6 +25,7 @@ export function ProductItem({product, loading}) {
   const videoSource = (product.media?.nodes ?? [])
     .flatMap((n) => n.sources ?? []).find((s) => s.mimeType === 'video/mp4');
   const [playingVideo, setPlayingVideo] = useState(false);
+  const loopCountRef = useRef(0);
 
   return (
     <Link className="tob-card" key={product.id} prefetch="intent" to={variantUrl}>
@@ -43,9 +44,17 @@ export function ProductItem({product, loading}) {
             src={videoSource.url}
             autoPlay
             muted
-            loop
             playsInline
             className="absolute inset-0 h-full w-full object-cover"
+            onEnded={(e) => {
+              loopCountRef.current += 1;
+              if (loopCountRef.current >= 2) {
+                e.currentTarget.pause();
+                setPlayingVideo(false);
+              } else {
+                e.currentTarget.play();
+              }
+            }}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -60,6 +69,7 @@ export function ProductItem({product, loading}) {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              loopCountRef.current = 0;
               setPlayingVideo((v) => !v);
             }}
             className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[11px] font-semibold shadow"

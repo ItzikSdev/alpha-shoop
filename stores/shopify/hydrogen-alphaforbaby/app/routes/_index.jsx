@@ -295,6 +295,7 @@ function HomeProductCard({product, index}) {
   const videoSource = (product.media?.nodes ?? [])
     .flatMap((n) => n.sources ?? []).find((s) => s.mimeType === 'video/mp4');
   const [playingVideo, setPlayingVideo] = useState(false);
+  const loopCountRef = useRef(0);
   return (
     <Link
       to={`/products/${product.handle}`}
@@ -317,8 +318,16 @@ function HomeProductCard({product, index}) {
             src={videoSource.url}
             autoPlay
             muted
-            loop
             playsInline
+            onEnded={(e) => {
+              loopCountRef.current += 1;
+              if (loopCountRef.current >= 2) {
+                e.currentTarget.pause();
+                setPlayingVideo(false);
+              } else {
+                e.currentTarget.play();
+              }
+            }}
             className="absolute inset-0 h-full w-full object-cover"
             onClick={(e) => {
               e.preventDefault();
@@ -334,6 +343,7 @@ function HomeProductCard({product, index}) {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              loopCountRef.current = 0;
               setPlayingVideo((v) => !v);
             }}
             className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[11px] font-semibold shadow"
