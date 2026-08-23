@@ -619,7 +619,7 @@ const PRODUCT_FRAGMENT = `#graphql
         height
       }
     }
-    media(first: 20) {
+    media(first: 50) {
       nodes {
         ... on Video {
           id
