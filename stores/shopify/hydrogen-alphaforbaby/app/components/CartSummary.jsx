@@ -1,6 +1,17 @@
 import {CartForm, Money} from '@shopify/hydrogen';
-import {useEffect, useId, useRef, useState} from 'react';
-import {useFetcher} from 'react-router';
+import {useEffect, useId, useRef, useState, Suspense} from 'react';
+import {useFetcher, useRouteLoaderData, Await} from 'react-router';
+
+/** The sign-in discount code — same one shown in the header once logged in
+ * (Header.jsx's AccountLinkResolved). Kept as one constant since both
+ * places must always agree on the code. */
+const SIGNIN_DISCOUNT_CODE = 'ALPHA10';
+
+function withDiscount(url, code) {
+  if (!url) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}discount=${encodeURIComponent(code)}`;
+}
 
 /**
  * @param {CartSummaryProps}
@@ -47,14 +58,30 @@ export function CartSummary({cart, layout}) {
  */
 function CartCheckoutActions({checkoutUrl}) {
   if (!checkoutUrl) return null;
+  // root's isLoggedIn is a deferred Promise<boolean> (same value Header/
+  // SignInPromo resolve via Await) — read via useRouteLoaderData instead of
+  // threading a new prop through CartMain -> CartSummary -> here.
+  const rootData = useRouteLoaderData('root');
 
   return (
     <div>
-      <a href={checkoutUrl} target="_self">
-        <p>Continue to Checkout &rarr;</p>
-      </a>
+      <Suspense fallback={<CheckoutLink href={checkoutUrl} />}>
+        <Await resolve={rootData?.isLoggedIn} errorElement={<CheckoutLink href={checkoutUrl} />}>
+          {(loggedIn) => (
+            <CheckoutLink href={loggedIn ? withDiscount(checkoutUrl, SIGNIN_DISCOUNT_CODE) : checkoutUrl} />
+          )}
+        </Await>
+      </Suspense>
       <br />
     </div>
+  );
+}
+
+function CheckoutLink({href}) {
+  return (
+    <a href={href} target="_self">
+      <p>Continue to Checkout &rarr;</p>
+    </a>
   );
 }
 
