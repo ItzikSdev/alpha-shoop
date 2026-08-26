@@ -239,14 +239,26 @@ function AccountLink({isLoggedIn}) {
 
 function AccountLinkResolved({loggedIn}) {
   return (
-    <span style={{display: 'inline-flex', alignItems: 'center', gap: 6}}>
+    <span style={{display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 0}}>
       {loggedIn && (
-        <span
-          title="Your sign-in discount — enter at checkout"
-          style={{fontSize: 11, letterSpacing: '.03em', color: '#6b6b6b', whiteSpace: 'nowrap'}}
-        >
-          Code: <strong>ALPHA10</strong>
-        </span>
+        // Hidden below 480px — the header's icon row (logo/nav/search/cart/
+        // account) is already tight on a 375/390px viewport; a nowrap text
+        // label there has no room and overflows the row. Visible on
+        // larger phones/tablet/desktop where there's actually space.
+        <>
+          <style>{'@media (max-width: 480px){.afb-code-badge{display:none}}'}</style>
+          <span
+            className="afb-code-badge"
+            title="Your sign-in discount — enter at checkout"
+            style={{
+              fontSize: 11, letterSpacing: '.03em', color: '#6b6b6b',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              maxWidth: 120,
+            }}
+          >
+            Code: <strong>ALPHA10</strong>
+          </span>
+        </>
       )}
       <Link
         to={loggedIn ? '/account' : '/account/login'}
