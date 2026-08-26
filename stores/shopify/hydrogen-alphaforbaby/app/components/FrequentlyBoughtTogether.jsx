@@ -66,29 +66,43 @@ export function FrequentlyBoughtTogether({mainProduct, extras}) {
           </span>
         </div>
         {items.map((p, i) => (
-          <button
+          <div
             key={p.id}
-            type="button"
-            onClick={() => toggle(i)}
-            className="flex w-full items-center gap-3 border-b border-divider py-2 text-left last:border-b-0"
+            className="flex w-full items-center gap-3 border-b border-divider py-2 last:border-b-0"
           >
-            <span
+            {/* Toggle stays its own control (was the whole row before — that
+                meant clicking the title/image also toggled it off, with no
+                way to actually visit the product). */}
+            <button
+              type="button"
+              onClick={() => toggle(i)}
+              aria-label={checked.has(i) ? `Remove ${p.title} from the set` : `Add ${p.title} to the set`}
               className={`flex h-[18px] w-[18px] flex-none items-center justify-center rounded-sm border text-accent ${
                 checked.has(i) ? 'border-accent' : 'border-divider'
               }`}
             >
               {checked.has(i) ? '✓' : ''}
-            </span>
-            <span className="plate plate-sm block h-[46px] w-[46px] flex-none overflow-hidden rounded-sm">
+            </button>
+            <Link
+              to={p.handle ? `/products/${p.handle}` : '#'}
+              prefetch="intent"
+              className="plate plate-sm block h-[46px] w-[46px] flex-none overflow-hidden rounded-sm"
+            >
               {p.featuredImage && (
                 <img src={p.featuredImage.url} alt={p.featuredImage.altText || p.title} className="h-full w-full object-cover" />
               )}
-            </span>
-            <span className="flex-1 text-[13px] leading-snug">{p.title}</span>
+            </Link>
+            <Link
+              to={p.handle ? `/products/${p.handle}` : '#'}
+              prefetch="intent"
+              className="flex-1 text-[13px] leading-snug text-ink"
+            >
+              {p.title}
+            </Link>
             <span className="tnum text-[13px]">
               <Money data={p.selectedOrFirstAvailableVariant.price} />
             </span>
-          </button>
+          </div>
         ))}
       </div>
       <div className="flex items-center justify-between gap-3">
