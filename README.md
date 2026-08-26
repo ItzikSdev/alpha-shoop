@@ -4,6 +4,8 @@ Autonomous Shopify store builder: one AI pipeline that brands a store, designs a
 pushes a theme, sources on-niche products from CJ Dropshipping, lists them with
 real-data-grounded copy, and (optionally) runs ads and fulfills orders — all
 against the real Shopify Admin API.
+<!-- shopify-github-reconnect-test 2026-08-26 post-reconnect trivial commit -->
+
 
 ## Architecture, in one line
 
