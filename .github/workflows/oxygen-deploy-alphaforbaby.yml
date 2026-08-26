@@ -1,5 +1,8 @@
 name: Storefront 1000154886
-on: [push]
+on:
+  push:
+    paths:
+      - 'stores/shopify/hydrogen-alphaforbaby/**'
 
 permissions:
   contents: read
