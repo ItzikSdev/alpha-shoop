@@ -40,9 +40,24 @@ export function ProductForm({productOptions, selectedVariant}) {
         // treat it like one (image swatch instead of raw code).
         const isColorOption = option.name.toLowerCase() === 'color';
         const isSizeOption = option.name.toLowerCase() === 'size';
-        const isCmSize = (raw) => /^\d+cm$/i.test(raw);
+        // "Looks like a real size" must cover every size SHAPE this catalog
+        // actually uses, not just cm — a bug found live (Duck Print Baby
+        // Bodysuit, 2026-08-26): its real Size values are age labels
+        // ("NEWBORN", "0 To 3M", "3 To 6M"), none of which are cm-formatted,
+        // so the old cm-only check misclassified this genuine Size axis as a
+        // mislabeled color axis and rendered age labels as "Color" swatches
+        // — a customer thought they were picking a color but were picking a
+        // size. Only values that DON'T match any known size shape (i.e. look
+        // like a raw color SKU code, e.g. "WW942") should still be treated
+        // as a mislabeled color axis.
+        const isRealSizeLabel = (raw) =>
+          /^\d+cm$/i.test(raw) ||                      // "52cm"
+          /^newborn$/i.test(raw) ||                     // "NEWBORN"
+          /^\d+\s*(to|-)\s*\d+\s*[myMY]$/i.test(raw) ||  // "0 To 3M", "3-6M"
+          /^\d+\s*[myMY]$/i.test(raw) ||                 // "6M", "2Y"
+          /^(xxs|xs|s|m|l|xl|xxl|xxxl)$/i.test(raw);     // letter sizes
         const sizeOptionIsActuallyColor =
-          isSizeOption && !hasRealColorOption && !option.optionValues.some((v) => isCmSize(v.name));
+          isSizeOption && !hasRealColorOption && !option.optionValues.some((v) => isRealSizeLabel(v.name));
         const sizeLabels = isSizeOption && !sizeOptionIsActuallyColor
           ? getDisplaySizeLabels(option.optionValues.map((v) => v.name))
           : null;

@@ -239,14 +239,24 @@ function AccountLink({isLoggedIn}) {
 
 function AccountLinkResolved({loggedIn}) {
   return (
-    <Link
-      to={loggedIn ? '/account' : '/account/login'}
-      prefetch="intent"
-      className="tob-hcart reset"
-      aria-label={loggedIn ? 'Account' : 'Sign in'}
-    >
-      <IconAccount />
-    </Link>
+    <span style={{display: 'inline-flex', alignItems: 'center', gap: 6}}>
+      {loggedIn && (
+        <span
+          title="Your sign-in discount — enter at checkout"
+          style={{fontSize: 11, letterSpacing: '.03em', color: '#6b6b6b', whiteSpace: 'nowrap'}}
+        >
+          Code: <strong>ALPHA10</strong>
+        </span>
+      )}
+      <Link
+        to={loggedIn ? '/account' : '/account/login'}
+        prefetch="intent"
+        className="tob-hcart reset"
+        aria-label={loggedIn ? 'Account' : 'Sign in'}
+      >
+        <IconAccount />
+      </Link>
+    </span>
   );
 }
 

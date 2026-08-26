@@ -42,7 +42,16 @@ export function ProductGallery({images, selectedVariantImage, discountPercent, v
   useEffect(() => {
     if (!selectedVariantImage || !trackRef.current) return;
     if (selectedVariantImage.id === initialVariantImageIdRef.current) return;
-    const idx = gallery.findIndex((img) => img.id === selectedVariantImage.id);
+    // Match by id first; variant.image and product.images can hand back
+    // differently-scoped GIDs for the same underlying photo, so fall back to
+    // matching by URL (stripping the CDN version query string) — without this
+    // fallback, a mismatched id silently no-ops and the swatch click appears
+    // to do nothing, which was the actual bug.
+    const targetUrl = (selectedVariantImage.url || '').split('?')[0];
+    let idx = gallery.findIndex((img) => img.id === selectedVariantImage.id);
+    if (idx === -1 && targetUrl) {
+      idx = gallery.findIndex((img) => (img.url || '').split('?')[0] === targetUrl);
+    }
     if (idx === -1) return;
     const track = trackRef.current;
     const slide = track.children[idx];
