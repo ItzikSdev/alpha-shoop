@@ -523,16 +523,10 @@ export default function Product() {
           >
             {selectedVariant?.availableForSale ? 'ADD TO CART' : 'SOLD OUT'}
           </AddToCartButton>
-          {selectedVariant?.availableForSale && (
-            <AddToCartButton
-              disabled={!selectedVariant || !selectedVariant.availableForSale}
-              redirectTo="checkout"
-              className="btn btn-secondary flex-none w-[84px] min-h-[48px] text-[13px] tracking-[.04em]"
-              lines={[{merchandiseId: selectedVariant.id, quantity: 1, selectedVariant}]}
-            >
-              PayPal
-            </AddToCartButton>
-          )}
+          {/* PayPal express shortcut removed here too (2026-08-26) — this is
+              a SEPARATE mobile-only sticky bar from ProductForm.jsx's
+              buttons, missed in the first pass. Same reasoning: shortcut
+              button only, not the actual PayPal payment method. */}
         </div>
       </div>
       <Analytics.ProductView
