@@ -72,7 +72,7 @@ function SignInPromoInner({isLoggedIn}) {
         Sign in or create an account to get <strong>10% off</strong> your order.
       </p>
       <a
-        href="https://account.alphaforbaby.com"
+        href="/account/login"
         style={{display: 'inline-block', padding: '10px 18px', background: '#2b2b2b', color: '#fff', textDecoration: 'none', borderRadius: 4, fontSize: 13, letterSpacing: '.03em'}}
       >
         Sign in
