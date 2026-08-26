@@ -264,20 +264,13 @@ export function ProductForm({productOptions, selectedVariant}) {
           >
             BUY IT NOW
           </AddToCartButton>
-          <AddToCartButton
-            disabled={!selectedVariant || !selectedVariant.availableForSale}
-            redirectTo="checkout"
-            className={BTN_SECONDARY}
-            lines={[
-              {
-                merchandiseId: selectedVariant.id,
-                quantity: 1,
-                selectedVariant,
-              },
-            ]}
-          >
-            PayPal
-          </AddToCartButton>
+          {/* PayPal express-checkout SHORTCUT button removed (2026-08-26,
+              owner request) — this was only ever a redirect-to-checkout
+              shortcut labeled "PayPal" (see comment above), not the actual
+              PayPal payment method. Removing it does NOT touch PayPal as a
+              selectable payment method at checkout — that's controlled
+              entirely by Shopify Admin -> Settings -> Payments and is
+              untouched by this component. */}
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[11px] text-ink/50">
             <Lock size={13} />
             {/* Real accepted-payment-method logos (same assets as the header
