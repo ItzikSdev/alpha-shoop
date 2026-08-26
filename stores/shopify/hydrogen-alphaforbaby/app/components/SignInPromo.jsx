@@ -1,5 +1,5 @@
 import {Suspense, useEffect, useState} from 'react';
-import {Await} from 'react-router';
+import {Await, useLocation} from 'react-router';
 
 const DISMISS_KEY = 'afb_signin_promo_dismissed';
 const SHOW_DELAY_MS = 4000;
@@ -27,9 +27,11 @@ export function SignInPromo({isLoggedIn}) {
 
 function SignInPromoInner({isLoggedIn}) {
   const [visible, setVisible] = useState(false);
+  const {pathname} = useLocation();
+  const onAccountRoute = pathname.startsWith('/account');
 
   useEffect(() => {
-    if (isLoggedIn) return; // already signed in — nothing to promo
+    if (isLoggedIn || onAccountRoute) return; // already signed in, or already on the sign-in flow itself
     try {
       if (localStorage.getItem(DISMISS_KEY)) return;
     } catch {
@@ -37,9 +39,9 @@ function SignInPromoInner({isLoggedIn}) {
     }
     const t = setTimeout(() => setVisible(true), SHOW_DELAY_MS);
     return () => clearTimeout(t);
-  }, [isLoggedIn]);
+  }, [isLoggedIn, onAccountRoute]);
 
-  if (!visible || isLoggedIn) return null;
+  if (!visible || isLoggedIn || onAccountRoute) return null;
 
   const dismiss = () => {
     setVisible(false);
