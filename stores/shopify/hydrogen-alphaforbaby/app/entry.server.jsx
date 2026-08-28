@@ -27,6 +27,21 @@ export default async function handleRequest(
     // policy — without this, the browser silently blocks the <video> element
     // ("media-src" falls back to "default-src 'self'" and refuses the load).
     mediaSrc: ["'self'", 'https://cdn.shopify.com', 'https://*.myshopify.com'],
+    // Microsoft Clarity (2026-08-28): the root-layout snippet is nonce'd and
+    // executes fine, but it then does document.createElement('script') with
+    // src=clarity.ms — a DYNAMICALLY inserted script gets no nonce, so without
+    // this it's silently blocked by the default script-src fallback (and its
+    // own data-collection beacons blocked by connect-src) in every
+    // CSP-respecting browser, not just Safari/ad-blockers. These two lists
+    // replicate Hydrogen's existing computed defaults (visible live before
+    // this change) plus clarity.ms — an override here REPLACES the default
+    // for that directive, so the prior entries must stay, not just clarity.ms.
+    scriptSrc: ["'self'", 'https://cdn.shopify.com', 'https://shopify.com', 'https://www.clarity.ms', 'https://*.clarity.ms'],
+    connectSrc: [
+      "'self'", 'https://cdn.shopify.com/', 'https://monorail-edge.shopifysvc.com',
+      'https://alphaforbaby.com', 'https://kgg8n0-k0.myshopify.com',
+      'https://www.clarity.ms', 'https://*.clarity.ms',
+    ],
   });
 
   const body = await renderToReadableStream(
