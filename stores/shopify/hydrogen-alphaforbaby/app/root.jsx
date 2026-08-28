@@ -204,6 +204,20 @@ export function Layout({children}) {
             })();`,
           }}
         />
+        {/* Microsoft Clarity — session recordings/heatmaps, added 2026-08-28.
+            Project id hardcoded (it's a public tracking id, not a secret —
+            same trust level as a GA measurement id). */}
+        <script
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `(function(c,l,a,r,i,t,y){
+              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window,document,"clarity","script","y9evik4b8h");`,
+          }}
+        />
         <Meta />
         <Links />
       </head>
