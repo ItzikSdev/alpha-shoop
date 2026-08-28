@@ -50,6 +50,29 @@ The rest of this skill (reading docs, understanding the store) is exactly what y
 regardless — you need the full picture to write a good task brief and to judge the result when
 the owning agent is done.
 
+## 0b. NO HARDCODING — the LLM decides (owner's rule, 2026-08-13)
+
+When you change org/agent code (`src/org/**`, `src/mcp_tools/**`), the agents' *decisions* stay
+with the model. Code supplies facts and capabilities; it does not make the call.
+
+- **Never hardcode an agent name into logic or into a message.** No `if agent == "Reel"`, no
+  `"ask Milo to confirm stock"` in an error string. Report the FACT (`no 360° video`,
+  `out of stock at CJ`) and let the model decide who to ask.
+- **Never build a code-side routing table** from capability → agent. The roster is live in
+  SQLite; `src/org/directory.py` (`capability_directory()`, `who_can()`) derives who-can-do-what
+  from it plus `src/org/tool_catalog.py`. Add or rename an agent and behaviour must follow with
+  no code edit.
+- **Do not add behaviour rules to the hardcoded `_system_prompt`** in `src/org/agent_loop.py`.
+  Guidance for a tool belongs in that tool's **docstring** — the model reads it as the tool's
+  interface. Only *derived* content (the live roster block, the charter read from the DB) may be
+  injected into the prompt.
+- **Asks and answers between agents must both be real model turns** — `dispatch_to_agent()` runs
+  the teammate's own handler/LLM. Never substitute a templated string for a teammate's reply.
+- **The one exception: physical safety invariants.** A rule that protects customers (the
+  storefront publish gate in `src/mcp_tools/shopify.py` — ≥3 images, a real 360° video, live CJ
+  stock) IS enforced in code, because an agent must not be able to talk its way past it. The gate
+  decides *whether*; the model decides *everything about how to resolve it*.
+
 ## 1. Find the store
 
 ```bash

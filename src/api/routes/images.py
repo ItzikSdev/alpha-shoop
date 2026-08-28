@@ -67,7 +67,7 @@ async def _run_pipeline(image_id: str, store_id: str, store_slug: str, product: 
             kind = "3D showcase render" if style == "3d_showcase" else "baby-lifestyle photo"
             caption = (
                 f"*{product['title']}* — Gemini {kind} ready for review\n"
-                f"Original vs generated — approve/reject via the dashboard's Images page."
+                f"Original vs generated — tap ✅ or ❌ below."
             )
         else:
             result = await generate_baby_outfit_image(
@@ -79,10 +79,11 @@ async def _run_pipeline(image_id: str, store_id: str, store_slug: str, product: 
             caption = (
                 f"*{product['title']}* — baby-outfit image ready for review\n"
                 f"Garment: {result.garment_description}\n"
-                f"Original vs generated — approve/reject via the dashboard's Images page."
+                f"Original vs generated — tap ✅ or ❌ below."
             )
         telegram_message_id = await post_photo_group_as(
-            "Reel", "Video Producer", [str(result.source_path), str(result.image_path)], caption
+            "Reel", "Video Producer", [str(result.source_path), str(result.image_path)], caption,
+            review_id=image_id,
         )
 
         async with get_session() as session:
@@ -218,8 +219,12 @@ async def approve_image(image_id: str) -> dict:
         # division of labor (see src/org/seed.py's charters).
         ok = await attach_local_image_to_product(row.shopify_product_id, row.file_path, alt=row.product_title)
         row.status = "published" if ok else "approved"
-        if not ok:
-            row.error = "Shopify upload failed — image approved but not attached; retry needed"
+        # Clear the error on success. Without this the message from an earlier
+        # failed attempt survived the retry that fixed it, leaving 22 rows reading
+        # `published` AND "upload failed — retry needed" at the same time. Agents
+        # and humans both read these fields to decide what still needs doing, so a
+        # stale error means real work gets re-queued and real successes look broken.
+        row.error = "" if ok else "Shopify upload failed — image approved but not attached; retry needed"
         row.updated_at = datetime.now(timezone.utc)
         session.add(row)
         result = {"status": row.status, "error": row.error}
@@ -265,3 +270,143 @@ async def reject_image(image_id: str) -> dict:
         row.updated_at = datetime.now(timezone.utc)
         session.add(row)
         return {"status": row.status}
+
+
+@router.post("/media/repost-pending", summary="Re-post every pending_review image/video to Telegram WITH ✅/❌ buttons")
+async def repost_pending_media(body: dict | None = None) -> dict:
+    """Send every item still awaiting review back to Telegram, this time with
+    working approve/reject buttons.
+
+    Needed because media posted BEFORE the review buttons existed (or before a
+    bot restart) sits in `pending_review` with no way to decide it from
+    Telegram — which is exactly how nine finished videos went unapproved and
+    never reached the store. Idempotent: only touches `pending_review` rows,
+    and updates each row's stored Telegram message id to the new post.
+    """
+    from src.db.models import ProductVideo
+    from src.org.telegram import post_video_as
+
+    body = body or {}
+    store_id = body.get("store_id", "")
+    posted: list[dict] = []
+    skipped: list[dict] = []
+
+    async with get_session() as session:
+        img_q = select(ProductImage).where(ProductImage.status == "pending_review")
+        vid_q = select(ProductVideo).where(ProductVideo.status == "pending_review")
+        if store_id:
+            img_q = img_q.where(ProductImage.store_id == store_id)
+            vid_q = vid_q.where(ProductVideo.store_id == store_id)
+        images = list((await session.execute(img_q)).scalars())
+        videos = list((await session.execute(vid_q)).scalars())
+
+    for row in images:
+        if not row.file_path or not Path(row.file_path).is_file():
+            skipped.append({"kind": "image", "id": row.id, "title": row.product_title,
+                            "reason": "generated file is missing on disk"})
+            continue
+        # Post the generated image on its own — the original source file from the
+        # first (side-by-side) post is often long gone.
+        msg_id = await post_photo_group_as(
+            "Reel", "Video Producer", [row.file_path],
+            f"*{row.product_title}* — image awaiting your review\nTap ✅ or ❌ below.",
+            review_id=row.id,
+        )
+        if msg_id:
+            async with get_session() as session:
+                fresh = await session.get(ProductImage, row.id)
+                fresh.telegram_message_id = msg_id
+                session.add(fresh)
+            posted.append({"kind": "image", "id": row.id, "title": row.product_title})
+        else:
+            skipped.append({"kind": "image", "id": row.id, "title": row.product_title,
+                            "reason": "Telegram upload failed"})
+
+    for row in videos:
+        if not row.file_path or not Path(row.file_path).is_file():
+            skipped.append({"kind": "video", "id": row.id, "title": row.product_title,
+                            "reason": "rendered file is missing on disk"})
+            continue
+        msg_id = await post_video_as(
+            "Reel", "Video Producer", row.file_path,
+            f"*{row.product_title}* — video awaiting your review\nTap ✅ or ❌ below.",
+            review_id=row.id,
+        )
+        if msg_id:
+            async with get_session() as session:
+                fresh = await session.get(ProductVideo, row.id)
+                fresh.slack_ts = msg_id
+                session.add(fresh)
+            posted.append({"kind": "video", "id": row.id, "title": row.product_title})
+        else:
+            skipped.append({"kind": "video", "id": row.id, "title": row.product_title,
+                            "reason": "Telegram upload failed"})
+
+    return {"posted": len(posted), "skipped": len(skipped), "items": posted, "problems": skipped}
+
+
+@router.post("/media/retry-attach", summary="Re-run the Shopify attach for any approved media whose upload failed")
+async def retry_attach_media(body: dict | None = None) -> dict:
+    """Push media that was approved but never made it onto the product.
+
+    The approve handlers write "…retry needed" when `attach_local_*_to_product`
+    fails, but nothing ever performed that retry — the row just sat there
+    (mislabelled `published`) and the product stayed without its image/video.
+    This is that retry: for every row with a real file on disk that Shopify
+    doesn't actually have, attach it again and clear the error on success.
+    """
+    from src.db.models import ProductVideo
+    from src.mcp_tools.shopify import attach_local_video_to_product
+
+    body = body or {}
+    store_id = body.get("store_id", "")
+    fixed: list[dict] = []
+    failed: list[dict] = []
+
+    async with get_session() as session:
+        img_q = select(ProductImage).where(ProductImage.error != "")
+        vid_q = select(ProductVideo).where(ProductVideo.error != "")
+        if store_id:
+            img_q = img_q.where(ProductImage.store_id == store_id)
+            vid_q = vid_q.where(ProductVideo.store_id == store_id)
+        images = [r for r in (await session.execute(img_q)).scalars()
+                  if "not attached" in (r.error or "")]
+        videos = [r for r in (await session.execute(vid_q)).scalars()
+                  if "not attached" in (r.error or "")]
+
+    for row, kind in [(r, "image") for r in images] + [(r, "video") for r in videos]:
+        if not row.file_path or not Path(row.file_path).is_file():
+            failed.append({"kind": kind, "id": row.id, "title": row.product_title,
+                           "reason": "file no longer on disk — must be regenerated"})
+            continue
+        if not _use_store(row.store_id):
+            failed.append({"kind": kind, "id": row.id, "title": row.product_title,
+                           "reason": f"unknown store {row.store_id!r}"})
+            continue
+        try:
+            if kind == "image":
+                ok = await attach_local_image_to_product(
+                    row.shopify_product_id, row.file_path, alt=row.product_title)
+            else:
+                ok = await attach_local_video_to_product(
+                    row.shopify_product_id, row.file_path, alt=row.product_title)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("retry-attach failed for %s %s", kind, row.id)
+            ok, exc_note = False, str(exc)[:200]
+        else:
+            exc_note = ""
+
+        model = ProductImage if kind == "image" else ProductVideo
+        async with get_session() as session:
+            fresh = await session.get(model, row.id)
+            if ok:
+                fresh.status, fresh.error = "published", ""
+            fresh.updated_at = datetime.now(timezone.utc)
+            session.add(fresh)
+        (fixed if ok else failed).append(
+            {"kind": kind, "id": row.id, "title": row.product_title}
+            | ({} if ok else {"reason": exc_note or "Shopify still rejected the upload"})
+        )
+
+    return {"attached": len(fixed), "still_failing": len(failed),
+            "fixed": fixed, "problems": failed}

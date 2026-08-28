@@ -14,7 +14,7 @@ Decision schema (the only types the executor understands):
   {"type": "hire",         "role": str, "skill": str, "team": str, "model_role": str}
   {"type": "train",        "target_role": str, "topic": str}
   {"type": "set_goal",     "goal": str}
-  {"type": "record_lesson","lesson": str}
+  {"type": "record_lesson","lesson": str, "target_role": str (optional)}
 
 Robust JSON parsing: this repo has a known history of LLMs wrapping JSON in
 fences / prose, so a parse failure degrades safely to zero decisions rather than
@@ -115,9 +115,12 @@ Each decision is one JSON object. Allowed types (use only these):
 - {"type":"build_store","niche":"<specific product niche>","budget_usd":<number>}
 - {"type":"boost_store","store_id":"<id from the snapshot>","mode":"MARKETING"|"MONITOR"}
 - {"type":"hire","role":"<title>","skill":"<one explicit sentence on exactly what they do>","team":"<team>","model_role":"executive|standup"}
-- {"type":"train","target_role":"<existing role>","topic":"<what to teach/improve>"}
+- {"type":"train","target_role":"<teammate's name OR role>","topic":"<what to teach/improve>"}
 - {"type":"set_goal","goal":"<short OKR>"}
 - {"type":"record_lesson","lesson":"<short reusable insight>"}
+- {"type":"record_lesson","lesson":"<...>","target_role":"<teammate's name OR role>"}
+    Same as above but scoped to ONE teammate (e.g. correcting something specific
+    they did) instead of the whole company.
 """
 
 _KIND_FOCUS = {

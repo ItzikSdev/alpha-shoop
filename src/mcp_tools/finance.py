@@ -181,12 +181,15 @@ def integrations_status() -> list[dict]:
         row("facebook_instagram", "Facebook & Instagram", "Marketing", ["Max"],
             False,  # enriched by the REAL Shopify channel check in the /org/integrations route
             "Checking the store's sales channels…"),
-        row("tiktok", "TikTok (ads + sales channel)", "Marketing", ["Max"],
-            True,
-            "$70 ad budget was added to the TikTok channel, but it is NOT currently in "
-            "active use — no Smart campaign is running. Agents have no Marketing-API "
-            "access either way; TikTok ads would run through the app's own UI, not "
-            "created by Max programmatically."),
+        row("tiktok", "TikTok Ads (read-only reporting)", "Marketing", ["Kai"],
+            bool(s.tiktok_access_token and s.tiktok_advertiser_id),
+            "Connected — Kai can pull real spend/CTR/conversions via TikTok's Marketing "
+            "API (src/tiktok_mcp/, a real MCP client)." if (s.tiktok_access_token and s.tiktok_advertiser_id)
+            else ("TikTok Developer app credentials set (TIKTOK_APP_ID/SECRET) but OAuth not "
+                  "completed yet — ask Kai to connect (tiktok_ads_login)." if (s.tiktok_app_id and s.tiktok_app_secret)
+                  else "Not connected — no TikTok Developer app credentials yet "
+                       "(TIKTOK_APP_ID/TIKTOK_APP_SECRET unset). Kai only reports, never launches "
+                       "or edits campaigns — that stays a human action in TikTok Ads Manager.")),
         row("paypal", "PayPal (revenue reporting)", "Payments", ["Ava"],
             paypal_ok, "Not working yet — owner is sending more information before this is fixed." if paypal_ok else "No PayPal credentials."),
         row("hype", "Hype (checkout payments)", "Payments", ["Ava"],

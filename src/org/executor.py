@@ -14,10 +14,11 @@ Persists the meeting and the updated company at the end.
 """
 from __future__ import annotations
 
+import re
 import uuid
 
 from src.org.health import cancel_stuck_runs, pipeline_run_active
-from src.org.lifecycle import fold_teambuilding_into_culture, onboard_agent, train_agent
+from src.org.lifecycle import fold_teambuilding_into_culture, onboard_agent, resolve_agent, train_agent
 from src.org.telegram import post_hire, post_to_telegram
 from src.org.models import (
     Company,
@@ -27,7 +28,8 @@ from src.org.models import (
     list_agents,
     new_agent,
     save_agent,
-    save_company,
+    update_agent,
+    update_company,
 )
 from src.stores import list_stores
 from src.tracing import agent_log
@@ -78,6 +80,29 @@ def _is_false_doom(text: str) -> bool:
     return any(k.lower() in t for k in _FALSE_CLAIMS)
 
 
+def _words(text: str) -> set[str]:
+    return {w for w in re.findall(r"\w+", (text or "").lower()) if len(w) > 3}
+
+
+def _is_restated_goal(goal: str, existing: list[str], threshold: float = 0.6) -> bool:
+    """True if `goal` is a reworded version of one we already hold.
+
+    Exact-match dedup was not enough: the CEO restated the same goal every hour
+    with slightly different wording ("Complete…" / "Finish…" / the Hebrew
+    translation), so 10 of 12 stored goals were one goal. Compares word overlap
+    (Jaccard) instead of strings."""
+    new = _words(goal)
+    if not new:
+        return False
+    for old in existing:
+        cur = _words(old)
+        if not cur:
+            continue
+        if len(new & cur) / len(new | cur) >= threshold:
+            return True
+    return False
+
+
 async def execute_decisions(meeting: Meeting) -> list[str]:
     """Execute every decision in `meeting`. Returns human-readable action log."""
     company = get_company() or Company()
@@ -89,6 +114,17 @@ async def execute_decisions(meeting: Meeting) -> list[str]:
         dtype = d.get("type")
 
         if dtype == "build_store":
+            # Meeting decisions are charter-AWARE (the prompt shows company.goals)
+            # but were never charter-BOUND — the LLM could still decide build_store
+            # (a whole new store) during the single-store, pre-first-sale phase.
+            # Hard-gate here so it can't, regardless of which caller reached this
+            # (org_tick's meeting cycle, or a CEO heartbeat turn) — same flag
+            # _sourcing_tick respects, since a second store is exactly the kind of
+            # expansion work Nova's charter rules out before sale #1.
+            if company.daemon.get("sourcing_paused"):
+                actions.append(f"build_store({d.get('niche')}) skipped — sourcing paused (single-store, pre-first-sale phase)")
+                agent_log(f"🚫 build_store skipped — sourcing paused: {d.get('niche')}", "warning")
+                continue
             # Serialise heavy pipeline work — the CJ sourcing step is globally
             # rate-limited (1 QPS), so concurrent runs jam behind it and look
             # "stuck". One pipeline run at a time.
@@ -113,6 +149,13 @@ async def execute_decisions(meeting: Meeting) -> list[str]:
             if store_id not in valid_ids:
                 actions.append(f"boost_store skipped — unknown store_id {store_id!r}")
                 agent_log(f"boost_store skipped — unknown store {store_id!r}", "warning")
+                continue
+            # MARKETING spends real ad budget (and its task text allows adding
+            # products "if the catalog is short") — gate it like build_store.
+            # MONITOR is just a health check, no spend, no scope creep — let it run.
+            if mode == "MARKETING" and company.daemon.get("sourcing_paused"):
+                actions.append(f"boost_store({store_id[:8]}, MARKETING) skipped — sourcing paused (pre-first-sale phase)")
+                agent_log(f"🚫 boost_store MARKETING skipped — sourcing paused: {store_id[:8]}", "warning")
                 continue
             if pipeline_run_active():
                 actions.append(f"boost_store({store_id[:8]}) deferred — a run is already in progress")
@@ -150,8 +193,7 @@ async def execute_decisions(meeting: Meeting) -> list[str]:
             )
             await onboard_agent(agent, mentor_name, company)
             save_agent(agent)
-            company.headcount += 1
-            save_company(company)
+            company = update_company(lambda c: setattr(c, "headcount", c.headcount + 1))
             actions.append(f"hire({agent.role}) → {agent.name}")
             agent_log(f"✅ Hired {agent.name} as {agent.role} — skill: {agent.skill[:60]}", "success")
             await post_hire(agent.name, agent.role, agent.skill, mentor_name)
@@ -161,23 +203,65 @@ async def execute_decisions(meeting: Meeting) -> list[str]:
             actions.append(f"train({d.get('target_role')}, {d.get('topic')})"
                            + (" ✓" if lesson else " — no target"))
 
+        elif dtype == "assign":
+            # The CEO hands real work to a real teammate — the one action that
+            # turns "manager" from a job title into a job. Runs the same
+            # execution paths a Telegram message from Itzik would.
+            from src.org.conversation import dispatch_to_agent
+            who = str(d.get("to") or "").strip()
+            task = str(d.get("task") or "").strip()
+            if not who or not task:
+                actions.append("assign skipped — needs both 'to' and 'task'")
+                continue
+            result = await dispatch_to_agent(who, task, requested_by=mentor_name)
+            actions.append(result)
+            agent_log(f"📮 {mentor_name} → {who}: {task[:70]}", "action")
+
         elif dtype == "set_goal":
             goal = d.get("goal", "").strip()
-            if goal and goal not in company.goals:
-                company.goals.append(goal)
-                company.goals = company.goals[-12:]
-                save_company(company)
+            if goal and _is_restated_goal(goal, company.goals):
+                # The CEO re-deriving a goal she already set is how the
+                # PROOF-GATE loop ran for 25 days: set_goal → company.goals →
+                # back into her prompt → set_goal again. Drop the restatement.
+                agent_log(f"Dropped restated goal (already set): {goal[:60]}", "info")
+            elif goal and goal not in company.goals:
+                def _add_goal(c: Company, goal: str = goal) -> None:
+                    if goal not in c.goals:
+                        c.goals.append(goal)
+                        c.goals = c.goals[-12:]
+                company = update_company(_add_goal)
                 actions.append(f"set_goal: {goal}")
                 agent_log(f"🎯 New goal: {goal}", "info")
 
         elif dtype == "record_lesson":
             lesson = d.get("lesson", "").strip()
+            target_role = str(d.get("target_role") or "").strip()
             if lesson and _is_false_doom(lesson):
                 agent_log(f"Dropped false-doom lesson (you HAVE full access): {lesson[:50]}", "info")
+            elif lesson and not target_role and _is_restated_goal(lesson, company.lessons):
+                # Same restatement loop as set_goal — 34 of 40 stored lessons were
+                # one lesson repeated in slightly different words.
+                agent_log(f"Dropped restated lesson (already known): {lesson[:50]}", "info")
+            elif lesson and target_role:
+                # Targeted lesson (e.g. Nova catching one agent drifting) —
+                # goes into THAT agent's own memory, not the company-wide list, so
+                # it actually changes that agent's future behavior instead of
+                # getting buried in everyone else's lesson feed too.
+                target = resolve_agent(target_role, action="record_lesson")
+                if target is None:
+                    actions.append(f"record_lesson({target_role}) — no target")
+                else:
+                    def _add_agent_lesson(a, lesson: str = lesson) -> None:
+                        a.memory.setdefault("lessons", [])
+                        a.memory["lessons"] = (a.memory["lessons"] + [lesson])[-40:]
+                    update_agent(target.agent_id, _add_agent_lesson)
+                    actions.append(f"record_lesson({target.name}): {lesson[:50]}")
+                    agent_log(f"📝 Lesson for {target.name}: {lesson}", "info")
             elif lesson:
-                company.lessons.append(lesson)
-                company.lessons = company.lessons[-40:]
-                save_company(company)
+                def _add_lesson(c: Company, lesson: str = lesson) -> None:
+                    c.lessons.append(lesson)
+                    c.lessons = c.lessons[-40:]
+                company = update_company(_add_lesson)
                 actions.append(f"record_lesson: {lesson[:50]}")
                 agent_log(f"📝 Lesson: {lesson}", "info")
 
@@ -196,9 +280,10 @@ async def execute_decisions(meeting: Meeting) -> list[str]:
                 agent_log(f"Dropped false blocker (access/funnel is fine): {issue[:50]}", "info")
             elif issue:
                 note = f"⚠️ BLOCKER: {issue}"
-                company.lessons.append(note)
-                company.lessons = company.lessons[-40:]
-                save_company(company)
+                def _add_blocker(c: Company, note: str = note) -> None:
+                    c.lessons.append(note)
+                    c.lessons = c.lessons[-40:]
+                company = update_company(_add_blocker)
                 actions.append(f"flag_blocker: {issue[:50]}")
                 agent_log(f"🚩 Blocker flagged: {issue}", "warning")
                 await post_to_telegram(

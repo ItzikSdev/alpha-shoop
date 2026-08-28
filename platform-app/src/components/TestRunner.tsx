@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { APIEndpoint, MCPTool } from '../types';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000`;
 
 interface EndpointRunnerProps {
   endpoint: APIEndpoint;

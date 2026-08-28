@@ -17,6 +17,7 @@ Public surface:
 from src.org.models import (
     Agent,
     Company,
+    ConcurrencyError,
     Meeting,
     add_meeting,
     get_agent,
@@ -28,12 +29,14 @@ from src.org.models import (
     new_meeting,
     save_agent,
     save_company,
+    update_agent,
+    update_company,
 )
 
 __all__ = [
-    "Agent", "Company", "Meeting",
+    "Agent", "Company", "Meeting", "ConcurrencyError",
     "init_org_tables",
-    "list_agents", "get_agent", "save_agent", "new_agent",
+    "list_agents", "get_agent", "save_agent", "new_agent", "update_agent",
     "add_meeting", "list_meetings", "new_meeting",
-    "get_company", "save_company",
+    "get_company", "save_company", "update_company",
 ]

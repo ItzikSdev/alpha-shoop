@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { apiGet, apiPost, apiPatch } from '../api/client';
+import { apiGet, apiPost, apiPatch, apiDelete } from '../api/client';
 import {
   listStorefronts,
   runStorefront,
@@ -272,8 +272,7 @@ export function StoresPage() {
   async function handleDelete(store_id: string) {
     setDeleteId(store_id);
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/stores/${store_id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Delete failed');
+      await apiDelete(`/stores/${store_id}`);
       await loadStores();
     } catch {
       setError('Failed to delete store');
@@ -781,7 +780,7 @@ export function StoresPage() {
                   <div className="text-gray-600 mb-0.5">Localhost dev URL</div>
                   {storefronts[store.store_id]?.running && storefronts[store.store_id]?.port ? (
                     <a
-                      href={`http://localhost:${storefronts[store.store_id]?.port}`}
+                      href={`${window.location.protocol}//${window.location.hostname}:${storefronts[store.store_id]?.port}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-indigo-400 hover:underline font-mono"

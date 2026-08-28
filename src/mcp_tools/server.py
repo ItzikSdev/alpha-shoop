@@ -7,14 +7,21 @@ expose CJ data the REST subset can't reach (live inventory-by-country, tracking)
 """
 from __future__ import annotations
 from typing import Any
-from src.mcp_tools import sourcing, market, shopify, ads, fulfillment, cj_connect, paypal, cloudflare, shopify_design, store_scan, design_files, variant_backfill, finance
-from src import cj_mcp
+from src.mcp_tools import sourcing, market, shopify, ads, fulfillment, cj_connect, paypal, cloudflare, shopify_design, store_scan, design_files, variant_backfill, finance, org_docs
+from src import cj_mcp, tiktok_mcp
 
 _TOOLS: dict[str, Any] = {
     "search_trending_products": sourcing.search_trending_products,
     "get_shipping_cost": sourcing.get_shipping_cost,
     "search_market_prices": market.search_market_prices,
+    "search_web": market.search_web,
     "check_google_trends": market.check_google_trends,
+    # Nova's grounding context — read-only, no matching write tool (see org_docs.py).
+    "read_org_docs": org_docs.read_org_docs,
+    # Reel: read-only media status (no render capability) — see conversation.py's
+    # _agent_act_video, which routes a status/check question here instead of
+    # falling back to a non-answer.
+    "check_media_status": shopify.check_media_status,
     "create_shopify_product": shopify.create_shopify_product,
     "update_inventory": shopify.update_inventory,
     "create_google_campaign": ads.create_google_campaign,
@@ -25,6 +32,13 @@ _TOOLS: dict[str, Any] = {
     # live warehouse stock by destination country + shipment tracking.
     "cj_mcp_product_inventory": cj_mcp.get_product_inventory,
     "cj_mcp_tracking_info": cj_mcp.get_tracking_info,
+    # TikTok Ads via REAL MCP (src/tiktok_mcp) — our own server wrapping
+    # TikTok's Marketing API v1.3, run as a local stdio subprocess. Read-only.
+    "tiktok_ads_login": tiktok_mcp.login,
+    "tiktok_ads_complete_auth": tiktok_mcp.complete_auth,
+    "tiktok_ads_auth_status": tiktok_mcp.auth_status,
+    "tiktok_ads_campaigns": tiktok_mcp.list_campaigns,
+    "tiktok_ads_report": tiktok_mcp.get_ads_report,
     # CJ ⇄ Shopify product connection (enables the CJ app to auto-fulfill)
     "list_cj_shops": cj_connect.list_cj_shops,
     "connect_product": cj_connect.connect_product,

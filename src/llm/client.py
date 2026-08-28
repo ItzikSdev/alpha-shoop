@@ -51,6 +51,7 @@ _ROLE_MODEL: dict[str, str] = {
     "builder":         "alpha/local-coder",    # local Ollama qwen3.6:35b — free, no budget cap risk
     "video_producer":  "alpha/worker-fast",   # Haiku — Reel's chat replies (video generation itself already runs local: qwen3 script + Wan2.2)
     "support_email":   "alpha/worker-fast",   # Haiku — Nora's drafted customer replies
+    "advisor":         "alpha/local-fast",    # local Ollama — weekly checks, ~free, no strategy-grade reasoning needed
 }
 
 # ── Sensible defaults per role ────────────────────────────────────────────────
@@ -70,6 +71,7 @@ _ROLE_DEFAULTS: dict[str, dict] = {
     "builder":         {"temperature": 0.2, "max_tokens": 8000},
     "video_producer":  {"temperature": 0.4, "max_tokens": 3072},
     "support_email":   {"temperature": 0.3, "max_tokens": 500},
+    "advisor":         {"temperature": 0.4, "max_tokens": 1200},
 }
 
 # Org roles that the ORG_LOCAL_LLM=1 toggle reroutes to the local model to save
@@ -79,7 +81,7 @@ _ROLE_DEFAULTS: dict[str, dict] = {
 _ORG_ROLES = {
     "executive", "standup", "developer", "builder",
     "ceo", "product_hunter", "ux_content", "shopify_dev", "growth_marketer", "video_producer",
-    "support_email", "fulfillment",
+    "support_email", "fulfillment", "advisor",
 }
 _LOCAL_ALIAS = "alpha/local-fast"
 

@@ -23,11 +23,10 @@ from src.org.models import (
     Agent,
     Company,
     Meeting,
-    get_company,
     list_agents,
     list_meetings,
-    save_agent,
-    save_company,
+    update_agent,
+    update_company,
 )
 from src.tracing import agent_log
 
@@ -70,13 +69,57 @@ async def onboard_agent(agent: Agent, mentor_name: str, company: Company) -> Non
     agent_log(f"🎓 Onboarded {agent.name} ({agent.role}) — mentor: {mentor_name}", "success")
 
 
+def resolve_agent(target: str, action: str = "train") -> Agent | None:
+    """Loosely resolve a decision's target to an active Agent.
+
+    `target_role` fields in train/record_lesson decisions are LLM-generated —
+    the meeting/heartbeat prompts show each teammate as "Name (Role, team=...)"
+    so the model just as often names the AGENT ("Ava", "Sol") as it does the
+    exact DB role string ("CEO", "Product Sourcer & Copywriter"). A strict
+    `a.role == target_role` check therefore missed the common case, not the
+    edge case: 226 of 246 historical train_agent calls failed this way, 103 of
+    them naming a display name for a still-active agent. Try role, then name,
+    both case-insensitively, before giving up.
+
+    Fails LOUDLY (not silently) when nothing matches: distinguishes a target
+    that names a DEPARTED agent (role/charter changed or agent retired — never
+    going to match again) from one that names nobody at all (probably a
+    hallucinated role/name), so the log is actionable instead of a generic
+    "no target" that looks identical either way.
+    """
+    target = (target or "").strip()
+    if not target:
+        agent_log(f"{action}: called with no target", "warning")
+        return None
+    active = list_agents(active_only=True)
+    for a in active:
+        if a.role == target:
+            return a
+    for a in active:
+        if a.role.lower() == target.lower():
+            return a
+    for a in active:
+        if a.name.lower() == target.lower():
+            return a
+    departed = next(
+        (a for a in list_agents(active_only=False)
+         if a.status != "active" and (a.name.lower() == target.lower() or a.role.lower() == target.lower())),
+        None,
+    )
+    if departed:
+        agent_log(
+            f"{action}: target {target!r} matches DEPARTED agent {departed.name} "
+            f"({departed.role}) — no longer on the active roster, dropping", "warning")
+    else:
+        agent_log(f"{action}: {target!r} matches no agent, active or departed — dropping", "warning")
+    return None
+
+
 async def train_agent(target_role: str, topic: str) -> str | None:
     """A senior agent trains an existing junior on a topic — upgrades their skill."""
-    targets = [a for a in list_agents(active_only=True) if a.role == target_role]
-    if not targets:
-        agent_log(f"train: no active agent with role {target_role!r}", "warning")
+    target = resolve_agent(target_role, action="train")
+    if target is None:
         return None
-    target = targets[0]
     lesson = f"Trained on '{topic}': apply it within your role."
     try:
         from langchain_core.messages import HumanMessage, SystemMessage
@@ -90,9 +133,10 @@ async def train_agent(target_role: str, topic: str) -> str | None:
         lesson = str(resp.content).strip()[:300]
     except Exception:
         pass
-    target.memory.setdefault("lessons", [])
-    target.memory["lessons"] = _append_capped(target.memory["lessons"], lesson)
-    save_agent(target)
+    def _add_lesson(a: Agent, lesson: str = lesson) -> None:
+        a.memory.setdefault("lessons", [])
+        a.memory["lessons"] = _append_capped(a.memory["lessons"], lesson)
+    update_agent(target.agent_id, _add_lesson)
     agent_log(f"🎓 {target.name} ({target.role}) trained on '{topic}'", "success")
     return lesson
 
@@ -131,22 +175,24 @@ async def run_retrospective() -> str | None:
         f"${prior_rev:.2f} → ${now_rev:.2f} ({verdict})."
     )
 
-    company = get_company() or Company()
-    # Treasury accrues from real revenue observed over the company's life.
-    company.treasury_usd = round(company.treasury_usd + max(delta, 0.0), 2)
-    company.lessons = _append_capped(company.lessons, lesson)
-    save_company(company)
+    def _accrue(c: Company, delta: float = delta, lesson: str = lesson) -> None:
+        # Treasury accrues from real revenue observed over the company's life.
+        c.treasury_usd = round(c.treasury_usd + max(delta, 0.0), 2)
+        c.lessons = _append_capped(c.lessons, lesson)
+    update_company(_accrue)
 
     # Credit/teach the agents who were in that meeting (mutual learning).
     attendee_ids = set(last.attendees)
     for a in list_agents(active_only=True):
         if a.agent_id in attendee_ids:
-            a.memory.setdefault("lessons", [])
-            a.memory["lessons"] = _append_capped(a.memory["lessons"], lesson)
-            a.perf["decisions_reviewed"] = a.perf.get("decisions_reviewed", 0) + len(actioned)
-            a.perf["revenue_attributed"] = round(
-                a.perf.get("revenue_attributed", 0.0) + max(delta, 0.0), 2)
-            save_agent(a)
+            def _credit(agent: Agent, lesson: str = lesson, delta: float = delta,
+                        actioned_n: int = len(actioned)) -> None:
+                agent.memory.setdefault("lessons", [])
+                agent.memory["lessons"] = _append_capped(agent.memory["lessons"], lesson)
+                agent.perf["decisions_reviewed"] = agent.perf.get("decisions_reviewed", 0) + actioned_n
+                agent.perf["revenue_attributed"] = round(
+                    agent.perf.get("revenue_attributed", 0.0) + max(delta, 0.0), 2)
+            update_agent(a.agent_id, _credit)
 
     agent_log(f"🔁 Retrospective: {lesson}", "info")
     return lesson
@@ -158,13 +204,19 @@ def fold_teambuilding_into_culture(meeting: Meeting) -> None:
     """Promote a team-building meeting's lessons into shared company culture."""
     if meeting.kind != "teambuilding":
         return
-    company = get_company() or Company()
-    values = company.culture.setdefault("values", [])
-    for d in meeting.decisions:
-        if d.get("type") in ("record_lesson", "set_goal"):
-            text = d.get("lesson") or d.get("goal")
-            if text and text not in values:
+    new_texts = [
+        d.get("lesson") or d.get("goal")
+        for d in meeting.decisions
+        if d.get("type") in ("record_lesson", "set_goal") and (d.get("lesson") or d.get("goal"))
+    ]
+
+    def _fold(c: Company, new_texts: list = new_texts) -> None:
+        values = c.culture.setdefault("values", [])
+        for text in new_texts:
+            if text not in values:
                 values.append(text)
-    company.culture["values"] = values[-12:]
-    save_company(company)
-    agent_log(f"🤝 Team-building folded into culture ({len(values)} values)", "success")
+        c.culture["values"] = values[-12:]
+
+    company = update_company(_fold)
+    n_values = len(company.culture.get("values", []))
+    agent_log(f"🤝 Team-building folded into culture ({n_values} values)", "success")

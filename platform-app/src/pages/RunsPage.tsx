@@ -138,7 +138,7 @@ const DEFAULT_TASK = PRESETS[0].task;
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const API_BASE = (import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL
-  ?? 'http://localhost:8000/api/v1';
+  ?? `${window.location.protocol}//${window.location.hostname}:8000/api/v1`;
 
 function fmt(n: number): string { return n.toLocaleString(); }
 function fmtMs(ms: number): string { return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${Math.round(ms)}ms`; }

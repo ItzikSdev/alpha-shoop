@@ -381,14 +381,15 @@ def _record_nora_lesson(lesson: str) -> None:
     if not lesson:
         return
     try:
-        from src.org.models import list_agents, save_agent
+        from src.org.models import list_agents, update_agent
+        def _add_lesson(a, lesson: str = lesson) -> None:
+            lessons = a.memory.get("lessons", [])
+            if lesson not in lessons:
+                lessons.append(lesson)
+            a.memory["lessons"] = lessons[-20:]
         for a in list_agents(active_only=True):
             if a.name == "Nora":
-                lessons = a.memory.get("lessons", [])
-                if lesson not in lessons:
-                    lessons.append(lesson)
-                a.memory["lessons"] = lessons[-20:]
-                save_agent(a)
+                update_agent(a.agent_id, _add_lesson)
                 break
     except Exception:
         logger.warning("Couldn't record Nora's lesson", exc_info=True)
@@ -512,7 +513,7 @@ async def process_central_inbox(max_results: int = 10) -> list[dict]:
     forever. A transient draft failure (e.g. the LLM was briefly down) is
     NOT marked, so it's retried on the next poll. Returns one result dict
     per message handled, for logging/narration to Telegram."""
-    from src.org.models import get_company, save_company
+    from src.org.models import get_company, update_company
     results: list[dict] = []
     company = get_company()
     newly_processed: list[str] = []
@@ -557,6 +558,5 @@ async def process_central_inbox(max_results: int = 10) -> list[dict]:
             "sent": bool(send_res.get("ok")), "error": send_res.get("error"),
         })
     if newly_processed and company:
-        _mark_ids_processed(company, newly_processed)
-        save_company(company)
+        update_company(lambda c: _mark_ids_processed(c, newly_processed))
     return results

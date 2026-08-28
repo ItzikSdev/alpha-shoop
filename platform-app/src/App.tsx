@@ -10,7 +10,7 @@ import { Technologies } from './pages/Technologies';
 import { FinancePage } from './pages/FinancePage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
 import { AgentLogsPage } from './pages/AgentLogsPage';
-import { AgentActivityPage } from './pages/AgentActivityPage';
+import { GraphPage } from './pages/GraphPage';
 import { StoresPage } from './pages/StoresPage';
 import { VideosPage } from './pages/VideosPage';
 import { RagPage } from './pages/RagPage';
@@ -52,7 +52,12 @@ export default function App() {
             <Route path="/finance" element={<FinancePage />} />
             <Route path="/integrations" element={<IntegrationsPage />} />
             <Route path="/agent-logs" element={<AgentLogsPage />} />
-            <Route path="/agents/live" element={<AgentActivityPage />} />
+            {/* /agents/live (the step-by-step run timeline) was removed 2026-08-09
+                at the owner's request — the Knowledge Graph replaced it as the
+                agent view. Anyone following an old bookmark lands on the graph
+                rather than a blank 404. */}
+            <Route path="/agents/live" element={<Navigate to="/graph" replace />} />
+            <Route path="/graph" element={<GraphPage />} />
             <Route path="/stores" element={<StoresPage />} />
             <Route path="/videos" element={<VideosPage />} />
             <Route path="/rag" element={<RagPage />} />

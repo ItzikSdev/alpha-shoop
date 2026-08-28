@@ -24,4 +24,4 @@ set +a
 export REDIS_URL="${REDIS_URL_HOST_OVERRIDE:-redis://localhost:6379/0}"
 unset DATABASE_URL   # host-run uses the SQLite path (TRACES_DB_PATH), not the Docker postgres host
 
-exec .venv/bin/uvicorn src.main:app --host 127.0.0.1 --port 8000
+exec .venv/bin/uvicorn src.main:app --host "${API_HOST:-127.0.0.1}" --port 8000

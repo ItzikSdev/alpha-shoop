@@ -31,7 +31,7 @@ from src.org.models import (
     get_agent,
     get_company,
     list_agents,
-    save_agent,
+    update_agent,
 )
 from src.org.seed import seed_founding_team
 from src.org.telegram import post_as
@@ -262,15 +262,15 @@ async def linus_delegates(force: bool = False) -> dict | None:
         return None
 
     # Roll the just-finished task into history so Linus won't re-pick it.
-    grace = get_agent(grace.agent_id) or grace
-    history = grace.memory.get("task_history", [])
-    if current and current not in history:
-        history.insert(0, current)
-    grace.memory["task_history"] = history[:8]
-    grace.memory["assigned_task"] = task
-    grace.memory["assigned_at"] = _now()
-    grace.memory["turns_on_task"] = 0
-    save_agent(grace)
+    def _assign(a: Agent, current: str = current, task: str = task) -> None:
+        history = a.memory.get("task_history", [])
+        if current and current not in history:
+            history.insert(0, current)
+        a.memory["task_history"] = history[:8]
+        a.memory["assigned_task"] = task
+        a.memory["assigned_at"] = _now()
+        a.memory["turns_on_task"] = 0
+    grace = update_agent(grace.agent_id, _assign)
 
     by = linus.name if linus else "Linus"
     await post_as(by, "CTO", note or f"📋 {grace.name}, focus next on: {task}")

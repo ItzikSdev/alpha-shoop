@@ -124,3 +124,62 @@ async def execute_shopify(method: str, path: str, body: dict | None) -> dict:
         return {"status": 401, "ok": False, "error": "shopify token invalid (401)",
                 "reauth_url": reauth_url, "body": last.text[:500]}
     return {"status": last.status_code, "ok": last.status_code < 400, "body": last.text[:1500]}
+
+
+async def execute_shopify_graphql(query: str, variables: dict | None) -> dict:
+    """Run a GraphQL query/mutation against the Admin API, same token discovery
+    and 401 self-heal as execute_shopify(). Added because the REST-only path
+    above was pushing agents toward inventing REST endpoints that don't exist
+    (e.g. a product-search-by-title endpoint Shopify's REST API has never had)
+    and, worse, toward calling products/{id}.json with a CJ supplier product id
+    instead of a real Shopify product id — both produced a false "doesn't
+    exist" 404 for a product that was actually live. GraphQL's `products(query:
+    "title:...")` is the correct, existing pattern for exactly that lookup
+    (see `_shopify_gql` in src/mcp_tools/shopify.py) — give agents a way to
+    reach it here instead of hand-rolling REST."""
+    import httpx
+    from src.config import get_settings
+    from src.stores import list_stores
+    try:
+        stores = list_stores()
+    except Exception:
+        stores = []
+    settings = get_settings()
+    domain = stores[0].shopify_domain if stores else settings.shopify_store_domain
+    if not domain:
+        return {"error": "no store"}
+
+    candidates: list[str] = []
+    if stores and stores[0].shopify_access_token:
+        candidates.append(stores[0].shopify_access_token)
+    if settings.shopify_access_token and settings.shopify_access_token not in candidates:
+        candidates.append(settings.shopify_access_token)
+    if not candidates:
+        return {"error": "no shopify token configured"}
+
+    url = f"https://{domain}/admin/api/2024-07/graphql.json"
+    last = None
+    async with httpx.AsyncClient(timeout=25) as c:
+        for token in candidates:
+            r = await c.post(url, headers={"X-Shopify-Access-Token": token},
+                             json={"query": query, "variables": variables or {}})
+            last = r
+            if r.status_code != 401:
+                break
+    if last is not None and last.status_code == 401:
+        try:
+            from src.mcp_tools.shopify_auth import escalate_shopify_401
+            reauth_url = await escalate_shopify_401(domain)
+        except Exception:
+            reauth_url = ""
+        return {"status": 401, "ok": False, "error": "shopify token invalid (401)",
+                "reauth_url": reauth_url, "body": last.text[:500]}
+    body = last.text[:1500]
+    ok = last.status_code < 400
+    if ok:
+        try:
+            data = last.json()
+            ok = not data.get("errors")
+        except Exception:
+            pass
+    return {"status": last.status_code, "ok": ok, "body": body}

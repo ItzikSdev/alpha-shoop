@@ -252,20 +252,23 @@ async def _get_or_create_agent_topic(name: str) -> int | None:
     once. General is reserved for meeting/status recaps (post_to_telegram),
     never per-agent chatter. None if topics aren't usable (not a forum-mode
     group, Ava not admin, etc.) — callers fall back to the plain main topic."""
-    from src.org.models import get_company, save_company
+    from src.org.models import Company, get_company, update_company
     company = get_company()
     if not company:
         return None
-    topics = company.daemon.setdefault("agent_topics", {})
+    topics = company.daemon.get("agent_topics", {})
     existing = topics.get(name)
     if existing:
         return existing
     try:
         topic = await _get_bot(_topic_creator_token()).create_forum_topic(chat_id=_chat_id(), name=name)
-        topics[name] = topic.message_thread_id
-        company.daemon["agent_topics"] = topics
-        save_company(company)
-        return topic.message_thread_id
+        thread_id = topic.message_thread_id
+        def _save_topic(c: Company, name: str = name, thread_id: int = thread_id) -> None:
+            topics = c.daemon.setdefault("agent_topics", {})
+            topics[name] = thread_id
+            c.daemon["agent_topics"] = topics
+        update_company(_save_topic)
+        return thread_id
     except Exception as exc:
         logger.warning("Couldn't create a Telegram topic for %s: %s", name, exc)
         return None
@@ -358,11 +361,13 @@ async def post_meeting(kind: str, notes: str, decisions: list[dict], actions: li
     return await post_to_telegram("\n".join(lines))
 
 
-async def post_video_as(name: str, role: str, file_path: str, caption: str) -> str:
+async def post_video_as(name: str, role: str, file_path: str, caption: str,
+                        review_id: str = "") -> str:
     """Upload a local video file to Telegram as a specific agent, for human
-    review (the video pipeline's approve/reject gate). Returns the sent
-    message id (stored so a later approve/reject can reference it), or "" on
-    failure/not-configured."""
+    review (the video pipeline's approve/reject gate). Pass `review_id` (the
+    ProductVideo id) to attach ✅/❌ buttons that actually decide it. Returns the
+    sent message id (stored so a later approve/reject can reference it), or ""
+    on failure/not-configured."""
     from pathlib import Path
     if not telegram_enabled():
         logger.info("post_video_as: Telegram not configured — skipping upload")
@@ -381,6 +386,7 @@ async def post_video_as(name: str, role: str, file_path: str, caption: str) -> s
             msg = await bot.send_video(
                 chat_id=_chat_id(), video=f, caption=full_caption[:1024],
                 parse_mode=ParseMode.MARKDOWN, message_thread_id=_main_thread_id(),
+                reply_markup=review_keyboard("v", review_id) if review_id else None,
             )
         log_message(name, role, f"[video] {caption}")
         return str(msg.message_id)
@@ -390,7 +396,8 @@ async def post_video_as(name: str, role: str, file_path: str, caption: str) -> s
 
 
 # ── Inbound: the bot that reads YOUR messages ───────────────────────────────
-async def post_photo_group_as(name: str, role: str, image_paths: list[str], caption: str) -> str:
+async def post_photo_group_as(name: str, role: str, image_paths: list[str], caption: str,
+                              review_id: str = "") -> str:
     """Upload local image files to Telegram as an album (one message with multiple
     photos), as a specific agent, for human review — Reel's image-pipeline
     approve/reject gate. Posting the original product photo + the generated
@@ -427,6 +434,19 @@ async def post_photo_group_as(name: str, role: str, image_paths: list[str], capt
         finally:
             for f in files:
                 f.close()
+        # An album can't carry an inline keyboard (Telegram allows reply_markup on
+        # single messages only), so the ✅/❌ buttons ride on a short follow-up
+        # message that replies to the album.
+        if review_id:
+            try:
+                await bot.send_message(
+                    chat_id=_chat_id(), text="Approve this image for the store?",
+                    message_thread_id=_main_thread_id(),
+                    reply_to_message_id=messages[0].message_id if messages else None,
+                    reply_markup=review_keyboard("i", review_id),
+                )
+            except TelegramError as exc:
+                logger.warning("review buttons for image %s failed: %s", review_id, exc)
         log_message(name, role, f"[photo] {caption}")
         return str(messages[0].message_id) if messages else ""
     except TelegramError as exc:
@@ -479,6 +499,79 @@ async def _keep_typing(bot, chat_id, thread_id, stop: asyncio.Event) -> None:
 def _is_authorized(update) -> bool:
     allowed = _allowed_user_id()
     return bool(allowed and update.effective_user and update.effective_user.id == allowed)
+
+
+# ── Media review: ✅/❌ buttons on everything Reel posts ──────────────────────
+# Reel posted every generated image/video to Telegram "for approval", but the bot
+# had NO approve path at all — no inline buttons, no callback handler, no
+# /approve command. Nine finished videos sat in `pending_review` because the
+# owner's approvals had nowhere to land, and the media never reached the store.
+# `callback_data` is capped at 64 bytes by Telegram; "v:a:<32-hex>" is 36.
+
+def review_keyboard(kind: str, item_id: str):
+    """Inline ✅ Approve / ❌ Reject keyboard for a video ('v') or image ('i')."""
+    try:
+        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    except ImportError:
+        return None
+    return InlineKeyboardMarkup([[
+        InlineKeyboardButton("✅ Approve", callback_data=f"{kind}:a:{item_id}"),
+        InlineKeyboardButton("❌ Reject", callback_data=f"{kind}:r:{item_id}"),
+    ]])
+
+
+async def _handle_review_callback(update, context) -> None:
+    """Run the approve/reject the owner tapped, then rewrite the caption with the
+    real outcome — including the failure text, so a Shopify attach error is
+    visible where the decision was made instead of only in the database."""
+    query = update.callback_query
+    if query is None:
+        return
+    if not _is_authorized(update):
+        await query.answer("Not authorized", show_alert=True)
+        return
+    try:
+        kind, action, item_id = (query.data or "").split(":", 2)
+    except ValueError:
+        await query.answer("Malformed button")
+        return
+
+    await query.answer("Working…")
+    try:
+        if kind == "v":
+            from src.api.routes.videos import approve_video, reject_video
+            result = await (approve_video(item_id) if action == "a" else reject_video(item_id))
+        elif kind == "i":
+            from src.api.routes.images import approve_image, reject_image
+            result = await (approve_image(item_id) if action == "a" else reject_image(item_id))
+        else:
+            return
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Review callback failed for %s %s", kind, item_id)
+        result = {"error": str(exc)}
+
+    status = result.get("status") or ""
+    err = result.get("error") or ""
+    if err:
+        note = f"⚠️ {err}"
+    elif status == "published":
+        note = "✅ Approved — live on the store"
+    elif status == "approved":
+        note = "✅ Approved, but the Shopify upload failed — retry needed"
+    elif status == "rejected":
+        note = "❌ Rejected"
+    else:
+        note = f"status: {status or 'unknown'}"
+
+    base = (query.message.caption if query.message and query.message.caption else "") or ""
+    try:
+        # Drop the buttons so the same decision can't be submitted twice.
+        await query.edit_message_caption(caption=f"{base}\n\n{note}"[:1024], reply_markup=None)
+    except Exception:  # noqa: BLE001
+        try:
+            await query.edit_message_reply_markup(reply_markup=None)
+        except Exception:  # noqa: BLE001
+            pass
 
 
 async def _handle_start(update, context) -> None:
@@ -539,6 +632,30 @@ async def _handle_manager(update, context) -> None:
         await typing_task
 
 
+async def _handle_report(update, context) -> None:
+    """/report — on-demand Daily CEO Report from Ava (Revenue, TikTok ad
+    spend/ROAS, bottlenecks, executed agent commands). The same thing that
+    also fires automatically once a day, see src/telegram/ceo_report.py."""
+    if not _is_authorized(update):
+        return
+    bot = context.bot
+    chat_id = _chat_id() or update.effective_chat.id
+    thread_id = _main_thread_id()
+    stop = asyncio.Event()
+    typing_task = asyncio.create_task(_keep_typing(bot, chat_id, thread_id, stop))
+    try:
+        from src.telegram.ceo_report import post_daily_ceo_report
+        res = await post_daily_ceo_report(label="On-demand CEO report")
+        if not res.get("posted"):
+            await _send("⚠️ Couldn't post the report.", thread_id=thread_id)
+    except Exception as exc:
+        logger.exception("/report command failed")
+        await _send(f"⚠️ Something went wrong: {exc}", thread_id=thread_id)
+    finally:
+        stop.set()
+        await typing_task
+
+
 async def _handle_message(update, context) -> None:
     if not _is_authorized(update):
         uid = update.effective_user.id if update.effective_user else "?"
@@ -591,17 +708,23 @@ async def _handle_message(update, context) -> None:
 _COMMANDS = (
     ("agents", "List everyone on the roster + what they're doing now"),
     ("manager", "Ask the manager for a status + next-steps report"),
+    ("report", "Ava's Daily CEO Report — revenue, TikTok ads, bottlenecks, agent commands"),
     ("help", "Show this list"),
 )
 
 
 def _build_application():
-    from telegram.ext import Application, CommandHandler, MessageHandler, filters
+    from telegram.ext import (Application, CallbackQueryHandler, CommandHandler,
+                              MessageHandler, filters)
     app = Application.builder().token(_token()).build()
     app.add_handler(CommandHandler("start", _handle_start))
     app.add_handler(CommandHandler("help", _handle_start))
     app.add_handler(CommandHandler("agents", _handle_agents))
     app.add_handler(CommandHandler("manager", _handle_manager))
+    app.add_handler(CommandHandler("report", _handle_report))
+    # ✅/❌ on Reel's media. Registered BEFORE the catch-all message handler so a
+    # button tap is handled as a decision, not routed to an agent as chat.
+    app.add_handler(CallbackQueryHandler(_handle_review_callback, pattern=r"^[vi]:[ar]:"))
     app.add_handler(MessageHandler(filters.TEXT | filters.PHOTO | filters.Document.IMAGE, _handle_message))
     return app
 
@@ -655,12 +778,69 @@ async def start_telegram_bot():
         return None
     logger.warning("Telegram bot polling started")
     asyncio.create_task(_roll_call())
+
+    # Agents with their OWN bot token post under their own identity — and Telegram
+    # delivers a button tap to the bot that SENT that message, not to the main
+    # one. Reel posts every image/video for review, so without a poller on his
+    # token his ✅/❌ buttons were dead: the tap went to a bot nobody was
+    # listening to and simply did nothing. Give every per-agent bot a minimal
+    # callback-only Application so its buttons actually work.
+    #
+    # Tracked in a module-level list, NOT as an attribute on `app`:
+    # telegram.ext.Application defines __slots__, so assigning a new attribute
+    # raises AttributeError and takes the whole server's startup down with it.
+    global _agent_callback_apps
+    _agent_callback_apps = await _start_agent_callback_apps()
     return app
+
+
+_agent_callback_apps: list = []  # per-agent callback pollers, for clean shutdown
+
+
+async def _start_agent_callback_apps() -> list:
+    """One tiny polling Application per distinct per-agent bot token, handling
+    ONLY review callbacks (no commands, no chat) — those still belong to the
+    main bot. Best-effort: a failure here must not stop the app."""
+    from telegram.ext import Application, CallbackQueryHandler
+
+    main = _token()
+    seen: set[str] = {main}
+    apps: list = []
+    for name in ("Ava", "Sol", "Reel", "Nora", "Milo", "Kai", "Nova"):
+        token = os.environ.get(f"TELEGRAM_BOT_TOKEN_{name.upper()}", "").strip()
+        if not token or token in seen:
+            continue
+        seen.add(token)
+        try:
+            sub = Application.builder().token(token).build()
+            sub.add_handler(CallbackQueryHandler(_handle_review_callback, pattern=r"^[vi]:[ar]:"))
+            await sub.initialize()
+            await sub.start()
+            # allowed_updates: only callback_query — these bots must never
+            # consume chat messages, which are the main bot's job.
+            await sub.updater.start_polling(drop_pending_updates=False,
+                                            allowed_updates=["callback_query"])
+            apps.append(sub)
+            logger.warning("Callback poller started for %s's bot", name)
+        except Exception:
+            logger.warning("Couldn't start callback poller for %s", name, exc_info=True)
+    return apps
 
 
 async def stop_telegram_bot(app) -> None:
     if app is None:
         return
+    # Stop the per-agent callback pollers too — a leftover poller keeps holding
+    # getUpdates for that bot and makes the next start fail with a Conflict.
+    global _agent_callback_apps
+    for sub in _agent_callback_apps:
+        try:
+            await sub.updater.stop()
+            await sub.stop()
+            await sub.shutdown()
+        except Exception:
+            logger.warning("Error stopping an agent callback poller", exc_info=True)
+    _agent_callback_apps = []
     try:
         await app.updater.stop()
         await app.stop()

@@ -26,7 +26,18 @@ export function Architecture() {
       <div>
         <h1 className="text-2xl font-bold text-white">Architecture</h1>
         <p className="text-gray-400 text-sm mt-1">
-          Three views: MCP server, full orchestrator pipeline (the 5-role autonomous flow — CEO orchestrates: store setup → UX &amp; Content design/frontend loop → Product Hunter sourcing → Evaluator net-margin self-correction loop (18% VAT + fees, max 3 loops) → Shopify Developer GraphQL push → Growth Marketer ads → fulfillment, sequenced by plain Python — no LLM router), and Draw.io diagram. The full-system view also covers the storefront layer — the platform-app drives the host Storefront Runner (:8788), which uses the official Shopify CLI (`shopify theme pull · dev · push`) to run and deploy each store's Liquid theme from stores/shopify/* — plus the separate price/stock monitor job. Use +/− or Ctrl+scroll to zoom.
+          Four views: MCP server, full system, Draw.io diagram, and Sol's RAG/fulfillment/email
+          plumbing. The company today is a 6-agent org — <strong>Ava</strong> (CEO), <strong>Sol</strong> (sourcing
+          &amp; copy), <strong>Reel</strong> (video), <strong>Nora</strong> (support inbox), <strong>Milo</strong> (fulfillment),
+          <strong> Kai</strong> (TikTok Ads reporting) — that chats over Telegram and acts on a 60-second
+          heartbeat loop, not a per-client pipeline request. A legacy deterministic pipeline
+          (<code className="text-gray-500">src/agents/orchestrator.py</code>) still exists underneath for full
+          store builds; it's reached only via org <code className="text-gray-500">build_store</code>/
+          <code className="text-gray-500">boost_store</code> decisions now, not directly by clients. The
+          full-system view also covers the storefront layer — the platform-app drives the host
+          Storefront Runner (:8788), which uses the official Shopify CLI
+          (`shopify theme pull · dev · push`) to run and deploy each store's Liquid theme from
+          stores/shopify/* — plus the standalone daily CJ stock-sweep job. Use +/− or Ctrl+scroll to zoom.
         </p>
       </div>
 
@@ -92,84 +103,99 @@ export function Architecture() {
 }
 
 const SYSTEM_MERMAID = `graph TB
-    subgraph IN ["Triggers & Auth"]
+    subgraph IN ["Interfaces"]
         direction LR
-        WH["Webhooks\nHMAC SHA-256"]
-        RUN["POST /api/v1/run"]
-        AT["POST /auth/token\nJWT Issuer"]
-        DAEMON["Daemon loop (main.py)\nfires [MONITOR] run per\nactive store on interval"]
+        TG["Telegram\nonly chat interface\n(replaced Slack)"]
+        WH["Shopify webhooks\nHMAC SHA-256"]
+        API["FastAPI :8000\n/org · /images · /videos ..."]
     end
 
-    GW["FastAPI :8000\nJWT · CORS · rate-limit"]
-    IN --> GW
-    DAEMON --> GW
-
-    subgraph PIPE ["Orchestrator — run_pipeline() (plain Python control flow, no LLM router)"]
+    subgraph LOOPS ["main.py lifespan — 8 background loops"]
         direction LR
-        ORC["CEO · Ava\nOrchestrator / router"]
-        SS["Store Setup\nSonnet 4.6\nruns once"]
-        DA["UX & Content · Remy\nDesign Agent · Sonnet 4.6"]
-        FRA["UX & Content · Remy\nFrontend Agent · implements UI"]
-        TS["Product Hunter · Hunter\nTrend Scraper · CJ sourcing"]
-        EV["Evaluator\nnet margin: 18% VAT + fees\nmax_loops=3"]
-        EM["Shopify Developer · Devon\nE-com Manager · GraphQL push"]
-        MA["Growth Marketer · Max\nFB/IG ad blueprint"]
-        FA["Fulfillment\ndeterministic, no LLM"]
-        ORC --> SS
-        SS --> DA
-        DA <-.->|"design loop"| FRA
-        FRA --> TS
-        TS --> EV
-        EV -.->|"reject: self-correct (≤3)"| TS
-        EV -->|"approve"| EM
-        EM --> MA --> FA
+        HB["Heartbeat\nevery 60s"]
+        ORGD["Org daemon\nevery 30s"]
+        SUPL["Support-inbox poll\nevery 120s"]
+        CEOR["CEO report\ndaily 21:00 Asia/Jerusalem"]
+        MGR["Manager check-in\nevery 30min"]
+        LEGD["Legacy single-store daemon\ndisabled by default"]
+        IMGL["Reel image scan\ndisabled by default"]
     end
 
-    GW --> ORC
-
-    THEME["shopify_theme.py\ncolors · hero · marquee · story · nav"]
-    HZ["Horizon Theme\nkgg8n0-k0.myshopify.com"]
-    SS --> THEME --> HZ
-
-    subgraph MCP ["Tool Registry — src/mcp_tools (in-process Python, REST — NOT MCP)"]
+    subgraph ORG ["Org — 6 agents · org_agents / org_company tables"]
         direction LR
-        T1["Sourcing\nCJ REST · >=3 imgs · cap 3×"]
-        T2["Market Data\nSerper / Trends"]
-        T3["Shopify\nGraphQL + REST"]
-        T4["Ads Tools"]
-        T5["Fulfillment"]
+        AVA["Ava · CEO\nrouting · reports · meeting decisions"]
+        SOL["Sol · sourcing & copy\nCJ search → Shopify push"]
+        REEL["Reel · video\nlocal Wan2.2/ComfyUI pipeline"]
+        NORA["Nora · support\ncentral Gmail inbox"]
+        MILO["Milo · fulfillment\norder → CJ → tracking"]
+        KAI["Kai · TikTok Ads\nread-only reporting"]
     end
 
-    TS --> T1 & T2
-    EM --> T3
-    MA --> T4
-    FA --> T5 & T3
+    TG <--> ORG
+    API --> ORG
+    HB --> ORG
+    ORGD --> ORG
+    SUPL --> NORA
+    CEOR --> AVA
+    MGR --> AVA
+    WH --> MILO
+
+    ORG -->|"build_store / boost_store\nmeeting decisions"| PIPE
+    subgraph PIPE ["Legacy pipeline — src/agents/orchestrator.py (still live, no longer client-facing)"]
+        direction LR
+        SS["store_setup"] --> DA["design"] --> FR["frontend"] --> TSN["trend_scraper"] --> EV["evaluator"] --> EM["ecommerce"] --> MA["marketing"] --> FA["fulfillment"]
+    end
+    LEGD -.->|"disabled by default"| PIPE
+
+    subgraph TOOLS ["Per-agent tools"]
+        direction LR
+        CJREST["CJ REST\nsrc/mcp_tools — catalog search"]
+        CJMCP["CJ real MCP\nsrc/cj_mcp — inventory + tracking"]
+        SHOP["Shopify Admin\nGraphQL 2024-07"]
+        TT["TikTok Ads real MCP\nsrc/tiktok_mcp — read-only"]
+        GMAIL["Central Gmail inbox\nsend via Resend"]
+        WAN["Local Wan2.2/ComfyUI\n+ TTS + ffmpeg"]
+    end
+
+    SOL --> CJREST & CJMCP & SHOP
+    KAI --> TT
+    NORA --> GMAIL
+    MILO --> CJREST & SHOP
+    REEL --> WAN
+    PIPE --> SHOP
+    IMGL --> REEL
 
     CJ["CJ Dropshipping"]
-    SERP["Serper"]
-    SHOP["Shopify Admin\nGraphQL 2024-07"]
-    GADS["Google Ads"]
+    SHOPADM["Shopify Admin API"]
+    TIKTOK["TikTok Marketing API"]
+    CJREST & CJMCP --> CJ
+    SHOP --> SHOPADM
+    TT --> TIKTOK
 
-    T1 & T5 --> CJ
-    T2 --> SERP
-    T3 --> SHOP
-    T4 --> GADS
-
-    subgraph SOLBLK ["Sol — single autonomous builder (run_sol_task, Opus)"]
+    subgraph LLM ["Model routing — src/llm/client.py, LiteLLM proxy"]
         direction LR
-        SOL["Sol\ncodes · builds · sources · deploys"]
+        LITELLM["get_llm(role)\nrole → LiteLLM model alias"]
+        CLAUDE["Anthropic Claude\nCEO smart-tier, Sol fast-tier"]
+        QWEN["Local qwen3\ndefault fallback for every role\nwhen ORG_LOCAL_LLM=1 or over budget"]
+        LITELLM --> CLAUDE
+        LITELLM --> QWEN
     end
-    GW --> SOL
-    SOL --> T1 & T3
+    ORG --> LITELLM
+    PIPE --> LITELLM
 
-    subgraph REALMCP ["REAL MCP — src/cj_mcp (JSON-RPC 2.0 / StreamableHTTP)"]
+    subgraph GRAPH ["Knowledge graph — FalkorDB (Stage 1 of 3 built)"]
         direction LR
-        CJMCP["cj_mcp client\ncj_product_inventory · cj_track_shipment"]
-        CJMCPSRV["CJ MCP Server\ndevelopers.cjdropshipping.cn/mcp/&lt;token&gt;"]
-        CJMCP --> CJMCPSRV
+        FALKOR[("alpha_org graph\nAgent → CAN_USE → Tool\nAgent → EXECUTED → Tool\nAgent → ASSIGNED → Agent")]
     end
-    SOL --> CJMCP
-    CJMCPSRV --> CJ
+    ORG -.->|"best-effort, non-blocking"| FALKOR
+
+    subgraph DATA ["Data layer — one shared data/traces.db"]
+        direction LR
+        SQLITE[("SQLite\norg_agents · org_meetings · org_company\nagent_runs · trace runs · product_mappings")]
+        REDIS[("Redis\nRAG: CJ catalog + Sol's playbook")]
+    end
+    ORG --> SQLITE
+    SOL --> REDIS
 
     subgraph SF ["Storefront — Shopify CLI Liquid themes"]
         direction LR
@@ -177,37 +203,31 @@ const SYSTEM_MERMAID = `graph TB
         RUNNER["Storefront Runner\nhost :8788"]
         THEMEDIR["Liquid themes\nstores/shopify/*"]
         CLI["shopify theme\npull · dev · push"]
-        DOCS --> RUNNER
-        RUNNER --> CLI
-        CLI --> THEMEDIR
+        DOCS --> RUNNER --> CLI --> THEMEDIR
     end
+    RUNNER -->|"/stores/{id}/theme-creds"| API
+    CLI --> SHOPADM
 
-    CREDS["FastAPI\n/stores/{id}/theme-creds"]
-    DOCS --> RUNNER
-    RUNNER --> CREDS
-    CREDS --> GW
-    CLI --> SHOP
-
-    subgraph MON ["Price/stock monitor — outside the pipeline"]
+    subgraph MON ["Daily CJ stock sweep — src/org/stock_watch.py, outside the org tick"]
         direction LR
-        MONJOB["check_store_prices()\nmonitoring.py — deterministic,\nno LLM, manually/cron-triggered"]
+        STOCKW["check_store_stock()\nfails closed · 2 consecutive zero-stock\nchecks before removal · cap 3/cycle"]
     end
-    MONJOB --> CJ
-    MONJOB --> SHOP
+    STOCKW --> CJ
+    STOCKW --> SHOPADM
 
     classDef agent fill:#4B0082,stroke:#6d28d9,color:#e2e8f0
-    classDef detagent fill:#1e293b,stroke:#475569,color:#cbd5e1
-    classDef mcp fill:#1e3a5f,stroke:#2563eb,color:#e2e8f0
+    classDef legacy fill:#292524,stroke:#57534e,color:#a8a29e
     classDef ext fill:#450a0a,stroke:#dc2626,color:#fee2e2
-    classDef theme fill:#065f46,stroke:#059669,color:#d1fae5
-    classDef gw fill:#292524,stroke:#78716c,color:#d6d3d1
-    classDef store fill:#312e81,stroke:#6366f1,color:#e0e7ff
-    class ORC,SS,DA,FRA,TS,EM,SOL agent
-    class MA,FA,MONJOB,EV detagent
-    class T1,T2,T3,T4,T5 mcp
-    class CJMCP,CJMCPSRV realmcp
-    class CJ,SERP,SHOP,GADS ext
-    classDef realmcp fill:#0b3d2e,stroke:#10b981,color:#d1fae5
-    class THEME,HZ theme
-    class GW,CREDS,DAEMON gw
-    class RUNNER,CLI,THEMEDIR,DOCS store`;
+    classDef data fill:#312e81,stroke:#6366f1,color:#e0e7ff
+    classDef llm fill:#1e3a5f,stroke:#2563eb,color:#e2e8f0
+    classDef gw fill:#374151,stroke:#78716c,color:#d6d3d1
+    classDef store fill:#065f46,stroke:#059669,color:#d1fae5
+    classDef graph fill:#0b3d2e,stroke:#10b981,color:#d1fae5
+    class AVA,SOL,REEL,NORA,MILO,KAI agent
+    class SS,DA,FR,TSN,EV,EM,MA,FA,LEGD legacy
+    class CJREST,CJMCP,SHOP,TT,GMAIL,WAN,CJ,SHOPADM,TIKTOK ext
+    class SQLITE,REDIS data
+    class LITELLM,CLAUDE,QWEN llm
+    class TG,WH,API,HB,ORGD,SUPL,CEOR,MGR,IMGL gw
+    class RUNNER,CLI,THEMEDIR,DOCS,STOCKW store
+    class FALKOR graph`;

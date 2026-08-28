@@ -71,6 +71,26 @@ async def place_supplier_order(
     }
 
 
+_FULFILLMENT_ORDERS_QUERY = """
+query openFulfillmentOrders($orderId: ID!) {
+  order(id: $orderId) {
+    fulfillmentOrders(first: 10) {
+      nodes { id status }
+    }
+  }
+}
+"""
+
+_FULFILLMENT_CREATE_MUTATION = """
+mutation fulfillmentCreate($fulfillment: FulfillmentV2Input!) {
+  fulfillmentCreateV2(fulfillment: $fulfillment) {
+    fulfillment { id status }
+    userErrors { field message }
+  }
+}
+"""
+
+
 async def fulfill_shopify_order(
     shopify_order_id: str,
     tracking_number: str,
@@ -78,7 +98,14 @@ async def fulfill_shopify_order(
     tracking_url: str,
 ) -> dict:
     """
-    Mark a Shopify order as fulfilled with tracking info.
+    Mark a Shopify order as fulfilled with tracking info, via the current
+    FulfillmentOrder-based Admin GraphQL API (fulfillmentCreateV2).
+
+    The old REST `orders/{id}/fulfillments.json` endpoint this used to call
+    returns 406 — Shopify's moved fulfillment creation to FulfillmentOrders
+    (assignable per-location, works with multi-location/partial fulfillment);
+    the legacy endpoint no longer accepts fulfillment writes directly on an
+    order the way it used to.
 
     Args:
         shopify_order_id: Shopify order ID (numeric string)
@@ -87,27 +114,36 @@ async def fulfill_shopify_order(
         tracking_url: Full tracking URL
 
     Returns:
-        Dict with keys: fulfillment_id (str), status (str)
+        Dict with keys: fulfillment_id (str), status (str), or {"error": ...}
     """
-    # Prefer the active store's own credentials (the .env defaults are often a
-    # stale token); fall back to settings only if no store context is set.
-    settings = get_settings()
-    domain, token = settings.shopify_store_domain, settings.shopify_access_token
+    from src.mcp_tools.shopify import _shopify_gql
+
+    order_gid = shopify_order_id if shopify_order_id.startswith("gid://") \
+        else f"gid://shopify/Order/{shopify_order_id}"
     try:
-        from src.stores import _current_store
-        store = _current_store.get(None)
-        if store:
-            domain, token = store.shopify_domain, store.shopify_access_token
-    except Exception:
-        pass
-    url = f"https://{domain}/admin/api/2024-07/orders/{shopify_order_id}/fulfillments.json"
-    async with httpx.AsyncClient(timeout=20) as client:
-        resp = await client.post(
-            url,
-            json={"fulfillment": {"tracking_number": tracking_number, "tracking_company": carrier, "tracking_url": tracking_url, "notify_customer": True}},
-            headers={"X-Shopify-Access-Token": token},
-        )
-    if resp.status_code >= 400:
-        return {"error": resp.text[:200], "status_code": resp.status_code}
-    data = resp.json().get("fulfillment", {})
-    return {"fulfillment_id": str(data.get("id", "")), "status": data.get("status", "success")}
+        data = await _shopify_gql(_FULFILLMENT_ORDERS_QUERY, {"orderId": order_gid})
+    except Exception as exc:
+        return {"error": f"couldn't read fulfillment orders: {exc}"}
+    nodes = ((data.get("order") or {}).get("fulfillmentOrders") or {}).get("nodes") or []
+    open_ids = [n["id"] for n in nodes if n.get("status") in ("OPEN", "IN_PROGRESS", "SCHEDULED")]
+    if not open_ids:
+        return {"error": f"no open FulfillmentOrder for {shopify_order_id} "
+                          f"(found {len(nodes)}, none in a fulfillable status)"}
+
+    variables = {
+        "fulfillment": {
+            "lineItemsByFulfillmentOrder": [{"fulfillmentOrderId": fid} for fid in open_ids],
+            "trackingInfo": {"number": tracking_number, "url": tracking_url, "company": carrier},
+            "notifyCustomer": True,
+        }
+    }
+    try:
+        data = await _shopify_gql(_FULFILLMENT_CREATE_MUTATION, variables)
+    except Exception as exc:
+        return {"error": f"fulfillmentCreateV2 call failed: {exc}"}
+    result = data.get("fulfillmentCreateV2") or {}
+    errors = result.get("userErrors") or []
+    if errors:
+        return {"error": "; ".join(f"{e.get('field')}: {e.get('message')}" for e in errors)}
+    fulfillment = result.get("fulfillment") or {}
+    return {"fulfillment_id": str(fulfillment.get("id", "")), "status": fulfillment.get("status", "success")}

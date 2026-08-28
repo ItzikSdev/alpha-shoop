@@ -277,7 +277,273 @@ async def _storefront_publication_ids() -> list[str]:
     return ids
 
 
-async def _publish_product(product_gid: str) -> None:
+# ── Storefront gate (owner's rule, 2026-08-13) ──────────────────────────────
+# Nothing reaches the storefront without Reel's media and real supplier stock.
+# The rule used to live only in `shopify_publish_products`, which made it
+# advisory: create_shopify_product published every product the moment it created
+# it — before any video could exist — so 12 of 32 live products went up with no
+# 360° video at all. The gate now sits inside _publish_product, the one function
+# that can make a product visible, so EVERY path is covered.
+#
+# A blocked publish is not a dead end and NOT a routing decision: the gate states
+# the plain fact ("no 360° video", "out of stock at CJ") and the agent decides who
+# to ask. No teammate name appears here on purpose — the roster is live data
+# (src/org/directory.py), so naming anyone in code would drift the moment it
+# changes and would take the decision away from the agent making it.
+MIN_IMAGES_TO_PUBLISH = 3
+REQUIRE_VIDEO_TO_PUBLISH = True
+REQUIRE_STOCK_TO_PUBLISH = True
+
+# Supplier media carries this alt prefix (stamped at creation) so it can't be
+# mistaken for Reel's 360° rotation video — CJ ships its own listing clip, and
+# counting that would let a product go live on media nobody ever approved.
+SUPPLIER_MEDIA_ALT = "supplier::"
+
+
+class PublishBlocked(RuntimeError):
+    """A product failed the storefront gate. Not a pipeline error — it means the
+    product isn't ready for customers yet and someone has work left to do."""
+
+
+_GATE_PRODUCT_QUERY = (
+    'query($id:ID!){ product(id:$id){ id title '
+    'images(first:50){ nodes{ id } } '
+    'media(first:50){ nodes{ mediaContentType alt } } '
+    'variants(first:100){ nodes{ sku } } } }'
+)
+
+
+def media_blockers(node: dict) -> list[str]:
+    """Media reasons this product may not go live, from an already-fetched product
+    node (needs `images` + `media`). Pure, so a batch caller can report on 100
+    products without 100 extra round-trips."""
+    reasons: list[str] = []
+    n_images = len(node.get("images", {}).get("nodes", []))
+    if n_images < MIN_IMAGES_TO_PUBLISH:
+        reasons.append(f"only {n_images}/{MIN_IMAGES_TO_PUBLISH} images")
+    if REQUIRE_VIDEO_TO_PUBLISH:
+        n_videos = sum(
+            1 for m in node.get("media", {}).get("nodes", [])
+            if m.get("mediaContentType") in ("VIDEO", "EXTERNAL_VIDEO")
+            and not (m.get("alt") or "").startswith(SUPPLIER_MEDIA_ALT)
+        )
+        if n_videos == 0:
+            reasons.append("no 360° video")
+    return reasons
+
+
+async def stock_blockers(node: dict) -> list[str]:
+    """Supplier-stock reasons this product may not go live. Each Shopify variant's
+    `sku` IS the CJ variant id, so stock is read per-variant from CJ — Shopify's
+    own inventory is structurally useless here (every dropship variant has
+    inventoryItem.tracked = false, so it reads 0/available no matter what).
+
+    FAILS CLOSED: a lookup that errors or times out is UNKNOWN, and unknown blocks
+    the publish. Holding a product back for a cycle is recoverable; listing an item
+    nobody can fulfil is a customer who paid for nothing."""
+    if not REQUIRE_STOCK_TO_PUBLISH:
+        return []
+    from src.cj_mcp import CJMCPClient
+    from src.org.stock_watch import _variant_stock
+
+    vids = [v["sku"] for v in node.get("variants", {}).get("nodes", []) if v.get("sku")]
+    if not vids:
+        return ["no CJ variant ids (sku) on the variants — stock can't be verified"]
+    try:
+        async with CJMCPClient() as cj:
+            for vid in vids:
+                total = await _variant_stock(cj, vid)
+                if total:               # one stocked variant is enough to sell
+                    return []
+                if total is None:       # UNKNOWN ≠ zero — never guess
+                    return [f"couldn't verify CJ stock for variant {vid}"]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("publish gate: CJ stock check failed for %r: %s: %s",
+                       node.get("title"), type(exc).__name__, exc)
+        return [f"couldn't verify CJ stock ({type(exc).__name__})"]
+    return ["out of stock at CJ (every variant, every warehouse)"]
+
+
+async def publish_blockers(product_gid: str) -> list[str]:
+    """Every reason this product may not be published — checked against Shopify and
+    CJ rather than our own tables, because a status column can be stale while the
+    storefront is what customers actually see."""
+    data = await _shopify_gql(_GATE_PRODUCT_QUERY, {"id": product_gid})
+    node = data.get("product")
+    if not node:
+        return [f"product {product_gid} not found on Shopify"]
+    # Skip the slow, rate-limited CJ calls when media already blocks it.
+    return media_blockers(node) or await stock_blockers(node)
+
+
+async def check_media_status(product_gid: str) -> dict:
+    """READ-ONLY status check for Reel — what media a product ALREADY has and
+    whether it clears the storefront gate, no render capability. Answers
+    'is there a real video' / 'is it published' without starting anything."""
+    data = await _shopify_gql(_GATE_PRODUCT_QUERY, {"id": product_gid})
+    node = data.get("product")
+    if not node:
+        return {"error": f"product {product_gid} not found on Shopify"}
+    n_images = len(node.get("images", {}).get("nodes", []))
+    videos = [m for m in node.get("media", {}).get("nodes", [])
+              if m.get("mediaContentType") in ("VIDEO", "EXTERNAL_VIDEO")]
+    real_videos = [v for v in videos if not (v.get("alt") or "").startswith(SUPPLIER_MEDIA_ALT)]
+    blockers = media_blockers(node)
+    return {
+        "product_id": product_gid,
+        "title": node.get("title"),
+        "image_count": n_images,
+        "video_count_total": len(videos),
+        "video_count_real": len(real_videos),
+        "video_count_supplier_clip": len(videos) - len(real_videos),
+        "publish_blockers": blockers,
+        "clears_storefront_gate": not blockers,
+    }
+
+
+_GQL_MEDIA_SWEEP = """
+query mediaSweep($cursor: String) {
+  products(first: 50, after: $cursor, query: "status:active") {
+    pageInfo { hasNextPage endCursor }
+    nodes {
+      id
+      title
+      images(first: 50) { nodes { id } }
+      media(first: 50) { nodes { mediaContentType alt } }
+    }
+  }
+}
+"""
+
+
+async def scan_media_gaps() -> list[dict]:
+    """Every ACTIVE product currently failing media_blockers() — real Shopify state,
+    not the product_videos table (a row there can say 'rejected' while an EARLIER
+    generation for the same product is still the one live on the PDP; the table
+    tracks generation ATTEMPTS, not current storefront truth). One paginated
+    GraphQL sweep, no CJ calls (media_blockers is pure/local), so this is cheap
+    enough to run daily. Returns [{"id","title","blockers"}] for every product
+    with a real gap — empty list means the catalog is clean."""
+    gaps: list[dict] = []
+    cursor = None
+    while True:
+        data = await _shopify_gql(_GQL_MEDIA_SWEEP, {"cursor": cursor})
+        page = data.get("products", {})
+        for node in page.get("nodes", []):
+            blockers = media_blockers(node)
+            if blockers:
+                gaps.append({"id": node["id"], "title": node["title"], "blockers": blockers})
+        info = page.get("pageInfo", {})
+        if not info.get("hasNextPage"):
+            break
+        cursor = info.get("endCursor")
+    return gaps
+
+
+_GQL_UNFULFILLED_ORDERS = """
+query unfulfilledOrders {
+  orders(first: 20, sortKey: CREATED_AT, reverse: true, query: "fulfillment_status:unfulfilled") {
+    nodes {
+      legacyResourceId
+      email
+      displayFinancialStatus
+      currentTotalPriceSet { shopMoney { amount } }
+      lineItems(first: 50) { nodes { sku quantity title } }
+      shippingAddress { countryCode country province city zip address1 name }
+    }
+  }
+}
+"""
+
+
+async def list_unfulfilled_orders() -> list[dict]:
+    """The store's unfulfilled orders (poll-based order trigger — see
+    heartbeat._order_poll_tick; this stands in for a Shopify order webhook,
+    which needs a public HTTPS endpoint this backend doesn't have yet).
+    Returns dicts shaped to build a ShopifyOrderWebhook: id, email,
+    financial_status, total_price, line_items, shipping_address."""
+    data = await _shopify_gql(_GQL_UNFULFILLED_ORDERS, {})
+    out = []
+    for n in data.get("orders", {}).get("nodes", []):
+        addr = n.get("shippingAddress") or {}
+        out.append({
+            "id": int(n["legacyResourceId"]),
+            "email": n.get("email") or "",
+            "financial_status": (n.get("displayFinancialStatus") or "pending").lower(),
+            "total_price": (n.get("currentTotalPriceSet", {}).get("shopMoney", {}) or {}).get("amount", "0.00"),
+            "line_items": [
+                {"sku": li.get("sku") or "", "quantity": li.get("quantity") or 1, "title": li.get("title") or ""}
+                for li in n.get("lineItems", {}).get("nodes", [])
+            ],
+            "shipping_address": {
+                "country_code": addr.get("countryCode") or "",
+                "country": addr.get("country") or "",
+                "province": addr.get("province") or "",
+                "city": addr.get("city") or "",
+                "zip": addr.get("zip") or "",
+                "address1": addr.get("address1") or "",
+                "name": addr.get("name") or "",
+            } if addr else None,
+        })
+    return out
+
+
+_GQL_ORDER_EVENTS = """
+query orderEvents($id: ID!) {
+  order(id: $id) {
+    events(first: 20, sortKey: CREATED_AT, reverse: true) {
+      nodes { action message createdAt }
+    }
+  }
+}
+"""
+
+
+async def check_shipping_email_sent(order_id: str, since_iso: str) -> bool | None:
+    """Did Shopify's OWN mailer confirm sending the shipping-confirmation email
+    for this order, at/after `since_iso` (the fulfillment call's own timestamp)?
+
+    IMPORTANT LIMITATION, found by testing against a real order rather than
+    guessing: Shopify's Admin API has no delivery/bounce-status field anywhere
+    — no webhook, no query. What DOES exist is Order.events (the same Timeline
+    shown in Shopify Admin), which logs a real `action:"mail_sent"` entry with
+    message "... sent a shipping confirmation email to <name> (<email>)." the
+    moment Shopify's mailer accepts the send. So this confirms Shopify
+    ATTEMPTED and ACCEPTED the send (real, not a guess) — it does NOT confirm
+    the email was actually delivered to the inbox or didn't bounce; Shopify
+    exposes nothing for that. Treat a True return as "Shopify tried and didn't
+    immediately fail", not as delivery proof.
+
+    Returns True (confirmed sent), False (checked — no matching event), or
+    None (the check itself failed/was inconclusive — network error, bad
+    order id). Callers must treat None the same as False, never as success.
+    """
+    from datetime import datetime, timedelta, timezone
+    order_gid = order_id if order_id.startswith("gid://") else f"gid://shopify/Order/{order_id}"
+    try:
+        data = await _shopify_gql(_GQL_ORDER_EVENTS, {"id": order_gid})
+    except Exception:
+        return None
+    nodes = ((data.get("order") or {}).get("events") or {}).get("nodes") or []
+    try:
+        since = datetime.fromisoformat(since_iso.replace("Z", "+00:00"))
+    except Exception:
+        since = datetime.now(timezone.utc) - timedelta(minutes=10)
+    for n in nodes:
+        if n.get("action") != "mail_sent":
+            continue
+        if "shipping" not in (n.get("message") or "").lower():
+            continue
+        try:
+            created = datetime.fromisoformat(n["createdAt"].replace("Z", "+00:00"))
+        except Exception:
+            return True  # matched but couldn't parse the timestamp — don't block on formatting
+        if created >= since - timedelta(seconds=30):
+            return True
+    return False
+
+
+async def _publish_product(product_gid: str, force: bool = False) -> None:
     """Publish a product to every storefront channel (Online Store + headless).
 
     Uses GraphQL publishablePublish — the legacy REST `published:true` field only
@@ -285,7 +551,15 @@ async def _publish_product(product_gid: str) -> None:
     Sol-created products with publishedAt=None → invisible on the Hydrogen site).
     Raises on hard failure so the caller can log it instead of silently shipping
     an unpublished product.
+
+    Enforces the storefront gate first (>=3 images, a real 360° video, live CJ
+    stock) and raises PublishBlocked otherwise. `force` exists for the owner's own
+    tooling — no agent tool passes it.
     """
+    if not force:
+        blockers = await publish_blockers(product_gid)
+        if blockers:
+            raise PublishBlocked("; ".join(blockers))
     pub_ids = await _storefront_publication_ids()
     if not pub_ids:
         raise RuntimeError("no storefront publications found to publish to")
@@ -564,23 +838,36 @@ async def create_shopify_product(
         try:
             vid_result = await _shopify_gql(_GQL_CREATE_MEDIA, {
                 "productId": product["id"],
-                "media": [{"originalSource": video_url, "mediaContentType": "VIDEO", "alt": title}],
+                # Tagged as supplier media so the publish gate doesn't count CJ's
+                # own listing clip as Reel's 360° rotation video.
+                "media": [{"originalSource": video_url, "mediaContentType": "VIDEO",
+                           "alt": f"{SUPPLIER_MEDIA_ALT}{title}"}],
             })
             if vid_result.get("productCreateMedia", {}).get("mediaUserErrors"):
                 logger.warning("Video attach failed for %s: %s", title, vid_result["productCreateMedia"]["mediaUserErrors"])
         except Exception as exc:
             logger.warning("Video attach failed for %s: %s", title, exc)
 
-    # Publish to the storefront channels (Online Store + headless). Log on failure
-    # — a silently-unpublished product is invisible on the live site (this is the
-    # bug that left Sol's products with publishedAt=None / not on the storefront).
+    # Try the storefront — the gate inside _publish_product decides. A brand-new
+    # product almost always fails it (Reel's 360° video doesn't exist yet), and
+    # that is the CORRECT outcome: creating a product must not be the same act as
+    # showing it to customers. It goes live later via shopify_publish_products,
+    # once the media is there. Anything else here is a real publish failure worth
+    # logging (this used to leave products with publishedAt=None, invisible).
+    published, held_back = False, ""
     try:
         await _publish_product(product["id"])
+        published = True
+    except PublishBlocked as exc:
+        held_back = str(exc)
+        logger.info("Created '%s' as NOT-yet-live — %s", title, held_back)
     except Exception as exc:
+        held_back = f"publish failed: {exc}"
         logger.warning("Publish failed for '%s' (%s) — product is ACTIVE but NOT on the storefront: %s",
                        title, product.get("id"), exc)
 
-    return {"product": product, "success": True, "error": None}
+    return {"product": product, "success": True, "error": None,
+            "published": published, "held_back": held_back}
 
 
 async def create_collection(title: str) -> dict:

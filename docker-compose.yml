@@ -31,6 +31,37 @@ services:
       retries: 12
       start_period: 15s
 
+  # ── FalkorDB (visual knowledge graph — agent/tool/event relations) ────────
+  # Host ports remapped: 6379 is already taken by the redis-stack-server RAG
+  # service above, and 3000/3001 are already taken by the docs service and a
+  # locally-running Hydrogen dev server (node, [::1]:3001) respectively — the
+  # latter isn't a compose service so nothing here would have caught the
+  # collision; found by inspecting the actual response body, not just the
+  # HTTP status code. The container's own internal ports (6379 for the
+  # graph/Redis protocol, 3000 for the bundled Browser UI) are unchanged.
+  falkordb:
+    image: falkordb/falkordb:latest
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+      - "3002:3000"
+    environment:
+      # The bundled Browser (NextAuth v5) infers its own login/callback URLs
+      # from AUTH_URL (NEXTAUTH_URL is only a v4-compat fallback — this image
+      # bakes AUTH_URL=http://localhost:3000/ into its own .env.local, which
+      # otherwise wins). Must match the falkor-mirror port platform-app embeds
+      # it through (vite.config.ts `falkorMirror`, :3009) — NOT :3002 (raw
+      # container port) or :3000 (collides with the unrelated `docs` service).
+      AUTH_URL: http://localhost:3009
+      NEXTAUTH_URL: http://localhost:3009
+    volumes:
+      - falkordb_data:/var/lib/falkordb/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6379", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # ── LiteLLM Proxy ────────────────────────────────────────────────────────
   litellm:
     image: ghcr.io/berriai/litellm:main-stable
@@ -78,6 +109,8 @@ services:
       CJ_API_KEY: ${CJ_API_KEY:-}
       OLLAMA_URL: http://ollama:11434
       CHROMA_PATH: /app/data/chroma
+      FALKORDB_HOST: falkordb
+      FALKORDB_PORT: "6379"
     volumes:
       - traces_data:/app/data
     depends_on:
@@ -86,6 +119,8 @@ services:
       litellm:
         condition: service_healthy
       ollama:
+        condition: service_healthy
+      falkordb:
         condition: service_healthy
 
   # ── React Docs (production build, nginx) ─────────────────────────────────
@@ -101,3 +136,4 @@ services:
 volumes:
   traces_data:
   ollama_data:
+  falkordb_data:
