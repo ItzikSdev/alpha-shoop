@@ -1,12 +1,30 @@
+import {Suspense} from 'react';
+import {Await, useRouteLoaderData} from 'react-router';
 import {config} from '~/lib/theme';
 
 /**
  * Product-page FAQ (TKT-68b77b1e item 3) — real catalog/policy data only,
  * sourced from theme.config.json's legal block (single source of truth for
- * shipping/returns) and the live ALPHA10 code already applied at checkout
- * (see CartSummary.jsx). No invented policies, no fabricated timelines.
+ * shipping/returns). No invented policies, no fabricated timelines.
+ *
+ * The "discount code" item is sign-in-gated, same as TrustBanner.jsx and
+ * the checkout ?discount= logic in CartSummary.jsx — ALPHA10 must not be
+ * publicly visible. Reads root's deferred isLoggedIn via
+ * useRouteLoaderData (same no-prop-drilling pattern CartSummary.jsx uses)
+ * since this route doesn't otherwise receive isLoggedIn as a prop.
  */
 export function ProductFAQ() {
+  const rootData = useRouteLoaderData('root');
+  return (
+    <Suspense fallback={<ProductFAQInner showCode={false} />}>
+      <Await resolve={rootData?.isLoggedIn} errorElement={<ProductFAQInner showCode={false} />}>
+        {(loggedIn) => <ProductFAQInner showCode={!!loggedIn} />}
+      </Await>
+    </Suspense>
+  );
+}
+
+function ProductFAQInner({showCode}) {
   const {shipping, returns} = config.legal || {};
   const regions = shipping?.regions || [];
 
@@ -40,15 +58,19 @@ export function ProductFAQ() {
         </>
       ),
     },
-    {
-      q: 'Is there a discount code?',
-      a: (
-        <>
-          Yes — use code <strong className="font-bold">ALPHA10</strong> at checkout for 10%
-          off your order.
-        </>
-      ),
-    },
+    ...(showCode
+      ? [
+          {
+            q: 'Is there a discount code?',
+            a: (
+              <>
+                Yes — use code <strong className="font-bold">ALPHA10</strong> at checkout
+                for 10% off your order.
+              </>
+            ),
+          },
+        ]
+      : []),
     {
       q: 'How do I track my order?',
       a: "You'll receive a tracking link by email as soon as your order ships.",
