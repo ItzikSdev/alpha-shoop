@@ -4,6 +4,7 @@ import {Aside, useAside} from '~/components/Aside';
 import {Footer} from '~/components/Footer';
 import {Header} from '~/components/Header';
 import {SignInPromo} from '~/components/SignInPromo';
+import {TrustBanner} from '~/components/TrustBanner';
 import {CartMain} from '~/components/CartMain';
 import {
   SEARCH_ENDPOINT,
@@ -57,6 +58,7 @@ export function PageLayout({cart, children = null, isLoggedIn}) {
         <MobileMenuAside />
         <CartAside cart={cart} />
         <SearchAside />
+        <TrustBanner />
         <Header cart={cart} isLoggedIn={isLoggedIn} />
         <main>{children}</main>
         <Footer />
