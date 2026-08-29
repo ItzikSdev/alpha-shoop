@@ -58,7 +58,7 @@ export function PageLayout({cart, children = null, isLoggedIn}) {
         <MobileMenuAside />
         <CartAside cart={cart} />
         <SearchAside />
-        <TrustBanner />
+        <TrustBanner isLoggedIn={isLoggedIn} />
         <Header cart={cart} isLoggedIn={isLoggedIn} />
         <main>{children}</main>
         <Footer />
