@@ -17,25 +17,13 @@ Examples:
 - `timeofbaby/hero-video-refresh`
 
 `<store-slug>` matches the store's directory name under `stores/shopify/`
-(e.g. `hydrogen-alphaforbaby` → `alphaforbaby`). This keeps branches
-identifiable at a glance once more than one store is under active
-development at the same time, and lets the per-store Oxygen deploy
-workflows (`.github/workflows/oxygen-deploy-<store>.yml`, each scoped by
-`paths:` to its own `stores/shopify/<store>/**`) be reasoned about by
-branch name alone.
+(e.g. `hydrogen-alphaforbaby` → `alphaforbaby`). Non-store work (agent/
+pipeline code under `src/`, docs, etc.) doesn't need this prefix.
 
-Non-store work (agent/pipeline code under `src/`, docs, etc.) doesn't need
-this prefix — use a plain descriptive branch name as usual.
+## Full workflow
 
-## Workflow for store-code changes
-
-1. Branch from `main` using the naming convention above.
-2. Do all work on that branch. Never push directly to `main` or trigger a
-   production deploy without explicit review/approval from the store owner.
-3. Each meaningful change is its own commit with a descriptive message
-   (what changed and why, not just what).
-4. Pushing the branch triggers the store's Oxygen deploy workflow, which
-   deploys to Shopify's Preview environment (not Production, which is
-   bound to `main` — see `npx shopify hydrogen env list`). Share the
-   preview link for review before merging.
-5. Merge to `main` only after explicit sign-off.
+See **`docs/DEV_WORKFLOW.md`** for the complete standing playbook this
+convention is part of — branch naming, the no-production-without-review
+rule, preview-before-review requirement, commit discipline, logging, and
+the status-honesty rule. That file is the source of truth; keep this
+section in sync with it rather than duplicating detail here.
