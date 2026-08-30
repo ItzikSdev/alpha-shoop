@@ -18,6 +18,7 @@ import {ProductForm} from '~/components/ProductForm';
 import {AddToCartButton} from '~/components/AddToCartButton';
 import {FrequentlyBoughtTogether} from '~/components/FrequentlyBoughtTogether';
 import {ProductReviews, parseReviews} from '~/components/ProductReviews';
+import {ProductFAQ} from '~/components/ProductFAQ';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {config} from '~/lib/theme';
 import {normalizeSizeLabel} from '~/lib/sizeLabels';
@@ -500,9 +501,11 @@ export default function Product() {
           />
         </div>
 
-        <section className="px-4 md:px-6 pt-6 pb-[100px]">
+        <section className="px-4 md:px-6 pt-6 pb-6">
           <ProductReviews productId={product.id} reviews={reviews} />
         </section>
+
+        <ProductFAQ />
 
         {/* sticky add-to-cart — mobile only; the desktop 2-col layout already
             keeps the buy box on screen without scrolling. */}

@@ -28,7 +28,11 @@ premium type scale (tune them in `theme.config.json → tokens.fontSizes`).
   testimonials → dark footer.
 - **Collections** (`collections.$handle.jsx`, `/collections/all`): real products, paginated.
 - **Product** (`products.$handle.jsx`): gallery, Size/Color selectors, **sold-out variants
-  disabled**, add-to-cart, trust badges, real CJ description.
+  disabled**, add-to-cart, trust badges, real CJ description, FAQ section
+  (`ProductFAQ.jsx`, sign-in-gated discount item).
+- **Site-wide trust banner** (`TrustBanner.jsx`, mounted in `PageLayout.jsx`): free
+  shipping / 30-day returns for everyone; the ALPHA10 code only once signed in
+  (same gating as `SignInPromo.jsx`/`CartSummary.jsx` — never shown publicly).
 - **Cart / search / account**: Hydrogen defaults, restyled.
 - Nav is hardcoded to the owner rule (Baby Boys / Baby Girls / Unisex) — no dependency on
   Shopify online-store menus.
