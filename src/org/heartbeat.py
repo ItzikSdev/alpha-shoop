@@ -17,6 +17,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import subprocess
 from datetime import datetime, timezone
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -512,6 +513,78 @@ async def _sourcing_tick(company: Company) -> None:
         logger.warning("Autonomous sourcing tick failed: %s", exc)
 
 
+async def _pr_merge_watch_tick(company: Company) -> None:
+    """Pull-side half of the PR-merge notification pipeline. The push half
+    (.github/workflows/pr-merged-notify.yml) posts to Telegram the instant a
+    PR merges — that works because Telegram's API is reachable from GitHub's
+    runners. This repo's ticket system (data/traces.db) is NOT: it only
+    exists on whatever machine is running this heartbeat, with no public
+    endpoint a GitHub-hosted runner could reach (confirmed: the "Deploy to
+    GCP Cloud Run" workflow that would make this backend publicly reachable
+    has never actually succeeded — see docs/DECISIONS_LOG.md, 2026-08-29).
+    So instead of a webhook pushing a ticket in, this tick pulls newly-merged
+    PRs from GitHub (public repo, no token needed) on its own short interval
+    and opens a normal ticket for each one via the existing open_ticket() —
+    same function, same auto-assignment, same lack of special authority as
+    every other ticket source. No agent gets merge/deploy authority from
+    this; it only ever creates a ticket to be picked up on a later tick,
+    same as today."""
+    interval_min = float(company.daemon.get("pr_merge_check_interval_minutes", 5))
+    last = company.daemon.get("pr_merge_checked_at")
+    if last:
+        try:
+            since_min = (datetime.now(timezone.utc) - datetime.fromisoformat(last)).total_seconds() / 60
+            if since_min < interval_min:
+                return
+        except Exception:
+            pass
+    company.daemon["pr_merge_checked_at"] = datetime.now(timezone.utc).isoformat()
+    save_company(company)
+
+    try:
+        result = subprocess.run(
+            ["gh", "pr", "list", "--repo", "ItzikSdev/alpha-shoop", "--state", "merged",
+             "--limit", "10", "--json", "number,title,url,headRefName,mergeCommit"],
+            capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode != 0:
+            logger.warning("PR-merge watch: gh pr list failed: %s", result.stderr.strip())
+            return
+        merged = json.loads(result.stdout or "[]")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("PR-merge watch failed: %s", exc)
+        return
+
+    from src.org.tickets import open_ticket
+
+    last_seen = int(company.daemon.get("pr_merge_last_seen_number", 0))
+    new_max = last_seen
+    for pr in merged:
+        number = pr.get("number", 0)
+        if number <= last_seen:
+            continue
+        new_max = max(new_max, number)
+        sha = (pr.get("mergeCommit") or {}).get("oid", "")[:12]
+        open_ticket(
+            title=f"PR #{number} merged — ready for post-merge verification",
+            description=(
+                f"{pr.get('title', '')}\n"
+                f"Branch: {pr.get('headRefName', '')}\n"
+                f"Merge commit: {sha}\n"
+                f"URL: {pr.get('url', '')}\n\n"
+                "Auto-opened by the PR-merge watch tick (pulls merged PRs from "
+                "GitHub — see _pr_merge_watch_tick in heartbeat.py). No auto-execute "
+                "authority: this is a normal ticket, worked the same way any other "
+                "ticket is."
+            ),
+            source="pr_merge_watch",
+            dedupe_key=f"pr-merged-{number}",
+        )
+    if new_max != last_seen:
+        company.daemon["pr_merge_last_seen_number"] = new_max
+        save_company(company)
+
+
 async def _poll_inboxes() -> None:
     """Cheap per-tick check for new customer emails across every store with a support
     inbox configured. Runs every tick regardless of the operator change-gate below —
@@ -555,6 +628,7 @@ async def agent_heartbeat() -> dict | None:
 
     await _poll_inboxes()
     await _sourcing_tick(company)
+    await _pr_merge_watch_tick(company)
 
     # Respect the global kill-switch (lazy import avoids a route import cycle).
     try:
