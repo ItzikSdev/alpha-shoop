@@ -1,0 +1,51 @@
+name: Notify on PR merge
+
+# Push half of the PR-merge notification pipeline (see docs/DECISIONS_LOG.md,
+# 2026-08-29, "PR-merge notification pipeline"). Fires the instant a PR
+# merges and posts to the org's shared Telegram channel — no agent authority
+# involved, this is a notification only.
+#
+# The pull half — opening a "ready for post-merge verification" ticket —
+# does NOT happen here. This repo's ticket system (data/traces.db) has no
+# public endpoint reachable from a GitHub-hosted runner (confirmed: the
+# "Deploy → GCP Cloud Run" workflow that would make it reachable has never
+# actually succeeded). Instead, src/org/heartbeat.py::_pr_merge_watch_tick
+# polls GitHub for newly-merged PRs on its own short interval and opens the
+# ticket locally via the existing open_ticket() — same function, same
+# auto-assignment, no special authority beyond any other ticket source.
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  notify:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post merge notification to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Untrusted PR-supplied values (title/branch) are passed through
+          # `env:`, never spliced directly into the `run:` script text —
+          # splicing `${{ github.event.pull_request.title }}` straight into
+          # a shell script lets a malicious title/branch name inject shell
+          # commands. As an env var, its value is inert data to bash.
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TELEGRAM_BOT_TOKEN:-}" ] || [ -z "${TELEGRAM_CHAT_ID:-}" ]; then
+            echo "TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID not set — skipping notification (not a failure, nothing to merge-block on)."
+            exit 0
+          fi
+          SHORT_SHA="${MERGE_SHA:0:12}"
+          TEXT=$(printf '✅ PR #%s merged: %s\nBranch: %s\nCommit: %s\n%s' \
+            "$PR_NUMBER" "$PR_TITLE" "$BRANCH" "$SHORT_SHA" "$PR_URL")
+          curl -sS --fail -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${TEXT}"
