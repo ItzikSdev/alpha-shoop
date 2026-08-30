@@ -23,7 +23,8 @@ pipeline code under `src/`, docs, etc.) doesn't need this prefix.
 ## Full workflow
 
 See **`docs/DEV_WORKFLOW.md`** for the complete standing playbook this
-convention is part of — branch naming, the no-production-without-review
-rule, preview-before-review requirement, commit discipline, logging, and
-the status-honesty rule. That file is the source of truth; keep this
+convention is part of — branch naming, per-store production branches
+(`<store-slug>/production`), the no-production-without-review rule,
+preview-before-review requirement, commit discipline, logging, and the
+status-honesty rule. That file is the source of truth; keep this
 section in sync with it rather than duplicating detail here.
