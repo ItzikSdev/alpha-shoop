@@ -1,22 +1,39 @@
 name: Push Shopify Theme
 
-# Subfolder-aware theme deploy via the official Shopify CLI.
-# Triggers only when a store's theme under stores/shopify/** changes (or manually).
-# Uses `shopify theme push` — authenticated non-interactively with a store token in
-# the SHOPIFY_CLI_THEME_TOKEN secret (an Admin API token works for push, or a
-# Theme Access password). Set repo/environment secrets:
-#   SHOPIFY_CLI_THEME_TOKEN  — store token
-#   SHOPIFY_STORE_DOMAIN     — e.g. lumibud-dev.myshopify.com
+# Subfolder-aware CLASSIC LIQUID theme deploy via the official Shopify CLI.
+# NOT for Hydrogen storefronts (stores/shopify/hydrogen-*/) — those deploy
+# via Oxygen (Shopify's own GitHub-App-injected "Deploy to Oxygen" check),
+# a completely different mechanism `shopify theme push` doesn't touch.
+#
+# Root cause of the 2026-08-30 misfire (see docs/DECISIONS_LOG.md): this
+# workflow's `paths:` filter matched ANY change under stores/shopify/**,
+# including pure-Hydrogen pushes, and on a `push` event `github.event.inputs`
+# is always undefined (inputs only exist for workflow_dispatch) — so SLUG
+# silently fell back to a hardcoded 'lumibud-dev' default that doesn't
+# correspond to any directory in this repo, on every single push, regardless
+# of what actually changed. Fixed two ways, deliberately redundant:
+#   1. `paths:` now explicitly excludes hydrogen-*/ (and the non-theme
+#      skills/ dir) — a Hydrogen-only push no longer queues this job at all.
+#   2. No more hardcoded default. On a push event, the slug step diffs the
+#      actual commit range for which stores/shopify/<slug>/ directories
+#      changed (excluding hydrogen-*/skills) and only pushes if EXACTLY one
+#      matched — anything else (zero, or more than one) skips cleanly
+#      instead of guessing. workflow_dispatch requires an explicit slug, no
+#      default, so a manual run can never silently target the wrong store
+#      either.
+#
+# Set repo/environment secrets: SHOPIFY_CLI_THEME_TOKEN, SHOPIFY_STORE_DOMAIN.
 on:
   push:
     paths:
       - 'stores/shopify/**'
+      - '!stores/shopify/hydrogen-*/**'
+      - '!stores/shopify/skills/**'
   workflow_dispatch:
     inputs:
       slug:
-        description: 'Theme folder under stores/shopify/'
+        description: 'Theme folder under stores/shopify/ (classic Liquid themes only — NOT hydrogen-* stores, which deploy via Oxygen)'
         required: true
-        default: 'lumibud-dev'
       publish:
         description: 'Push to the LIVE theme (true) or a new unpublished theme (false)'
         required: false
@@ -28,18 +45,59 @@ jobs:
     env:
       SHOPIFY_CLI_THEME_TOKEN: ${{ secrets.SHOPIFY_CLI_THEME_TOKEN }}
       SHOPIFY_FLAG_STORE: ${{ secrets.SHOPIFY_STORE_DOMAIN }}
-      # TODO: parameterize per storefront via a matrix as more stores are added.
-      SLUG: ${{ github.event.inputs.slug || 'lumibud-dev' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine theme slug
+        id: slug
+        env:
+          DISPATCH_SLUG: ${{ github.event.inputs.slug }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.event.after }}
+        run: |
+          if [ -n "$DISPATCH_SLUG" ]; then
+            echo "slug=$DISPATCH_SLUG" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Push-triggered: find which classic-theme store dir(s) actually
+          # changed. BEFORE_SHA is all-zeros on a brand-new branch's first
+          # push (nothing to diff against) — treat that as "can't determine,
+          # skip" rather than erroring.
+          if [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "No previous commit to diff against (new branch) — skipping, nothing to safely infer."
+            echo "slug=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$BEFORE_SHA" "$AFTER_SHA" -- 'stores/shopify/*' \
+            | grep -v '^stores/shopify/hydrogen-' \
+            | grep -v '^stores/shopify/skills/' \
+            | cut -d/ -f3 | sort -u)
+          COUNT=$(printf '%s\n' "$CHANGED" | grep -c . || true)
+          if [ "$COUNT" -eq 1 ]; then
+            echo "slug=$CHANGED" >> "$GITHUB_OUTPUT"
+          else
+            echo "Expected exactly one classic-theme store directory changed, found $COUNT ($CHANGED) — skipping rather than guessing."
+            echo "slug=" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.slug.outputs.slug != ''
         with:
           node-version: 22
+
       - name: Install Shopify CLI
+        if: steps.slug.outputs.slug != ''
         run: npm install -g @shopify/cli
+
       - name: Push theme
+        if: steps.slug.outputs.slug != ''
+        env:
+          SLUG: ${{ steps.slug.outputs.slug }}
+          PUBLISH: ${{ github.event.inputs.publish }}
         run: |
-          if [ "${{ github.event.inputs.publish }}" = "true" ]; then
+          if [ "$PUBLISH" = "true" ]; then
             shopify theme push --path "stores/shopify/$SLUG" --live --allow-live --json
           else
             shopify theme push --path "stores/shopify/$SLUG" --unpublished --theme "Alpha Shoop — $SLUG (CI ${{ github.run_number }})" --json
