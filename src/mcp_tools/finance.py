@@ -147,7 +147,12 @@ def integrations_status() -> list[dict]:
     store_cj_creds = (getattr(store, "supplier_credentials", None) or {}) if store else {}
     cj_ok = bool(store_cj_creds.get("mcp_key") or store_cj_creds.get("api_key") or s.cj_mcp_key or s.cj_api_key)
     email_creds = (getattr(store, "email_credentials", None) or {}) if store else {}
-    gmail_ok = bool(email_creds.get("refresh_token"))
+    # Nora's real support-inbox tool (src/mcp_tools/support_inbox.py) reads the
+    # central mailbox's creds straight from SUPPORT_GMAIL_* env vars, never from
+    # this per-store DB column — check both so a globally-configured mailbox
+    # doesn't show as "not connected" just because the store row is empty.
+    import os
+    gmail_ok = bool(email_creds.get("refresh_token")) or bool(os.environ.get("SUPPORT_GMAIL_REFRESH_TOKEN", "").strip())
     redis_ok, redis_detail = _redis_status(s)
     # Checkout payment gateways — replaced PayPlus with Hype + Max (owner switch,
     # 2026-07-09). Credentials live per-store under StoreConfig.integrations
@@ -164,21 +169,23 @@ def integrations_status() -> list[dict]:
     meta_creds = store_integrations.get("meta_ads") or {}
     meta_api_ok = bool((meta_creds.get("access_token") or s.meta_access_token)
                         and (meta_creds.get("ad_account_id") or s.meta_ad_account_id))
-    ALL = ["Ava", "Hunter", "Remy", "Devon", "Max"]
+    # Current active roster (org_agents, not the departed legacy 5-role pipeline
+    # names — see [[org_roster]] in memory / docs/DECISIONS_LOG.md for history).
+    ALL = ["Ava", "Sol", "Reel", "Nora", "Milo", "Kai", "Nova"]
     return [
-        row("shopify", "Shopify (storefront + admin)", "Platform", ["Devon", "Remy", "Ava"],
+        row("shopify", "Shopify (storefront + admin)", "Platform", ["Sol", "Ava"],
             shop_ok, "Store admin token present." if shop_ok else "No access token — re-auth via /org/shopify-reauth."),
         row("cj", "CJ Dropshipping (sourcing + fulfillment)", "Suppliers", ["Sol"],
             cj_ok, "CJ token configured (per-store or global)." if cj_ok else "No CJ token."),
         row("redis_rag", "Redis (vector RAG — CJ catalog + playbook)", "AI / Data", ["Sol"],
             redis_ok, redis_detail),
-        row("gmail", "Gmail (customer email)", "Communication", ["Sol"],
+        row("gmail", "Gmail (customer email)", "Communication", ["Nora"],
             gmail_ok,
             f"Support inbox {store.support_email} configured." if gmail_ok and store and store.support_email
-            else "No Gmail credentials on the active store yet — see docs/sol_integrations_rag_fulfillment_email.md."),
-        row("serper", "Serper (competitor price / market search)", "Market data", ["Hunter"],
+            else "No Gmail credentials configured yet — see docs/sol_integrations_rag_fulfillment_email.md."),
+        row("serper", "Serper (competitor price / market search)", "Market data", ["Sol"],
             bool(getattr(s, "serper_api_key", "")), "Serper key present — live competitor pricing." if getattr(s, "serper_api_key", "") else "No Serper key — competitor pricing falls back."),
-        row("facebook_instagram", "Facebook & Instagram", "Marketing", ["Max"],
+        row("facebook_instagram", "Facebook & Instagram", "Marketing", ["Ava"],
             False,  # enriched by the REAL Shopify channel check in the /org/integrations route
             "Checking the store's sales channels…"),
         row("tiktok", "TikTok Ads (read-only reporting)", "Marketing", ["Kai"],
@@ -198,7 +205,7 @@ def integrations_status() -> list[dict]:
             max_ok, "Max API key on the active store." if max_ok else "No Max key configured yet — set it on the Stores page."),
         row("cloudflare", "Cloudflare (domain / DNS)", "Infra", ["Ava"],
             bool(s.cloudflare_api_token), "Cloudflare token present." if s.cloudflare_api_token else "No Cloudflare token."),
-        row("google_ads", "Google Ads (paid traffic)", "Marketing", ["Max"],
+        row("google_ads", "Google Ads (paid traffic)", "Marketing", ["Ava"],
             bool(s.google_ads_developer_token and s.google_ads_customer_id),
             "Configured." if (s.google_ads_developer_token and s.google_ads_customer_id) else "Not connected — ad-spend metrics are still mocked."),
         row("meta_ads_api", "Meta Marketing API (create ads)", "Marketing", ["Sol"],
@@ -210,7 +217,7 @@ def integrations_status() -> list[dict]:
         row("gcp", "Google Cloud (GCP)", "Cloud / Infra", ["Ava"],
             bool(s.google_application_credentials), "Service-account credentials set." if s.google_application_credentials else "No GCP credentials file."),
         row("claude", "Claude via LiteLLM (the agents' brain)", "AI", ALL,
-            bool(s.litellm_proxy_url), f"Proxy {s.litellm_proxy_url}; CEO + Product Hunter on Sonnet, the rest on Haiku — all fall back to free local Ollama over the budget cap."),
+            bool(s.litellm_proxy_url), f"Proxy {s.litellm_proxy_url}; Ava (CEO) on Sonnet-tier, Sol on Haiku-tier — the ceiling model when ORG_LOCAL_LLM isn't forcing local and the budget cap isn't hit."),
         row("ollama", "Ollama (free local fallback + embeddings)", "AI", ALL,
             bool(s.ollama_url), f"Local model at {s.ollama_url} — $0. Two jobs: the budget-cap fallback brain for every agent, and product/store embeddings for RAG."),
     ]
@@ -236,10 +243,10 @@ async def facebook_instagram_status() -> tuple[bool, str]:
 
     if has_channel:
         detail = ("Facebook & Instagram sales channel is installed — product catalog syncs to the "
-                  "Meta Shop. " + ("Meta Marketing API token present — Max can launch ads."
+                  "Meta Shop. " + ("Meta Marketing API token present — Sol can launch ads."
                                    if has_ads_token else
                                    "Ads via the Marketing API still need a Meta access token + ad-account id "
-                                   "(Max prepares the blueprint and posts before any spend)."))
+                                   "before Sol can spend on them."))
         return True, detail
     if not channels:
         return False, "Couldn't read the store's sales channels (publications scope or token) — can't confirm the channel."

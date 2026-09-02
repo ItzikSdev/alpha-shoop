@@ -16,6 +16,7 @@ import { VideosPage } from './pages/VideosPage';
 import { RagPage } from './pages/RagPage';
 import { TicketsPage } from './pages/TicketsPage';
 import { Company } from './pages/Company';
+import { UpdatesPage } from './pages/UpdatesPage';
 
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -49,6 +50,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Overview />} />
             <Route path="/company" element={<Company />} />
+            <Route path="/updates" element={<UpdatesPage />} />
             <Route path="/finance" element={<FinancePage />} />
             <Route path="/integrations" element={<IntegrationsPage />} />
             <Route path="/agent-logs" element={<AgentLogsPage />} />

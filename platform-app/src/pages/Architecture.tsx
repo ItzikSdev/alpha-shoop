@@ -222,7 +222,7 @@ const SYSTEM_MERMAID = `graph TB
     classDef llm fill:#1e3a5f,stroke:#2563eb,color:#e2e8f0
     classDef gw fill:#374151,stroke:#78716c,color:#d6d3d1
     classDef store fill:#065f46,stroke:#059669,color:#d1fae5
-    classDef graph fill:#0b3d2e,stroke:#10b981,color:#d1fae5
+    classDef kg fill:#0b3d2e,stroke:#10b981,color:#d1fae5
     class AVA,SOL,REEL,NORA,MILO,KAI agent
     class SS,DA,FR,TSN,EV,EM,MA,FA,LEGD legacy
     class CJREST,CJMCP,SHOP,TT,GMAIL,WAN,CJ,SHOPADM,TIKTOK ext
@@ -230,4 +230,4 @@ const SYSTEM_MERMAID = `graph TB
     class LITELLM,CLAUDE,QWEN llm
     class TG,WH,API,HB,ORGD,SUPL,CEOR,MGR,IMGL gw
     class RUNNER,CLI,THEMEDIR,DOCS,STOCKW store
-    class FALKOR graph`;
+    class FALKOR kg`;

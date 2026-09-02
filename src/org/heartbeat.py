@@ -947,6 +947,67 @@ async def _ticket_tick(company: Company) -> None:
 
 # Daily, not urgent-frequency — a media gap sits there until Sol works the
 # ticket regardless of whether we notice it in an hour or in 12.
+async def _clarity_report_tick(company: Company) -> None:
+    """Kai's proactive Clarity post — real code-driven cron (like
+    _stock_watch_tick), not an LLM narrating an update it hasn't actually
+    checked. Daily by default (override: company.daemon["clarity_check_interval_hours"])
+    — deliberately conservative given Clarity's own 10-requests/project/day
+    cap on the Data Export API; a shorter interval here would burn that quota
+    before a human ever asks for a report in chat.
+
+    No-ops silently (not an error) when CLARITY_API_TOKEN isn't set yet —
+    this only starts posting once Itzik has actually generated the token,
+    never spams "not connected" to Telegram on a timer."""
+    interval_h = float(company.daemon.get("clarity_check_interval_hours", 24))
+    last = company.daemon.get("clarity_checked_at")
+    if last:
+        try:
+            since_h = (datetime.now(timezone.utc) - datetime.fromisoformat(last)).total_seconds() / 3600
+            if since_h < interval_h:
+                return
+        except Exception:
+            pass
+    company.daemon["clarity_checked_at"] = datetime.now(timezone.utc).isoformat()
+    save_company(company)
+
+    import os
+    if not os.environ.get("CLARITY_API_TOKEN", "").strip():
+        return  # not connected yet — silent no-op, not a Telegram post about it
+
+    from src.mcp_tools.clarity import get_clarity_report
+    try:
+        result = await get_clarity_report(days=3)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Clarity report tick failed: %s", exc)
+        return
+    if result.get("status") != "ok":
+        logger.warning("Clarity report tick: %s", result.get("detail") or result.get("status"))
+        return
+    summary = result.get("summary") or {}
+    if not summary:
+        return  # connected but nothing parseable this cycle — see clarity.py's field-name caveat
+
+    parts = []
+    if "sessions" in summary:
+        parts.append(f"{summary['sessions']} sessions")
+    if "distinct_users" in summary:
+        parts.append(f"{summary['distinct_users']} visitors")
+    friction_bits = [
+        f"{summary[k]} {label}" for k, label in (
+            ("dead_clicks", "dead clicks"), ("rage_clicks", "rage clicks"),
+        ) if summary.get(k, 0) > 0
+    ]
+    if not parts and not friction_bits:
+        return
+    msg = "📊 Clarity — last 3 days: " + ", ".join(parts)
+    if friction_bits:
+        msg += " | UX friction: " + ", ".join(friction_bits)
+    try:
+        await post_as("Kai", "Growth Marketing Analyst", msg)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Clarity report post failed: %s", exc)
+
+
 _MEDIA_SWEEP_INTERVAL_HOURS = 24.0
 
 # The dedupe_key open_ticket checks — ONE catalog-wide ticket at a time. A
@@ -1221,6 +1282,7 @@ async def agent_heartbeat() -> dict | None:
     await _media_sweep_tick(company)
     await _order_poll_tick(company)
     await _nova_tick(company)
+    await _clarity_report_tick(company)
 
     # Respect the global kill-switch (lazy import avoids a route import cycle).
     try:

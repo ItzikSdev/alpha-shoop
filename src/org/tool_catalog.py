@@ -64,6 +64,10 @@ AGENT_TOOL_GROUPS: dict[str, dict[str, list[str]]] = {
         "ads_auth": ["tiktok_ads_login", "tiktok_ads_complete_auth", "tiktok_ads_auth_status"],
         "ads_reporting": ["get_ads_report", "list_campaigns"],
         "ads_manual": ["read_ads_export", "ads_export_status"],
+        # Real Data Export API (src/mcp_tools/clarity.py), added 2026-09-02 —
+        # needs CLARITY_API_TOKEN in .env or every call honestly reports
+        # status="not_connected" instead of guessing a number.
+        "analytics_reporting": ["get_clarity_report"],
     },
     "Nova": {
         # create_ticket/close_ticket-only by charter — same authority every other

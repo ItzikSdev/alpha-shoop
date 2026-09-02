@@ -253,8 +253,11 @@ the message is about; do NOT funnel everything to the CEO. Use the EXACT role st
   refund/complaint handling status.
 - "Growth Marketing Analyst" (Kai) → TikTok Ads Manager data — spend, ROAS, CTR,
   impressions, conversions, campaign performance, connecting/authorizing TikTok
-  Ads, or pasting back a TikTok auth code. Read-only reporting only — Kai never
-  creates or edits a campaign.
+  Ads, or pasting back a TikTok auth code. ALSO Microsoft Clarity data — site
+  traffic/visitor counts, session recordings, heatmaps, rage/dead clicks,
+  scroll depth, UX friction/drop-off. Read-only reporting only — Kai never
+  creates or edits a campaign, and never edits the site based on a UX finding
+  himself (that's a ticket for whoever owns the code).
 - "CEO" (Ava)                → ONLY strategy/direction/money/vision, a build-or-
   launch decision, or a genuinely ambiguous greeting. NOT the default dumping ground.
 If the message NAMES a person (e.g. "Sol, ..."), THAT person answers. When in
@@ -874,6 +877,82 @@ async def _agent_act_ads(agent: Agent, message: str, company) -> str:
     return "\n".join(lines)
 
 
+# Keywords that route a Growth Marketing Analyst message to the Clarity/UX
+# report instead of the TikTok Ads report — checked before falling through to
+# ads (the existing default), so "how's spend looking" still goes to TikTok
+# unchanged, but "how's the site traffic / any UX friction" goes to Clarity.
+_CLARITY_KEYWORDS = (
+    "clarity", "heatmap", "session record", "rage click", "dead click",
+    "scroll depth", "site traffic", "web traffic", "visitors", "bounce",
+    "ux friction", "user experience", "drop off", "drop-off",
+)
+
+
+async def _agent_act_growth(agent: Agent, message: str, company) -> str:
+    """Kai's single entry point for both real data sources he has: TikTok Ads
+    (spend/CTR/ROAS) and Clarity (site traffic + UX-friction signals). Keyword
+    routing on the incoming message, not a guess — defaults to ads (the
+    original, longer-standing behavior) when nothing Clarity-specific is
+    mentioned."""
+    low = message.lower()
+    if any(kw in low for kw in _CLARITY_KEYWORDS):
+        return await _agent_act_analytics(agent, message, company)
+    return await _agent_act_ads(agent, message, company)
+
+
+async def _agent_act_analytics(agent: Agent, message: str, company) -> str:
+    """Kai ACTS in chat: pulls REAL Microsoft Clarity data (Data Export API,
+    src/mcp_tools/clarity.py) — real session/traffic counts and UX-friction
+    signals (dead clicks, rage clicks, excessive scroll), never a guessed or
+    invented number. If no CLARITY_API_TOKEN is configured, says so plainly
+    with the exact setup step rather than pretending to have data."""
+    from src.mcp_tools.clarity import get_clarity_report
+
+    result = await get_clarity_report(days=3)
+    status = result.get("status")
+    if status == "not_connected":
+        return f"Clarity isn't connected yet — {result['setup']}"
+    if status == "error":
+        return f"⚠️ Clarity report fetch failed: {result.get('detail')}"
+
+    summary = result.get("summary") or {}
+    if not summary:
+        return (
+            "Clarity is connected, but I couldn't find any of the metrics I "
+            "normally report in this response (its response shape may have "
+            "changed — see src/mcp_tools/clarity.py's field-name caveat). "
+            f"Raw data has {len(result.get('raw') or [])} metric(s) — ask me to "
+            "dig into the raw payload if you want it."
+        )
+
+    lines = ["Clarity — last 3 days (real session-recording data):"]
+    if "sessions" in summary:
+        lines.append(f"  Sessions: {summary['sessions']}")
+    if "distinct_users" in summary:
+        lines.append(f"  Distinct visitors: {summary['distinct_users']}")
+    friction = []
+    for key, label in (
+        ("dead_clicks", "Dead clicks"), ("rage_clicks", "Rage clicks"),
+        ("excessive_scroll_sessions", "Excessive-scroll sessions"),
+        ("quickback_clicks", "Quickback clicks"), ("script_errors", "Script errors"),
+    ):
+        if key in summary:
+            friction.append(f"  {label}: {summary[key]}")
+    if friction:
+        lines.append("UX friction signals:")
+        lines.extend(friction)
+        # Interpretation stays a plain observation of the real numbers just
+        # printed above, not a claim about a cause not in the data.
+        if summary.get("rage_clicks", 0) > 0 or summary.get("dead_clicks", 0) > 0:
+            lines.append(
+                "  → Rage/dead clicks mean visitors clicked something that "
+                "didn't respond the way they expected — worth a look at which "
+                "page in the Clarity dashboard, not something I can pinpoint "
+                "from these totals alone."
+            )
+    return "\n".join(lines)
+
+
 def _org_docs_context() -> str:
     """Nova's grounding context — the two root docs (DECISIONS_LOG: what's
     already been diagnosed/tried; VISION_ROADMAP: current phase + the explicit
@@ -1238,7 +1317,7 @@ async def route_and_respond(message: str, author: str = "You",
             elif agent.role == "Video Producer":
                 reply = await _agent_act_video(agent, message, company)
             elif agent.role == "Growth Marketing Analyst":
-                reply = await _agent_act_ads(agent, message, company)
+                reply = await _agent_act_growth(agent, message, company)
             elif agent.role == "Nova":
                 reply = await _agent_act_nova(agent, message, company)
         final.append((agent, reply))
@@ -1339,7 +1418,7 @@ async def dispatch_to_agent(name: str, task: str, requested_by: str = "Ava",
             elif agent.role == "Video Producer":
                 reply = await _agent_act_video(agent, message, company)
             elif agent.role == "Growth Marketing Analyst":
-                reply = await _agent_act_ads(agent, message, company)
+                reply = await _agent_act_growth(agent, message, company)
             elif agent.role == "Product Hunter":
                 reply = await _agent_act_sourcing(agent, message, company)
             elif agent.role == "UX & Content":
