@@ -27,9 +27,10 @@ export function Architecture() {
         <h1 className="text-2xl font-bold text-white">Architecture</h1>
         <p className="text-gray-400 text-sm mt-1">
           Four views: MCP server, full system, Draw.io diagram, and Sol's RAG/fulfillment/email
-          plumbing. The company today is a 6-agent org — <strong>Ava</strong> (CEO), <strong>Sol</strong> (sourcing
+          plumbing. The company today is a 7-agent org — <strong>Ava</strong> (CEO), <strong>Sol</strong> (sourcing
           &amp; copy), <strong>Reel</strong> (video), <strong>Nora</strong> (support inbox), <strong>Milo</strong> (fulfillment),
-          <strong> Kai</strong> (TikTok Ads reporting) — that chats over Telegram and acts on a 60-second
+          <strong> Kai</strong> (TikTok Ads + Clarity reporting), <strong>Nova</strong> (stay-on-target, weekly
+          audit, no execute authority) — that chats over Telegram and acts on a 60-second
           heartbeat loop, not a per-client pipeline request. A legacy deterministic pipeline
           (<code className="text-gray-500">src/agents/orchestrator.py</code>) still exists underneath for full
           store builds; it's reached only via org <code className="text-gray-500">build_store</code>/
@@ -62,7 +63,9 @@ export function Architecture() {
       {tab === 'mcp' && (
         <div className="space-y-2">
           <p className="text-gray-500 text-xs">
-            Source: <code className="text-gray-400">mcp.mmd</code> — MCP server with 5 tool groups, Stdio/SSE transport, no exposed API keys.
+            Source: <code className="text-gray-400">mcp.mmd</code> — per-agent real tool sets (<code className="text-gray-400">src/org/tool_catalog.py</code>).
+            Only 2 of these actually speak the MCP protocol (<code className="text-gray-400">cj_mcp</code>, <code className="text-gray-400">tiktok_mcp</code>,
+            both stdio) — the rest are plain Python functions under <code className="text-gray-400">src/mcp_tools/*.py</code> despite the folder name.
           </p>
           {mcpContent ? (
             <MermaidDiagram content={mcpContent} id="mcp-diagram" />
@@ -121,14 +124,15 @@ const SYSTEM_MERMAID = `graph TB
         IMGL["Reel image scan\ndisabled by default"]
     end
 
-    subgraph ORG ["Org — 6 agents · org_agents / org_company tables"]
+    subgraph ORG ["Org — 7 agents · org_agents / org_company tables"]
         direction LR
         AVA["Ava · CEO\nrouting · reports · meeting decisions"]
         SOL["Sol · sourcing & copy\nCJ search → Shopify push"]
-        REEL["Reel · video\nlocal Wan2.2/ComfyUI pipeline"]
+        REEL["Reel · video\nVeo rotation video + Gemini photos (paid API,\nreplaced local Wan2.2/ComfyUI 2026-08-20)"]
         NORA["Nora · support\ncentral Gmail inbox"]
-        MILO["Milo · fulfillment\norder → CJ → tracking"]
-        KAI["Kai · TikTok Ads\nread-only reporting"]
+        MILO["Milo · fulfillment\norder → CJ → tracking (deterministic, no LLM)"]
+        KAI["Kai · TikTok Ads + Clarity\nread-only reporting"]
+        NOVA["Nova · stay-on-target\nweekly audit — create_ticket/close_ticket\nonly, no execute authority"]
     end
 
     TG <--> ORG
@@ -147,21 +151,24 @@ const SYSTEM_MERMAID = `graph TB
     end
     LEGD -.->|"disabled by default"| PIPE
 
-    subgraph TOOLS ["Per-agent tools"]
+    subgraph TOOLS ["Per-agent tools — src/org/tool_catalog.py is the source of truth"]
         direction LR
         CJREST["CJ REST\nsrc/mcp_tools — catalog search"]
         CJMCP["CJ real MCP\nsrc/cj_mcp — inventory + tracking"]
         SHOP["Shopify Admin\nGraphQL 2024-07"]
         TT["TikTok Ads real MCP\nsrc/tiktok_mcp — read-only"]
-        GMAIL["Central Gmail inbox\nsend via Resend"]
-        WAN["Local Wan2.2/ComfyUI\n+ TTS + ffmpeg"]
+        CLARITY["Microsoft Clarity\nData Export API — src/mcp_tools/clarity.py\nadded 2026-09-02, needs CLARITY_API_TOKEN"]
+        GMAIL["Central Gmail inbox\nsupport_inbox.py (Nora, via Resend) +\nemail.py (Milo, fulfillment notices)"]
+        VEO["Veo + Gemini (Google, paid ~$0.40/clip)\nrotation video + product photos"]
+        SERPER["Serper\nweb search + competitor pricing"]
     end
 
     SOL --> CJREST & CJMCP & SHOP
-    KAI --> TT
+    KAI --> TT & CLARITY
     NORA --> GMAIL
-    MILO --> CJREST & SHOP
-    REEL --> WAN
+    MILO --> CJREST & SHOP & GMAIL
+    REEL --> VEO
+    NOVA -.->|"read-only reporting"| SERPER & TT
     PIPE --> SHOP
     IMGL --> REEL
 
@@ -196,6 +203,7 @@ const SYSTEM_MERMAID = `graph TB
     end
     ORG --> SQLITE
     SOL --> REDIS
+    NOVA -.->|"search_playbook / search_local_catalog"| REDIS
 
     subgraph SF ["Storefront — Shopify CLI Liquid themes"]
         direction LR
@@ -223,9 +231,9 @@ const SYSTEM_MERMAID = `graph TB
     classDef gw fill:#374151,stroke:#78716c,color:#d6d3d1
     classDef store fill:#065f46,stroke:#059669,color:#d1fae5
     classDef kg fill:#0b3d2e,stroke:#10b981,color:#d1fae5
-    class AVA,SOL,REEL,NORA,MILO,KAI agent
+    class AVA,SOL,REEL,NORA,MILO,KAI,NOVA agent
     class SS,DA,FR,TSN,EV,EM,MA,FA,LEGD legacy
-    class CJREST,CJMCP,SHOP,TT,GMAIL,WAN,CJ,SHOPADM,TIKTOK ext
+    class CJREST,CJMCP,SHOP,TT,CLARITY,GMAIL,VEO,SERPER,CJ,SHOPADM,TIKTOK ext
     class SQLITE,REDIS data
     class LITELLM,CLAUDE,QWEN llm
     class TG,WH,API,HB,ORGD,SUPL,CEOR,MGR,IMGL gw

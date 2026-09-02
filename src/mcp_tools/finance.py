@@ -177,13 +177,13 @@ def integrations_status() -> list[dict]:
             shop_ok, "Store admin token present." if shop_ok else "No access token — re-auth via /org/shopify-reauth."),
         row("cj", "CJ Dropshipping (sourcing + fulfillment)", "Suppliers", ["Sol"],
             cj_ok, "CJ token configured (per-store or global)." if cj_ok else "No CJ token."),
-        row("redis_rag", "Redis (vector RAG — CJ catalog + playbook)", "AI / Data", ["Sol"],
+        row("redis_rag", "Redis (vector RAG — CJ catalog + playbook)", "AI / Data", ["Sol", "Nova"],
             redis_ok, redis_detail),
-        row("gmail", "Gmail (customer email)", "Communication", ["Nora"],
+        row("gmail", "Gmail (customer email)", "Communication", ["Nora", "Milo"],
             gmail_ok,
             f"Support inbox {store.support_email} configured." if gmail_ok and store and store.support_email
             else "No Gmail credentials configured yet — see docs/sol_integrations_rag_fulfillment_email.md."),
-        row("serper", "Serper (competitor price / market search)", "Market data", ["Sol"],
+        row("serper", "Serper (competitor price / market search)", "Market data", ["Nova"],
             bool(getattr(s, "serper_api_key", "")), "Serper key present — live competitor pricing." if getattr(s, "serper_api_key", "") else "No Serper key — competitor pricing falls back."),
         row("facebook_instagram", "Facebook & Instagram", "Marketing", ["Ava"],
             False,  # enriched by the REAL Shopify channel check in the /org/integrations route
@@ -208,12 +208,14 @@ def integrations_status() -> list[dict]:
         row("google_ads", "Google Ads (paid traffic)", "Marketing", ["Ava"],
             bool(s.google_ads_developer_token and s.google_ads_customer_id),
             "Configured." if (s.google_ads_developer_token and s.google_ads_customer_id) else "Not connected — ad-spend metrics are still mocked."),
-        row("meta_ads_api", "Meta Marketing API (create ads)", "Marketing", ["Sol"],
+        row("meta_ads_api", "Meta Marketing API (create ads)", "Marketing", ["Ava"],
             meta_api_ok,
-            "Access token + ad account id configured — Sol can create/manage campaigns." if meta_api_ok
+            "Access token + ad account id configured — but no current agent has ad-creation tools "
+            "wired in (Kai is TikTok read-only reporting only; Nova is read-only reporting only). "
+            "This would need to be wired to an agent's tool list before anything gets created." if meta_api_ok
             else "Sales channel may be connected, but creating ads needs a Marketing API access "
-                 "token + ad account id — set them on the Stores page (same idea as PayPal: more "
-                 "info needed before this actually works)."),
+                 "token + ad account id — set them on the Stores page. Also note: no current agent "
+                 "has ad-creation tools wired in even once this is configured."),
         row("gcp", "Google Cloud (GCP)", "Cloud / Infra", ["Ava"],
             bool(s.google_application_credentials), "Service-account credentials set." if s.google_application_credentials else "No GCP credentials file."),
         row("claude", "Claude via LiteLLM (the agents' brain)", "AI", ALL,
@@ -243,10 +245,11 @@ async def facebook_instagram_status() -> tuple[bool, str]:
 
     if has_channel:
         detail = ("Facebook & Instagram sales channel is installed — product catalog syncs to the "
-                  "Meta Shop. " + ("Meta Marketing API token present — Sol can launch ads."
+                  "Meta Shop. " + ("Meta Marketing API token present, but no current agent has "
+                                   "ad-creation tools wired in yet."
                                    if has_ads_token else
                                    "Ads via the Marketing API still need a Meta access token + ad-account id "
-                                   "before Sol can spend on them."))
+                                   "— and even then, no current agent has ad-creation tools wired in yet."))
         return True, detail
     if not channels:
         return False, "Couldn't read the store's sales channels (publications scope or token) — can't confirm the channel."

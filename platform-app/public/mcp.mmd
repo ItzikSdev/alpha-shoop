@@ -1,33 +1,63 @@
 graph LR
-    CLIENT["Claude Desktop\n/ LangGraph Client"]
-
-    subgraph SRV ["E-commerce Arbitrage MCP Server"]
+    subgraph AGENTS["7 agents — each with their own real tool set"]
         direction TB
-        PROTO["Protocol Engine\nStdio / SSE Transport"]
-        T1["Sourcing Tools\nsearch_trending_products\nget_shipping_cost"]
-        T2["Market Validation\nsearch_market_prices\ncheck_google_trends"]
-        T3["Shopify Tools\ncreate_product · update_inventory\n_publish_product"]
-        T4["Ads Tools\ncreate_campaign\nget_campaign_metrics"]
-        T5["Fulfillment Tools\nplace_supplier_order\nfulfill_shopify_order"]
-        PROTO --> T1 & T2 & T3 & T4 & T5
+        AVA["Ava · CEO\nmanagement · operations · shopify"]
+        SOL["Sol · sourcing & copy\nshopify · sourcing · knowledge · ask_teammate"]
+        REEL["Reel · video\nvideo · image · catalog"]
+        NORA["Nora · support\ninbox · comms · knowledge"]
+        MILO["Milo · fulfillment\nfulfillment · comms\n(deterministic, no LLM tool loop)"]
+        KAI["Kai · TikTok Ads + Clarity\nads_auth · ads_reporting · analytics_reporting"]
+        NOVA["Nova · stay-on-target\noversight · knowledge · ads_reporting ·\nshopify_reporting · market_research · diagnostics\n(read-only — no execute authority)"]
     end
 
-    CJ["CJ Dropshipping\nAliExpress"]
-    SERP["Google Trends\nSerper"]
-    SHOP["Shopify Admin\nGraphQL 2024-07"]
-    ADS["Google Ads\nMeta Ads"]
+    subgraph REALMCP["Real MCP-protocol servers (stdio)"]
+        direction TB
+        CJMCP["cj_mcp\nsrc/cj_mcp/client.py — inventory + tracking\nJWT via cj_mcp_key"]
+        TIKTOKMCP["tiktok_mcp\nsrc/tiktok_mcp/server.py — real MCP SDK\nserver+client, read-only"]
+    end
 
-    CLIENT -->|"call_tool — no API keys exposed"| PROTO
-    T1 -->|REST| CJ
-    T2 -->|REST| SERP
-    T3 -->|GraphQL + REST| SHOP
-    T4 -->|REST/gRPC| ADS
-    T5 -->|REST| CJ
-    T5 -->|REST| SHOP
+    subgraph PLAINTOOLS["Plain Python tool modules — NOT MCP protocol, called directly by agent handlers"]
+        direction TB
+        SOURCING["sourcing.py / cj_connect.py\nsearch_trending_products, cj_search_products,\ncj_add_product, cj_stock_sweep"]
+        SHOPIFY["shopify.py / shopify_auth.py\nshopify_admin, publish_products,\nget_sales_summary"]
+        SUPPORTINBOX["support_inbox.py\nprocess_central_inbox, list_new_support_emails,\nsend_reply_via_resend"]
+        EMAILPY["email.py\nsend_email — Milo's fulfillment\nconfirmation/tracking notices"]
+        FULFILL["fulfillment.py\nprocess_order() — deterministic,\nno LLM reasoning on the happy path"]
+        CLARITY["clarity.py — added 2026-09-02\nget_clarity_report; honest\nstatus=not_connected until token is set"]
+        VIDEO["video/veo_video.py + gemini_images.py\nrotation video (~$0.40/clip) + product photos —\nreplaced local Wan2.2/ComfyUI 2026-08-20"]
+        MARKET["market.py\nsearch_web / search_market_prices\n(Serper — Nova's outside-context tool)"]
+        FINANCE["finance.py\nintegrations_status, finance_snapshot —\nfeeds the platform-app Integrations/Finance pages"]
+    end
 
-    classDef client fill:#14532d,stroke:#22c55e,color:#d1fae5
+    AVA --> SHOPIFY
+    SOL --> SOURCING & SHOPIFY & CJMCP
+    REEL --> VIDEO
+    NORA --> SUPPORTINBOX
+    MILO --> FULFILL & EMAILPY
+    KAI --> TIKTOKMCP & CLARITY
+    NOVA --> MARKET
+
+    CJ["CJ Dropshipping"]
+    SHOPADM["Shopify Admin API\nGraphQL 2024-07"]
+    TIKTOKAPI["TikTok Marketing API"]
+    GMAIL["Gmail\ncentral mailbox, one per company"]
+    CLARITYAPI["Microsoft Clarity\nData Export API"]
+    GOOGLEAPI["Google Veo + Gemini\npaid APIs"]
+    SERPERAPI["Serper\nweb search"]
+
+    SOURCING & CJMCP --> CJ
+    SHOPIFY --> SHOPADM
+    TIKTOKMCP --> TIKTOKAPI
+    SUPPORTINBOX & EMAILPY --> GMAIL
+    CLARITY --> CLARITYAPI
+    VIDEO --> GOOGLEAPI
+    MARKET --> SERPERAPI
+
+    classDef agent fill:#4B0082,stroke:#6d28d9,color:#e2e8f0
+    classDef mcp fill:#14532d,stroke:#22c55e,color:#d1fae5
     classDef tool fill:#1e1b4b,stroke:#6d28d9,color:#e0e7ff
     classDef ext fill:#450a0a,stroke:#dc2626,color:#fee2e2
-    class CLIENT client
-    class T1,T2,T3,T4,T5,PROTO tool
-    class CJ,SERP,SHOP,ADS ext
+    class AVA,SOL,REEL,NORA,MILO,KAI,NOVA agent
+    class CJMCP,TIKTOKMCP mcp
+    class SOURCING,SHOPIFY,SUPPORTINBOX,EMAILPY,FULFILL,CLARITY,VIDEO,MARKET,FINANCE tool
+    class CJ,SHOPADM,TIKTOKAPI,GMAIL,CLARITYAPI,GOOGLEAPI,SERPERAPI ext
