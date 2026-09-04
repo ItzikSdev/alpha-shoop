@@ -1092,6 +1092,25 @@ async def _media_sweep_tick(company: Company) -> None:
                     dedupe_key=_MEDIA_SWEEP_DEDUPE_KEY)
     if t:
         agent_log(f"🎬 Media sweep: opened {t.id} — {len(gaps)} product(s) missing media", "info")
+        # The ticket stays assigned to Sol (only he has the tool loop _ticket_tick
+        # can actually run) — but this is Reel's job, and waiting for Sol to work
+        # the ticket and THEN reactively ask Reel meant Reel had no visibility
+        # into a media gap until Sol got around to it. Ping Reel directly and
+        # immediately instead, bounded to a few products so this doesn't turn
+        # into an unbounded render queue on one sweep.
+        try:
+            from src.org.conversation import dispatch_to_agent
+            top = gaps[:3]
+            gap_lines = "\n".join(f"- {g['title']} ({g['id']}): missing {', '.join(g['blockers'])}" for g in top)
+            await dispatch_to_agent(
+                "Reel",
+                f"Today's media sweep found {len(gaps)} product(s) missing required media. "
+                f"Start on these first:\n{gap_lines}\nRender/generate what's missing for as "
+                "many as you can get through right now.",
+                requested_by="system",
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Media sweep: couldn't ping Reel directly: %s", exc)
 
 
 # Poll-based stand-in for a Shopify order webhook: this backend has no public

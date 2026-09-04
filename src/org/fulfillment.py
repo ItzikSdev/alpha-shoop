@@ -192,15 +192,30 @@ async def _escalate(payload: ShopifyOrderWebhook, store: StoreConfig, errors: li
         description=desc, source="order_failure", store_id=store.store_id,
         dedupe_key=f"order_failure_{payload.id}",
     )
+    # Customer communication doesn't wait on Sol's investigation — that could
+    # take a while or not pan out, and the customer shouldn't sit in silence
+    # either way. This used to be a note buried in Sol's prompt ("flag that
+    # Milo/Nora will send it") that only reached Nora if Sol's own judgment
+    # decided to ask_teammate her mid-investigation; ping her directly instead.
+    try:
+        from src.org.conversation import dispatch_to_agent
+        await dispatch_to_agent(
+            "Nora",
+            f"Order {payload.id} for {payload.email} at {store.name} just hit a fulfillment "
+            f"problem ({'; '.join(errors)[:200]}) and may be delayed. Send them a short, "
+            "honest heads-up now — Sol is investigating a fix in parallel.",
+            requested_by="Milo",
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not hand fulfillment delay notice for order %s to Nora: %s", payload.id, exc)
     try:
         from src.org.agent_loop import run_sol_task
         await run_sol_task(
             f"Fulfillment failed for order {payload.id}: {'; '.join(errors)}. Investigate "
             "(check cj_product_inventory / search_local_catalog for the sku, retry "
             "place_supplier_order via shopify_admin if it looks transient) and post what you "
-            f"find. If it can't be resolved quickly, flag that this order's customer "
-            f"({payload.email}) needs a delay email — Milo/Nora will send it; you have no "
-            "customer-email tool yourself.",
+            f"find. Nora has already been notified to send the customer ({payload.email}) a "
+            "delay heads-up, so you don't need to arrange that yourself.",
             store_slug=store.store_id,
             # Without this, update_ticket(..., "doing") never fired: open_ticket()'s
             # return was discarded and the ticket sat in 'todo' even while Sol worked it.
