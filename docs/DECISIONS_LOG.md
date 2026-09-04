@@ -6,6 +6,25 @@ found, what was done, current status.
 
 ---
 
+## 2026-09-04 (evening) — Telegram restart made real; Sol escalation gap closed; shared-memory blind spot found
+
+**Ask**: verify the morning's Telegram routing changes (see entry below) were actually live — they weren't — then close the escalation gaps found while investigating.
+
+**Found**: the org's `uvicorn src.main:app` process had been running since Wed Sep 2 13:36 — a bare background process with no supervisor (no launchd/pm2/systemd/tmux), so merging to `main` never touched it. All of today's Telegram commits, including the morning's routing rework, were sitting unused in git for 2 days despite being merged.
+
+**Fixed and verified live, not assumed**:
+1. Restarted the process (`scripts/run_host_api.sh` — the only redeploy mechanism; manual, no automated trigger on merge). Verified end-to-end with a real message from a non-owner group member ("guy nahum") getting a real, context-grounded model reply posted back in the group.
+2. `_agent_reply()` (`src/org/conversation.py`) no longer returns a scripted "(On it — {role} here...)" line when the model call fails — retries once on the Claude tier, then shows an honest ⚠️ error instead of faking an in-character answer. (`040b4b6`)
+3. Sol's escalation gap: his structural failure modes (a stuck `ask_teammate` loop, an uncaught exception, running out of steps/time) were narrating into his own buried Telegram topic like everything else, instead of escalating — same "buried, not lost, but effectively invisible" pattern already fixed for Nora/Milo earlier today. Fixed via 4 new `post_escalation()` call sites inside `run_sol_task`/`ask_teammate`, including a `_repeated_without_progress` detector for the "same reply repeating verbatim, sounds substantive but nothing's actually landing" case — verified against real trace data from a live Reel-stuck-in-a-loop incident that surfaced tonight (correctly fires on the real repeated-reply burst, correctly stays silent on a control/never-asked PID). (`f8a777c`)
+4. Sol's own semantic judgment ("this is a critical systemic error") still wasn't wired to escalation even after #3 — those are structural triggers, not a read of what Sol actually concluded in prose. Added `escalate_and_ticket(issue)`, a new tool Sol can call explicitly, paired with a system-prompt nudge in the same "ask a teammate before you flag_blocker" style already used in the other agents' `seed.py` charters. Deliberately NOT implemented as a keyword-scan of his narration: tested that approach against real data first and rejected it — Milo and Nora both use "critical" as routine vocabulary in ordinary status updates tonight, so a keyword gate would have drowned the main topic in false positives. (`b29da56`)
+5. Used the new tool immediately, manually, for a real bug Sol had already fully diagnosed but that had been sitting unticketed for hours: PID 2609030524201609500 blocked by a check erroneously cross-referencing an unrelated PID 2609040624391621700 → `TKT-e793a8f2` (critical, assigned Sol).
+
+**Structural gap found, not fixed — needs its own dedicated session**: `post_to_telegram()`/`_send()` (used for main-topic-only posts, e.g. `executor.py`'s `flag_blocker` handler) never calls `log_message()` — only `post_as()` does. `_recent_transcript()`, the single shared-memory mechanism every agent reads before replying, pulls exclusively from that `log_message`-populated file (`data/agent_messages.jsonl`). So any main-topic-only message is invisible to every agent's own memory, including whoever posted it — a real blind spot in the org's core shared-memory mechanism, not something to patch as a side effect of an escalation-focused session.
+
+**Verified**: all three commits (`040b4b6`, `f8a777c`, `b29da56`) syntax-checked; process restarted into each in turn, confirmed clean startup (Telegram bot polling + all 7 agent callback pollers + `HTTP 200` health check) after every restart. `TKT-e793a8f2` confirmed present in the tickets table with the expected fields.
+
+---
+
 ## 2026-09-04 — Agent-communication routing rework; Nora's dispatch_to_agent gap flagged (not fixed)
 
 **Ask**: change how the org communicates — stop private DMs to Itzik, increase real inter-agent talk where a real gap exists, and make the shared Telegram channel answer questions from anyone in it, not just Itzik. Explicitly out of scope: ticket creation, real-blocker escalation to Itzik, and the merge/deploy human-review gate — none of those touched.
