@@ -136,29 +136,29 @@
         <mxCell id="VEO" value="Veo + Gemini (Google, paid)&#10;rotation video + product photos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e1b4b;strokeColor=#6d28d9;fontColor=#e0e7ff;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="1780" y="730" width="300" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="SERPER" value="Serper&#10;web search + competitor pricing (Nova)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e1b4b;strokeColor=#6d28d9;fontColor=#e0e7ff;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="2100" y="730" width="260" height="80" as="geometry" />
+        <mxCell id="SERPER" value="Serper&#10;web search + competitor pricing (Nova)" style="shape=image;html=1;imageAspect=0;image=https://serper.dev/apple-touch-icon.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="2206" y="746" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="CJ" value="CJ Dropshipping" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#450a0a;strokeColor=#dc2626;fontColor=#fee2e2;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="80" y="900" width="260" height="60" as="geometry" />
+        <mxCell id="CJ" value="CJ Dropshipping" style="shape=image;html=1;imageAspect=0;image=https://cjdropshipping.com/favicon.ico;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="186" y="906" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="SHOPADM" value="Shopify Admin API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#450a0a;strokeColor=#dc2626;fontColor=#fee2e2;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="400" y="900" width="260" height="60" as="geometry" />
+        <mxCell id="SHOPADM" value="Shopify Admin API" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/shopify.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="506" y="906" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="TIKTOK" value="TikTok Marketing API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#450a0a;strokeColor=#dc2626;fontColor=#fee2e2;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="720" y="900" width="260" height="60" as="geometry" />
+        <mxCell id="TIKTOK" value="TikTok Marketing API" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/tiktok.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="826" y="906" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="CLARITYAPI" value="Microsoft Clarity&#10;Data Export API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#450a0a;strokeColor=#dc2626;fontColor=#fee2e2;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1040" y="900" width="260" height="60" as="geometry" />
+        <mxCell id="CLARITYAPI" value="Microsoft Clarity&#10;Data Export API" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/microsoft.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1146" y="906" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="GMAILEXT" value="Gmail" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#450a0a;strokeColor=#dc2626;fontColor=#fee2e2;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1360" y="900" width="200" height="60" as="geometry" />
+        <mxCell id="GMAILEXT" value="Gmail" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/gmail.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1436" y="906" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="GOOGLEAPI" value="Google Veo + Gemini APIs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#450a0a;strokeColor=#dc2626;fontColor=#fee2e2;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1620" y="900" width="260" height="60" as="geometry" />
+        <mxCell id="GOOGLEAPI" value="Google Veo + Gemini APIs" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/google.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1726" y="906" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="SERPERAPI" value="Serper API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#450a0a;strokeColor=#dc2626;fontColor=#fee2e2;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1940" y="900" width="220" height="60" as="geometry" />
+        <mxCell id="SERPERAPI" value="Serper API" style="shape=image;html=1;imageAspect=0;image=https://serper.dev/apple-touch-icon.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="2026" y="906" width="48" height="48" as="geometry" />
         </mxCell>
         <mxCell id="LITELLM" value="get_llm(role)&#10;role -&gt; LiteLLM model alias" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e3a5f;strokeColor=#2563eb;fontColor=#e2e8f0;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="80" y="1050" width="300" height="70" as="geometry" />

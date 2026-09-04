@@ -1,0 +1,118 @@
+<mxfile host="app.diagrams.net" agent="alpha-shoop" version="24.0.0">
+  <diagram name="alphaforbaby — Traffic &amp; Data Flow" id="alpha-store-architecture">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1780" pageHeight="740" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="g_traffic" value="Traffic in" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="320" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="g_storefront" value="Hydrogen storefront (Oxygen)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="400" y="40" width="420" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="g_checkout" value="Checkout — Shopify-hosted, NOT the Hydrogen app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="860" y="40" width="380" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="g_analytics" value="Session analytics (client-side)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="400" y="320" width="420" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="g_fulfillment" value="Order -&gt; fulfillment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="860" y="320" width="410" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="g_reporting" value="Agent reporting (read-only, separate from traffic)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="40" width="460" height="670" as="geometry" />
+        </mxCell>
+        <mxCell id="tiktok_ads" value="TikTok Ads" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/tiktok.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="176" y="90" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="customer" value="Customer" style="shape=umlActor;whiteSpace=wrap;html=1;fillColor=#78350f;strokeColor=#d97706;fontColor=#fef3c7;fontSize=11;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="80" y="220" width="100" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="hydrogen" value="Hydrogen React app&#10;Oxygen edge runtime" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e1b4b;strokeColor=#6366f1;fontColor=#e0e7ff;fontSize=11;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="440" y="90" width="340" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="storefront_api" value="Shopify&#10;(Storefront API)" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/shopify.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="586" y="190" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="checkout" value="Shopify Checkout&#10;(separate domain)" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/shopify.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="90" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="hyp" value="Hyp payment gateway&#10;(clears via MAX acquirer)" style="shape=image;html=1;imageAspect=0;image=https://hyp.co.il/wp-content/themes/hyp-theme/assets/favicon.ico;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="956" y="211" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="clarity_script" value="Clarity script tag&#10;root.jsx, nonce&#x27;d,&#10;project y9evik4b8h" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e1b4b;strokeColor=#6366f1;fontColor=#e0e7ff;fontSize=11;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="440" y="370" width="340" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="clarity_saas" value="Microsoft Clarity&#10;(session recordings)" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/microsoft.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="586" y="465" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="order_webhook" value="orders/create webhook&#10;HMAC-validated" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#374151;strokeColor=#78716c;fontColor=#d6d3d1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="900" y="370" width="300" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="milo" value="Milo&#10;(Fulfillment agent)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="900" y="460" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="cj" value="CJ Dropshipping&#10;(place_supplier_order)" style="shape=image;html=1;imageAspect=0;image=https://cjdropshipping.com/favicon.ico;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1141" y="476" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="kai" value="Kai&#10;(Growth agent)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="85" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="tiktok_api" value="TikTok API&#10;(spend/CTR/conv.)" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/tiktok.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1496" y="230" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="clarity_api" value="Clarity API&#10;(data export)" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/microsoft.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1496" y="380" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="nora" value="Nora&#10;(Support agent)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="500" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="gmail" value="Gmail&#10;(support inbox)" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/gmail.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1496" y="600" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="note1" value="Kai&#x27;s reports and Milo&#x27;s fulfillment are separate&#10;from the customer-facing flow at left." style="text;html=1;align=left;verticalAlign=top;fontSize=10;fontColor=#666666;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="590" width="700" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ads_customer" value="ad click" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#dc2626;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="tiktok_ads" target="customer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_customer_hydrogen" value="browses" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="customer" target="hydrogen">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_hydrogen_sfapi" value="GraphQL" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="hydrogen" target="storefront_api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_hydrogen_checkout" value="cart -&gt; checkout" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="hydrogen" target="checkout">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_checkout_hyp" value="charge" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="checkout" target="hyp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_hydrogen_clarityscript" value="injects on&#10;every page load" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="hydrogen" target="clarity_script">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_clarityscript_saas" value="session data" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="clarity_script" target="clarity_saas">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_checkout_webhook" value="order paid" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="checkout" target="order_webhook">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_webhook_milo" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="order_webhook" target="milo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_milo_cj" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0.15;entryY=0.5;" edge="1" parent="1" source="milo" target="cj">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_kai_tiktokapi" value="read-only" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#7c3aed;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="kai" target="tiktok_api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_kai_clarityapi" value="read-only&#10;(needs token)" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#7c3aed;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="kai" target="clarity_api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_nora_gmail" value="check_inbox /&#10;send_reply_via_resend" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="nora" target="gmail">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

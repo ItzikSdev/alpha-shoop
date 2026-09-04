@@ -1,33 +1,69 @@
-import { useState, useEffect } from 'react';
-import { MermaidDiagram } from '../components/MermaidDiagram';
+import { useState } from 'react';
 import { DrawioViewer } from '../components/DrawioViewer';
 
-type DiagramTab = 'drawio' | 'mcp' | 'system' | 'sol_rag';
+type SystemTab = 'mcp' | 'system' | 'drawio' | 'sol_rag';
+type StoreSubTab = 'org' | 'deploy' | 'store';
+
+interface StoreEntry {
+  id: string;
+  label: string;
+  icon: string;
+  subTabs: { id: StoreSubTab; label: string; icon: string; url: string; desc: React.ReactNode }[];
+}
+
+// Adding a second store domain: append another entry here — it gets its own
+// grouped button + sub-tab row automatically, same shape as this one.
+const STORES: StoreEntry[] = [
+  {
+    id: 'alphaforbaby',
+    label: 'AlphaForBaby',
+    icon: '🏪',
+    subTabs: [
+      {
+        id: 'org', label: 'Agent Org', icon: '👥', url: '/agent-org-architecture.drawio',
+        desc: <>The live 7-agent org, Telegram, heartbeat/org-daemon/support-poll triggers, the ticket
+          board, and the shared data layer (SQLite/Redis/FalkorDB).</>,
+      },
+      {
+        id: 'deploy', label: 'Deploy Flow', icon: '🚀', url: '/deploy-branch-flow.drawio',
+        desc: <>Branch naming → preview → human review gate → per-store production branch → Oxygen
+          deploy, plus the PR-merge-notify pipeline. See <code className="text-gray-400">docs/DEV_WORKFLOW.md</code>.</>,
+      },
+      {
+        id: 'store', label: 'Store Architecture', icon: '🏬', url: '/alphaforbaby-store-architecture.drawio',
+        desc: <>alphaforbaby's traffic &amp; data flow — TikTok Ads → Hydrogen storefront → Shopify-hosted
+          checkout (Hyp gateway) → Clarity, and Kai/Nora's separate read-only reporting paths.</>,
+      },
+    ],
+  },
+];
 
 export function Architecture() {
-  const [tab, setTab] = useState<DiagramTab>('mcp');
-  const [mcpContent, setMcpContent] = useState<string | null>(null);
+  const [category, setCategory] = useState<'system' | 'store'>('system');
+  const [tab, setTab] = useState<SystemTab>('mcp');
+  const [activeStoreId, setActiveStoreId] = useState<string>(STORES[0].id);
+  const [storeSubTab, setStoreSubTab] = useState<StoreSubTab>('org');
 
-  useEffect(() => {
-    fetch('/mcp.mmd')
-      .then(r => r.ok ? r.text() : null)
-      .then(t => setMcpContent(t));
-  }, []);
-
-  const TABS: { id: DiagramTab; label: string; icon: string }[] = [
+  const SYSTEM_TABS: { id: SystemTab; label: string; icon: string }[] = [
     { id: 'mcp', label: 'MCP Architecture', icon: '🔌' },
     { id: 'system', label: 'Full System', icon: '🗺️' },
     { id: 'drawio', label: 'Draw.io Diagram', icon: '📐' },
     { id: 'sol_rag', label: 'Sol: RAG + Fulfillment + Email', icon: '🧠' },
   ];
 
+  const activeStore = STORES.find(s => s.id === activeStoreId)!;
+  const activeSubTab = activeStore.subTabs.find(t => t.id === storeSubTab) ?? activeStore.subTabs[0];
+
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Architecture</h1>
         <p className="text-gray-400 text-sm mt-1">
-          Four views: MCP server, full system, Draw.io diagram, and Sol's RAG/fulfillment/email
-          plumbing. The company today is a 7-agent org — <strong>Ava</strong> (CEO), <strong>Sol</strong> (sourcing
+          Two categories: system-wide diagrams (MCP server, full system, draw.io, Sol's RAG/
+          fulfillment/email plumbing) and per-store-domain architecture — one consolidated view
+          per store, matching each store's <code className="text-gray-500">ARCHITECTURE.md</code>. AlphaForBaby's
+          diagrams are from <code className="text-gray-500">alphaforbaby/pdp-drawio-diagrams</code>, not yet
+          merged. The company today is a 7-agent org — <strong>Ava</strong> (CEO), <strong>Sol</strong> (sourcing
           &amp; copy), <strong>Reel</strong> (video), <strong>Nora</strong> (support inbox), <strong>Milo</strong> (fulfillment),
           <strong> Kai</strong> (TikTok Ads + Clarity reporting), <strong>Nova</strong> (stay-on-target, weekly
           audit, no execute authority) — that chats over Telegram and acts on a 60-second
@@ -42,56 +78,109 @@ export function Architecture() {
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2">
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors border ${
-              tab === t.id
-                ? 'bg-indigo-900/70 text-indigo-200 border-indigo-700'
-                : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200'
-            }`}
-          >
-            {t.icon} {t.label}
-          </button>
-        ))}
+      {/* Category selector */}
+      <div className="flex gap-2 border-b border-gray-800 pb-4">
+        <button
+          onClick={() => setCategory('system')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+            category === 'system'
+              ? 'bg-indigo-900/70 text-indigo-200 border-indigo-700'
+              : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200'
+          }`}
+        >
+          🗂️ System-wide
+        </button>
+        <button
+          onClick={() => setCategory('store')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+            category === 'store'
+              ? 'bg-indigo-900/70 text-indigo-200 border-indigo-700'
+              : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200'
+          }`}
+        >
+          🏪 Stores
+        </button>
       </div>
 
-      {/* MCP Mermaid */}
-      {tab === 'mcp' && (
-        <div className="space-y-2">
-          <p className="text-gray-500 text-xs">
-            Source: <code className="text-gray-400">mcp.mmd</code> — per-agent real tool sets (<code className="text-gray-400">src/org/tool_catalog.py</code>).
-            Only 2 of these actually speak the MCP protocol (<code className="text-gray-400">cj_mcp</code>, <code className="text-gray-400">tiktok_mcp</code>,
-            both stdio) — the rest are plain Python functions under <code className="text-gray-400">src/mcp_tools/*.py</code> despite the folder name.
-          </p>
-          {mcpContent ? (
-            <MermaidDiagram content={mcpContent} id="mcp-diagram" />
-          ) : (
-            <div className="p-4 bg-gray-900 border border-gray-700 rounded-xl text-gray-500 text-sm animate-pulse">
-              Loading mcp.mmd...
-            </div>
-          )}
+      {/* System-wide sub-tabs */}
+      {category === 'system' && (
+        <div className="flex gap-2">
+          {SYSTEM_TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors border ${
+                tab === t.id
+                  ? 'bg-indigo-900/70 text-indigo-200 border-indigo-700'
+                  : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200'
+              }`}
+            >
+              {t.icon} {t.label}
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Full system mermaid (hardcoded since architecture.mmd may not exist) */}
-      {tab === 'system' && (
-        <MermaidDiagram
-          content={SYSTEM_MERMAID}
-          id="system-diagram"
-        />
+      {/* Store selector, then that store's sub-tabs — one cohesive view per domain */}
+      {category === 'store' && (
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            {STORES.map(s => (
+              <button
+                key={s.id}
+                onClick={() => { setActiveStoreId(s.id); setStoreSubTab(s.subTabs[0].id); }}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                  activeStoreId === s.id
+                    ? 'bg-emerald-900/60 text-emerald-200 border-emerald-700'
+                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200'
+                }`}
+              >
+                {s.icon} {s.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2 pl-4 border-l-2 border-emerald-800/60">
+            {activeStore.subTabs.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setStoreSubTab(t.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors border ${
+                  storeSubTab === t.id
+                    ? 'bg-indigo-900/70 text-indigo-200 border-indigo-700'
+                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200'
+                }`}
+              >
+                {t.icon} {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* MCP Architecture — converted from mcp.mmd to a real .drawio (2026-09-02) */}
+      {category === 'system' && tab === 'mcp' && (
+        <div className="space-y-2">
+          <p className="text-gray-500 text-xs">
+            Per-agent real tool sets (<code className="text-gray-400">src/org/tool_catalog.py</code>).
+            Only 2 of these actually speak the MCP protocol (<code className="text-gray-400">cj_mcp</code>, <code className="text-gray-400">tiktok_mcp</code>,
+            both stdio, shown in green) — the rest are plain Python functions under <code className="text-gray-400">src/mcp_tools/*.py</code> despite the folder name.
+          </p>
+          <DrawioViewer url="/mcp-architecture.drawio" height={700} />
+        </div>
+      )}
+
+      {/* Full System — converted from the hardcoded SYSTEM_MERMAID to a real .drawio (2026-09-02) */}
+      {category === 'system' && tab === 'system' && (
+        <DrawioViewer url="/full-system-architecture.drawio" height={700} />
       )}
 
       {/* Draw.io */}
-      {tab === 'drawio' && (
+      {category === 'system' && tab === 'drawio' && (
         <DrawioViewer url="/architecture.drawio" height={700} />
       )}
 
       {/* Sol: store integration registry + Redis RAG + fulfillment + email */}
-      {tab === 'sol_rag' && (
+      {category === 'system' && tab === 'sol_rag' && (
         <div className="space-y-2">
           <p className="text-gray-500 text-xs">
             Store integration registry (per-store supplier/email creds), the two Redis RAG
@@ -101,141 +190,18 @@ export function Architecture() {
           <DrawioViewer url="/sol_integrations_rag_fulfillment_email.drawio" height={700} />
         </div>
       )}
+
+      {/* Store domain — one consolidated view, sub-tabbed (mirrors that store's ARCHITECTURE.md) */}
+      {category === 'store' && (
+        <div className="space-y-2">
+          <p className="text-gray-500 text-xs">
+            {activeSubTab.desc} Copied from
+            <code className="text-gray-400"> alphaforbaby/pdp-drawio-diagrams</code> (docs/diagrams{activeSubTab.url}) — not yet merged into main.
+          </p>
+          <DrawioViewer url={activeSubTab.url} height={700} />
+        </div>
+      )}
     </div>
   );
 }
 
-const SYSTEM_MERMAID = `graph TB
-    subgraph IN ["Interfaces"]
-        direction LR
-        TG["Telegram\nonly chat interface\n(replaced Slack)"]
-        WH["Shopify webhooks\nHMAC SHA-256"]
-        API["FastAPI :8000\n/org · /images · /videos ..."]
-    end
-
-    subgraph LOOPS ["main.py lifespan — 8 background loops"]
-        direction LR
-        HB["Heartbeat\nevery 60s"]
-        ORGD["Org daemon\nevery 30s"]
-        SUPL["Support-inbox poll\nevery 120s"]
-        CEOR["CEO report\ndaily 21:00 Asia/Jerusalem"]
-        MGR["Manager check-in\nevery 30min"]
-        LEGD["Legacy single-store daemon\ndisabled by default"]
-        IMGL["Reel image scan\ndisabled by default"]
-    end
-
-    subgraph ORG ["Org — 7 agents · org_agents / org_company tables"]
-        direction LR
-        AVA["Ava · CEO\nrouting · reports · meeting decisions"]
-        SOL["Sol · sourcing & copy\nCJ search → Shopify push"]
-        REEL["Reel · video\nVeo rotation video + Gemini photos (paid API,\nreplaced local Wan2.2/ComfyUI 2026-08-20)"]
-        NORA["Nora · support\ncentral Gmail inbox"]
-        MILO["Milo · fulfillment\norder → CJ → tracking (deterministic, no LLM)"]
-        KAI["Kai · TikTok Ads + Clarity\nread-only reporting"]
-        NOVA["Nova · stay-on-target\nweekly audit — create_ticket/close_ticket\nonly, no execute authority"]
-    end
-
-    TG <--> ORG
-    API --> ORG
-    HB --> ORG
-    ORGD --> ORG
-    SUPL --> NORA
-    CEOR --> AVA
-    MGR --> AVA
-    WH --> MILO
-
-    ORG -->|"build_store / boost_store\nmeeting decisions"| PIPE
-    subgraph PIPE ["Legacy pipeline — src/agents/orchestrator.py (still live, no longer client-facing)"]
-        direction LR
-        SS["store_setup"] --> DA["design"] --> FR["frontend"] --> TSN["trend_scraper"] --> EV["evaluator"] --> EM["ecommerce"] --> MA["marketing"] --> FA["fulfillment"]
-    end
-    LEGD -.->|"disabled by default"| PIPE
-
-    subgraph TOOLS ["Per-agent tools — src/org/tool_catalog.py is the source of truth"]
-        direction LR
-        CJREST["CJ REST\nsrc/mcp_tools — catalog search"]
-        CJMCP["CJ real MCP\nsrc/cj_mcp — inventory + tracking"]
-        SHOP["Shopify Admin\nGraphQL 2024-07"]
-        TT["TikTok Ads real MCP\nsrc/tiktok_mcp — read-only"]
-        CLARITY["Microsoft Clarity\nData Export API — src/mcp_tools/clarity.py\nadded 2026-09-02, needs CLARITY_API_TOKEN"]
-        GMAIL["Central Gmail inbox\nsupport_inbox.py (Nora, via Resend) +\nemail.py (Milo, fulfillment notices)"]
-        VEO["Veo + Gemini (Google, paid ~$0.40/clip)\nrotation video + product photos"]
-        SERPER["Serper\nweb search + competitor pricing"]
-    end
-
-    SOL --> CJREST & CJMCP & SHOP
-    KAI --> TT & CLARITY
-    NORA --> GMAIL
-    MILO --> CJREST & SHOP & GMAIL
-    REEL --> VEO
-    NOVA -.->|"read-only reporting"| SERPER & TT
-    PIPE --> SHOP
-    IMGL --> REEL
-
-    CJ["CJ Dropshipping"]
-    SHOPADM["Shopify Admin API"]
-    TIKTOK["TikTok Marketing API"]
-    CJREST & CJMCP --> CJ
-    SHOP --> SHOPADM
-    TT --> TIKTOK
-
-    subgraph LLM ["Model routing — src/llm/client.py, LiteLLM proxy"]
-        direction LR
-        LITELLM["get_llm(role)\nrole → LiteLLM model alias"]
-        CLAUDE["Anthropic Claude\nCEO smart-tier, Sol fast-tier"]
-        QWEN["Local qwen3\ndefault fallback for every role\nwhen ORG_LOCAL_LLM=1 or over budget"]
-        LITELLM --> CLAUDE
-        LITELLM --> QWEN
-    end
-    ORG --> LITELLM
-    PIPE --> LITELLM
-
-    subgraph GRAPH ["Knowledge graph — FalkorDB (Stage 1 of 3 built)"]
-        direction LR
-        FALKOR[("alpha_org graph\nAgent → CAN_USE → Tool\nAgent → EXECUTED → Tool\nAgent → ASSIGNED → Agent")]
-    end
-    ORG -.->|"best-effort, non-blocking"| FALKOR
-
-    subgraph DATA ["Data layer — one shared data/traces.db"]
-        direction LR
-        SQLITE[("SQLite\norg_agents · org_meetings · org_company\nagent_runs · trace runs · product_mappings")]
-        REDIS[("Redis\nRAG: CJ catalog + Sol's playbook")]
-    end
-    ORG --> SQLITE
-    SOL --> REDIS
-    NOVA -.->|"search_playbook / search_local_catalog"| REDIS
-
-    subgraph SF ["Storefront — Shopify CLI Liquid themes"]
-        direction LR
-        DOCS["platform-app\nMy Stores"]
-        RUNNER["Storefront Runner\nhost :8788"]
-        THEMEDIR["Liquid themes\nstores/shopify/*"]
-        CLI["shopify theme\npull · dev · push"]
-        DOCS --> RUNNER --> CLI --> THEMEDIR
-    end
-    RUNNER -->|"/stores/{id}/theme-creds"| API
-    CLI --> SHOPADM
-
-    subgraph MON ["Daily CJ stock sweep — src/org/stock_watch.py, outside the org tick"]
-        direction LR
-        STOCKW["check_store_stock()\nfails closed · 2 consecutive zero-stock\nchecks before removal · cap 3/cycle"]
-    end
-    STOCKW --> CJ
-    STOCKW --> SHOPADM
-
-    classDef agent fill:#4B0082,stroke:#6d28d9,color:#e2e8f0
-    classDef legacy fill:#292524,stroke:#57534e,color:#a8a29e
-    classDef ext fill:#450a0a,stroke:#dc2626,color:#fee2e2
-    classDef data fill:#312e81,stroke:#6366f1,color:#e0e7ff
-    classDef llm fill:#1e3a5f,stroke:#2563eb,color:#e2e8f0
-    classDef gw fill:#374151,stroke:#78716c,color:#d6d3d1
-    classDef store fill:#065f46,stroke:#059669,color:#d1fae5
-    classDef kg fill:#0b3d2e,stroke:#10b981,color:#d1fae5
-    class AVA,SOL,REEL,NORA,MILO,KAI,NOVA agent
-    class SS,DA,FR,TSN,EV,EM,MA,FA,LEGD legacy
-    class CJREST,CJMCP,SHOP,TT,CLARITY,GMAIL,VEO,SERPER,CJ,SHOPADM,TIKTOK ext
-    class SQLITE,REDIS data
-    class LITELLM,CLAUDE,QWEN llm
-    class TG,WH,API,HB,ORGD,SUPL,CEOR,MGR,IMGL gw
-    class RUNNER,CLI,THEMEDIR,DOCS,STOCKW store
-    class FALKOR kg`;
