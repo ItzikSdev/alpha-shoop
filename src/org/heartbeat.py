@@ -799,6 +799,24 @@ async def _sourcing_tick(company: Company) -> None:
     company.daemon["last_sourcing_run_at"] = datetime.now(timezone.utc).isoformat()
     save_company(company)
 
+    # Check with Kai (ad performance) before locking in this cycle's keyword —
+    # this loop used to source blind, with zero reference to what's actually
+    # converting on TikTok. Best-effort: Kai's TikTok connection may not be
+    # live yet, in which case he'll just say so and sourcing proceeds unblocked
+    # — this is a signal to weigh, never a gate on sourcing.
+    ad_signal = ""
+    try:
+        from src.org.conversation import dispatch_to_agent
+        ad_signal = await dispatch_to_agent(
+            "Kai",
+            f'Before Sol sources more "{keyword}" this cycle — anything in recent TikTok Ads '
+            "or Clarity data suggesting this category (or a related one) is converting well or "
+            "poorly right now? One or two sentences, or say plainly if there's no data yet.",
+            requested_by="Sol", return_reply=True,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Sol's pre-sourcing check-in with Kai failed: %s", exc)
+
     from src.org.agent_loop import run_sol_task
     try:
         remaining = (cap - live) if live is not None else None
@@ -807,12 +825,13 @@ async def _sourcing_tick(company: Company) -> None:
             f"{remaining} more this cycle and then stop. "
             if remaining is not None else ""
         )
+        kai_note = f"Kai on ad performance: {ad_signal}\n" if ad_signal else ""
         await run_sol_task(
             f'Autonomous sourcing cycle: search CJ for "{keyword}" — try search_local_catalog '
             "first so you don't re-evaluate a known reject. Evaluate up to 8 candidates and "
             "cj_add_product any that pass the guards (pick whichever collection fits: Baby "
             "Girls / Baby Boys / Unisex). Stop after ~8 candidates evaluated even if none pass "
-            f"— this is a small bounded batch, not an open-ended search. {budget_note}",
+            f"— this is a small bounded batch, not an open-ended search. {budget_note}\n{kai_note}",
             store_slug="alphaforbaby", max_steps=18,
         )
     except Exception as exc:  # noqa: BLE001
