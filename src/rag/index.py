@@ -165,6 +165,31 @@ async def upsert(corpus: str, doc_id: str, text: str, metadata: dict) -> bool:
         return False
 
 
+async def delete(corpus: str, doc_id: str) -> bool:
+    """Remove one doc from the given corpus by id. Used to purge a RAG entry
+    that's gone stale — e.g. a CJ candidate whose Shopify product was later
+    deleted; upsert()/list_all() have no concept of "this no longer applies,"
+    so a caller who knows that has to say so explicitly. Fails soft like the
+    rest of this module: returns False (logs a warning) rather than raising."""
+    if corpus not in _CORPUS_SCHEMAS:
+        logger.warning("Unknown RAG corpus %r, skipping delete", corpus)
+        return False
+
+    import redis.asyncio as aredis
+
+    settings = get_settings()
+    prefix = _CORPUS_SCHEMAS[corpus]["prefix"]
+    client = aredis.from_url(settings.redis_url, decode_responses=True)
+    try:
+        removed = await client.delete(f"{prefix}:{doc_id}")
+        return bool(removed)
+    except Exception as exc:
+        logger.warning("RAG delete failed corpus=%s doc_id=%s: %s", corpus, doc_id, exc)
+        return False
+    finally:
+        await client.aclose()
+
+
 async def get(corpus: str, doc_id: str) -> dict | None:
     """Fetch one doc's metadata (never the vector bytes) by id, or None if it
     doesn't exist / on any error. For merge-safe upserts: read the existing

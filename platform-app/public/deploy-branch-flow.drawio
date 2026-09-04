@@ -1,0 +1,130 @@
+<mxfile host="app.diagrams.net" agent="alpha-shoop" version="24.0.0">
+  <diagram name="Deploy &amp; Branch Flow (per DEV_WORKFLOW.md)" id="alpha-deploy-branch-flow">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1080" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="g_branch" value="1. Branch naming — &lt;store-slug&gt;/&lt;feature&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="500" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="g_preview" value="2. Preview on every push (DEV_WORKFLOW.md #4)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="600" y="40" width="540" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="g_review" value="3. Human review gate (DEV_WORKFLOW.md #3)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="40" width="400" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="g_prod" value="4. Per-store production branch (DEV_WORKFLOW.md #2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="40" width="260" height="550" as="geometry" />
+        </mxCell>
+        <mxCell id="g_notify" value="PR-merge notification pipeline (two independent halves)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="40" y="640" width="1820" height="380" as="geometry" />
+        </mxCell>
+        <mxCell id="dev" value="Claude Code session&#10;/ Sol (once tooled)" style="shape=umlActor;whiteSpace=wrap;html=1;fillColor=#78350f;strokeColor=#d97706;fontColor=#fef3c7;fontSize=11;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="80" y="90" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="feature_branch" value="alphaforbaby/pdp-conversion-&#10;improvements&#10;(feature branch)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e1b4b;strokeColor=#6366f1;fontColor=#e0e7ff;fontSize=11;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="90" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="push" value="git push" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#374151;strokeColor=#78716c;fontColor=#d6d3d1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="640" y="90" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="oxygen_preview" value="Shopify GitHub App&#10;(auto-injected)" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/shopify.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="936" y="75" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="preview_url" value="Preview URL&#10;(Admin &gt; Deployments tab —&#10;not in GH check output)" style="text;html=1;align=left;verticalAlign=top;fontSize=10;fontColor=#666666;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="640" y="175" width="220" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="pr" value="Pull Request" style="shape=document;whiteSpace=wrap;html=1;fillColor=#78350f;strokeColor=#d97706;fontColor=#fef3c7;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1190" y="90" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="review_gate" value="Itzik approves&#10;no exceptions" style="shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;fillColor=#7c2d12;strokeColor=#ea580c;fontColor=#fed7aa;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1400" y="75" width="130" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_branch" value="alphaforbaby/production&#10;(dedicated per store —&#10;rollback isolation)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e1b4b;strokeColor=#6366f1;fontColor=#e0e7ff;fontSize=11;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1630" y="90" width="210" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="admin_binding" value="Shopify Admin&#10;(binds Production)" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/shopify.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1711" y="200" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="oxygen_prod" value="Oxygen&#10;(Production)" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/shopify.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1711" y="380" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="live" value="alphaforbaby.com&#10;(live storefront)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#065f46;strokeColor=#059669;fontColor=#d1fae5;fontSize=11;fontStyle=1;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1630" y="470" width="210" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="gh_merge_event" value="GitHub&#10;(PR merged)" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/github.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="166" y="700" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="push_half_group_label" value="Push half — reachable from GitHub&#x27;s runners" style="text;html=1;align=left;verticalAlign=top;fontSize=10;fontColor=#666666;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="80" y="800" width="380" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="gh_action" value="GitHub Actions&#10;(notify workflow)" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/github.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="166" y="830" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="telegram_notify" value="Telegram&#10;(merge notice)" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/telegram-app.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="426" y="830" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pull_half_group_label" value="Pull half — data/traces.db has no public endpoint from GH runners" style="text;html=1;align=left;verticalAlign=top;fontSize=10;fontColor=#666666;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="650" y="800" width="480" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="nova_watch" value="_pr_merge_watch_tick()&#10;heartbeat.py" style="shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;fillColor=#164e63;strokeColor=#0891b2;fontColor=#cffafe;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="650" y="830" width="240" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="gh_api_poll" value="GitHub CLI&#10;(gh pr list)" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/github.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="996" y="835" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="open_ticket" value="open_ticket()&#10;dedupe_key=&quot;pr-merged-{n}&quot;&#10;same auth as any ticket source" style="shape=document;whiteSpace=wrap;html=1;fillColor=#78350f;strokeColor=#d97706;fontColor=#fef3c7;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="830" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="no_authority" value="No agent gains merge/deploy&#10;authority from either half —&#10;notification + ticket only" style="text;html=1;align=left;verticalAlign=top;fontSize=10;fontColor=#666666;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1440" y="830" width="380" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dev_branch" value="creates,&#10;never pushes to main" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="dev" target="feature_branch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_branch_push" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="feature_branch" target="push">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_push_preview" value="every push" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="push" target="oxygen_preview">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_oxy_previewurl" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="oxygen_preview" target="preview_url">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_push_pr" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="push" target="pr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_pr_gate" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="pr" target="review_gate">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_gate_prodbranch" value="merge" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="review_gate" target="prod_branch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_prodbranch_admin" value="bound branch" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="prod_branch" target="admin_binding">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_admin_oxygen" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="admin_binding" target="oxygen_prod">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_oxygen_live" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="oxygen_prod" target="live">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_merge_action" value="fires instantly" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="gh_merge_event" target="gh_action">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_action_telegram" value="posts" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="gh_action" target="telegram_notify">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_watch_poll" value="polls" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="nova_watch" target="gh_api_poll">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_poll_ticket" value="new PR found" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="gh_api_poll" target="open_ticket">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_merge_watch" value="(no webhook —&#10;pure poll)" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="gh_merge_event" target="nova_watch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

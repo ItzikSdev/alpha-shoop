@@ -25,8 +25,9 @@ interface VideoRow {
   created_at: string | null;
 }
 
-// Static video files are served at the API host root (/media/videos/...), not
-// under /api/v1 — apiGet's BASE has the /api/v1 suffix, so build this separately.
+// video_url from the API is already a full path (/api/v1/videos/{id}/file);
+// apiGet's BASE isn't reused here since it also injects an auth header this
+// plain <video src> tag can't send.
 const MEDIA_BASE = `${window.location.protocol}//${window.location.hostname}:8000`;
 
 // Veo 3.1 Fast, 4s @ 720p — see src/video/veo_video.py's ESTIMATED_COST_USD.
@@ -81,10 +82,10 @@ function VideoCard({ video, onDecision }: { video: VideoRow; onDecision: () => v
         <video className="mt-3 w-full rounded-lg bg-black" controls src={`${MEDIA_BASE}${video.video_url}`} />
       )}
 
-      {video.script && (
+      {video.script && 'hook' in video.script && 'cta' in video.script && (
         <div className="mt-3 text-sm text-gray-400">
-          <div><span className="text-gray-500">Hook:</span> {video.script.hook}</div>
-          <div className="mt-1"><span className="text-gray-500">CTA:</span> {video.script.cta}</div>
+          <div><span className="text-gray-500">Hook:</span> {String((video.script as VideoScript).hook)}</div>
+          <div className="mt-1"><span className="text-gray-500">CTA:</span> {String((video.script as VideoScript).cta)}</div>
         </div>
       )}
 

@@ -1,0 +1,183 @@
+<mxfile host="app.diagrams.net" agent="alpha-shoop" version="24.0.0">
+  <diagram name="MCP Architecture — per-agent real tool sets (2026-09-02)" id="alpha-mcp-architecture">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2300" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="g_agents" value="7 agents — each with their own real tool set (src/org/tool_catalog.py)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="2220" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="g_tools" value="Tools agents call directly — green = real MCP protocol (stdio), the only two that speak it; navy = plain Python, not MCP despite the folder name" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="220" width="2220" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="g_ext" value="External systems" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="530" width="2020" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="ava" value="Ava · CEO&#10;management, operations, shopify" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="80" width="260" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="sol" value="Sol · Sourcing &amp; Copy&#10;shopify, sourcing, knowledge, ask_teammate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="80" width="260" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="reel" value="Reel · Video&#10;video, image, catalog" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="640" y="80" width="260" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="nora" value="Nora · Support&#10;inbox, comms, knowledge" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="920" y="80" width="260" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="milo" value="Milo · Fulfillment&#10;fulfillment, comms (no LLM loop)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="80" width="260" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kai" value="Kai · Growth&#10;ads_auth, ads_reporting, analytics_reporting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1480" y="80" width="260" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="nova" value="Nova · Stay-on-target&#10;oversight, market_research, diagnostics (read-only)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1760" y="80" width="260" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="cjmcp" value="cj_mcp&#10;src/cj_mcp/client.py&#10;inventory + tracking, JWT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="280" width="175" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="sourcing" value="sourcing.py / cj_connect.py&#10;search_trending_products,&#10;cj_search_products" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#6366f1;fontSize=11;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="270" y="280" width="175" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="shopify" value="shopify.py / shopify_auth.py&#10;shopify_admin, publish_products" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#6366f1;fontSize=11;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="460" y="280" width="175" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="supportinbox" value="support_inbox.py&#10;process_central_inbox,&#10;list_new_support_emails" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#6366f1;fontSize=11;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="650" y="280" width="175" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="emailpy" value="email.py&#10;send_email — Milo&#x27;s&#10;fulfillment notices" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#6366f1;fontSize=11;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="840" y="280" width="175" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="fulfill" value="fulfillment.py&#10;process_order()&#10;— deterministic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#6366f1;fontSize=11;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="280" width="175" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="tiktokmcp" value="tiktok_mcp&#10;src/tiktok_mcp/server.py&#10;real MCP SDK, read-only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="280" width="175" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="clarity" value="clarity.py (2026-09-02)&#10;get_clarity_report — honest&#10;not_connected until token set" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#6366f1;fontSize=11;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1410" y="280" width="175" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="video" value="veo_video.py + gemini_images.py&#10;rotation video (~$0.40/clip)&#10;+ product photos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#6366f1;fontSize=11;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="280" width="175" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="market" value="market.py&#10;search_web / search_market_prices&#10;(Nova&#x27;s Serper tool)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#6366f1;fontSize=11;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1790" y="280" width="175" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="finance" value="finance.py&#10;integrations_status,&#10;finance_snapshot" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#6366f1;fontSize=11;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1980" y="280" width="175" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="cj" value="CJ Dropshipping" style="shape=image;html=1;imageAspect=0;image=https://cjdropshipping.com/favicon.ico;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="136" y="586" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="shopadm" value="Shopify Admin API" style="shape=image;html=1;imageAspect=0;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;image=https://img.icons8.com/color/48/shopify.png;" vertex="1" parent="1">
+          <mxGeometry x="340" y="580" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="tiktokapi" value="TikTok Marketing API" style="shape=image;html=1;imageAspect=0;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;image=https://img.icons8.com/color/48/tiktok.png;" vertex="1" parent="1">
+          <mxGeometry x="560" y="580" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="gmail" value="Gmail" style="shape=image;html=1;imageAspect=0;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;image=https://img.icons8.com/color/48/gmail.png;" vertex="1" parent="1">
+          <mxGeometry x="780" y="580" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="clarityapi" value="Microsoft Clarity API" style="shape=image;html=1;imageAspect=0;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;image=https://img.icons8.com/color/48/microsoft.png;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="580" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="googleapi" value="Google Veo + Gemini" style="shape=image;html=1;imageAspect=0;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;image=https://img.icons8.com/color/48/google.png;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="580" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="serperapi" value="Serper" style="shape=image;html=1;imageAspect=0;image=https://serper.dev/apple-touch-icon.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1496" y="586" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ava_shopify" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="ava" target="shopify">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sol_sourcing" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="sol" target="sourcing">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sol_shopify" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="sol" target="shopify">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sol_cjmcp" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="sol" target="cjmcp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_reel_video" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="reel" target="video">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_nora_supportinbox" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="nora" target="supportinbox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_milo_fulfill" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="milo" target="fulfill">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_milo_email" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="milo" target="emailpy">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_kai_tiktokmcp" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="kai" target="tiktokmcp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_kai_clarity" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="kai" target="clarity">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_nova_market" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="nova" target="market">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sourcing_cj" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="sourcing" target="cj">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cjmcp_cj" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="cjmcp" target="cj">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_shopify_shopadm" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="shopify" target="shopadm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_tiktokmcp_tiktokapi" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="tiktokmcp" target="tiktokapi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_supportinbox_gmail" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="supportinbox" target="gmail">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_email_gmail" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="emailpy" target="gmail">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_clarity_clarityapi" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="clarity" target="clarityapi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_video_google" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="video" target="googleapi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_market_serper" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="market" target="serperapi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ═══ Legend ═══ -->
+        <mxCell id="legend" value="Legend" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="700" width="2220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-purple" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;" vertex="1" parent="1">
+          <mxGeometry x="60" y="735" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-purple-txt" value="Agent hub (LLM tool loop)" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="100" y="733" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-green" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="380" y="735" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-green-txt" value="Real MCP protocol tool (stdio)" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="420" y="733" width="240" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-lavender" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#6366f1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="735" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-lavender-txt" value="Plain Python tool (not MCP)" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="780" y="733" width="240" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-icon" value="" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/shopify.png;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="728" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-icon-txt" value="External system / 3rd-party API" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="733" width="260" height="24" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

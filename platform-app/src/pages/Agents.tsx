@@ -12,21 +12,33 @@ interface Integration { name: string; category: string; who: string[]; connected
 interface IntegResp { integrations: Integration[] }
 
 const AVATAR: Record<string, string> = {
-  CEO: '👑', 'Product Hunter': '🔍', 'UX & Content': '🎨',
-  'Shopify Developer': '🛠️', 'Growth Marketer': '📣',
-  // legacy roles (departed agents) kept so history still renders
-  CTO: '🧭', Developer: '👩‍💻',
+  CEO: '👑',
+  'Product Sourcer & Copywriter': '🛒', // Sol
+  'Video Producer': '🎬',               // Reel
+  'Customer Support': '📮',             // Nora
+  Fulfillment: '📦',                    // Milo
+  'Growth Marketing Analyst': '📊',     // Kai
+  // legacy roles (departed agents, e.g. the old 5-role pipeline) kept so history still renders
+  'Product Hunter': '🔍', 'UX & Content': '🎨', 'Shopify Developer': '🛠️',
+  'Growth Marketer': '📣', CTO: '🧭', Developer: '👩‍💻',
 };
 
-// Which Claude model each role runs on (budget-aware tier in src/llm/client.py).
-// All roles auto-fall back to the free local Ollama (qwen2.5) over the budget cap.
+// Which model each role runs on (budget-aware routing in src/llm/client.py via
+// LiteLLM). Every role in _ORG_ROLES auto-falls back to a local qwen3 model
+// (LiteLLM alias alpha/local-fast) when ORG_LOCAL_LLM=1 or the monthly
+// Anthropic budget cap is hit — so "Claude" below is the ceiling, not a guarantee.
 const MODEL: Record<string, { name: string; tier: 'smart' | 'fast' }> = {
-  CEO: { name: 'Claude Sonnet 4.6', tier: 'smart' },
+  CEO: { name: 'Claude (Sonnet-tier)', tier: 'smart' },
+  'Product Sourcer & Copywriter': { name: 'Claude (Haiku-tier)', tier: 'fast' },
+  'Video Producer': { name: 'Local qwen3 + Wan2.2 — no Claude', tier: 'fast' },
+  'Customer Support': { name: 'Local qwen3', tier: 'fast' },
+  Fulfillment: { name: 'Deterministic — no LLM on the happy path', tier: 'fast' },
+  'Growth Marketing Analyst': { name: 'Local qwen3', tier: 'fast' },
+  // legacy
   'Product Hunter': { name: 'Claude Sonnet 4.6', tier: 'smart' },
   'UX & Content': { name: 'Claude Haiku 4.5', tier: 'fast' },
   'Shopify Developer': { name: 'Claude Haiku 4.5', tier: 'fast' },
   'Growth Marketer': { name: 'Claude Haiku 4.5', tier: 'fast' },
-  // legacy
   CTO: { name: 'Claude Sonnet 4.6', tier: 'smart' },
   Developer: { name: 'Claude Haiku 4.5', tier: 'fast' },
 };
@@ -89,8 +101,8 @@ export function Agents() {
                   >
                     🧠 {MODEL[m.role].name}
                   </span>
-                  <span className="text-[10px] text-gray-600" title="Routes to the free local Ollama model when the monthly Claude budget cap is hit">
-                    ↘ local fallback over budget
+                  <span className="text-[10px] text-gray-600" title="Routes via LiteLLM to a local qwen3 model when ORG_LOCAL_LLM=1 or the monthly Claude budget cap is hit">
+                    ↘ local qwen3 fallback over budget
                   </span>
                 </div>
               )}

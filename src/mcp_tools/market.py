@@ -40,6 +40,46 @@ async def search_market_prices(
             return {"prices": [], "avg_price": 0.0, "price_range": {"min": 0.0, "max": 0.0}}
 
 
+async def search_web(
+    query: str,
+    num_results: int = 8,
+) -> dict:
+    """
+    General web search via Serper (Google Search) — outside context none of our
+    own store/CJ data can give: marketing trend writeups, industry benchmark
+    reports, competitor pages that aren't a Shopping listing. Read-only, same
+    Serper key as search_market_prices.
+
+    Args:
+        query: Search query
+        num_results: Number of organic results to fetch
+
+    Returns:
+        Dict with keys: results (list of {title, snippet, link}), answer_box (str | None)
+    """
+    settings = get_settings()
+    async with httpx.AsyncClient(timeout=15) as client:
+        try:
+            resp = await client.post(
+                "https://google.serper.dev/search",
+                json={"q": query, "num": num_results},
+                headers={"X-API-KEY": settings.serper_api_key, "Content-Type": "application/json"},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            organic = data.get("organic", [])
+            answer_box = data.get("answerBox") or {}
+            return {
+                "results": [
+                    {"title": r.get("title"), "snippet": r.get("snippet"), "link": r.get("link")}
+                    for r in organic[:num_results]
+                ],
+                "answer_box": answer_box.get("snippet") or answer_box.get("answer"),
+            }
+        except Exception:
+            return {"results": [], "answer_box": None}
+
+
 async def check_google_trends(
     keyword: str,
     timeframe: str = "today 3-m",

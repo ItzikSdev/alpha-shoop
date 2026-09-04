@@ -16,6 +16,8 @@ import asyncio
 import json
 import uuid
 
+import re as _re
+
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
@@ -28,7 +30,8 @@ from src.org.models import (
     list_meetings,
     new_agent,
     save_agent,
-    save_company,
+    update_agent,
+    update_company,
 )
 from src.org.seed import seed_founding_team
 
@@ -67,7 +70,7 @@ async def post_org_unblock() -> dict:
     # The agents compounded an escalating negative narrative (re-wording the same
     # blocker each turn), so a phrase filter just plays whack-a-mole. A human
     # green-light RESETS the lessons to verified current reality instead.
-    company.lessons = [
+    reset_lessons = [
         "✅ The store is LIVE and PROFITABLE-CAPABLE: first real paid order received "
         "($19.64). Funnel works end-to-end — products, PayPal, shipping, checkout. "
         "CJ is healthy. These problems are RESOLVED — do not re-flag them.",
@@ -82,7 +85,9 @@ async def post_org_unblock() -> dict:
         "Be constructive and action-oriented. Build, improve, sell — don't loop on "
         "already-resolved blockers.",
     ]
-    save_company(company)
+    def _reset_lessons(c, reset_lessons: list = reset_lessons) -> None:
+        c.lessons = list(reset_lessons)
+    company = update_company(_reset_lessons)
     stuck = cancel_stuck_runs()
     return {
         "cleared_lessons": before,
@@ -186,10 +191,11 @@ async def post_org_announce(body: dict) -> dict:
     message = (body or {}).get("message", "").strip()
     if not message:
         return {"note": "Provide a non-empty 'message'."}
-    company = seed_founding_team()
-    company.lessons.append(f"📣 Founder update: {message}")
-    company.lessons = company.lessons[-40:]
-    save_company(company)
+    seed_founding_team()
+    def _add_announcement(c, message: str = message) -> None:
+        c.lessons.append(f"📣 Founder update: {message}")
+        c.lessons = c.lessons[-40:]
+    company = update_company(_add_announcement)
     await post_to_telegram(f":loudspeaker: *Itzik (Founder):* {message}")
     return {"posted": True, "lessons_now": company.lessons[-3:]}
 
@@ -310,11 +316,12 @@ async def post_org_rename(body: dict) -> dict:
     new_name = (body.get("new_name") or "").strip()
     if not (match and new_name):
         return {"note": "Provide 'match' (current name or role) and 'new_name'."}
+    def _rename(agent, new_name: str = new_name) -> None:
+        agent.name = new_name
     for a in list_agents(active_only=True):
         if a.name.lower() == match or a.role.lower() == match:
             old = a.name
-            a.name = new_name
-            save_agent(a)
+            update_agent(a.agent_id, _rename)
             return {"renamed": f"{old} → {new_name}", "role": a.role}
     return {"note": f"no active agent matching {match!r}"}
 
@@ -333,10 +340,11 @@ async def post_org_assign(body: dict) -> dict:
     role = (body.get("role") or "Developer")
     task = (body.get("task") or "").strip()
     by = body.get("by", "Linus")
+    def _assign_task(agent, task: str = task) -> None:
+        agent.memory["assigned_task"] = task
     for a in list_agents(active_only=True):
         if a.role.lower() == role.lower():
-            a.memory["assigned_task"] = task
-            save_agent(a)
+            update_agent(a.agent_id, _assign_task)
             await post_as(by, "CTO", f"📋 {a.name}, משימה חדשה ממני: {task}")
             return {"assigned_to": a.name, "task": task}
     return {"error": f"no active agent with role {role!r}"}
@@ -492,17 +500,18 @@ async def get_org_daemon() -> dict:
 
 @router.post("/org/daemon", summary="Enable/disable the autonomous org loop")
 async def set_org_daemon(body: dict) -> dict:
-    company = seed_founding_team()
-    for k in ("enabled", "interval_minutes"):
-        if k in body:
-            company.daemon[k] = body[k]
-    save_company(company)
+    seed_founding_team()
+    def _apply_daemon_config(c, body: dict = body) -> None:
+        for k in ("enabled", "interval_minutes"):
+            if k in body:
+                c.daemon[k] = body[k]
+    company = update_company(_apply_daemon_config)
     return company.daemon
 
 
 @router.post("/org/hire", summary="Manually hire an agent (bypasses revenue gate)")
 async def post_org_hire(body: dict, operator: str = Depends(get_current_operator)) -> dict:
-    company = seed_founding_team()
+    seed_founding_team()
     agent = new_agent(
         name=body.get("name") or body.get("role", "Agent"),
         role=body.get("role", "Agent"),
@@ -512,8 +521,7 @@ async def post_org_hire(body: dict, operator: str = Depends(get_current_operator
         hired_by=operator,
     )
     save_agent(agent)
-    company.headcount += 1
-    save_company(company)
+    update_company(lambda c: setattr(c, "headcount", c.headcount + 1))
     return agent.to_public()
 
 
@@ -684,3 +692,130 @@ async def get_redis_key(key: str) -> dict:
     finally:
         await client.aclose()
     return {"key": key, "type": key_type, "ttl": ttl, "value": value}
+
+
+@router.get("/org/graph", summary="The company knowledge graph (FalkorDB) as nodes + edges for the dashboard")
+async def get_org_graph(limit: int = 500) -> dict:
+    """Agents, the tools they can use, and what they actually did — the same
+    data the FalkorDB browser shows on :3002, served in a shape the dashboard
+    can render directly so the graph lives inside the platform app.
+
+    Read-only. Returns {"nodes": [...], "edges": [...], "available": bool};
+    `available: false` (rather than an error) when FalkorDB isn't running, so
+    the page can show a clear "graph offline" state instead of breaking.
+    """
+    import asyncio as _asyncio
+
+    def _query() -> dict:
+        from src.graph.knowledge_graph import _get_graph
+        graph = _get_graph()
+        if graph is None:
+            return {"available": False, "nodes": [], "edges": [],
+                    "note": "FalkorDB isn't reachable — start the `falkordb` service (docker compose up falkordb)."}
+        nodes_res = graph.query(
+            "MATCH (n) RETURN id(n), labels(n)[0], n.name, n.key, n.role LIMIT $limit",
+            params={"limit": limit},
+        )
+        nodes = [
+            {"id": r[0], "type": r[1] or "Node", "name": r[2] or r[3] or str(r[0]), "role": r[4]}
+            for r in nodes_res.result_set
+        ]
+        edges_res = graph.query(
+            "MATCH (a)-[e]->(b) RETURN id(a), id(b), type(e), e.ok, e.task, e.detail LIMIT $limit",
+            params={"limit": limit},
+        )
+        edges = [
+            {"source": r[0], "target": r[1], "type": r[2], "ok": r[3],
+             "label": r[4] or r[5] or ""}
+            for r in edges_res.result_set
+        ]
+        return {"available": True, "nodes": nodes, "edges": edges}
+
+    try:
+        return await _asyncio.to_thread(_query)
+    except Exception as exc:  # noqa: BLE001
+        return {"available": False, "nodes": [], "edges": [], "note": f"graph query failed: {exc}"}
+
+
+# Cypher clauses that mutate. The graph browser is a READ-ONLY window onto the
+# company's own observability data: a typo'd DELETE in the query box would wipe
+# real history, so writes are rejected outright rather than trusted to the user.
+_CYPHER_WRITE_RE = _re.compile(
+    r"\b(create|merge|delete|detach|set|remove|drop|foreach|load\s+csv|"
+    r"call\s*\{|call\s+db\.|call\s+dbms\.|call\s+algo\.)\b",
+    _re.IGNORECASE,
+)
+
+
+@router.post("/org/graph/query", summary="Run a READ-ONLY Cypher query against the knowledge graph")
+async def post_org_graph_query(body: dict) -> dict:
+    """Ad-hoc Cypher, same as the FalkorDB browser's query box, but restricted to
+    reads. Returns both a tabular result (`columns`/`rows`) and, when the query
+    returns nodes/relationships, a `nodes`/`edges` graph the page can draw.
+
+    Rejects any mutating clause (CREATE/MERGE/DELETE/SET/REMOVE/DROP/CALL …) —
+    this endpoint exists to inspect the company, never to edit it.
+    """
+    import asyncio as _asyncio
+
+    query = str(body.get("query") or "").strip()
+    if not query:
+        return {"error": "empty query"}
+    if _CYPHER_WRITE_RE.search(query):
+        return {"error": "read-only: CREATE/MERGE/DELETE/SET/REMOVE/DROP/CALL are not allowed here"}
+    limit = int(body.get("limit") or 1000)
+
+    def _run() -> dict:
+        from src.graph.knowledge_graph import _get_graph
+        graph = _get_graph()
+        if graph is None:
+            return {"available": False, "error": "FalkorDB isn't reachable"}
+        res = graph.query(query, params={"limit": limit})
+
+        nodes: dict[int, dict] = {}
+        edges: list[dict] = []
+
+        def _absorb(value: object) -> object:
+            """Pull any Node/Edge out of a result cell into the graph payload,
+            and render it as something JSON-serialisable for the table."""
+            # falkordb returns Node/Edge objects; detect them structurally so we
+            # don't depend on the client's class paths.
+            if hasattr(value, "labels") and hasattr(value, "properties"):
+                nid = int(getattr(value, "id", 0))
+                props = dict(getattr(value, "properties", {}) or {})
+                labels = list(getattr(value, "labels", []) or [])
+                nodes[nid] = {
+                    "id": nid,
+                    "type": labels[0] if labels else "Node",
+                    "name": props.get("name") or props.get("key") or str(nid),
+                    "role": props.get("role"),
+                    "props": props,
+                }
+                return nodes[nid]["name"]
+            if hasattr(value, "relation") and hasattr(value, "src_node"):
+                props = dict(getattr(value, "properties", {}) or {})
+                edges.append({
+                    "source": int(getattr(value, "src_node", 0)),
+                    "target": int(getattr(value, "dest_node", 0)),
+                    "type": str(getattr(value, "relation", "REL")),
+                    "ok": props.get("ok"),
+                    "label": props.get("task") or props.get("detail") or "",
+                })
+                return str(getattr(value, "relation", "REL"))
+            if isinstance(value, list):
+                return [_absorb(v) for v in value]
+            return value
+
+        rows = [[_absorb(cell) for cell in row] for row in res.result_set]
+        return {
+            "available": True,
+            "columns": list(res.header and [h[1] for h in res.header] or []),
+            "rows": rows,
+            "nodes": list(nodes.values()),
+            "edges": edges,
+        }
+
+    try:
+        return await _asyncio.to_thread(_run)
+    except Exception as exc:  # noqa: BLE001
+        return {"available": True, "error": f"{type(exc).__name__}: {exc}"}

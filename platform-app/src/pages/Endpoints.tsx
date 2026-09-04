@@ -1,6 +1,8 @@
 import { ENDPOINTS } from '../data/endpoints';
 import { EndpointCard } from '../components/EndpointCard';
 
+const API_HOST = `${window.location.protocol}//${window.location.hostname}:8000`;
+
 export function Endpoints() {
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-6">
@@ -13,7 +15,7 @@ export function Endpoints() {
         </p>
         <div className="mt-2 flex gap-2">
           <a
-            href="http://localhost:8000/docs"
+            href={`${API_HOST}/docs`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-teal-400 hover:text-teal-300 underline"
@@ -22,7 +24,7 @@ export function Endpoints() {
           </a>
           <span className="text-gray-700">·</span>
           <a
-            href="http://localhost:8000/redoc"
+            href={`${API_HOST}/redoc`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-teal-400 hover:text-teal-300 underline"

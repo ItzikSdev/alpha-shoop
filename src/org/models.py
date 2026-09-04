@@ -24,8 +24,15 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Callable
 
 _DB_PATH = Path(os.environ.get("TRACES_DB_PATH", "./data/traces.db"))
+
+
+class ConcurrencyError(Exception):
+    """Raised when a save() targets a row whose version no longer matches —
+    someone else wrote to it first. Callers should re-fetch and retry
+    (see update_agent / update_company)."""
 
 
 def _now() -> str:
@@ -52,6 +59,7 @@ class Agent:
     hired_by: str = "founders"
     memory: dict = field(default_factory=dict)   # {"training": str, "lessons": [str], ...}
     perf: dict = field(default_factory=dict)      # {"decisions_made": int, "revenue_attributed": float}
+    version: int = 0                   # optimistic-lock counter; 0 = not yet persisted
 
     def to_public(self) -> dict:
         """Shape consumed by the Company UI page."""
@@ -111,6 +119,7 @@ class Company:
         "last_tick_at": None,
         "tick_count": 0,
     })
+    version: int = 0                   # optimistic-lock counter; 0 = not yet persisted
 
     def to_dict(self) -> dict:
         return {
@@ -141,9 +150,14 @@ def init_org_tables() -> None:
                 hired_at TEXT NOT NULL,
                 hired_by TEXT DEFAULT 'founders',
                 memory TEXT DEFAULT '{}',
-                perf TEXT DEFAULT '{}'
+                perf TEXT DEFAULT '{}',
+                version INTEGER DEFAULT 1
             )
         """)
+        try:
+            con.execute("ALTER TABLE org_agents ADD COLUMN version INTEGER DEFAULT 1")
+        except Exception:
+            pass
         con.execute("""
             CREATE TABLE IF NOT EXISTS org_meetings (
                 meeting_id TEXT PRIMARY KEY,
@@ -164,9 +178,14 @@ def init_org_tables() -> None:
                 goals TEXT DEFAULT '[]',
                 lessons TEXT DEFAULT '[]',
                 culture TEXT DEFAULT '{}',
-                daemon TEXT DEFAULT '{}'
+                daemon TEXT DEFAULT '{}',
+                version INTEGER DEFAULT 1
             )
         """)
+        try:
+            con.execute("ALTER TABLE org_company ADD COLUMN version INTEGER DEFAULT 1")
+        except Exception:
+            pass
         con.commit()
 
 
@@ -174,7 +193,7 @@ def init_org_tables() -> None:
 
 _AGENT_COLS = (
     "agent_id, name, role, skill, team, model_role, status, "
-    "hired_at, hired_by, memory, perf"
+    "hired_at, hired_by, memory, perf, version"
 )
 
 
@@ -184,6 +203,7 @@ def _row_to_agent(r: tuple) -> Agent:
         model_role=r[5] or "executive", status=r[6] or "active",
         hired_at=r[7], hired_by=r[8] or "founders",
         memory=json.loads(r[9] or "{}"), perf=json.loads(r[10] or "{}"),
+        version=int(r[11] or 1),
     )
 
 
@@ -206,18 +226,53 @@ def get_agent(agent_id: str) -> Agent | None:
 
 
 def save_agent(agent: Agent) -> None:
+    """Insert (agent.version == 0 / row absent) or update with an optimistic
+    version check. On update, raises ConcurrencyError if the stored version
+    no longer matches `agent.version` (someone else wrote first) — the row is
+    left untouched. On success, `agent.version` is bumped in place so the
+    caller's object stays valid for a subsequent save."""
     with sqlite3.connect(_DB_PATH) as con:
-        con.execute(
-            """INSERT OR REPLACE INTO org_agents
-               (agent_id, name, role, skill, team, model_role, status,
-                hired_at, hired_by, memory, perf)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                agent.agent_id, agent.name, agent.role, agent.skill, agent.team,
-                agent.model_role, agent.status, agent.hired_at, agent.hired_by,
-                json.dumps(agent.memory), json.dumps(agent.perf),
-            ),
-        )
+        row = con.execute(
+            "SELECT version FROM org_agents WHERE agent_id = ?", (agent.agent_id,)
+        ).fetchone()
+        if row is None:
+            try:
+                con.execute(
+                    """INSERT INTO org_agents
+                       (agent_id, name, role, skill, team, model_role, status,
+                        hired_at, hired_by, memory, perf, version)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        agent.agent_id, agent.name, agent.role, agent.skill, agent.team,
+                        agent.model_role, agent.status, agent.hired_at, agent.hired_by,
+                        json.dumps(agent.memory), json.dumps(agent.perf), 1,
+                    ),
+                )
+            except sqlite3.IntegrityError as e:
+                raise ConcurrencyError(
+                    f"Agent {agent.agent_id} was created concurrently"
+                ) from e
+            agent.version = 1
+        else:
+            new_version = agent.version + 1
+            cur = con.execute(
+                """UPDATE org_agents SET
+                       name = ?, role = ?, skill = ?, team = ?, model_role = ?, status = ?,
+                       hired_at = ?, hired_by = ?, memory = ?, perf = ?, version = ?
+                   WHERE agent_id = ? AND version = ?""",
+                (
+                    agent.name, agent.role, agent.skill, agent.team, agent.model_role,
+                    agent.status, agent.hired_at, agent.hired_by,
+                    json.dumps(agent.memory), json.dumps(agent.perf), new_version,
+                    agent.agent_id, agent.version,
+                ),
+            )
+            if cur.rowcount == 0:
+                raise ConcurrencyError(
+                    f"Agent {agent.agent_id} was modified concurrently "
+                    f"(expected version {agent.version}, stored version is {row[0]})"
+                )
+            agent.version = new_version
         con.commit()
 
 
@@ -228,6 +283,24 @@ def new_agent(name: str, role: str, skill: str, team: str = "leadership",
         agent_id=_new_id("agent"), name=name, role=role, skill=skill,
         team=team, model_role=model_role, hired_by=hired_by,
     )
+
+
+def update_agent(agent_id: str, mutate: Callable[[Agent], None], max_retries: int = 5) -> Agent:
+    """Read-modify-write an Agent safely under optimistic locking: re-fetches
+    the latest row, applies `mutate` to it, and saves — retrying from a fresh
+    read if a concurrent writer won the race in between."""
+    for attempt in range(max_retries):
+        agent = get_agent(agent_id)
+        if agent is None:
+            raise ValueError(f"Agent {agent_id} not found")
+        mutate(agent)
+        try:
+            save_agent(agent)
+            return agent
+        except ConcurrencyError:
+            if attempt == max_retries - 1:
+                raise
+    raise ConcurrencyError(f"Agent {agent_id} update failed after {max_retries} retries")
 
 
 # ── Meetings CRUD ─────────────────────────────────────────────────────────────
@@ -278,7 +351,7 @@ def list_meetings(limit: int = 50) -> list[Meeting]:
 # ── Company (singleton) ───────────────────────────────────────────────────────
 
 _COMPANY_COLS = (
-    "company_id, founded_at, headcount, treasury_usd, goals, lessons, culture, daemon"
+    "company_id, founded_at, headcount, treasury_usd, goals, lessons, culture, daemon, version"
 )
 
 
@@ -288,6 +361,7 @@ def _row_to_company(r: tuple) -> Company:
         treasury_usd=float(r[3] or 0),
         goals=json.loads(r[4] or "[]"), lessons=json.loads(r[5] or "[]"),
         culture=json.loads(r[6] or "{}"),
+        version=int(r[8] or 1),
     )
     daemon = json.loads(r[7] or "{}")
     if daemon:
@@ -304,16 +378,67 @@ def get_company() -> Company | None:
 
 
 def save_company(company: Company) -> None:
+    """Insert (company.version == 0 / row absent) or update with an optimistic
+    version check. On update, raises ConcurrencyError if the stored version
+    no longer matches `company.version` (someone else wrote first) — the row
+    is left untouched. On success, `company.version` is bumped in place."""
     with sqlite3.connect(_DB_PATH) as con:
-        con.execute(
-            """INSERT OR REPLACE INTO org_company
-               (company_id, founded_at, headcount, treasury_usd, goals, lessons, culture, daemon)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                company.company_id, company.founded_at, company.headcount,
-                company.treasury_usd, json.dumps(company.goals),
-                json.dumps(company.lessons), json.dumps(company.culture),
-                json.dumps(company.daemon),
-            ),
-        )
+        row = con.execute(
+            "SELECT version FROM org_company WHERE company_id = ?", (company.company_id,)
+        ).fetchone()
+        if row is None:
+            try:
+                con.execute(
+                    """INSERT INTO org_company
+                       (company_id, founded_at, headcount, treasury_usd, goals, lessons,
+                        culture, daemon, version)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        company.company_id, company.founded_at, company.headcount,
+                        company.treasury_usd, json.dumps(company.goals),
+                        json.dumps(company.lessons), json.dumps(company.culture),
+                        json.dumps(company.daemon), 1,
+                    ),
+                )
+            except sqlite3.IntegrityError as e:
+                raise ConcurrencyError(
+                    f"Company {company.company_id} was created concurrently"
+                ) from e
+            company.version = 1
+        else:
+            new_version = company.version + 1
+            cur = con.execute(
+                """UPDATE org_company SET
+                       founded_at = ?, headcount = ?, treasury_usd = ?, goals = ?,
+                       lessons = ?, culture = ?, daemon = ?, version = ?
+                   WHERE company_id = ? AND version = ?""",
+                (
+                    company.founded_at, company.headcount, company.treasury_usd,
+                    json.dumps(company.goals), json.dumps(company.lessons),
+                    json.dumps(company.culture), json.dumps(company.daemon), new_version,
+                    company.company_id, company.version,
+                ),
+            )
+            if cur.rowcount == 0:
+                raise ConcurrencyError(
+                    f"Company {company.company_id} was modified concurrently "
+                    f"(expected version {company.version}, stored version is {row[0]})"
+                )
+            company.version = new_version
         con.commit()
+
+
+def update_company(mutate: Callable[[Company], None], max_retries: int = 5) -> Company:
+    """Read-modify-write the singleton Company safely under optimistic
+    locking: re-fetches the latest row, applies `mutate`, and saves —
+    retrying from a fresh read if a concurrent writer won the race."""
+    for attempt in range(max_retries):
+        company = get_company() or Company()
+        mutate(company)
+        try:
+            save_company(company)
+            return company
+        except ConcurrencyError:
+            if attempt == max_retries - 1:
+                raise
+    raise ConcurrencyError(f"Company update failed after {max_retries} retries")

@@ -131,14 +131,14 @@ async def escalate_shopify_401(shop: str = "") -> str:
     except Exception:
         pass
     try:
-        from src.org.models import get_company, save_company
-        company = get_company()
-        if company:
-            note = "⚠️ BLOCKER: Shopify token returned 401 — owner must re-authorize (one click)."
-            if note not in company.lessons:
-                company.lessons.append(note)
-                company.lessons = company.lessons[-40:]
-                save_company(company)
+        from src.org.models import get_company, update_company
+        note = "⚠️ BLOCKER: Shopify token returned 401 — owner must re-authorize (one click)."
+        if get_company():
+            def _add_blocker(c, note: str = note) -> None:
+                if note not in c.lessons:
+                    c.lessons.append(note)
+                    c.lessons = c.lessons[-40:]
+            update_company(_add_blocker)
     except Exception:
         pass
     return url

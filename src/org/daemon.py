@@ -111,10 +111,13 @@ async def org_tick() -> None:
     if not _interval_elapsed(company):
         return
 
-    # Anti-pileup: don't start a cycle while any pipeline run is still going
-    # (same guard main.py's daemon uses). Builds spawned by the last cycle must
-    # finish before we make new decisions.
-    if any(r.status in ("running", "pending") for r in trace_store.list_runs()[:3]):
+    # Anti-pileup: don't start a cycle while a real pipeline run is still going.
+    # Builds spawned by the last cycle must finish before we make new decisions.
+    # Uses the shared zombie-aware check (heartbeat._build_running) rather than a
+    # raw status scan — a crashed run left "running" forever used to stop the
+    # meeting cycle permanently (it did, from 2026-08-05).
+    from src.org.heartbeat import _build_running
+    if _build_running():
         return
 
     # Respect the global kill-switch (lazy import avoids a route import cycle).

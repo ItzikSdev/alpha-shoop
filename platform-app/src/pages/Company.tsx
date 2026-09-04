@@ -43,10 +43,16 @@ interface Meeting {
 }
 
 const ROLE_ICON: Record<string, string> = {
-  CEO: '👑', 'Product Hunter': '🔍', 'UX & Content': '🎨',
-  'Shopify Developer': '🛠️', 'Growth Marketer': '📣',
-  // legacy roles (departed agents)
-  CTO: '🧠', HR: '🧑‍💼', store_builder: '🏗️', marketer: '📣', Developer: '👩‍💻',
+  CEO: '👑',
+  'Product Sourcer & Copywriter': '🛒', // Sol
+  'Video Producer': '🎬',               // Reel
+  'Customer Support': '📮',             // Nora
+  Fulfillment: '📦',                    // Milo
+  'Growth Marketing Analyst': '📊',     // Kai
+  // legacy roles (departed agents, e.g. the old 5-role pipeline)
+  'Product Hunter': '🔍', 'UX & Content': '🎨', 'Shopify Developer': '🛠️',
+  'Growth Marketer': '📣', CTO: '🧠', HR: '🧑‍💼', store_builder: '🏗️',
+  marketer: '📣', Developer: '👩‍💻',
 };
 
 const KIND_COLOR: Record<string, string> = {

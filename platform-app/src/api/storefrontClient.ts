@@ -7,7 +7,7 @@
  * so the browser never handles the admin token.
  */
 
-const RUNNER = 'http://localhost:8788';
+const RUNNER = `${window.location.protocol}//${window.location.hostname}:8788`;
 
 export interface StorefrontStatus {
   store_id: string;

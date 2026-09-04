@@ -7,11 +7,12 @@ const API_BASE = `http://${API_HOST}:8000`;
 
 const NAV: { path: string; icon: string; label: string; highlight?: boolean }[] = [
   { path: '/', icon: '🏠', label: 'Overview' },
+  { path: '/updates', icon: '📰', label: 'Updates', highlight: true },
   { path: '/company', icon: '🏢', label: 'The Company', highlight: true },
   { path: '/finance', icon: '💰', label: 'Finance', highlight: true },
   { path: '/integrations', icon: '🔌', label: 'Integrations' },
   { path: '/agent-logs', icon: '💬', label: 'Agent Logs' },
-  { path: '/agents/live', icon: '🛰️', label: 'Agent Activity', highlight: true },
+  { path: '/graph', icon: '🕸️', label: 'Knowledge Graph', highlight: true },
   { path: '/stores', icon: '🏪', label: 'My Stores' },
   { path: '/videos', icon: '🎬', label: 'Videos', highlight: true },
   { path: '/rag', icon: '🧠', label: 'RAG Data' },

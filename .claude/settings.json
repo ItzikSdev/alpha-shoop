@@ -283,7 +283,8 @@
       "Bash(curl -s -X POST http://127.0.0.1:8000/api/v1/videos/generate -H 'Content-Type: application/json' -d '{\"store_id\":\"alphaforbaby\",\"product_id\":\"gid://shopify/Product/7596785762375\",\"style\":\"PRODUCT_3D_SHOWCASE\"}')",
       "Bash(curl -s http://127.0.0.1:8188/queue)",
       "Bash(curl -s \"http://127.0.0.1:8000/api/v1/videos?store_id=alphaforbaby\")",
-      "Bash(curl -s \"http://127.0.0.1:8188/history?max_items=3\")"
+      "Bash(curl -s \"http://127.0.0.1:8188/history?max_items=3\")",
+      "Bash(sed *)"
     ],
     "additionalDirectories": [
       "/tmp"

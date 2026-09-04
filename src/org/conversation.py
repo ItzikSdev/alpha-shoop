@@ -25,8 +25,9 @@ import re
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.llm import get_llm
-from src.org.models import Agent, get_company, list_agents, save_company
+from src.org.models import Agent, get_company, list_agents
 from src.org.telegram import post_as, post_to_telegram, show_typing_as, telegram_enabled
+from src.tracing import agent_log
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,16 @@ def _store_context(store_slug: str = "alphaforbaby") -> str:
     )
 
 
+def _capability_block(exclude: str = "") -> str:
+    """The team's capability directory (src/org/directory.py), best-effort — a
+    prompt must still render if the roster lookup hiccups."""
+    try:
+        from src.org.directory import capability_directory
+        return capability_directory(exclude=exclude)
+    except Exception:  # noqa: BLE001
+        return "(teammate directory unavailable)"
+
+
 def _budget_line_safe() -> str:
     """The live org-credit line for the agents' prompts, so they know how many $ are
     left this month and stay economical (hard $100/mo cap). Best-effort — never break
@@ -88,12 +99,26 @@ def _budget_line_safe() -> str:
 
 def company_language() -> str:
     """The default language agents speak in the channel (ORG_LANGUAGE, default
-    Hebrew). They still switch to match a message that's clearly in another
-    language."""
-    return os.environ.get("ORG_LANGUAGE", "Hebrew").strip() or "Hebrew"
+    English). They still switch to match a message that's clearly in another
+    language.
+
+    Read through Settings, not os.environ: `.env` is never loaded into the
+    process environment, so the old os.environ read could only ever return its
+    own default and silently ignored ORG_LANGUAGE=English."""
+    from src.config import get_settings
+    try:
+        return get_settings().org_language.strip() or "English"
+    except Exception:  # noqa: BLE001
+        return os.environ.get("ORG_LANGUAGE", "English").strip() or "English"
 
 
 def _parse_json(text: str) -> dict:
+    # Strip qwen3's reasoning block first. It's a REASONING model, so its raw
+    # output can be "<think>…</think>{json}" — and any brace inside that prose
+    # (it often drafts the JSON there) would otherwise be what the regex below
+    # locks onto, yielding a half-written object instead of the real answer.
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r"^.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE)  # unclosed/truncated
     text = text.strip()
     m = re.search(r"\{.*\}", text, re.DOTALL)
     if m:
@@ -148,6 +173,11 @@ async def _agent_reply(agent: Agent, message: str, author: str, company,
         f"Company goals: {company.goals if company else []}\n"
         f"Recent lessons you've learned: {agent.memory.get('lessons', [])[-2:]}\n"
         f"{_budget_line_safe()}\n"
+        # Who else is on the team and what they can actually RUN. Without this an
+        # agent only ever saw its own charter, so it couldn't hand anything over
+        # or even say accurately who owns a problem.
+        f"YOUR TEAMMATES — refer people to the right one by name:\n"
+        f"{_capability_block(agent.name)}\n"
         "You have FULL access to the repo, the store files, and the Shopify Admin "
         "API — NEVER say you lack access or ask the owner to paste files/confirm "
         "permission. The store folder tree + build guide are below; read them and act."
@@ -211,8 +241,8 @@ the roster, decide WHO should answer — usually ONE teammate (the single most
 relevant person), occasionally two, and ALL of them only if the message is
 clearly addressed to everyone (e.g. a group greeting).
 
-The team is 4 agents — ALWAYS pick the SPECIALIST whose domain the message is
-about; do NOT funnel everything to the CEO. Use the EXACT role string:
+The team is several specialist agents — ALWAYS pick the SPECIALIST whose domain
+the message is about; do NOT funnel everything to the CEO. Use the EXACT role string:
 - "Product Sourcer & Copywriter" (Sol) → ANY mention of CJ / sourcing / finding
   products / prices / margins / "get products" / "add products" / "push products
   to the store" / product copywriting / SEO titles+descriptions. Sol runs his own
@@ -221,11 +251,18 @@ about; do NOT funnel everything to the CEO. Use the EXACT role string:
   the video review/approve-reject queue.
 - "Customer Support" (Nora)  → customer emails/tickets, support inbox questions,
   refund/complaint handling status.
+- "Growth Marketing Analyst" (Kai) → TikTok Ads Manager data — spend, ROAS, CTR,
+  impressions, conversions, campaign performance, connecting/authorizing TikTok
+  Ads, or pasting back a TikTok auth code. ALSO Microsoft Clarity data — site
+  traffic/visitor counts, session recordings, heatmaps, rage/dead clicks,
+  scroll depth, UX friction/drop-off. Read-only reporting only — Kai never
+  creates or edits a campaign, and never edits the site based on a UX finding
+  himself (that's a ticket for whoever owns the code).
 - "CEO" (Ava)                → ONLY strategy/direction/money/vision, a build-or-
   launch decision, or a genuinely ambiguous greeting. NOT the default dumping ground.
 If the message NAMES a person (e.g. "Sol, ..."), THAT person answers. When in
 doubt between the CEO and a specialist, pick the specialist. For a group greeting
-("hi all", "hey team") ALL FOUR must answer, one per line in "responders".
+("hi all", "hey team") EVERY agent above must answer, one per line in "responders".
 
 EVERY agent has FULL repo + Shopify access — never route to "ask the owner for
 permission". The chosen person reads/does it themselves.
@@ -251,9 +288,20 @@ async def _agent_act_shopify(agent: Agent, message: str, company) -> str:
         "yourself. NEVER ask the owner for permission or to paste files.\n"
         f"Answer in {company_language()}. You can see the recent channel conversation "
         "in the user message — you DO remember it; use it for context. If the request "
-        "needs a Shopify call, include it. Output ONLY JSON:\n"
-        '{"reply":"<short first-person reply>","shopify_request":null OR '
-        '{"method":"GET|POST|PUT|DELETE","path":"<e.g. products/count.json>","body":<obj or null>}}'
+        "needs a Shopify call, include it. Two ways to make one — pick whichever fits:\n"
+        '- shopify_graphql: {"query":"<GraphQL query/mutation>","variables":{...}} — '
+        "use this for ANY lookup/search (e.g. \"does a product with this title exist\"): "
+        'query { products(first: 5, query: "title:*Foo*") { nodes { id title } } }. '
+        "Shopify's REST API has NO product-search-by-title endpoint — don't invent one.\n"
+        '- shopify_request: {"method":"GET|POST|PUT|DELETE","path":"<e.g. products/count.json>",'
+        '"body":<obj or null>} — for simple REST calls by a KNOWN Shopify id.\n'
+        "CRITICAL: a CJ supplier product id (from product_mappings/RAG, often 16-19 digits) "
+        "is NEVER a Shopify product id (Shopify's are shorter, ~10-13 digits) — never call "
+        "products/{id}.json with a CJ id, you'll get a false 404 and wrongly conclude the "
+        "product doesn't exist. Look it up by title/handle via shopify_graphql instead. "
+        "Only one of shopify_graphql/shopify_request should be set (or neither). "
+        "Output ONLY JSON: {\"reply\":\"<short first-person reply>\","
+        '"shopify_graphql":null OR {...},"shopify_request":null OR {...}}'
         + _store_context()
     )
     transcript = await _recent_transcript(message)
@@ -267,13 +315,18 @@ async def _agent_act_shopify(agent: Agent, message: str, company) -> str:
         parsed = _parse_json(str(resp.content))
         reply = str(parsed.get("reply", "")).strip()
         req = parsed.get("shopify_request")
+        gql = parsed.get("shopify_graphql")
     except Exception:
         return await _agent_reply(agent, message, "You", company)
-    if isinstance(req, dict) and req.get("path"):
+    if isinstance(gql, dict) and gql.get("query"):
+        from src.org.proposals import execute_shopify_graphql
+        res = await execute_shopify_graphql(gql["query"], gql.get("variables"))
+        reply = (reply + "\n" if reply else "") + f"→ graphql: {res.get('status')} {str(res.get('body',''))[:300]}"
+    elif isinstance(req, dict) and req.get("path"):
         from src.org.proposals import execute_shopify
         res = await execute_shopify(req.get("method", "GET"), req["path"], req.get("body"))
         reply = (reply + "\n" if reply else "") + f"→ {req.get('method','GET')} {req['path']}: {res.get('status')} {str(res.get('body',''))[:300]}"
-    return reply or "בוצע."
+    return reply or "Done."
 
 
 def author_q(message: str) -> str:
@@ -297,8 +350,12 @@ Operations you can run:
 - "remove_stale": remove products older than 3 years that are NOT baby items — reads
                   each product's title/description to judge relevance before removing.
 - "ticket":       CREATE, ADVANCE, or CLOSE a ticket. Create a NEW ticket for a problem/task
-                  ("open a ticket to ...", "תפתח טיקט ל..."); or advance/close an EXISTING one
-                  ("close the ticket ...", "סגור את הטיקט", "קדם את", "mark X done/doing/blocked").
+                  ("open a ticket to ..."); or advance/close an EXISTING one
+                  ("close the ticket ...", "mark X done/doing/blocked"). A message that
+                  literally starts with "create_ticket:" or "close_ticket:" (an agent's own
+                  self-directed decision, e.g. Nova's, not owner chat) is ALWAYS this op —
+                  don't require it to read like a natural sentence; everything after the
+                  colon is the ticket_title (create) or ticket_query (close/advance).
 
 Pick "none" unless the message clearly asks for one of these (in any language).
 Output ONLY JSON: {"op":"dedupe|cleanup|apply_design|fix_prices|remove_out_of_stock|remove_stale|ticket|none","reply":"<short first-person line in %s>","ticket_action":"create|update","ticket_title":"<title, when creating>","ticket_query":"<words identifying an existing ticket, when updating>","ticket_status":"todo|doing|blocked|done"}"""
@@ -366,15 +423,15 @@ async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
             title = ticket_title or ticket_query or message[:80]
             t = open_ticket(title, source="chat", created_by=agent.name)
             if not t:
-                return (reply + "\n" if reply else "") + "⚠️ טיקט דומה כבר פתוח."
-            return (reply + "\n" if reply else "") + f"✅ פתחתי טיקט '{t.title}' — אחראי {t.assignee}, {t.priority}, deadline {t.due_at[:16]}."
+                return (reply + "\n" if reply else "") + "⚠️ A similar ticket is already open."
+            return (reply + "\n" if reply else "") + f"✅ Opened ticket '{t.title}' — assignee {t.assignee}, {t.priority}, deadline {t.due_at[:16]}."
         q = ticket_query.lower()
         cand = [t for t in list_tickets() if t["status"] != "done"
                 and (q in t["title"].lower() or q in t["id"].lower() or not q)]
         if not cand:
-            return (reply + "\n" if reply else "") + f"⚠️ לא מצאתי טיקט פתוח שתואם ל־'{ticket_query}'."
+            return (reply + "\n" if reply else "") + f"⚠️ No open ticket found matching '{ticket_query}'."
         upd = [t for t in cand if update_ticket(t["id"], status=ticket_status or "done")]
-        return (reply + "\n" if reply else "") + f"✅ עדכנתי {len(upd)} טיקט ל־{ticket_status or 'done'}: " + ", ".join(t["title"][:40] for t in upd)
+        return (reply + "\n" if reply else "") + f"✅ Updated {len(upd)} ticket(s) to {ticket_status or 'done'}: " + ", ".join(t["title"][:40] for t in upd)
     # Make sure the Shopify calls target the store (falls back to env creds anyway).
     try:
         from src.stores import list_stores, _current_store
@@ -388,19 +445,19 @@ async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
         if op == "dedupe":
             from src.mcp_tools.shopify import dedupe_products
             res = await dedupe_products(dry_run=False)
-            note = f"הסרתי {res['deleted']} כפילויות (מתוך {res['duplicate_count']} שזוהו)."
+            note = f"Removed {res['deleted']} duplicate(s) (of {res['duplicate_count']} found)."
         elif op == "cleanup":
             from src.mcp_tools.shopify import cleanup_bad_products
             res = await cleanup_bad_products(dry_run=False)
-            note = f"ניקיתי {res['deleted']} מוצרים פגומים (בלי תמונה / טקסט לא תקין) מתוך {res['scanned']}."
+            note = f"Cleaned up {res['deleted']} bad product(s) (no image / invalid title) out of {res['scanned']}."
         elif op == "fix_prices":
             from src.mcp_tools.shopify import fix_zero_prices
             res = await fix_zero_prices(dry_run=False)
-            note = f"תיקנתי מחירי $0: תמחרתי מחדש {res['repriced']} מוצרים, הסרתי {res['deleted']} ללא מחיר."
+            note = f"Fixed $0 prices: repriced {res['repriced']} product(s), removed {res['deleted']} with no price."
         elif op == "remove_out_of_stock":
             from src.mcp_tools.shopify import cleanup_out_of_stock_products
             res = await cleanup_out_of_stock_products(dry_run=False)
-            note = f"הסרתי {res['deleted']} מוצרים שאזלו מהמלאי ולא ניתנים לרכישה (מתוך {res['scanned']} שנבדקו)."
+            note = f"Removed {res['deleted']} out-of-stock product(s), unpurchasable (out of {res['scanned']} checked)."
         elif op == "remove_stale":
             from src.mcp_tools.shopify import audit_stale_products, delete_shopify_product
             audit = await audit_stale_products(max_age_years=3)
@@ -409,15 +466,15 @@ async def _agent_act_ops(agent: Agent, message: str, company) -> str | None:
             for gid in to_remove:
                 if await delete_shopify_product(gid):
                     removed += 1
-            note = (f"בדקתי {audit['candidate_count']} מוצרים בני 3+ שנים; "
-                    f"הסרתי {removed} שאינם מוצרי תינוקות.")
+            note = (f"Checked {audit['candidate_count']} product(s) 3+ years old; "
+                    f"removed {removed} that aren't baby items.")
         else:  # apply_design
             from src.mcp_tools.shopify_design import apply_site_design, apply_product_design
             r1 = await apply_site_design(slug)
             r2 = await apply_product_design(slug)
-            note = f"החלתי את התבנית לייב — דף הבית {'✓' if r1.get('ok') else '✗'}, דף מוצר {'✓' if r2.get('ok') else '✗'}."
+            note = f"Applied the template live — homepage {'✓' if r1.get('ok') else '✗'}, product page {'✓' if r2.get('ok') else '✗'}."
     except Exception as exc:
-        return (reply + "\n" if reply else "") + f"⚠️ הפעולה נכשלה: {exc}"
+        return (reply + "\n" if reply else "") + f"⚠️ Operation failed: {exc}"
     # Log it to the store changelog so nothing is invisible.
     try:
         from src.mcp_tools.design_files import append_changelog
@@ -446,15 +503,15 @@ async def _agent_act_sourcing(agent: Agent, message: str, company) -> str:
     )
     transcript = await _recent_transcript(message)
     human = (f"Recent conversation (oldest first):\n{transcript}\n\n" if transcript else "") + author_q(message)
-    try:
-        llm = get_llm("executive", temperature=0.3, max_tokens=500)
-        resp = await llm.ainvoke([SystemMessage(content=system), HumanMessage(content=human)])
-        parsed = _parse_json(str(resp.content))
-        reply = str(parsed.get("reply", "")).strip()
-        category = str(parsed.get("category", "")).strip()
-        push = bool(parsed.get("push_to_store"))
-    except Exception:
+    parsed = await _classify_with_retry(agent, system, human, model_role="executive",
+                                        temperature=0.3, max_tokens=800)
+    if parsed is None:
+        agent_log(f"⚠️ {agent.name}: sourcing classifier failed twice — fell back to "
+                  "generic reply, no action taken", "warning")
         return await _agent_reply(agent, message, "You", company)
+    reply = str(parsed.get("reply", "")).strip()
+    category = str(parsed.get("category", "")).strip()
+    push = bool(parsed.get("push_to_store"))
     if not category:
         return reply or "On it — searching CJ now."
     try:
@@ -500,32 +557,74 @@ async def _agent_act_sourcing(agent: Agent, message: str, company) -> str:
     return out
 
 
+async def _classify_with_retry(
+    agent: Agent, system: str, human: str, model_role: str = "executive",
+    temperature: float = 0.3, max_tokens: int = 800,
+) -> dict | None:
+    """Run a classifier call (system+human → parsed JSON) with ONE retry on
+    failure, /no_think appended so a reasoning model (qwen3) doesn't burn its
+    whole token budget on a <think> block before ever writing the JSON —
+    exactly the failure mode that made _agent_act_video silently substitute a
+    plain chat reply for a real render: max_tokens=300, no /no_think, and the
+    response got cut off mid-string with no start_render/media/style fields.
+
+    Returns the parsed dict, or None if BOTH attempts failed to produce
+    parseable JSON. None is a real failure a caller must surface loudly (see
+    each _agent_act_*'s fallback-to-_agent_reply site) — it is NOT the same
+    thing as "nothing to do", which the classifier expresses inside its own
+    JSON (e.g. start_render:false), not by failing to parse."""
+    human_nt = human if human.rstrip().endswith("/no_think") else human + " /no_think"
+    last_exc: Exception | None = None
+    for attempt in range(2):
+        try:
+            llm = get_llm(model_role, temperature=temperature, max_tokens=max_tokens)
+            resp = await llm.ainvoke([SystemMessage(content=system), HumanMessage(content=human_nt)])
+            raw = str(resp.content).strip()
+            if not raw:
+                raise ValueError("model returned an empty response")
+            return _parse_json(raw)
+        except Exception as exc:  # noqa: BLE001
+            last_exc = exc
+            logger.warning("%s classifier attempt %d/2 failed: %s", agent.name, attempt + 1, exc)
+    logger.warning("%s classifier failed after retry, giving up: %s", agent.name, last_exc)
+    return None
+
+
 async def _agent_act_video(agent: Agent, message: str, company) -> str:
-    """Reel ACTS in chat: when asked to make/create/render an ad video OR a
+    """Reel ACTS in chat: when asked to make/create/render a video OR a
     baby-outfit image, picks a product and kicks off a REAL render (the same
     pipelines as POST /videos/generate and POST /images/generate) instead of just
-    talking about it — this was the actual bug: Reel kept replying "I'll select a
-    product..." forever without ever starting anything, because no _agent_act_*
-    was wired for his role. One intent-classification call decides media type
-    (video vs image) plus video style, then delegates to the matching starter."""
+    talking about it. One intent-classification call decides media type (rotation
+    video vs image) plus image style, then delegates to the matching starter.
+
+    The old full-ad-video path (AVATAR_UGC / PRODUCT_3D_SHOWCASE, Wan2.2/ComfyUI)
+    is retired as of 2026-08-20 — the owner deleted Wan2.2 (render quality wasn't
+    good enough, switched to paying for Veo/Gemini instead). Veo's wrapper
+    (src/video/veo_video.py) is purpose-built for one fixed 4s no-person rotation
+    shot, not a drop-in for a multi-scene scripted talking-avatar ad — replacing
+    the ad-video pipeline would be a real rebuild, not a redirect, so that video
+    type is disabled here rather than silently routed to a pipeline that can't
+    actually produce it."""
     system = (
         f"You are {agent.name} ({agent.role}) at Alpha — Video Producer, and you also "
         "generate product IMAGES two ways. You have FULL access to the store's products "
         "and all pipelines; NEVER say you lack access or ask which product — if the owner "
-        "didn't name one, YOU pick it.\n"
-        f"Answer in {company_language()}. From the owner's message decide: (1) do they "
-        "want you to START something NOW (e.g. 'make a video', 'create an ad', 'make an "
-        "image', 'try 10 seconds', 'just take one/any product') versus just chatting; "
-        "(2) if starting, is it a full AD VIDEO, a short ROTATION VIDEO, or an IMAGE, and "
-        "if an image, which kind.\n"
-        "Full ad video (media=video), two formats — pick PRODUCT_3D_SHOWCASE only if the "
-        "owner clearly asks for a 3D/product-only/no-face/cinematic style, else default "
-        "AVATAR_UGC:\n"
-        "- AVATAR_UGC: an avatar talks to camera, benefit captions alongside.\n"
-        "- PRODUCT_3D_SHOWCASE: no face, rotating/macro product render, floating title cards.\n"
+        "didn't name one, YOU pick it. You do NOT have a scripted/talking-avatar ad-video "
+        "pipeline anymore (that was Wan2.2, retired) — only a short rotation video and "
+        "images. If the owner asks for a talking-avatar or full ad video, say plainly "
+        "that pipeline was retired and offer a rotation video or image instead.\n"
+        "You also have a READ-ONLY status check (no render) for 'does this product "
+        "already have a video/enough images', 'is it published', 'what's its media "
+        "status' type questions — use check_status for those instead of guessing "
+        "or saying you'll look into it.\n"
+        f"Answer in {company_language()}. From the owner's message decide: (0) is this "
+        "a STATUS/CHECK question about EXISTING media (check_status=true, name/infer "
+        "the product) rather than a request to make something new; (1) if not a status "
+        "question, do they want you to START something NOW (e.g. 'make a video', 'spin "
+        "it around', 'make an image', 'just take one/any product') versus just chatting; "
+        "(2) if starting, is it a ROTATION VIDEO or an IMAGE, and if an image, which kind.\n"
         "Rotation video (media=rotation_video): a short (~4s) 360-degree turntable clip of "
-        "JUST the product (no person, no text) — pick this when the owner asks to 'see it "
-        "from every angle', 'spin it around', 'rotate', or a short product-only video. "
+        "JUST the product (no person, no text) — pick this for any video request. "
         "IMPORTANT: this uses a PAID API (Veo, ~$0.40/clip, NOT the free tier) — you must "
         "say so plainly in your reply and make clear you're only QUEUING it for the owner's "
         "cost approval (dashboard Videos page), not actually spending money yet.\n"
@@ -539,69 +638,408 @@ async def _agent_act_video(agent: Agent, message: str, company) -> str:
         "style is TEXT-FREE — never add a headline, logo, or callouts unless the owner "
         "explicitly asks for an ad banner with text.\n"
         "Output ONLY JSON:\n"
-        '{"reply":"<short first-person line>","start_render":true|false,'
-        '"media":"video"|"rotation_video"|"image","style":"AVATAR_UGC"|"PRODUCT_3D_SHOWCASE",'
+        '{"reply":"<short first-person line>","check_status":true|false,'
+        '"start_render":true|false,'
+        '"media":"rotation_video"|"image",'
         '"image_style":"LIFESTYLE"|"THREED"|"BABY_SWAP"}'
     )
     transcript = await _recent_transcript(message)
     human = (f"Recent conversation (oldest first):\n{transcript}\n\n" if transcript else "") + author_q(message)
-    try:
-        llm = get_llm("video_producer", temperature=0.2, max_tokens=300)
-        resp = await llm.ainvoke([SystemMessage(content=system), HumanMessage(content=human)])
-        parsed = _parse_json(str(resp.content))
-        reply = str(parsed.get("reply", "")).strip()
-        start = bool(parsed.get("start_render"))
-        media = str(parsed.get("media", "video")).strip().lower()
-        style = str(parsed.get("style", "AVATAR_UGC")).strip().upper()
-        if style not in ("AVATAR_UGC", "PRODUCT_3D_SHOWCASE"):
-            style = "AVATAR_UGC"
-        image_style = str(parsed.get("image_style", "LIFESTYLE")).strip().upper()
-        if image_style == "BABY_SWAP":
-            engine, gemini_style = "baby_swap", "lifestyle"
-        elif image_style == "THREED":
-            engine, gemini_style = "gemini", "3d_showcase"
-        else:
-            engine, gemini_style = "gemini", "lifestyle"
-    except Exception:
+    parsed = await _classify_with_retry(agent, system, human, model_role="video_producer",
+                                        temperature=0.2, max_tokens=800)
+    if parsed is None:
+        agent_log(f"⚠️ {agent.name}: video classifier failed twice — fell back to "
+                  "generic reply, no action taken", "warning")
         return await _agent_reply(agent, message, "You", company)
+    reply = str(parsed.get("reply", "")).strip()
+    if parsed.get("check_status"):
+        gid = _extract_product_gid(message)
+        if not gid:
+            from src.mcp_tools.shopify import get_products_for_video
+            try:
+                products = await get_products_for_video()
+                product, _err = _resolve_target_product(message, products)
+                gid = product["id"] if product else None
+            except Exception:
+                gid = None
+        if not gid:
+            return (reply + "\n" if reply else "") + "⚠️ Couldn't identify which product to check."
+        from src.mcp_tools.shopify import check_media_status
+        status = await check_media_status(gid)
+        if status.get("error"):
+            return (reply + "\n" if reply else "") + f"⚠️ Status check failed: {status['error']}"
+        gap = ("no gap — clears the storefront gate" if status["clears_storefront_gate"]
+               else "; ".join(status["publish_blockers"]))
+        return (
+            (reply + "\n" if reply else "")
+            + f"📋 *{status['title']}* — {status['image_count']} image(s), "
+            f"{status['video_count_real']} real video(s)"
+            + (f", {status['video_count_supplier_clip']} supplier clip(s)"
+               if status['video_count_supplier_clip'] else "")
+            + f". Gap: {gap}"
+        )
+    start = bool(parsed.get("start_render"))
+    media = str(parsed.get("media", "rotation_video")).strip().lower()
+    image_style = str(parsed.get("image_style", "LIFESTYLE")).strip().upper()
+    if image_style == "BABY_SWAP":
+        engine, gemini_style = "baby_swap", "lifestyle"
+    elif image_style == "THREED":
+        engine, gemini_style = "gemini", "3d_showcase"
+    else:
+        engine, gemini_style = "gemini", "lifestyle"
     if not start:
         return reply or "Got it."
     if media == "image":
-        return await _agent_act_image(reply, engine=engine, style=gemini_style)
-    if media == "rotation_video":
-        return await _agent_act_rotation_video(reply)
-    return await _agent_act_video_render(reply, style)
+        return await _agent_act_image(message, reply, engine=engine, style=gemini_style)
+    return await _agent_act_rotation_video(message, reply)
 
 
-async def _agent_act_video_render(reply: str, style: str) -> str:
-    """Starts a real ad-video render (POST /videos/generate) for the store's first
-    eligible product — the video half of _agent_act_video's dispatch."""
-    from src.mcp_tools.shopify import get_products_for_video
-    from src.api.routes.videos import post_generate_video
-    from src.stores import list_stores
+def _extract_product_gid(message: str) -> str:
+    """Pull an explicit Shopify product gid out of a request, e.g. an
+    ask_teammate question naming exactly which product to generate media
+    for. Only a full gid counts — a bare number is too ambiguous (could be
+    a CJ PID, a price, anything) to match against."""
+    m = re.search(r"gid://shopify/Product/\d+", message)
+    return m.group(0) if m else ""
+
+
+def _resolve_target_product(message: str, products: list[dict]) -> tuple[dict | None, str]:
+    """Which product a media request targets. If the request named an
+    explicit gid, it MUST match exactly — no name/first-match fallback.
+    That fallback is what silently substituted the wrong product before:
+    asked to generate a video for one gid, it queued one for an unrelated
+    "first eligible" product instead and reported the requested name back
+    as if it had used it. Returns (product, error); product is None with a
+    message in error when a named gid isn't in the eligible list at all —
+    that must surface as a loud failure, not a silent substitution."""
+    gid = _extract_product_gid(message)
+    if not gid:
+        return (products[0] if products else None), ""
+    for p in products:
+        if p.get("id") == gid:
+            return p, ""
+    return None, f"product not found: {gid} (not in the eligible list — check it exists and has an image)"
+
+
+def _extract_auth_code(message: str) -> str:
+    """Pull a TikTok OAuth `auth_code` out of a chat message — either an
+    explicit `auth_code=...` (pasted straight from the redirect URL) or, if
+    the whole message is one bare token-looking string with no spaces, that."""
+    m = re.search(r"auth_code=([\w\-.]+)", message)
+    if m:
+        return m.group(1)
+    stripped = message.strip()
+    if stripped and " " not in stripped and len(stripped) > 10:
+        return stripped
+    return ""
+
+
+async def _ads_export_report() -> str:
+    """Format the newest hand-exported Ads Manager report, or "" if there is
+    none. Used while the TikTok Developer app is still pending approval — the
+    Marketing API needs an OAuth access token for every call, so this file is
+    the only route to the numbers the owner already sees in his browser."""
+    from src import tiktok_mcp
     try:
-        store = next(iter(list_stores()), None)
-        if not store:
-            return (reply + "\n" if reply else "") + "⚠️ No active store to pick a product from."
-        products = await get_products_for_video()
+        data = await tiktok_mcp.read_ads_export()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("TikTok export read failed: %s", exc)
+        return ""
+    if not isinstance(data, dict) or data.get("error"):
+        return ""
+
+    m = data.get("metrics", {}) or {}
+    d = data.get("derived", {}) or {}
+    span = (f" ({data['start_date']} → {data['end_date']})"
+            if data.get("start_date") else "")
+    lines = [f"TikTok Ads{span} — from your export `{data.get('file')}` "
+             f"({data.get('rows_counted')} rows). API isn't connected yet, so these are "
+             "read straight out of the file you downloaded:"]
+    for key, label, fmt in (
+        ("spend", "Spend", "${:,.2f}"), ("impressions", "Impressions", "{:,.0f}"),
+        ("clicks", "Clicks", "{:,.0f}"), ("conversions", "Conversions", "{:,.0f}"),
+        ("revenue", "Purchase value", "${:,.2f}"),
+    ):
+        if key in m:
+            lines.append(f"  {label}: {fmt.format(m[key])}")
+    for key, label, fmt in (
+        ("ctr_pct", "CTR", "{:.2f}%"), ("cpc", "CPC", "${:,.3f}"),
+        ("cpm", "CPM", "${:,.2f}"), ("cpa", "CPA", "${:,.2f}"), ("roas", "ROAS", "{:.2f}x"),
+    ):
+        if key in d:
+            lines.append(f"  {label}: {fmt.format(d[key])}")
+    if "roas" not in d:
+        lines.append("  ROAS: not in this export — add 'Total purchase value' to the "
+                     "report columns in Ads Manager and re-export.")
+
+    # Per-ad ranking — the actual decision the owner needs ("which creative do I
+    # put more money behind?"), which an account-level total can't answer.
+    ads = data.get("ads") or []
+    if ads:
+        lines.append(f"\nPer-{data.get('grouped_by') or 'ad'} — ranked by "
+                     f"{data.get('ranking_metric')}:")
+        for i, row in enumerate(ads, 1):
+            am, ad_ = row.get("metrics", {}), row.get("derived", {})
+            bits = []
+            if "spend" in am:
+                bits.append(f"spend ${am['spend']:,.2f}")
+            for key, label, fmt in (("roas", "ROAS", "{:.2f}x"), ("cpa", "CPA", "${:,.2f}"),
+                                    ("ctr_pct", "CTR", "{:.2f}%")):
+                if key in ad_:
+                    bits.append(f"{label} {fmt.format(ad_[key])}")
+            if "conversions" in am:
+                bits.append(f"{am['conversions']:,.0f} conv")
+            lines.append(f"  {i}. {row['ad']} — " + " · ".join(bits))
+        best = data.get("best_ad")
+        if best:
+            lines.append(f"\n✅ Put the budget behind: **{best}** — it wins on "
+                         f"{data.get('ranking_metric')}.")
+            worst = data.get("worst_ad")
+            if worst and worst != best:
+                lines.append(f"❌ Weakest right now: {worst}.")
+        if len(ads) < 2:
+            lines.append("(Only one ad in this export — export a range covering both "
+                         "ads if you want them compared.)")
+    return "\n".join(lines)
+
+
+async def _agent_act_ads(agent: Agent, message: str, company) -> str:
+    """Kai ACTS in chat: pulls REAL TikTok Ads data (src/tiktok_mcp, a genuine
+    MCP client, see that folder's README) instead of talking about it —
+    read-only, never creates/edits/pauses a campaign. If TikTok isn't
+    connected yet, says so plainly (with the connect steps) rather than
+    guessing a number; if the message looks like it's handing back an
+    auth_code, completes the OAuth exchange instead of running a report."""
+    from datetime import datetime, timedelta, timezone
+    from src import tiktok_mcp
+
+    try:
+        status = await tiktok_mcp.auth_status()
     except Exception as exc:
-        return (reply + "\n" if reply else "") + f"⚠️ Couldn't read the store's products: {exc}"
-    if not products:
-        return (reply + "\n" if reply else "") + "Every eligible product already has a video queued/rendered — nothing new to make one for."
-    product = products[0]
-    res = await post_generate_video({"store_id": store.store_id, "product_id": product["id"], "style": style})
-    if res.get("error"):
-        return (reply + "\n" if reply else "") + f"⚠️ Couldn't start rendering: {res['error']}"
-    pretty_style = style.replace("_", " ").title()
-    return (reply + "\n" if reply else "") + f"🎬 Picked *{product['title']}* — rendering a {pretty_style} ad now (script → Wan2.2 scenes → voiceover → assembly). I'll post it here for approval when it's done."
+        return f"⚠️ Couldn't reach the TikTok Ads MCP server: {exc}"
+
+    if not status.get("authenticated"):
+        code = _extract_auth_code(message)
+        if code:
+            try:
+                result = await tiktok_mcp.complete_auth(code)
+            except Exception as exc:
+                return f"⚠️ TikTok auth exchange failed: {exc}"
+            if result.get("authenticated"):
+                return (f"✅ TikTok Ads connected (advertiser {result.get('advertiser_ids')}). "
+                        "Ask me for spend/CTR/ROAS any time.")
+            return f"⚠️ TikTok auth exchange failed: {result.get('error', result)}"
+        # Before admitting defeat: the owner can export the exact report he sees
+        # in his browser out of Ads Manager, and that needs no app approval. Real
+        # numbers from his own account beat "I'm not connected yet".
+        export = await _ads_export_report()
+        if export:
+            return export
+
+        try:
+            login = await tiktok_mcp.login()
+        except Exception as exc:
+            return f"TikTok Ads isn't connected yet, and I couldn't start OAuth: {exc}"
+        try:
+            where = (await tiktok_mcp.ads_export_status()).get("export_dir", "data/tiktok_exports")
+        except Exception:  # noqa: BLE001
+            where = "data/tiktok_exports"
+        manual = ("\n\nMeanwhile, if you don't want to wait for app approval: export the "
+                  f"report from Ads Manager and drop the CSV in `{where}` — I'll read the "
+                  "real numbers straight out of it.")
+        if "error" in login:
+            return f"TikTok Ads isn't connected yet — {login['error']}{manual}"
+        return (
+            "TikTok Ads isn't connected yet — I have no real data to give you. "
+            "One-time setup: open this, approve access, then send me back the "
+            f"`auth_code` from the redirect URL:\n{login['authorize_url']}{manual}"
+        )
+
+    end = datetime.now(timezone.utc).date()
+    start = end - timedelta(days=7)
+    try:
+        report = await tiktok_mcp.get_ads_report(str(start), str(end))
+    except Exception as exc:
+        return f"⚠️ TikTok report fetch failed: {exc}"
+    if "error" in report:
+        return f"⚠️ TikTok report fetch failed: {report['error']}"
+    rows = report.get("rows", [])
+    if not rows:
+        return f"TikTok Ads ({start} to {end}): no data returned for the account yet."
+    m = rows[0].get("metrics", rows[0])
+    lines = [f"TikTok Ads — last 7 days ({start} to {end}):"]
+    for key, label in (
+        ("spend", "Spend"), ("impressions", "Impressions"), ("clicks", "Clicks"),
+        ("ctr", "CTR"), ("conversion", "Conversions"), ("cost_per_conversion", "CPA"),
+    ):
+        if key in m:
+            lines.append(f"  {label}: {m[key]}")
+    return "\n".join(lines)
 
 
-async def _agent_act_rotation_video(reply: str) -> str:
-    """Queues a Veo 360-rotation video for the store's first eligible product —
-    COST GATE: this only creates an awaiting_cost_approval row (POST
-    /videos/generate, engine='veo_rotation'), it never spends money on its own.
-    The owner must separately approve via POST /videos/{id}/approve-render or the
-    dashboard's Videos page before the paid Veo call actually fires."""
+# Keywords that route a Growth Marketing Analyst message to the Clarity/UX
+# report instead of the TikTok Ads report — checked before falling through to
+# ads (the existing default), so "how's spend looking" still goes to TikTok
+# unchanged, but "how's the site traffic / any UX friction" goes to Clarity.
+_CLARITY_KEYWORDS = (
+    "clarity", "heatmap", "session record", "rage click", "dead click",
+    "scroll depth", "site traffic", "web traffic", "visitors", "bounce",
+    "ux friction", "user experience", "drop off", "drop-off",
+)
+
+
+async def _agent_act_growth(agent: Agent, message: str, company) -> str:
+    """Kai's single entry point for both real data sources he has: TikTok Ads
+    (spend/CTR/ROAS) and Clarity (site traffic + UX-friction signals). Keyword
+    routing on the incoming message, not a guess — defaults to ads (the
+    original, longer-standing behavior) when nothing Clarity-specific is
+    mentioned."""
+    low = message.lower()
+    if any(kw in low for kw in _CLARITY_KEYWORDS):
+        return await _agent_act_analytics(agent, message, company)
+    return await _agent_act_ads(agent, message, company)
+
+
+async def _agent_act_analytics(agent: Agent, message: str, company) -> str:
+    """Kai ACTS in chat: pulls REAL Microsoft Clarity data (Data Export API,
+    src/mcp_tools/clarity.py) — real session/traffic counts and UX-friction
+    signals (dead clicks, rage clicks, excessive scroll), never a guessed or
+    invented number. If no CLARITY_API_TOKEN is configured, says so plainly
+    with the exact setup step rather than pretending to have data."""
+    from src.mcp_tools.clarity import get_clarity_report
+
+    result = await get_clarity_report(days=3)
+    status = result.get("status")
+    if status == "not_connected":
+        return f"Clarity isn't connected yet — {result['setup']}"
+    if status == "error":
+        return f"⚠️ Clarity report fetch failed: {result.get('detail')}"
+
+    summary = result.get("summary") or {}
+    if not summary:
+        return (
+            "Clarity is connected, but I couldn't find any of the metrics I "
+            "normally report in this response (its response shape may have "
+            "changed — see src/mcp_tools/clarity.py's field-name caveat). "
+            f"Raw data has {len(result.get('raw') or [])} metric(s) — ask me to "
+            "dig into the raw payload if you want it."
+        )
+
+    lines = ["Clarity — last 3 days (real session-recording data):"]
+    if "sessions" in summary:
+        lines.append(f"  Sessions: {summary['sessions']}")
+    if "distinct_users" in summary:
+        lines.append(f"  Distinct visitors: {summary['distinct_users']}")
+    friction = []
+    for key, label in (
+        ("dead_clicks", "Dead clicks"), ("rage_clicks", "Rage clicks"),
+        ("excessive_scroll_sessions", "Excessive-scroll sessions"),
+        ("quickback_clicks", "Quickback clicks"), ("script_errors", "Script errors"),
+    ):
+        if key in summary:
+            friction.append(f"  {label}: {summary[key]}")
+    if friction:
+        lines.append("UX friction signals:")
+        lines.extend(friction)
+        # Interpretation stays a plain observation of the real numbers just
+        # printed above, not a claim about a cause not in the data.
+        if summary.get("rage_clicks", 0) > 0 or summary.get("dead_clicks", 0) > 0:
+            lines.append(
+                "  → Rage/dead clicks mean visitors clicked something that "
+                "didn't respond the way they expected — worth a look at which "
+                "page in the Clarity dashboard, not something I can pinpoint "
+                "from these totals alone."
+            )
+    return "\n".join(lines)
+
+
+def _org_docs_context() -> str:
+    """Nova's grounding context — the two root docs (DECISIONS_LOG: what's
+    already been diagnosed/tried; VISION_ROADMAP: current phase + the explicit
+    out-of-scope/deferred list), read fresh every call (they're small, and
+    stale grounding is worse than a file read). Empty string if neither exists
+    yet — never blocks the turn."""
+    from src.mcp_tools.org_docs import read_org_docs
+    docs = read_org_docs()
+    parts = []
+    if docs.get("decisions_log"):
+        parts.append(
+            "=== docs/DECISIONS_LOG.md (what's already been diagnosed/tried — "
+            "newest entry first; do NOT re-suggest something already tried today) ===\n"
+            + docs["decisions_log"]
+        )
+    if docs.get("vision_roadmap"):
+        parts.append(
+            "=== docs/VISION_ROADMAP.md (current phase + the EXPLICITLY OUT-OF-SCOPE/"
+            "deferred list; never propose anything on that list as a current move) ===\n"
+            + docs["vision_roadmap"]
+        )
+    return "\n\n".join(parts)
+
+
+async def _agent_act_nova(agent: Agent, message: str, company) -> str:
+    """Nova ACTS in chat: answers grounded in the two org-context docs
+    (docs/DECISIONS_LOG.md, docs/VISION_ROADMAP.md — read_org_docs) so she never
+    re-suggests something already tried today or something explicitly deferred,
+    and runs a REAL web search (Serper, src/mcp_tools/market.py) for outside
+    context our own store/CJ data can't give — competitor pricing, marketing
+    trends, industry benchmarks. Strictly read-only: this only INFORMS a
+    create_ticket/record_lesson/flag_blocker, it grants no new action power."""
+    docs_context = _org_docs_context()
+    system = (
+        f"You are {agent.name} ({agent.role}) at Alpha. {docs_context}\n\n"
+        "Answer the owner's message using the two docs above as grounding — cite the "
+        "specific fact you're relying on (e.g. what DECISIONS_LOG says the current "
+        "blocker is, or what VISION_ROADMAP lists as out of scope) rather than "
+        "answering generically. Do NOT re-suggest anything DECISIONS_LOG already "
+        "shows was tried today, and do NOT propose anything on VISION_ROADMAP's "
+        "explicitly-out-of-scope/deferred list as a current move.\n"
+        "Separately, decide ONE concrete web search query that would pull real "
+        "OUTSIDE information relevant to the message (competitor pricing, a "
+        "marketing trend, an industry benchmark) — leave it empty if no outside "
+        "lookup would actually help; most status/strategy questions don't need one.\n"
+        f"Answer in {company_language()}. Output ONLY JSON:\n"
+        '{"reply":"<your grounded answer, citing the doc fact(s) you used>",'
+        '"query":"<concrete web search query, or empty>"}'
+    )
+    transcript = await _recent_transcript(message)
+    human = (f"Recent conversation (oldest first):\n{transcript}\n\n" if transcript else "") + author_q(message)
+    parsed = await _classify_with_retry(agent, system, human, model_role="executive",
+                                        temperature=0.2, max_tokens=900)
+    if parsed is None:
+        agent_log(f"⚠️ {agent.name}: Nova classifier failed twice — fell back to "
+                  "generic reply, no action taken", "warning")
+        return await _agent_reply(agent, message, "You", company)
+    reply = str(parsed.get("reply", "")).strip()
+    query = str(parsed.get("query", "")).strip()
+    if not query:
+        return reply or "Nothing to look up outside for this one."
+    try:
+        from src.mcp_tools.market import search_web
+        results = await search_web(query)
+    except Exception as exc:
+        return (reply + "\n" if reply else "") + f"⚠️ Web search failed: {exc}"
+    hits = results.get("results", [])
+    if not hits:
+        return (reply + "\n" if reply else "") + f"No web results for '{query}'."
+    lines = [
+        f"• {h.get('title', '')[:70]} — {h.get('snippet', '')[:120]} ({h.get('link', '')})"
+        for h in hits[:5]
+    ]
+    out = (reply + "\n" if reply else "") + f"Web search — '{query}':\n" + "\n".join(lines)
+    if results.get("answer_box"):
+        out += f"\n\nQuick answer: {results['answer_box']}"
+    return out
+
+
+async def _agent_act_rotation_video(message: str, reply: str) -> str:
+    """Queues a Veo 360-rotation video for the requested product (exact gid
+    match if the request named one — see _resolve_target_product) or the
+    store's first eligible product otherwise. COST GATE: this only creates an
+    awaiting_cost_approval row (POST /videos/generate, engine='veo_rotation'),
+    it never spends money on its own. The owner must separately approve via
+    POST /videos/{id}/approve-render or the dashboard's Videos page before the
+    paid Veo call actually fires."""
     from src.mcp_tools.shopify import get_products_for_video
     from src.api.routes.videos import post_generate_video
     from src.video.veo_video import ESTIMATED_COST_USD
@@ -613,9 +1051,11 @@ async def _agent_act_rotation_video(reply: str) -> str:
         products = await get_products_for_video()
     except Exception as exc:
         return (reply + "\n" if reply else "") + f"⚠️ Couldn't read the store's products: {exc}"
-    if not products:
+    product, err = _resolve_target_product(message, products)
+    if err:
+        return (reply + "\n" if reply else "") + f"⚠️ {err}"
+    if not product:
         return (reply + "\n" if reply else "") + "Every eligible product already has a video queued/rendered — nothing new to make one for."
-    product = products[0]
     res = await post_generate_video({"store_id": store.store_id, "product_id": product["id"], "engine": "veo_rotation"})
     if res.get("error"):
         return (reply + "\n" if reply else "") + f"⚠️ Couldn't queue it: {res['error']}"
@@ -628,9 +1068,11 @@ async def _agent_act_rotation_video(reply: str) -> str:
     )
 
 
-async def _agent_act_image(reply: str, engine: str = "gemini", style: str = "lifestyle") -> str:
-    """Starts a real product image render (POST /images/generate) for the store's
-    first eligible product — the image half of _agent_act_video's dispatch.
+async def _agent_act_image(message: str, reply: str, engine: str = "gemini", style: str = "lifestyle") -> str:
+    """Starts a real product image render (POST /images/generate) for the
+    requested product (exact gid match if the request named one — see
+    _resolve_target_product) or the store's first eligible product otherwise —
+    the image half of _agent_act_video's dispatch.
     `engine='gemini'` (default) is the Gemini pipeline (src/video/gemini_images.py)
     — a clean, text-free photo generated directly from the product's real photo,
     either `style='lifestyle'` (a baby wearing/using it) or `style='3d_showcase'`
@@ -648,9 +1090,11 @@ async def _agent_act_image(reply: str, engine: str = "gemini", style: str = "lif
         products = await get_products_with_all_images()
     except Exception as exc:
         return (reply + "\n" if reply else "") + f"⚠️ Couldn't read the store's products: {exc}"
-    if not products:
+    product, err = _resolve_target_product(message, products)
+    if err:
+        return (reply + "\n" if reply else "") + f"⚠️ {err}"
+    if not product:
         return (reply + "\n" if reply else "") + "Every eligible product already has an image queued/rendered — nothing new to make one for."
-    product = products[0]
     res = await post_generate_image({"store_id": store.store_id, "product_id": product["id"], "engine": engine, "style": style})
     if res.get("error"):
         return (reply + "\n" if reply else "") + f"⚠️ Couldn't start rendering: {res['error']}"
@@ -727,15 +1171,15 @@ async def _agent_act_design(agent: Agent, message: str, company) -> str:
     )
     transcript = await _recent_transcript(message)
     human = (f"Recent conversation (oldest first):\n{transcript}\n\n" if transcript else "") + author_q(message)
-    try:
-        llm = get_llm("executive", temperature=0.4, max_tokens=1200)
-        resp = await llm.ainvoke([SystemMessage(content=system), HumanMessage(content=human)])
-        parsed = _parse_json(str(resp.content))
-        reply = str(parsed.get("reply", "")).strip()
-        changes = parsed.get("changes") or []
-        changelog = str(parsed.get("changelog", "")).strip()
-    except Exception:
+    parsed = await _classify_with_retry(agent, system, human, model_role="executive",
+                                        temperature=0.4, max_tokens=1200)
+    if parsed is None:
+        agent_log(f"⚠️ {agent.name}: design classifier failed twice — fell back to "
+                  "generic reply, no action taken", "warning")
         return await _agent_reply(agent, message, "You", company)
+    reply = str(parsed.get("reply", "")).strip()
+    changes = parsed.get("changes") or []
+    changelog = str(parsed.get("changelog", "")).strip()
     if not changes:
         return reply or "Noted — no design change needed."
     try:
@@ -794,6 +1238,13 @@ async def route_and_respond(message: str, author: str = "You",
         llm = get_llm("executive", temperature=0.7, max_tokens=600)
         sys_prompt = (
             _DISPATCH_SYS
+            # The hand-written routing table above lists roles but not what each
+            # agent can actually run, and drifts whenever the roster or tools
+            # change. Append the live directory so routing is based on real
+            # current capability.
+            + "\n\nLIVE CAPABILITY DIRECTORY (authoritative — generated from the "
+              "real roster and tool catalog; prefer it over the summary above if "
+              f"they ever disagree):\n{_capability_block()}"
             + f"\nWrite each reply in {company_language()} by default."
             + ("\nImage(s) are attached — the responder should react to what they show." if images else "")
         )
@@ -865,8 +1316,141 @@ async def route_and_respond(message: str, author: str = "You",
                 reply = await _agent_act_design(agent, message, company)
             elif agent.role == "Video Producer":
                 reply = await _agent_act_video(agent, message, company)
+            elif agent.role == "Growth Marketing Analyst":
+                reply = await _agent_act_growth(agent, message, company)
+            elif agent.role == "Nova":
+                reply = await _agent_act_nova(agent, message, company)
         final.append((agent, reply))
     return await _post_replies(final, reply_thread_id=reply_thread_id)
+
+
+# ── Agent → agent delegation ─────────────────────────────────────────────────
+# Until now every one of these execution paths could ONLY be reached by a human
+# writing in Telegram: route_and_respond was the sole caller. That meant the CEO
+# had no way to hand work to anyone — her whole action menu was build/hire/goal —
+# so she set the same goal every hour instead of managing. This is the missing
+# link: one teammate hands a concrete task to another and it actually RUNS,
+# through the exact same handlers your own messages go through.
+
+
+async def dispatch_to_agent(name: str, task: str, requested_by: str = "Ava",
+                            return_reply: bool = False) -> str:
+    """Hand `task` to the teammate called `name` (name OR role) and let them DO it.
+
+    No router LLM call — the caller already chose who. Returns a short
+    human-readable result line for the action log.
+
+    `return_reply=True` returns the teammate's OWN answer instead of that log line
+    — what their model actually said after running their tools. That's what makes
+    this a conversation rather than a fire-and-forget assignment: the agent who
+    asked can read the answer and act on it. Never fabricate a reply here; if the
+    teammate produced nothing, say so and let the asker deal with it."""
+    agents = list_agents(active_only=True)
+    target = name.strip().lower()
+    agent = next(
+        (a for a in agents if a.name.lower() == target or a.role.lower() == target), None
+    )
+    if agent is None:
+        roster = ", ".join(a.name for a in agents)
+        return f"assign skipped — no teammate named {name!r} (roster: {roster})"
+    if agent.name.lower() == requested_by.strip().lower():
+        return f"assign skipped — {requested_by} tried to assign to themselves"
+
+    # Explicitly re-scope tracing to the TARGET agent before any LLM call this
+    # dispatch makes. Without this, every downstream call (Sol's tool loop, the
+    # _agent_act_* handlers) inherited whatever current_thread_id/current_node
+    # was last set by an unrelated prior tick — confirmed via llm_calls: Milo's
+    # own turn-shaped prompts were showing up filed under heartbeat-CEO,
+    # heartbeat-Video Producer, heartbeat-Growth Marketing Analyst threads that
+    # had nothing to do with Milo, purely because those threads' contextvar
+    # values were still ambient from whatever ran right before. dispatch_to_agent
+    # is the shared hub nearly everything routes through, so fixing it here
+    # covers the calls _agent_take_turn's own thread-scoping (set by its
+    # callers) doesn't reach.
+    from src.tracing import current_node, current_thread_id
+    current_thread_id.set(f"heartbeat-{agent.role}")
+    current_node.set(f"agent:{agent.role}")
+
+    company = get_company()
+    message = f"{requested_by} asked you to do this now: {task}"
+
+    # Record it so /manager and the next standup show a REAL current task instead
+    # of "(nothing assigned)" for everyone.
+    def _note_task(a: Agent, task: str = task, by: str = requested_by) -> None:
+        a.memory["assigned_task"] = f"{task} (from {by})"
+    try:
+        from src.org.models import update_agent
+        update_agent(agent.agent_id, _note_task)
+    except Exception:  # noqa: BLE001
+        pass  # bookkeeping must never block the actual work
+
+    # Sol is a real tool-using agent — he runs the full loop and narrates himself.
+    if agent.name == "Sol":
+        from src.org.agent_loop import run_sol_task
+        # Log the ASSIGNED edge before attempting the run, not after — every path
+        # below this point `return`s (success AND exception), so a log_delegation
+        # call placed after the try/except (like the shared one further down this
+        # function) would NEVER run for a Sol target. This was silently dropping
+        # every Reel/Kai/etc → Sol delegation from the knowledge graph even when
+        # the ask and Sol's run both genuinely happened. The delegation itself is
+        # true regardless of whether Sol's run then succeeds or fails, so it's
+        # logged unconditionally here rather than duplicated in both branches.
+        try:
+            from src.graph.knowledge_graph import log_delegation
+            await log_delegation(requested_by, agent.name, task)
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            result = await run_sol_task(message, store_slug="alphaforbaby", narrate=True, max_steps=20)
+            if return_reply:
+                # run_sol_task's "final" is his model's closing message.
+                return str((result or {}).get("final") or "(Sol finished without a closing answer)")
+            return f"assign({agent.name}): {task[:70]}"
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Delegated task to Sol failed: %s", exc)
+            return f"assign({agent.name}) FAILED: {exc}"
+
+    try:
+        reply = await _agent_act_ops(agent, message, company)
+        if reply is None:
+            if agent.role in _SHOPIFY_DOERS:
+                reply = await _agent_act_shopify(agent, message, company)
+            elif agent.role == "Video Producer":
+                reply = await _agent_act_video(agent, message, company)
+            elif agent.role == "Growth Marketing Analyst":
+                reply = await _agent_act_growth(agent, message, company)
+            elif agent.role == "Product Hunter":
+                reply = await _agent_act_sourcing(agent, message, company)
+            elif agent.role == "UX & Content":
+                reply = await _agent_act_design(agent, message, company)
+            elif agent.role == "Nova":
+                reply = await _agent_act_nova(agent, message, company)
+            else:
+                # No specialist execution path (e.g. Nora, whose real work is the
+                # inbox poll) — they still answer in-persona so the hand-off is visible.
+                reply = await _agent_reply(agent, message, requested_by, company)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Delegated task to %s failed: %s", agent.name, exc)
+        return f"assign({agent.name}) FAILED: {exc}"
+
+    if reply:
+        await _post_replies([(agent, reply)])
+
+    # Draw the hand-off in the knowledge graph so the org chart is visible at
+    # http://localhost:3002 — before agent→agent delegation existed there was
+    # no ASSIGNED edge to draw, which is part of why the graph only ever showed
+    # Sol running tools. Best-effort: never let observability break the work.
+    try:
+        from src.graph.knowledge_graph import log_delegation
+        await log_delegation(requested_by, agent.name, task)
+    except Exception:  # noqa: BLE001
+        pass
+    if return_reply:
+        # The asker gets what the teammate's model actually said — including
+        # "nothing", which is real information (a silent agent is a problem to
+        # report, not something to paper over with a synthetic answer).
+        return reply or f"{agent.name} ({agent.role}) ran the task but said nothing back"
+    return f"assign({agent.name}): {task[:70]}"
 
 
 # ── Two-way status ───────────────────────────────────────────────────────────

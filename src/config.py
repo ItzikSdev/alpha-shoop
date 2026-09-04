@@ -41,6 +41,15 @@ class Settings(BaseSettings):
     google_ads_developer_token: str = ""
     google_ads_customer_id: str = ""
 
+    # TikTok Ads (Marketing API v1.3) — real MCP client at src/tiktok_mcp/,
+    # read-only reporting. access_token/advertiser_id are minted + persisted
+    # here by tiktok_ads_complete_auth, not filled in by hand.
+    tiktok_app_id: str = ""
+    tiktok_app_secret: str = ""
+    tiktok_advertiser_id: str = ""
+    tiktok_access_token: str = ""
+    tiktok_oauth_redirect: str = "https://localhost/tiktok/callback"
+
     # Meta Ads
     meta_access_token: str = ""
     meta_ad_account_id: str = ""
@@ -88,6 +97,14 @@ class Settings(BaseSettings):
     # renders). Flip to True once the local setup is faster or a different backend
     # is in place — no code change needed, just this flag.
     reel_image_scan_enabled: bool = False
+
+    # The language the agents speak to each other and in the channel. Lives here
+    # rather than being read straight from os.environ: nothing in this process
+    # ever calls load_dotenv, so `.env` reaches the app ONLY through this class —
+    # ORG_LANGUAGE=English sat in .env doing nothing while the org kept talking
+    # Hebrew, because the reader was os.environ.get("ORG_LANGUAGE", "Hebrew").
+    # (Storefronts are English-only regardless — that's a separate, harder rule.)
+    org_language: str = "English"
 
     # Guardrails
     max_ad_spend_daily_usd: float = 500.0

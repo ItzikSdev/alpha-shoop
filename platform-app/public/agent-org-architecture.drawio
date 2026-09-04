@@ -1,0 +1,127 @@
+<mxfile host="app.diagrams.net" agent="alpha-shoop" version="24.0.0">
+  <diagram name="Agent Org — Structure, Comms &amp; Data (2026-09-02)" id="alpha-agent-org">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1180" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="g_human" value="Owner" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="200" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="g_channel" value="Comms channel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="300" y="40" width="260" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="g_triggers" value="What makes an agent act" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="620" y="40" width="700" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="g_org" value="Org — 7 agents (org_agents / org_company tables)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="40" y="240" width="1820" height="255" as="geometry" />
+        </mxCell>
+        <mxCell id="g_work" value="What agents DO with a turn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="40" y="520" width="900" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="g_data" value="Shared data layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#94a3b8;strokeWidth=1.5;verticalAlign=top;align=left;spacingLeft=10;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#334155;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="980" y="520" width="880" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="itzik" value="Itzik&#10;(owner)" style="shape=umlActor;whiteSpace=wrap;html=1;fillColor=#78350f;strokeColor=#d97706;fontColor=#fef3c7;fontSize=11;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="90" y="80" width="100" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="telegram" value="Telegram&#10;(replaced Slack)" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/telegram-app.png;fontSize=11;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="380" y="80" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="heartbeat" value="Heartbeat&#10;every 60s&#10;1 agent/tick" style="shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;fillColor=#164e63;strokeColor=#0891b2;fontColor=#cffafe;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="650" y="75" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="orgdaemon" value="Org daemon&#10;every 30s&#10;meetings + decisions" style="shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;fillColor=#164e63;strokeColor=#0891b2;fontColor=#cffafe;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="870" y="75" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="supl" value="Support poll&#10;every 120s&#10;(Nora only)" style="shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;fillColor=#164e63;strokeColor=#0891b2;fontColor=#cffafe;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="75" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ava" value="Ava&#10;CEO&#10;routing, reports,&#10;meeting decisions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="300" width="240" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="sol" value="Sol&#10;Sourcing &amp; Copy&#10;CJ search -&gt;&#10;Shopify push" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="335" y="300" width="240" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="reel" value="Reel&#10;Video&#10;Veo rotation video +&#10;Gemini photos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="300" width="240" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="nora" value="Nora&#10;Support&#10;central Gmail inbox&#10;(support_inbox.py)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="845" y="300" width="240" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="milo" value="Milo&#10;Fulfillment&#10;order -&gt; CJ -&gt; tracking&#10;(deterministic, no LLM)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="300" width="240" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="kai" value="Kai&#10;Growth&#10;TikTok Ads + Clarity&#10;read-only reporting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1355" y="300" width="240" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="nova" value="Nova&#10;Stay-on-target&#10;weekly audit,&#10;create/close_ticket only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1610" y="300" width="240" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="org_anchor" value="" style="shape=none;html=1;" vertex="1" parent="1">
+          <mxGeometry x="944" y="470" width="10" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="ticket_sys" value="Ticket board&#10;(tickets.py — create/assign/&#10;close, dedupe_key)" style="shape=document;whiteSpace=wrap;html=1;fillColor=#78350f;strokeColor=#d97706;fontColor=#fef3c7;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="570" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="dispatch" value="dispatch_to_agent()&#10;agent -&gt; agent handoff&#10;(Ava routes work)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#374151;strokeColor=#78716c;fontColor=#d6d3d1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="380" y="570" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="meetings" value="Meetings&#10;standup / strategy / retro —&#10;org_meetings table" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#374151;strokeColor=#78716c;fontColor=#d6d3d1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="680" y="570" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="sqlite" value="SQLite&#10;data/traces.db —&#10;org_agents, org_meetings,&#10;org_company, tickets, agent_runs" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#312e81;strokeColor=#6366f1;fontColor=#e0e7ff;fontSize=11;fontStyle=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="570" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="redis" value="Redis&#10;RAG: CJ catalog +&#10;Sol&#x27;s + Nova&#x27;s playbook" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#312e81;strokeColor=#6366f1;fontColor=#e0e7ff;fontSize=11;fontStyle=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="570" width="240" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="falkor" value="FalkorDB&#10;alpha_org graph&#10;Agent -CAN_USE-&gt; Tool&#10;Agent -EXECUTED-&gt; Tool&#10;Agent -ASSIGNED-&gt; Agent&#10;(Stage 1 of 3 built)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#0b3d2e;strokeColor=#10b981;fontColor=#d1fae5;fontSize=11;fontStyle=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="1660" y="570" width="260" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="e_itzik_tg" value="chats" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#d97706;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="itzik" target="telegram">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_tg_org" value="routes to relevant&#10;agent(s)" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#0891b2;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="telegram" target="g_org">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_hb_org" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#0891b2;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="heartbeat" target="g_org">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_orgd_org" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#0891b2;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="orgdaemon" target="g_org">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_supl_org" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#0891b2;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="supl" target="g_org">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_org_ticket" value="create_ticket /&#10;close_ticket" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#d97706;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="org_anchor" target="ticket_sys">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_org_dispatch" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="org_anchor" target="dispatch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_org_meetings" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="org_anchor" target="meetings">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_org_sqlite" value="every agent reads/writes&#10;its own state" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#6366f1;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="org_anchor" target="sqlite">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sol_redis" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="sol" target="redis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_nova_redis" value="search_playbook" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="nova" target="redis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_org_falkor" value="best-effort,&#10;non-blocking" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#10b981;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="org_anchor" target="falkor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_nova_falkor" value="find_capability_gaps&#10;(read-only)" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#10b981;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="nova" target="falkor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ticket_sqlite" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="ticket_sys" target="sqlite">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

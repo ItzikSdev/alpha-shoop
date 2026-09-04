@@ -12,6 +12,7 @@ Base path for the Shopify toolkit skills: `stores/shopify/skills/.claude/skills/
 | **Hydrogen storefront CODE** (React/Remix, routes, components, `theme.config.json`) | `.claude/skills/shopify-hydrogen/SKILL.md` |
 | **Material Tailwind / product-page redesign** (Carousel, Dialog, any `@material-tailwind/react` component) | `skills/material-tailwind.md` |
 | **Storefront GraphQL** (query products/collections/cart for the frontend) | `.claude/skills/shopify-storefront-graphql/SKILL.md` |
+| **New store go-live / classic myshopify.com domain showing wrong theme** (Hydrogen storefront setup, redirect the legacy Online Store channel to the real domain) | `skills/legacy-domain-redirect.md` |
 | **Manage store DATA** (move products between collections / fix categorization, dedupe, fix $0 or high prices, SEO titles/meta, variants, images) → use the `shopify_admin` TOOL | `.claude/skills/shopify-admin/SKILL.md` |
 | **Metafields / custom data** (size chart, material, structured data) | `.claude/skills/shopify-custom-data/SKILL.md` |
 | **Liquid theme** (Online Store 2.0, sections, snippets) | `.claude/skills/shopify-liquid/SKILL.md` |

@@ -125,13 +125,29 @@ async def _manager_checkin_loop() -> None:
             logger.exception("Manager daily check-in failed")
 
 
+async def _ceo_report_loop() -> None:
+    """Ava's daily CEO report (Revenue, TikTok ad spend/ROAS, bottlenecks,
+    executed agent commands) — see src/telegram/ceo_report.py. Also
+    triggerable any time via the /report Telegram command. Checked every 30
+    min; maybe_run_daily_report self-gates on local calendar day + hour
+    (default 21:00 Asia/Jerusalem, persisted so a restart doesn't double-fire)."""
+    from src.telegram.ceo_report import maybe_run_daily_report
+
+    while True:
+        await asyncio.sleep(1800)
+        try:
+            await maybe_run_daily_report()
+        except Exception:
+            logger.exception("Daily CEO report failed")
+
+
 async def _support_inbox_loop() -> None:
     """Nora polls the shared central support mailbox and answers customer
     emails per the 3 routing rules (src/mcp_tools/support_inbox.py). No-op
     until SUPPORT_GMAIL_CLIENT_ID/SECRET/REFRESH_TOKEN + RESEND_API_KEY are
     set — the Google account/forwarding isn't provisioned yet."""
     from src.mcp_tools.support_inbox import process_central_inbox, refresh_store_products_rag, support_inbox_enabled
-    from src.org.models import get_company, save_company
+    from src.org.models import Company, get_company, update_company
     from src.org.telegram import post_as
     from src.stores import list_stores
     from datetime import datetime, timezone
@@ -160,8 +176,9 @@ async def _support_inbox_loop() -> None:
         try:
             company = get_company()
             if company is not None:
-                last_by_store = company.daemon.setdefault("store_products_rag_last_at", {})
+                last_by_store = dict(company.daemon.get("store_products_rag_last_at", {}))
                 now = datetime.now(timezone.utc)
+                refreshed: dict[str, str] = {}
                 for store in list_stores():
                     last = last_by_store.get(store.store_id)
                     if last:
@@ -169,10 +186,14 @@ async def _support_inbox_loop() -> None:
                         if elapsed_h < rag_refresh_hours:
                             continue
                     n = await refresh_store_products_rag(store)
-                    last_by_store[store.store_id] = now.isoformat()
+                    refreshed[store.store_id] = now.isoformat()
                     logger.info("Refreshed store_products RAG for %s: %d products", store.store_id, n)
-                company.daemon["store_products_rag_last_at"] = last_by_store
-                save_company(company)
+                if refreshed:
+                    def _mark_refreshed(c: Company, refreshed: dict = refreshed) -> None:
+                        last_by_store = c.daemon.setdefault("store_products_rag_last_at", {})
+                        last_by_store.update(refreshed)
+                        c.daemon["store_products_rag_last_at"] = last_by_store
+                    update_company(_mark_refreshed)
         except Exception:
             logger.exception("store_products RAG refresh failed")
 
@@ -265,7 +286,7 @@ async def _reel_image_scan_loop() -> None:
     from datetime import datetime, timezone
 
     from src.config import get_settings
-    from src.org.models import get_company, save_company
+    from src.org.models import Company, get_company, update_company
     from src.stores import list_stores
 
     settings = get_settings()
@@ -277,8 +298,9 @@ async def _reel_image_scan_loop() -> None:
             company = get_company()
             if company is None:
                 continue
-            last_by_store = company.daemon.setdefault("reel_image_scan_last_at", {})
+            last_by_store = dict(company.daemon.get("reel_image_scan_last_at", {}))
             now = datetime.now(timezone.utc)
+            scanned: dict[str, str] = {}
             for store in list_stores():
                 last = last_by_store.get(store.store_id)
                 if last:
@@ -286,9 +308,13 @@ async def _reel_image_scan_loop() -> None:
                     if elapsed_h < settings.reel_image_scan_hours:
                         continue
                 await _reel_image_scan_one_store(store)
-                last_by_store[store.store_id] = now.isoformat()
-            company.daemon["reel_image_scan_last_at"] = last_by_store
-            save_company(company)
+                scanned[store.store_id] = now.isoformat()
+            if scanned:
+                def _mark_scanned(c: Company, scanned: dict = scanned) -> None:
+                    last_by_store = c.daemon.setdefault("reel_image_scan_last_at", {})
+                    last_by_store.update(scanned)
+                    c.daemon["reel_image_scan_last_at"] = last_by_store
+                update_company(_mark_scanned)
         except Exception:
             logger.exception("Reel image scan loop failed")
 
@@ -303,11 +329,28 @@ async def lifespan(app: FastAPI):
     await create_tables()  # product_mappings etc — was previously only created by a manual Makefile step
     n = await asyncio.to_thread(load_all, trace_store)
     logger.info("Loaded %d persisted runs from SQLite", n)
+
+    # Draw the org into the knowledge graph (FalkorDB, browsable at :3002) so it
+    # shows the WHOLE company from boot — every agent and the tools each can use.
+    # Previously the only writer was Sol's tool loop, so the graph contained one
+    # agent and looked like the company was one person. Best-effort by design.
+    try:
+        from src.graph.knowledge_graph import seed_org_graph
+        from src.org.seed import seed_founding_team
+        from src.org.models import list_agents
+        from src.org.tool_catalog import all_tool_names
+        await asyncio.to_thread(seed_founding_team)
+        members = [(a.name, a.role) for a in list_agents(active_only=True)]
+        await seed_org_graph(members, all_tool_names())
+        logger.info("Seeded knowledge graph with %d agents", len(members))
+    except Exception:
+        logger.exception("Knowledge-graph seed failed (non-fatal)")
     checkpoint_task = asyncio.create_task(_checkpoint_loop())
     daemon_task = asyncio.create_task(_daemon_loop())
     org_daemon_task = asyncio.create_task(_org_daemon_loop())
     heartbeat_task = asyncio.create_task(_agent_heartbeat_loop())
     manager_task = asyncio.create_task(_manager_checkin_loop())
+    ceo_report_task = asyncio.create_task(_ceo_report_loop())
     support_inbox_task = asyncio.create_task(_support_inbox_loop())
     reel_image_scan_task = asyncio.create_task(_reel_image_scan_loop())
     from src.org.telegram import start_telegram_bot, stop_telegram_bot
@@ -319,6 +362,7 @@ async def lifespan(app: FastAPI):
     org_daemon_task.cancel()
     heartbeat_task.cancel()
     manager_task.cancel()
+    ceo_report_task.cancel()
     support_inbox_task.cancel()
     reel_image_scan_task.cancel()
     await stop_telegram_bot(telegram_app)
@@ -328,13 +372,20 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Alpha Shoop — Autonomous Arbitrage System",
     description=(
-        "Multi-agent e-commerce arbitrage powered by a deterministic Python "
-        "**orchestrator** + **Claude**.\n\n"
-        "- **Orchestrator**: plain Python — sequences workers by task tag, no LLM routing\n"
-        "- **Trend Scraper**: Claude Haiku — CJ Dropshipping + AliExpress\n"
-        "- **E-commerce Manager**: Claude Sonnet — Shopify Admin GraphQL\n"
-        "- **Marketing Agent**: Claude Sonnet — Google Ads + Meta Ads\n"
-        "- **Fulfillment Agent**: Claude Haiku — order placement + tracking\n\n"
+        "A self-managing org of AI agents (Ava·Sol·Reel·Nora·Milo·Kai) that runs "
+        "real Shopify stores end to end, chatting over Telegram and driven by a "
+        "60s heartbeat loop — see /org for the live roster.\n\n"
+        "- **Ava** (CEO): routing, daily reports, meeting decisions\n"
+        "- **Sol**: CJ Dropshipping sourcing + copywriting + Shopify product push\n"
+        "- **Reel**: ad-video pipeline (local Wan2.2/ComfyUI), Telegram approval gate\n"
+        "- **Nora**: central support-inbox, replies across every store\n"
+        "- **Milo**: fulfillment — places supplier orders, attaches tracking\n"
+        "- **Kai**: read-only TikTok Ads reporting (real MCP server)\n\n"
+        "Most agents run on a local qwen3 model via LiteLLM, auto-falling back "
+        "there for everyone once the monthly Anthropic budget cap is hit. A "
+        "legacy deterministic pipeline (src/agents/orchestrator.py) still exists "
+        "underneath for full store builds, entered via org `build_store`/"
+        "`boost_store` decisions.\n\n"
         "Hard guardrails: MAX_AD_SPEND=$500/day · MAX_ORDER_VALUE=$200"
     ),
     version="1.0.0",
@@ -345,11 +396,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:8000"],
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:8000", "http://localhost:8081"],
     # Also allow the dashboard served from a LAN IP (so a phone on the same Wi-Fi
     # can reach the API at http://<mac-lan-ip>:8000). Covers the common private
     # ranges on the dev ports; tighten/remove for production.
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+):(5173|3000|8000)",
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+):(5173|3000|8000|8081)",
     allow_methods=["*"],
     allow_headers=["*"],
 )

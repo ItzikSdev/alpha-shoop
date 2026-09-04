@@ -53,8 +53,10 @@ model_list:
       model: ollama_chat/qwen3:14b
       api_base: http://host.docker.internal:11434
       max_tokens: 4096
-      num_ctx: 32768 # Ollama's actual KV-cache context window (default 4096 was silently
-                      # truncating prompts — max_input_tokens alone doesn't set this).
+      num_ctx: 40960 # Must match alpha/local-coder below — both point at the same underlying
+                      # `ollama_chat/qwen3:14b` process (Ollama runs one instance at a time), so
+                      # a mismatched value here would reload the model at 32768 on every standup
+                      # call and undo local-coder's context window for Sol until the next call.
       initial_status_system_prompt: "You must respond ONLY in English. Do not use Hebrew under any circumstances."
 
   # ── Local CODER: stronger local model for the Developer agent (Grace) / Sol ──
@@ -68,9 +70,13 @@ model_list:
       api_base: http://host.docker.internal:11434
       max_input_tokens: 8192
       max_tokens: 4096 # Raised to 8192 to allow Qwen3 to spit out full, long code scripts without truncation
-      num_ctx: 32768 # Ollama's actual KV-cache context window (was defaulting to 4096 —
-                      # Sol's system prompt + ~13 tool schemas + growing tool-call transcript
-                      # blew past that and produced empty/no-tool-call responses).
+      num_ctx: 40960 # Ollama's actual KV-cache context window. Raised from 32768 2026-08-16 to
+                      # fix an 83% timeout rate on Sol's runs. 40960 is this GGUF's HARD CEILING
+                      # (max_position_embeddings) — `ollama show qwen3:14b` reports "context
+                      # length 40960"; requesting more (tried 65536, OpenClaw's stated >=64K
+                      # minimum) gets silently clamped by Ollama to 40960. To truly reach 64K+,
+                      # this model would need to be swapped for a build with RoPE/YaRN scaling —
+                      # not done here, out of scope for this pass.
       initial_status_system_prompt: "You must respond ONLY in English. All explanations, comments, and code architecture must be written in English only, regardless of the input language."
 
 litellm_settings:

@@ -17,7 +17,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.llm import get_llm
 from src.org.conversation import company_language
-from src.org.models import Agent, get_company, list_agents, save_company
+from src.org.models import Agent, get_company, list_agents, update_company
 from src.org.telegram import post_as, post_to_telegram
 
 logger = logging.getLogger(__name__)
@@ -92,9 +92,11 @@ async def _agent_standup(agent: Agent, company) -> str | None:
         "grounded in your ACTUAL recent activity below — reference something concrete and "
         "specific from it (e.g. a real product, a real customer exchange), never a vague "
         "corporate-sounding answer. If you're genuinely blocked on something (per your "
-        "status note below), say so plainly instead of inventing progress. If relevant, "
-        "invite the team's feedback on something specific you did (e.g. 'does this copy "
-        "need work?').\n"
+        "status note below), say so plainly instead of inventing progress — and if a "
+        "SPECIFIC teammate could unblock you (name them, e.g. 'Sol, can you...'), ask "
+        "them directly right here instead of just noting the blocker. If relevant "
+        "instead, invite the team's feedback on something specific you did (e.g. 'does "
+        "this copy need work?').\n"
         f"Write in {company_language()}. Keep it to 3-5 sentences.\n\n"
         f"YOUR RECENT ACTIVITY (most recent last):\n{activity}\n\n"
         f"Your current status note: {agent.memory.get('assigned_task') or '(none set)'}"
@@ -213,5 +215,6 @@ async def maybe_run_daily_checkin(interval_hours: float | None = None) -> None:
     if last and (now - last).total_seconds() < interval_hours * 3600:
         return
     await post_manager_checkin(label="Daily check-in")
-    company.daemon["manager_checkin_last_at"] = now.isoformat()
-    save_company(company)
+    def _mark_checkin(c: Company, now: datetime = now) -> None:
+        c.daemon["manager_checkin_last_at"] = now.isoformat()
+    update_company(_mark_checkin)

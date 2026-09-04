@@ -1,9 +1,9 @@
-"""Product ad video pipeline: generate → Slack review → approve/reject → publish.
-
-Mirrors the shape of /org/sol in src/api/routes/org.py — POST /videos/generate
-kicks off the pipeline as a background task and returns immediately with an id;
-the render itself (script → per-scene Wan2.2 + voiceover → assembly) can take a
-long time (see src/video/wan_video.py's timing notes), so callers never block on it.
+"""Product 360° rotation video: generate (Veo, paid) → Telegram review → approve/
+reject → publish. The old scripted-ad pipeline (Wan2.2/ComfyUI, engine='wan_ad')
+was retired 2026-08-20 — the owner deleted Wan2.2 (render quality wasn't good
+enough). Only engine='veo_rotation' is supported now; POST /videos/generate
+creates an awaiting_cost_approval row (no charge yet), a separate POST
+/videos/{id}/approve-render fires the actual paid Veo call.
 """
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 
 from src.db.engine import get_session
@@ -21,8 +22,6 @@ from src.db.models import ProductVideo
 from src.stores import _current_store, get_store
 from src.mcp_tools.shopify import get_products_for_video, attach_local_video_to_product
 from src.org.telegram import post_video_as
-from src.video.pipeline import generate_product_ad
-from src.video.schemas import VideoStyle
 from src.video.veo_video import VeoVideoError, ESTIMATED_COST_USD, generate_rotation_video
 
 logger = logging.getLogger(__name__)
@@ -53,40 +52,6 @@ async def get_video_candidates(store_id: str) -> list[dict]:
     return [p for p in products if p["id"] not in already_has_video]
 
 
-async def _run_pipeline(video_id: str, store_id: str, product: dict, style: VideoStyle = "AVATAR_UGC") -> None:
-    _use_store(store_id)
-    try:
-        result = await generate_product_ad(
-            product_title=product["title"],
-            product_description=product.get("description", ""),
-            product_image_url=product["image_url"],
-            style=style,
-        )
-        caption = (
-            f"*{product['title']}* — {style.replace('_', ' ').title()} ad ready for review\n"
-            f"Hook: {result.script.hook}\n"
-            f"Reply here to approve/reject, or use the dashboard's Videos page."
-        )
-        slack_ts = await post_video_as("Reel", "Video Producer", str(result.video_path), caption)
-
-        async with get_session() as session:
-            row = await session.get(ProductVideo, video_id)
-            row.file_path = str(result.video_path)
-            row.script_json = result.script.model_dump_json()
-            row.slack_ts = slack_ts
-            row.status = "pending_review"
-            row.updated_at = datetime.now(timezone.utc)
-            session.add(row)
-    except Exception as exc:
-        logger.exception("video pipeline failed for %s", video_id)
-        async with get_session() as session:
-            row = await session.get(ProductVideo, video_id)
-            row.status = "failed"
-            row.error = str(exc)[:2000]
-            row.updated_at = datetime.now(timezone.utc)
-            session.add(row)
-
-
 async def _run_veo_pipeline(video_id: str, store_id: str, store_slug: str, product_title: str, source_image_url: str) -> None:
     _use_store(store_id)
     try:
@@ -97,9 +62,10 @@ async def _run_veo_pipeline(video_id: str, store_id: str, store_slug: str, produ
         )
         caption = (
             f"*{product_title}* — 360° rotation video ready for review (Veo, cost already spent: ~${ESTIMATED_COST_USD})\n"
-            f"Reply here to approve/reject, or use the dashboard's Videos page."
+            f"Tap ✅ or ❌ below, or use the dashboard's Videos page."
         )
-        telegram_id = await post_video_as("Reel", "Video Producer", str(result.video_path), caption)
+        telegram_id = await post_video_as("Reel", "Video Producer", str(result.video_path), caption,
+                                          review_id=video_id)
 
         async with get_session() as session:
             row = await session.get(ProductVideo, video_id)
@@ -127,16 +93,16 @@ async def _run_veo_pipeline(video_id: str, store_id: str, store_slug: str, produ
             session.add(row)
 
 
-@router.post("/videos/generate", summary="Render a new ad video for one product (runs in the background). engine: 'wan_ad' (default, full scripted ad) or 'veo_rotation' (paid, ~$0.40 — 4s 360 product rotation, requires a separate approve-render call before it actually charges anything)")
+@router.post("/videos/generate", summary="Render a new 360° rotation video for one product (runs in the background, paid Veo API, requires a separate approve-render call before it actually charges anything). engine: 'veo_rotation' only — 'wan_ad' (the old scripted-ad pipeline) was retired 2026-08-20, Wan2.2/ComfyUI was deleted (owner decision, render quality)")
 async def post_generate_video(body: dict) -> dict:
     store_id = body.get("store_id", "")
     product_id = body.get("product_id", "")
-    engine = body.get("engine", "wan_ad")
-    style: VideoStyle = body.get("style") or "AVATAR_UGC"
-    if engine not in ("wan_ad", "veo_rotation"):
-        return {"error": f"unknown engine {engine!r} — use 'wan_ad' or 'veo_rotation'"}
-    if style not in ("AVATAR_UGC", "PRODUCT_3D_SHOWCASE"):
-        return {"error": f"unknown style {style!r} — use AVATAR_UGC or PRODUCT_3D_SHOWCASE"}
+    engine = body.get("engine", "veo_rotation")
+    if engine == "wan_ad":
+        return {"error": "engine 'wan_ad' was retired 2026-08-20 — Wan2.2/ComfyUI was "
+                          "deleted (owner decision, render quality). Use 'veo_rotation'."}
+    if engine != "veo_rotation":
+        return {"error": f"unknown engine {engine!r} — use 'veo_rotation'"}
     if not (store_id and product_id):
         return {"error": "missing 'store_id' or 'product_id'"}
     store = _use_store(store_id)
@@ -148,34 +114,26 @@ async def post_generate_video(body: dict) -> dict:
     if not product:
         return {"error": f"product {product_id!r} not found or has no image"}
 
+    # Gate BEFORE a request ever reaches awaiting_cost_approval — Cozy Baby
+    # Jumpsuit alone got 30 render requests over 3 weeks despite already
+    # having a real published video since 2026-08-06, because nothing ever
+    # checked "does this already clear the gate" before queuing another one.
+    from src.mcp_tools.shopify import publish_blockers
+    try:
+        blockers = await publish_blockers(product_id)
+    except Exception as exc:  # noqa: BLE001
+        blockers = None  # a failed check must not silently allow a duplicate spend
+    if blockers == []:
+        return {"error": f"{product['title']!r} already clears the storefront gate "
+                          "(real video + 3+ images) — no render needed. Refused before "
+                          "queuing to avoid a duplicate billed request."}
+
     video_id = uuid.uuid4().hex
 
-    if engine == "veo_rotation":
-        # COST GATE: creates the row but does NOT call Veo yet — nothing here can
-        # cost money. A separate, explicit POST /videos/{id}/approve-render call is
-        # required before any paid API call happens.
-        store_slug = store.storefront_slug or store.store_id
-        async with get_session() as session:
-            session.add(ProductVideo(
-                id=video_id,
-                store_id=store_id,
-                shopify_product_id=product_id,
-                product_title=product["title"],
-                file_path="",
-                script_json=json.dumps({
-                    "engine": "veo_rotation",
-                    "source_image_url": product["image_url"],
-                    "store_slug": store_slug,
-                }),
-                status="awaiting_cost_approval",
-            ))
-        return {
-            "video_id": video_id,
-            "status": "awaiting_cost_approval",
-            "estimated_cost_usd": ESTIMATED_COST_USD,
-            "note": f"Real money — call POST /videos/{video_id}/approve-render to actually render (~${ESTIMATED_COST_USD}, only charged on success).",
-        }
-
+    # COST GATE: creates the row but does NOT call Veo yet — nothing here can
+    # cost money. A separate, explicit POST /videos/{id}/approve-render call is
+    # required before any paid API call happens.
+    store_slug = store.storefront_slug or store.store_id
     async with get_session() as session:
         session.add(ProductVideo(
             id=video_id,
@@ -183,12 +141,19 @@ async def post_generate_video(body: dict) -> dict:
             shopify_product_id=product_id,
             product_title=product["title"],
             file_path="",
-            status="rendering",
+            script_json=json.dumps({
+                "engine": "veo_rotation",
+                "source_image_url": product["image_url"],
+                "store_slug": store_slug,
+            }),
+            status="awaiting_cost_approval",
         ))
-
-    import asyncio
-    asyncio.create_task(_run_pipeline(video_id, store_id, product, style=style))
-    return {"video_id": video_id, "status": "rendering"}
+    return {
+        "video_id": video_id,
+        "status": "awaiting_cost_approval",
+        "estimated_cost_usd": ESTIMATED_COST_USD,
+        "note": f"Real money — call POST /videos/{video_id}/approve-render to actually render (~${ESTIMATED_COST_USD}, only charged on success).",
+    }
 
 
 @router.post("/videos/{video_id}/approve-render", summary="Owner confirms the cost — actually fires the paid Veo render for an awaiting_cost_approval video")
@@ -229,10 +194,22 @@ async def list_videos(store_id: str = "", status: str = "") -> list[dict]:
         "product_title": r.product_title,
         "status": r.status,
         "error": r.error,
-        "video_url": f"/media/videos/{Path(r.file_path).name}" if r.file_path else "",
+        "video_url": f"/api/v1/videos/{r.id}/file" if r.file_path else "",
         "script": json.loads(r.script_json) if r.script_json else None,
         "created_at": r.created_at.isoformat() if r.created_at else None,
     } for r in rows]
+
+
+@router.get("/videos/{video_id}/file", summary="Serve one video's rendered mp4")
+async def get_video_file(video_id: str):
+    async with get_session() as session:
+        row = await session.get(ProductVideo, video_id)
+    if not row or not row.file_path:
+        return {"error": "not found"}
+    path = Path(row.file_path)
+    if not path.is_file():
+        return {"error": "file missing on disk"}
+    return FileResponse(path)
 
 
 @router.post("/videos/{video_id}/approve", summary="Approve a pending video — Sol uploads it to Shopify + writes back to RAG")
@@ -251,8 +228,11 @@ async def approve_video(video_id: str) -> dict:
         # division of labor (see src/org/seed.py's charters).
         ok = await attach_local_video_to_product(row.shopify_product_id, row.file_path, alt=row.product_title)
         row.status = "published" if ok else "approved"
-        if not ok:
-            row.error = "Shopify upload failed — video approved but not attached; retry needed"
+        # Clear the error on success — see the matching note in images.py. A
+        # stale failure message on a row that has since succeeded makes finished
+        # work look outstanding, which is how "22 missing images" turned out to
+        # be zero missing images.
+        row.error = "" if ok else "Shopify upload failed — video approved but not attached; retry needed"
         row.updated_at = datetime.now(timezone.utc)
         session.add(row)
         result = {"status": row.status, "error": row.error}

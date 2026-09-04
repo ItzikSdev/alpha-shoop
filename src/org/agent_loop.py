@@ -358,8 +358,12 @@ async def search_local_catalog(query: str, count: int = 10) -> dict:
 @tool
 async def cj_search_products(keyword: str = "baby clothes", count: int = 12) -> dict:
     """Search CJ Dropshipping for products worth selling (default: baby clothes).
-    Returns candidate products (each with images[], video, price, margin). Only
-    products with >= 3 images are returned (store rule). Resolves the keyword to a
+    Returns candidate products as a SLIM summary (product_id, title, price,
+    margin, trend_score, image_count, has_video, variant_count) to keep this
+    tool's result small — full detail (description, images, variants, specs)
+    isn't included here; pass a chosen product_id to cj_add_product, which
+    fetches the full CJ detail fresh. Only products with >= 3 images are
+    returned (store rule). Resolves the keyword to a
     real CJ category first so results stay on-niche instead of the junk free-text
     search returns (adult clothing, gadgets, car parts)."""
     from src.mcp_tools.sourcing import search_trending_products, resolve_category
@@ -377,8 +381,27 @@ async def cj_search_products(keyword: str = "baby clothes", count: int = 12) -> 
     if res:
         await _record_step("tool_result", tool_name="rag_ingest",
                             text=f"📥 RAG: cached {len(res)} candidate(s) into cj_catalog corpus", ok=True)
+    # Slim the payload before it hits the transcript: search_trending_products'
+    # full product dicts (long supplier description, every image URL, full
+    # variant/spec objects) run 20-50KB for a 12-product page — well past the
+    # generic 6000-char tool-result cap, so the LLM only ever saw a mid-JSON
+    # truncation of the first product or two and kept re-searching. Nothing is
+    # lost: the full dict is already cached above via RAG ingest, and
+    # cj_add_product re-fetches the full CJ detail fresh once a pid is picked.
+    slim = [{
+        "product_id": p.get("product_id", ""),
+        "title": p.get("title", ""),
+        "price_supplier_usd": p.get("price_supplier_usd"),
+        "estimated_price_shopify_usd": p.get("estimated_price_shopify_usd"),
+        "margin_pct": p.get("margin_pct"),
+        "trend_score": p.get("trend_score"),
+        "category": p.get("category", ""),
+        "image_count": len(p.get("images") or []),
+        "has_video": bool(p.get("video")),
+        "variant_count": len(p.get("supplier_variants") or []) or 1,
+    } for p in res]
     return {
-        "products": res,
+        "products": slim,
         "cj_category": resolved["path"] if resolved else None,
     }
 
@@ -466,7 +489,12 @@ async def cj_add_product(pid: str, title: str = "", collection: str = "", store_
         inv = json.loads(m.group(0)) if m else (raw if isinstance(raw, dict) else {})
         total_stock = sum(int(w.get("totalInventoryNum") or 0) for w in (inv.get("inventories") or []))
     except Exception as exc:  # noqa: BLE001
-        return {"error": f"couldn't verify CJ stock before listing, skipped: {exc}"}
+        # Log the FULL traceback: this guard swallows any failure from the CJ
+        # call or the parse below it, and a bare str(exc) hid which line raised
+        # for long enough that a bug here silently rejected every product.
+        logger.exception("cj_add_product stock guard failed for pid=%s", pid)
+        return {"error": f"couldn't verify CJ stock before listing, skipped: "
+                         f"{type(exc).__name__}: {exc}"}
     if total_stock <= 0:
         return {"error": "CJ shows zero stock for this product (all warehouses) — refusing to list an out-of-stock item"}
 
@@ -609,7 +637,12 @@ async def cj_add_product(pid: str, title: str = "", collection: str = "", store_
     age_map = _parse_height_age_map(d.get("description") or "")
     if age_map:
         try:
-            import json
+            # NB: no `import json` here. `json` is already imported at module
+            # scope, and a function-local import binds the name as a LOCAL for
+            # the WHOLE function — so this line (near the end) made the earlier
+            # `json.loads(...)` in the stock guard raise UnboundLocalError,
+            # which the guard reported as "couldn't verify CJ stock before
+            # listing, skipped" and silently rejected every single product.
             await _shopify_gql(
                 "mutation($metafields: [MetafieldsSetInput!]!) {"
                 " metafieldsSet(metafields: $metafields) { userErrors { field message } } }",
@@ -690,7 +723,13 @@ async def cj_add_product(pid: str, title: str = "", collection: str = "", store_
 
     return {"product_id": prod_id, "images": len(imgs), "variants": len(variants),
             "phantom_variants_removed": len(phantom_ids),
-            "collection": collection or "(none)", "published": True}
+            "collection": collection or "(none)",
+            # Creating is no longer the same act as showing it to customers: the
+            # publish gate decides, and a brand-new product normally fails it (no
+            # 360° video exists yet). `held_back` says exactly what's missing —
+            # it's a request to make of a teammate, not an error to retry.
+            "published": res.get("published", False),
+            "held_back": res.get("held_back", "")}
 
 
 @tool
@@ -757,25 +796,162 @@ async def cj_rewrite_all_copy(limit: int = 0) -> dict:
 
 @tool
 async def shopify_publish_products(store_slug: str = "alphaforbaby") -> dict:
-    """Publish EVERY currently-unpublished product to the storefront sales channels
-    (Online Store + the headless channel). A product created via shopify_admin is
-    ACTIVE but INVISIBLE on the live store until published — run this after adding
-    products, or whenever 'I don't see products on the store'. Idempotent."""
-    from src.mcp_tools.shopify import _shopify_gql, _publish_product
+    """Publish unpublished products to the storefront — but ONLY those that pass the
+    gate. A product created via cj_add_product/shopify_admin is ACTIVE but INVISIBLE
+    until published; this is the choke point that makes one visible.
+
+    THE GATE (owner's rule, enforced in code — you cannot talk your way past it):
+    >=3 images, Reel's 360° video (CJ's own supplier clip does NOT count), and real
+    CJ stock. All three are checked against Shopify and CJ rather than our own
+    tables, because a status column can be stale while the storefront is what
+    customers actually see. Anything held back comes back in `waiting_on` with the
+    teammate who owns the missing piece — ASK THEM with ask_teammate. Idempotent."""
+    from src.mcp_tools.shopify import _shopify_gql, _publish_product, media_blockers, PublishBlocked
     try:
-        nodes = (await _shopify_gql('{ products(first:100){ nodes{ id title publishedAt } } }', {}))["products"]["nodes"]
+        nodes = (await _shopify_gql(
+            '{ products(first:100){ nodes{ id title publishedAt '
+            'images(first:100){ nodes{ id } } '
+            'media(first:100){ nodes{ mediaContentType alt } } } } }', {}
+        ))["products"]["nodes"]
     except Exception as exc:  # noqa: BLE001
         return {"error": str(exc)}
+
     todo = [n for n in nodes if n.get("publishedAt") is None]
-    published = 0
+    published, waiting, failed = 0, [], []
     for n in todo:
+        # Cheap media check first, from data we already have — it saves a CJ stock
+        # call (rate-limited to ~1 req/s) on every product that can't go live anyway.
+        missing = media_blockers(n)
+        if missing:
+            waiting.append({"title": n["title"], "needs": "; ".join(missing)})
+            continue
         try:
-            await _publish_product(n["id"])
+            await _publish_product(n["id"])     # full gate: media re-checked + CJ stock
             published += 1
-        except Exception:  # noqa: BLE001
-            pass
+        except PublishBlocked as exc:
+            waiting.append({"title": n["title"], "needs": str(exc)})
+        except Exception as exc:  # noqa: BLE001
+            failed.append({"title": n["title"], "error": str(exc)})
+
+    note = "products are now on the storefront" if published else "nothing new published"
+    if waiting:
+        note += (f" — {len(waiting)} held back by the gate. Do NOT retry in a loop: use "
+                 "ask_teammate to get the missing media or stock answer from whoever owns it, "
+                 "then publish again")
     return {"unpublished_found": len(todo), "published": published,
-            "note": "products are now on the storefront" if published else "all already published"}
+            "waiting_on": waiting, "failed": failed, "note": note}
+
+
+@tool
+async def cj_stock_sweep(remove: bool = True, max_removals: int = 3,
+                         store_slug: str = "alphaforbaby") -> dict:
+    """Check REAL CJ stock for EVERY live product and DELETE the ones that are out of
+    stock. Standing rule: out of stock at CJ ⇒ off the store immediately — a customer
+    must never be able to buy something nobody can ship.
+
+    Reads stock per variant from CJ (each Shopify variant's sku IS the CJ variant id),
+    not from Shopify, whose inventory is meaningless for dropship items. Deliberately
+    cautious about DELETING real products: a variant whose lookup fails counts as
+    UNKNOWN and never triggers removal, a product must read zero on two consecutive
+    sweeps before it goes, and at most `max_removals` are removed per run — so a CJ
+    outage can't wipe the catalog. Every removal is announced.
+
+    `remove=False` reports what WOULD be removed without touching anything — use that
+    first if you want to see the damage before doing it."""
+    from src.org.stock_watch import check_store_stock
+    res = await check_store_stock(store_slug=store_slug, remove=remove, max_removals=max_removals)
+    removed = res.get("removed") or []
+    await _record_step("tool_result", tool_name="cj_stock_sweep",
+                       text=(f"📦 stock sweep: {res.get('scanned', 0)} scanned, "
+                             f"{len(res.get('out_of_stock') or [])} out of stock, "
+                             f"{len(removed)} removed"),
+                       ok=not res.get("error"))
+    return res
+
+
+@tool
+async def ask_teammate(agent: str, question: str) -> dict:
+    """ASK A TEAMMATE and get their real answer back. Use this instead of guessing,
+    instead of giving up, and instead of retrying something that's blocked on work
+    you don't own — e.g. Reel for a product's images or 360° rotation video, Milo
+    for live CJ stock/fulfilment reality, Nora for what customers are complaining
+    about, Kai for ad performance, Ava when a decision is above your pay grade.
+
+    `agent` = their name or role (see YOUR TEAM in your prompt for who can do what).
+    `question` = what you need, concretely: name the product and what's missing, not
+    "please help". They actually run their tools on it — this is a real hand-off, not
+    a chat message — and their reply comes back to you here, so read it and act on it.
+
+    This is how a blocked product gets unblocked. A product held back by the publish
+    gate is not a bug to work around; it's a request to make."""
+    cooldown = await _recent_substantive_answer(agent, question)
+    if cooldown is not None:
+        await _record_step("tool_result", tool_name="ask_teammate",
+                           text=f"🤝 (skipped — asked {agent} this within the last 10m) {question[:80]}",
+                           ok=True)
+        return {"asked": agent, "question": question, "reply": cooldown,
+                "note": "Reused a recent answer instead of re-asking — same product/id was asked "
+                        "about within the last 10 minutes and got a real answer. If you need a fresh "
+                        "check, wait a few minutes or ask about something that's actually changed."}
+    from src.org.conversation import dispatch_to_agent
+    reply = await dispatch_to_agent(agent, question, requested_by=AGENT_NAME, return_reply=True)
+    await _record_step("tool_result", tool_name="ask_teammate",
+                       text=f"🤝 asked {agent}: {question[:80]}", ok=True)
+    return {"asked": agent, "question": question, "reply": reply}
+
+
+# A reply this generic isn't a real answer — just an LLM narrating its own charter
+# back rather than reporting a result. Don't let it block a legitimate re-ask.
+_INCONCLUSIVE_REPLY_PREFIXES = (
+    "(on it", "i'll check", "i'll investigate", "i'll verify", "i'll look",
+    "i'll search", "checking", "let me check",
+)
+
+
+def _looks_inconclusive(reply: str) -> bool:
+    r = (reply or "").strip().lower()
+    if len(r) < 40:
+        return True
+    return any(r.startswith(p) for p in _INCONCLUSIVE_REPLY_PREFIXES)
+
+
+async def _recent_substantive_answer(agent: str, question: str) -> str | None:
+    """Anti-spam guard for ask_teammate: if Sol already asked about the SAME
+    product/id within the last 10 minutes and got a real (non-generic) reply,
+    return that reply instead of re-asking. Triggered the exact pattern this
+    guards against: the same CJ PID re-asked 4-6x in a few minutes, burning
+    paid Haiku calls each time for no new information.
+
+    Topic key is the first long digit run in the question (CJ product ids run
+    16-19 digits, Shopify ids ~10-13) — deliberately narrow: only dedupe when
+    there's a concrete id to match on, never on vague/generic questions."""
+    m = re.search(r"\d{10,}", question)
+    if not m:
+        return None
+    key = m.group(0)
+    try:
+        import sqlite3
+        db = sqlite3.connect(str(ROOT / "data" / "traces.db"))
+        rows = db.execute(
+            "SELECT result_json FROM agent_steps "
+            "WHERE tool_name='ask_teammate' AND result_json LIKE ? "
+            "AND ts >= datetime('now', '-10 minutes') "
+            "ORDER BY ts DESC LIMIT 5",
+            (f"%{key}%",),
+        ).fetchall()
+    except Exception:  # noqa: BLE001
+        return None
+    for (result_json,) in rows:
+        try:
+            prev = json.loads(result_json)
+        except Exception:
+            continue
+        if prev.get("asked") != agent:
+            continue
+        reply = prev.get("reply") or ""
+        if not _looks_inconclusive(reply):
+            return reply
+    return None
 
 
 @tool
@@ -869,7 +1045,11 @@ async def mark_email_handled(thread_id: str) -> dict:
 _TOOLS = [
     cj_search_products, cj_add_product, cj_rewrite_all_copy, shopify_list_products, shopify_admin, shopify_publish_products,
     # CJ via REAL MCP (src/cj_mcp) — data REST/cj_search_products can't reach
-    cj_product_inventory, cj_track_shipment,
+    cj_product_inventory, cj_track_shipment, cj_stock_sweep,
+    # Peer delegation: Sol owns the catalog but not the media or the warehouse.
+    # Without this he had no way to reach the teammate who does, from inside the
+    # loop where the work actually happens — so he shipped around the problem.
+    ask_teammate,
     # Local RAG (Redis) — Corpus A: seen CJ candidates; Corpus B: Sol's own playbook docs
     search_local_catalog, search_playbook, refresh_playbook,
 ]
@@ -878,15 +1058,40 @@ _TOOLS_BY_NAME = {t.name: t for t in _TOOLS}
 
 # ── System prompt ────────────────────────────────────────────────────────────
 def _charter() -> str:
-    """Sol's charter from the DB (stays in sync with seed.py), with a safe fallback."""
+    """Sol's charter from the DB (stays in sync with seed.py), with a safe fallback.
+
+    Also appends his recent per-agent lessons (agent.memory["lessons"], written by
+    train_agent/record_lesson) — until this was added they were recorded but never
+    read back into HIS OWN real tool-using run (only into the meeting persona
+    summary shown to other agents, and the plain-chat fallback in conversation.py),
+    so a lesson trained on him could never change what he actually does."""
     try:
         from src.org.models import list_agents
         for a in list_agents(active_only=True):
             if a.name == AGENT_NAME:
+                lessons = a.memory.get("lessons", [])
+                if lessons:
+                    return a.skill + "\n\nRecent lessons you've learned (apply these): " + "; ".join(lessons[-5:])
                 return a.skill
     except Exception:  # noqa: BLE001
         pass
     return "Sole autonomous full-stack Shopify builder. Sources from CJ, writes code, deploys."
+
+
+def _team_block() -> str:
+    """The live roster — who's on the team and what each of them can actually run,
+    derived at call time from the DB roster + tool catalog (src/org/directory.py).
+
+    Sol is the only agent with a real tool loop, and until now his prompt was the
+    one place the roster never reached: he could not name a teammate, so he had no
+    choice but to work around whatever he couldn't do himself. This is data, not
+    routing — no teammate is named in code; he reads the directory and decides who
+    to ask."""
+    try:
+        from src.org.directory import capability_directory
+        return capability_directory(exclude=AGENT_NAME)
+    except Exception:  # noqa: BLE001
+        return "(roster unavailable — ask Ava who owns this)"
 
 
 def _store_memory(store_slug: str) -> str:
@@ -910,34 +1115,27 @@ def _system_prompt(store_slug: str) -> str:
         "even when the user writes to you in Hebrew or any other language. Never reply in Hebrew.\n"
         + _store_memory(store_slug) + (
         f"You are {AGENT_NAME}, {AGENT_ROLE}. {_charter()}\n\n"
-        f"CURRENT STORE: {store_slug}. Its Hydrogen app is at {app}/ — the store's whole look "
-        f"is driven by {app}/app/theme.config.json (brand, colors, fonts, nav, hero, tiles, "
-        f"testimonials, legal, favicons). Products come LIVE from the Shopify Storefront API; "
-        f"policies come LIVE from Shopify. THIS IS A TEMPLATE: to change a store edit its "
-        f"theme.config.json (and app/*.jsx only when structure must change) — do NOT tangle or "
-        f"rewrite the template wholesale. To make a NEW store, run ./scripts/new-store.sh <slug> "
-        f"then edit its store-profiles/<slug>/theme.config.json.\n\n"
-        f"YOU WORK ONLY INSIDE {app}/ — that Hydrogen app is the entire live site (deployed to "
-        f"Oxygen at the store's real domain). There is an older folder, "
-        f"stores/shopify/{store_slug}.alpha-tech.live/style/site.json, from BEFORE the Hydrogen "
-        f"migration — it is retired, drives nothing live, and your file tools cannot reach it "
-        f"anymore. If a past instruction or memory mentions editing site.json/home.liquid/"
-        f"product.liquid for this store, ignore it — that pipeline is dead; make the equivalent "
-        f"change in {app}/app/theme.config.json or the relevant component instead.\n\n"
-        f"EDITING: prefer edit_store_file (surgical find/replace) over write_store_file — NEVER rewrite "
-        f"a whole file unless it is new/small. Touch ONLY the file/component the task names; do not "
-        f"refactor adjacent files unless told. Never delete closing tags or needed vars. "
-        f"COMMUNICATE IN ENGLISH. Keep replies to a 1-sentence confirmation of what changed + the "
-        f"preview URL — no long explanations or apologies. DEPLOY (CI/CD) — ALWAYS PREVIEW FIRST, NEVER straight to "
-        f"production: after `npm run build` passes + your checks, run shell `./scripts/deploy.sh "
-        f"{store_slug} --preview` (handles the token; do NOT read .env/secrets). Then read "
-        f"stores/shopify/hydrogen-{store_slug}/h2_deploy_log.json, and in your reply give Itzik the "
-        f"PREVIEW URL + a short summary of what you changed, and STOP. Do NOT deploy to production "
-        f"(`./scripts/deploy.sh {store_slug}`) until Itzik explicitly approves the preview.\n\n"
+        f"CURRENT STORE: {store_slug}. You are NOT a developer — you have no file, shell, build, "
+        f"or deploy tools (that changed 2026-07-23; ignore any past instruction or memory that "
+        f"tells you to edit theme.config.json, run npm/deploy scripts, or touch the Hydrogen app "
+        f"at {app}/ — none of that is reachable from here anymore). If a task asks for a store "
+        f"code/UI/theme change, say plainly that's outside your job now — ask_teammate whoever "
+        f"owns dev work if YOUR TEAM below lists one, otherwise tell the owner directly. Your job "
+        f"is CJ sourcing + copywriting + pushing products live via shopify_admin/"
+        f"shopify_publish_products.\n\n"
         f"PUBLISHING (CRITICAL): a product you create via shopify_admin is ACTIVE but INVISIBLE "
         f"on the live store until it is published to the storefront sales channel. After creating "
         f"ANY product(s), you MUST call shopify_publish_products — otherwise the owner sees NOTHING "
-        f"on the store. When told 'I don't see products', run shopify_publish_products first.\n\n"
+        f"on the store. When told 'I don't see products', run shopify_publish_products first.\n"
+        f"THE PUBLISH GATE (owner's rule, enforced in code): a product reaches customers only "
+        f"with >=3 images, a real 360° video and live CJ stock. Creating a product no longer "
+        f"publishes it. A product held back is correct behaviour, not a bug — and it is not "
+        f"yours to work around: you own the catalog, not the media and not the warehouse. Read "
+        f"the blocker, decide who on YOUR TEAM below owns the missing piece, and ask_teammate "
+        f"them. Never publish anyway, never retry the same publish in a loop, and never report a "
+        f"product as live when the gate held it back.\n\n"
+        f"YOUR TEAM — the live roster. You are not alone and you are not stuck; every one of "
+        f"these is an agent you can ask, and they answer for themselves:\n{_team_block()}\n\n"
         f"CJ DATA TOOLS: for product SEARCH/detail use cj_search_products (CJ REST — already "
         f"filters to >=3 images, resolves the niche category). For anything about STOCK or "
         f"SHIPMENTS use the REAL CJ MCP tools: cj_product_inventory(pid, country_code) for live "
@@ -946,15 +1144,7 @@ def _system_prompt(store_slug: str) -> str:
         f"reordering, or promising availability on a product (e.g. confirm the US warehouse "
         f"actually has stock). MCP wraps the same CJ backend, so it is NOT richer product detail "
         f"than REST — use REST for the catalog, MCP for inventory + tracking. See docs/mcp_vs_rest.md.\n\n"
-        f"FOR ANY TASK: first read_store_file('skills/SKILLS_MAP.md') and open the MATCHING skill "
-        f"(UI/UX → skills/ui-ux-pro.md; manage store data/collections → skills/.claude/skills/shopify-admin/"
-        f"SKILL.md + the shopify_admin tool; Hydrogen code → skills/.claude/skills/shopify-hydrogen/SKILL.md; "
-        f"etc.), then do the work YOURSELF. You own the store. "
-        f"AFTER ANY CHANGE you MUST follow {app}/docs/AGENT_WORKFLOW.md and run the checks in "
-        f"docs/QA.md, docs/SEO.md and the ui-ux-pro skill (new store = run the full set). Before going to "
-        f"production, run the full audit in skills/store-audit.md. "
-        f"RULES: storefronts are ENGLISH-ONLY. Work on a git branch. ALWAYS run `npm run build` "
-        f"and confirm it passes before any deploy. Never publish the owner's personal details "
+        f"RULES: storefronts are ENGLISH-ONLY. Never publish the owner's personal details "
         f"(only public contact: support@alphaforbaby.com). Use the tools to actually "
         f"DO the work — don't just describe it.\n\n"
         f"RAG: before a live CJ search, try search_local_catalog first (it remembers past "
@@ -964,11 +1154,9 @@ def _system_prompt(store_slug: str) -> str:
         f"search_local_catalog updates itself automatically as you source/create products — "
         f"but if YOU edit a guide doc (docs/*.md, guides/**/*.md, e.g. appending to "
         f"STORE_MEMORY.md), call refresh_playbook afterward so search_playbook isn't stale.\n\n"
-        f"CUSTOMER EMAIL: send_customer_email/check_inbox/mark_email_handled talk to THIS "
-        f"STORE'S support inbox. Always sign as store support, never a personal name. Never "
-        f"disclose internal costs/margins/system details. Keep replies short and on-topic. "
-        f"For anything refund/legal-shaped, do not promise money back yourself — say a human "
-        f"will follow up and leave it for review instead of sending a commitment.\n\n"
+        f"CUSTOMER EMAIL: you have no email tool (send_customer_email/check_inbox/"
+        f"mark_email_handled) — that's Nora's job. If a task asks you to reply to a customer, "
+        f"ask_teammate Nora with the details instead of trying to send it yourself.\n\n"
         f"When done, give a short final summary IN ENGLISH."
     ))
 
@@ -1038,9 +1226,16 @@ async def run_sol_task(task: str, store_slug: str = "alphaforbaby", max_steps: i
     # Narrowed 2026-07-23: sourcing+copywriting+push doesn't need the heavy "builder"
     # tier (a 35B local model) — moved to "shopify_dev" (Haiku), already budget-aware
     # (falls back to the free local model over the monthly cap, same as before).
-    llm = get_llm("shopify_dev", temperature=0.2, max_tokens=8000, timeout=180).bind_tools(_TOOLS)
+    # timeout raised 180->600 2026-08-16: 180s was well under LiteLLM's own 900s
+    # budget and tripped on ordinary slow steps (large/late-loop prompts, or the
+    # local Ollama fallback's prompt-reprocessing cost), aborting the whole run and
+    # losing all prior steps' progress — same failure mode already fixed for
+    # standup calls (90s->240s). This is a per-call ceiling, not multiplied by
+    # max_steps: each of up to 40 llm.ainvoke() calls in the loop below gets its
+    # own independent budget.
+    llm = get_llm("shopify_dev", temperature=0.2, max_tokens=8000, timeout=600).bind_tools(_TOOLS)
     messages = [SystemMessage(content=_system_prompt(store_slug)), human]
-    opener = f":hammer_and_wrench: On it — *{task}* (חנות: {store_slug})"
+    opener = f":hammer_and_wrench: On it — *{task}* (store: {store_slug})"
     await say(opener)  # full text to Telegram — only the live-timeline copy is capped
     await record("status", text=opener[:600])
 
@@ -1092,13 +1287,32 @@ async def run_sol_task(task: str, store_slug: str = "alphaforbaby", max_steps: i
                 ok = isinstance(result, dict) and not result.get("error")
                 await record("tool_result", tool_name=name, text=_result_line(name, result),
                              result_json=_truncate(result), ok=ok)
+                # Knowledge-graph logging (Stage 1, best-effort): a FalkorDB hiccup
+                # must never break Sol's autonomous run.
+                try:
+                    from src.graph.knowledge_graph import log_tool_execution
+                    await log_tool_execution(AGENT_NAME, name, ok, detail=_result_line(name, result)[:200])
+                except Exception:
+                    pass
     except Exception as exc:  # noqa: BLE001
         await asyncio.to_thread(finish_run, run_id, "error", str(exc)[:1500])
         await record("status", text=f":x: Sol hit an error: {exc}"[:1500])
+        if ticket_id:
+            # Revert to 'todo' rather than leaving it stuck at 'doing' forever —
+            # a ticket only started "doing" because we, not the caller, said so.
+            try:
+                await asyncio.to_thread(update_ticket, ticket_id, status="todo")
+            except Exception:  # noqa: BLE001
+                pass
         raise
 
     await say(":warning: Reached max steps — stopping. Tell me to continue.")
     await asyncio.to_thread(finish_run, run_id, "max_steps", "max_steps reached")
+    if ticket_id:
+        try:
+            await asyncio.to_thread(update_ticket, ticket_id, status="todo")
+        except Exception:  # noqa: BLE001
+            pass
     return {"steps": steps, "final": "max_steps reached", "transcript_len": len(messages)}
 
 

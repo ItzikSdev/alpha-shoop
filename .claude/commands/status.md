@@ -9,45 +9,67 @@ Read all of them before responding:
 
 **Changelog & architecture**
 - `CHANGELOG.md` — source of truth for what's done (newest first)
-- `docs/architecture.md` — system architecture, 3 diagrams, notes on what's stale
+- `docs/architecture.md` — system architecture: the org layer (6 agents, heartbeat,
+  Telegram) as the primary system, the legacy pipeline underneath it, the FalkorDB
+  knowledge graph, data layer, and a running "Notes" list of known stale spots
 - `platform-app/public/mcp.mmd` — MCP layer diagram
-- `platform-app/src/pages/Architecture.tsx` — full system diagram (SYSTEM_MERMAID constant)
+- `platform-app/src/pages/Architecture.tsx` — full system diagram (SYSTEM_MERMAID constant, hand-synced with docs/architecture.md §1)
 
 **Agents & tech stack**
-- `platform-app/src/pages/Agents.tsx` — all AI agents, their models and responsibilities
+- `platform-app/src/pages/Agents.tsx` — live roster (from `/org`), models, connections
+- `platform-app/src/pages/Company.tsx` — company KPIs, meeting feed, goals/culture
+- `platform-app/src/pages/GraphPage.tsx` — the FalkorDB knowledge-graph viewer
 - `platform-app/src/pages/Technologies.tsx` — full tech stack
 
-**Core source**
-- `src/agents/orchestrator.py` — single deterministic pipeline (replaced director.py + graph.py)
+**Core source — org layer (the primary system)**
+- `src/org/seed.py` — `_FOUNDERS`, the current 6-agent roster and their charters
+- `src/org/heartbeat.py` — the 60s proactive loop: sourcing tick, stock sweep, one agent's turn
+- `src/org/agent_loop.py` — Sol's real tool-use loop (`run_sol_task`) and its actual bound `_TOOLS`
+- `src/org/telegram.py` — the only chat interface (Slack removed 2026-07-26)
+- `src/org/executor.py` — turns meeting decisions (`build_store`, `boost_store`, `hire`, ...) into real actions
+- `src/graph/knowledge_graph.py` — FalkorDB writes (Stage 1 of 3; see docs/architecture.md §3)
+
+**Core source — legacy pipeline (still live, reached via `build_store`/`boost_store`, not client-facing)**
+- `src/agents/orchestrator.py` — deterministic pipeline (replaced director.py + graph.py)
 - `src/agents/workers/store_setup.py`
 - `src/mcp_tools/shopify_theme.py`
 - `src/mcp_tools/shopify.py`
 - `src/mcp_tools/sourcing.py`
 - `src/api/routes/auth.py`
 
-## Architecture: one orchestrator, not 7 routed agents
+## Architecture: the org is the front door; the orchestrator is what it calls
 
-`src/agents/director.py` and `src/agents/graph.py` are **deleted**. The old design had
-an LLM call after every single step just to decide which worker ran next — its
-"routing rules" were almost entirely mechanical and it was the direct cause of a real
-bug (trend_scraper returning 0 candidates got re-called identically 15+ times,
-burning ~1.5M tokens, before a circuit breaker existed).
+The company is a 6-agent **org** (Ava/Sol/Reel/Nora/Milo/Kai, `src/org/`) that chats
+over Telegram and acts on a 60-second heartbeat loop — not a per-client pipeline
+request/response system. Full detail (roster table, heartbeat mechanics, knowledge
+graph, data layer) lives in `docs/architecture.md`; don't re-derive it here.
 
-`src/agents/orchestrator.py::run_pipeline(state)` is now the single entry point — an
-async generator yielding `{"node_name": delta}` after each step (same shape
-`graph.astream()` used to produce, so `src/api/routes/agents.py` barely changed). It
-reads the same task-tag convention as before (`[REBUILD]`, `[SETUP_ONLY]`,
-`[MARKETING]`, `[MONITOR]`) and sequences the **unmodified** worker functions in
-`src/agents/workers/*.py` with plain Python control flow:
-store_setup → design loop (Mode 1/Mode 2, self-terminates by iteration 3) →
-catalog-fill loop (stops at `_MAX_STORE_PRODUCTS` or on worker-set `error`) →
-marketing (if tagged) → fulfillment (if pending_orders).
+`src/agents/director.py` and `src/agents/graph.py` are **deleted** — that part of the
+old story is still true. The old design had an LLM call after every single step just
+to decide which worker ran next — its "routing rules" were almost entirely
+mechanical and it was the direct cause of a real bug (trend_scraper returning 0
+candidates got re-called identically 15+ times, burning ~1.5M tokens, before a
+circuit breaker existed).
+
+But **`src/agents/orchestrator.py` and `src/agents/workers/*.py` were NOT deleted** —
+they're still the mechanism behind every full store build, just no longer entered
+directly by a client request. `run_pipeline(state)` is an async generator yielding
+`{"node_name": delta}` after each step, sequencing store_setup → design loop →
+catalog-fill loop → marketing (if tagged) → fulfillment (if pending_orders) with
+plain Python control flow, same as before. What changed is the caller:
+`src/org/executor.py::execute_decisions()` invokes it when a CEO meeting decides
+`build_store`/`boost_store`. (`main.py`'s older standalone `_daemon_loop`, which used
+to fire `[MONITOR]` tasks per store on a timer, still exists too but is disabled by
+default now — the org heartbeat/daemon does that job instead.)
 
 LLM call tracing (the "LLM Calls" tab in platform-app) used to work because LangGraph
 propagated `config={"callbacks": [...]}` to every node automatically. Without the
 graph, `src/llm/client.py::get_llm()` reads the active `TraceCallback` from a
 contextvar (`src/tracing/context.py::current_trace_callback`, set once in
-`_execute_graph`) instead — no per-worker changes needed.
+`_execute_graph`) instead — no per-worker changes needed. The org layer's own model
+calls route through the same `get_llm(role)`, with most roles defaulting to a local
+qwen3 model via LiteLLM (auto-fallback for everyone once the $100/month Anthropic
+cap is hit) — see docs/architecture.md §5.
 
 Tests: `tests/test_orchestrator.py` replaces `tests/test_director.py`, mocking worker
 functions directly instead of an LLM.

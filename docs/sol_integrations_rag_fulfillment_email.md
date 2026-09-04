@@ -1,5 +1,18 @@
 # Sol: Integration Registry, RAG, Fulfillment & Email
 
+> **Stale ownership claims — read before trusting, 2026-08-13.** This doc predates
+> two changes: (1) `timeforbaby` was renamed **`alphaforbaby`** (domain, DB, folder —
+> see the Alpha For Baby Rebrand memory); the store code now lives at
+> `stores/shopify/hydrogen-alphaforbaby/`. (2) Sol was narrowed 2026-07-23 to
+> sourcing + copywriting only — **fulfillment now belongs to Milo**
+> (`src/org/fulfillment.py`, fired by Shopify order webhooks) and **customer email
+> now belongs to Nora** (`src/mcp_tools/support_inbox.py`, one central Gmail mailbox
+> shared across every store, not a per-store `email_credentials` OAuth flow). §3 and
+> §4 below describe the mechanics roughly right but attribute them to the wrong
+> agent. §1 (integration registry) and §2 (Redis RAG corpora) are still accurate as
+> infrastructure. See `docs/architecture.md` for the current org roster and
+> ownership map.
+
 Sol is the single autonomous agent that builds and runs each store (currently
 `timeforbaby`, at `stores/shopify/hydrogen-timeforbaby/`, which also doubles as the
 template for future stores). This document describes four capabilities that turn
