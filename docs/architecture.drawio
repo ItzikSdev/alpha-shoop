@@ -1,365 +1,376 @@
 <mxfile host="app.diagrams.net" agent="alpha-shoop" version="24.0.0">
   <diagram name="Full System Architecture (2026-09-02)" id="alpha-shoop-full-system">
-    <mxGraphModel dx="2000" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2520" pageHeight="1360" math="0" shadow="0">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2560" pageHeight="1630" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="g_iface" value="Interfaces" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="40" width="2440" height="140" as="geometry" />
+          <mxGeometry x="40" y="40" width="1000" height="140" as="geometry" />
         </mxCell>
         <mxCell id="g_loops" value="main.py lifespan — 8 background loops" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="200" width="2440" height="140" as="geometry" />
+          <mxGeometry x="40" y="200" width="1860" height="140" as="geometry" />
         </mxCell>
         <mxCell id="g_org" value="Org — 7 agents · org_agents / org_company tables" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="360" width="2440" height="160" as="geometry" />
+          <mxGeometry x="40" y="360" width="2480" height="260" as="geometry" />
         </mxCell>
         <mxCell id="g_legacy" value="Legacy pipeline — src/agents/orchestrator.py (still live, no longer client-facing)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="540" width="2000" height="120" as="geometry" />
+          <mxGeometry x="40" y="660" width="2000" height="120" as="geometry" />
         </mxCell>
         <mxCell id="g_tools" value="Per-agent tools — src/org/tool_catalog.py is the source of truth" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="680" width="2440" height="160" as="geometry" />
+          <mxGeometry x="40" y="800" width="2480" height="150" as="geometry" />
         </mxCell>
         <mxCell id="g_ext" value="External systems" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="860" width="2440" height="120" as="geometry" />
+          <mxGeometry x="40" y="950" width="2480" height="130" as="geometry" />
         </mxCell>
         <mxCell id="g_llm" value="Model routing — src/llm/client.py, LiteLLM proxy" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="1000" width="900" height="160" as="geometry" />
-        </mxCell>
-        <mxCell id="g_data" value="Data layer — one shared data/traces.db" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="980" y="1000" width="700" height="160" as="geometry" />
+          <mxGeometry x="40" y="1110" width="900" height="160" as="geometry" />
         </mxCell>
         <mxCell id="g_kg" value="Knowledge graph — FalkorDB (Stage 1 of 3 built)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="1720" y="1000" width="500" height="160" as="geometry" />
+          <mxGeometry x="980" y="1110" width="520" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="g_data" value="Data layer — one shared data/traces.db" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="1540" y="1110" width="700" height="190" as="geometry" />
         </mxCell>
         <mxCell id="g_sf" value="Storefront — Shopify CLI Liquid themes" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="1180" width="1200" height="160" as="geometry" />
+          <mxGeometry x="40" y="1330" width="1200" height="160" as="geometry" />
         </mxCell>
         <mxCell id="g_mon" value="Daily CJ stock sweep — src/org/stock_watch.py, outside the org tick" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="1280" y="1180" width="700" height="160" as="geometry" />
+          <mxGeometry x="1280" y="1330" width="700" height="160" as="geometry" />
         </mxCell>
-        <mxCell id="TG" value="Telegram&#10;only chat interface (replaced Slack)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#374151;strokeColor=#78716c;fontColor=#d6d3d1;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="80" y="90" width="320" height="70" as="geometry" />
+        <mxCell id="tg" value="Telegram&#10;(replaced Slack)" style="shape=image;html=1;imageAspect=0;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;image=https://img.icons8.com/color/48/telegram-app.png;" vertex="1" parent="1">
+          <mxGeometry x="80" y="90" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="WH" value="Shopify webhooks&#10;HMAC SHA-256" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#374151;strokeColor=#78716c;fontColor=#d6d3d1;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="440" y="90" width="260" height="70" as="geometry" />
+        <mxCell id="wh" value="Shopify webhooks&#10;HMAC SHA-256" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="420" y="90" width="260" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="API" value="FastAPI :8000&#10;/org · /images · /videos ..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#374151;strokeColor=#78716c;fontColor=#d6d3d1;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="740" y="90" width="300" height="70" as="geometry" />
+        <mxCell id="api" value="FastAPI :8000&#10;/org · /images · /videos ..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="720" y="90" width="280" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="HB" value="Heartbeat&#10;every 60s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#374151;strokeColor=#78716c;fontColor=#d6d3d1;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="hb" value="Heartbeat&#10;every 60s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="80" y="250" width="220" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="ORGD" value="Org daemon&#10;every 30s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#374151;strokeColor=#78716c;fontColor=#d6d3d1;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="orgd" value="Org daemon&#10;every 30s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="320" y="250" width="220" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="SUPL" value="Support-inbox poll&#10;every 120s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#374151;strokeColor=#78716c;fontColor=#d6d3d1;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="supl" value="Support-inbox poll&#10;every 120s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="560" y="250" width="220" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="CEOR" value="CEO report&#10;daily 21:00 Asia/Jerusalem" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#374151;strokeColor=#78716c;fontColor=#d6d3d1;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="ceor" value="CEO report&#10;daily 21:00 Asia/Jerusalem" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="800" y="250" width="240" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="MGR" value="Manager check-in&#10;every 30min" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#374151;strokeColor=#78716c;fontColor=#d6d3d1;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="mgr" value="Manager check-in&#10;every 30min" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="1060" y="250" width="220" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="REELIMGL" value="Reel image scan&#10;disabled by default" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#374151;strokeColor=#78716c;fontColor=#d6d3d1;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1300" y="250" width="220" height="70" as="geometry" />
+        <mxCell id="legd" value="Legacy single-store daemon&#10;disabled by default" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="250" width="260" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="LEGD" value="Legacy single-store daemon&#10;disabled by default" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#374151;strokeColor=#78716c;fontColor=#d6d3d1;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1540" y="250" width="240" height="70" as="geometry" />
+        <mxCell id="imgl" value="Reel image scan&#10;disabled by default" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="250" width="240" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="CHECKPT" value="Checkpoint loop&#10;token-optimizer snapshots" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#374151;strokeColor=#78716c;fontColor=#d6d3d1;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1800" y="250" width="240" height="70" as="geometry" />
+        <mxCell id="ava" value="Ava · CEO&#10;routing, reports,&#10;meeting decisions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="420" width="320" height="130" as="geometry" />
         </mxCell>
-        <mxCell id="AVA" value="Ava · CEO&#10;routing · reports · meeting decisions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="80" y="410" width="300" height="90" as="geometry" />
+        <mxCell id="sol" value="Sol · Sourcing &amp; Copy&#10;CJ search -&gt; Shopify push" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="420" y="420" width="320" height="130" as="geometry" />
         </mxCell>
-        <mxCell id="SOL" value="Sol · sourcing &amp; copy&#10;CJ search -&gt; Shopify push" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="400" y="410" width="300" height="90" as="geometry" />
+        <mxCell id="reel" value="Reel · Video&#10;Veo rotation video +&#10;Gemini photos (paid, replaced&#10;local Wan2.2 2026-08-20)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="420" width="320" height="130" as="geometry" />
         </mxCell>
-        <mxCell id="REEL" value="Reel · video&#10;Veo rotation video + Gemini photos&#10;(paid API, replaced local Wan2.2 2026-08-20)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="720" y="410" width="320" height="90" as="geometry" />
+        <mxCell id="nora" value="Nora · Support&#10;central Gmail inbox" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="420" width="320" height="130" as="geometry" />
         </mxCell>
-        <mxCell id="NORA" value="Nora · support&#10;central Gmail inbox" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1060" y="410" width="280" height="90" as="geometry" />
+        <mxCell id="milo" value="Milo · Fulfillment&#10;order -&gt; CJ -&gt; tracking&#10;(deterministic, no LLM)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1440" y="420" width="320" height="130" as="geometry" />
         </mxCell>
-        <mxCell id="MILO" value="Milo · fulfillment&#10;order -&gt; CJ -&gt; tracking (deterministic)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1360" y="410" width="300" height="90" as="geometry" />
+        <mxCell id="kai" value="Kai · TikTok Ads + Clarity&#10;read-only reporting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1780" y="420" width="320" height="130" as="geometry" />
         </mxCell>
-        <mxCell id="KAI" value="Kai · TikTok Ads + Clarity&#10;read-only reporting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1680" y="410" width="300" height="90" as="geometry" />
+        <mxCell id="nova" value="Nova · Stay-on-target&#10;weekly audit, create/close_ticket&#10;only, no execute authority" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=12;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="2120" y="420" width="320" height="130" as="geometry" />
         </mxCell>
-        <mxCell id="NOVA" value="Nova · stay-on-target&#10;weekly audit, create_ticket/close_ticket&#10;only, no execute authority" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="2000" y="410" width="320" height="90" as="geometry" />
+        <mxCell id="org_anchor" value="" style="shape=none;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1195" y="570" width="10" height="10" as="geometry" />
         </mxCell>
-        <mxCell id="SS" value="store_setup" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#292524;strokeColor=#57534e;fontColor=#a8a29e;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="80" y="590" width="200" height="50" as="geometry" />
+        <mxCell id="ss" value="store_setup" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="700" width="190" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="DA" value="design" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#292524;strokeColor=#57534e;fontColor=#a8a29e;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="300" y="590" width="200" height="50" as="geometry" />
+        <mxCell id="da" value="design" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="300" y="700" width="190" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="FR" value="frontend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#292524;strokeColor=#57534e;fontColor=#a8a29e;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="520" y="590" width="200" height="50" as="geometry" />
+        <mxCell id="fr" value="frontend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="520" y="700" width="190" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="TSN" value="trend_scraper" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#292524;strokeColor=#57534e;fontColor=#a8a29e;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="740" y="590" width="200" height="50" as="geometry" />
+        <mxCell id="tsn" value="trend_scraper" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="740" y="700" width="190" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="EV" value="evaluator" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#292524;strokeColor=#57534e;fontColor=#a8a29e;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="960" y="590" width="200" height="50" as="geometry" />
+        <mxCell id="ev" value="evaluator" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="960" y="700" width="190" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="EM" value="ecommerce" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#292524;strokeColor=#57534e;fontColor=#a8a29e;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="1180" y="590" width="200" height="50" as="geometry" />
+        <mxCell id="em" value="ecommerce" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="700" width="190" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="MA" value="marketing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#292524;strokeColor=#57534e;fontColor=#a8a29e;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="1400" y="590" width="200" height="50" as="geometry" />
+        <mxCell id="ma" value="marketing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1400" y="700" width="190" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="FA" value="fulfillment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#292524;strokeColor=#57534e;fontColor=#a8a29e;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="1620" y="590" width="200" height="50" as="geometry" />
+        <mxCell id="fa" value="fulfillment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1620" y="700" width="190" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="CJREST" value="CJ REST&#10;src/mcp_tools — catalog search" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e1b4b;strokeColor=#6d28d9;fontColor=#e0e7ff;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="80" y="730" width="260" height="80" as="geometry" />
+        <mxCell id="cjrest" value="CJ REST&#10;src/mcp_tools — catalog search" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#6366f1;fontSize=11;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="850" width="220" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="CJMCP" value="CJ real MCP&#10;src/cj_mcp — inventory + tracking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e1b4b;strokeColor=#6d28d9;fontColor=#e0e7ff;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="360" y="730" width="260" height="80" as="geometry" />
+        <mxCell id="cjmcp" value="CJ real MCP&#10;src/cj_mcp — inventory" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="580" y="850" width="200" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="SHOP" value="Shopify Admin&#10;GraphQL 2024-07" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e1b4b;strokeColor=#6d28d9;fontColor=#e0e7ff;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="640" y="730" width="240" height="80" as="geometry" />
+        <mxCell id="shop" value="Shopify Admin&#10;(GraphQL 2024-07)" style="shape=image;html=1;imageAspect=0;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;image=https://img.icons8.com/color/48/shopify.png;" vertex="1" parent="1">
+          <mxGeometry x="100" y="855" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="TT" value="TikTok Ads real MCP&#10;src/tiktok_mcp — read-only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e1b4b;strokeColor=#6d28d9;fontColor=#e0e7ff;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="900" y="730" width="260" height="80" as="geometry" />
+        <mxCell id="veo" value="Google Veo + Gemini&#10;(paid API)" style="shape=image;html=1;imageAspect=0;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;image=https://img.icons8.com/color/48/google.png;" vertex="1" parent="1">
+          <mxGeometry x="830" y="855" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="CLARITY" value="Microsoft Clarity&#10;src/mcp_tools/clarity.py&#10;added 2026-09-02" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e1b4b;strokeColor=#6d28d9;fontColor=#e0e7ff;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1180" y="730" width="260" height="80" as="geometry" />
+        <mxCell id="gmail" value="Gmail&#10;(central inbox)" style="shape=image;html=1;imageAspect=0;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;image=https://img.icons8.com/color/48/gmail.png;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="855" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="GMAIL" value="Central Gmail inbox&#10;support_inbox.py (Nora, Resend) +&#10;email.py (Milo, fulfillment notices)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e1b4b;strokeColor=#6d28d9;fontColor=#e0e7ff;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1460" y="730" width="300" height="80" as="geometry" />
+        <mxCell id="tt" value="TikTok Ads MCP&#10;(read-only)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1780" y="855" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="VEO" value="Veo + Gemini (Google, paid)&#10;rotation video + product photos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e1b4b;strokeColor=#6d28d9;fontColor=#e0e7ff;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1780" y="730" width="300" height="80" as="geometry" />
+        <mxCell id="clarity" value="Microsoft Clarity&#10;(2026-09-02)" style="shape=image;html=1;imageAspect=0;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;image=https://img.icons8.com/color/48/microsoft.png;" vertex="1" parent="1">
+          <mxGeometry x="1960" y="855" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="SERPER" value="Serper&#10;web search + competitor pricing (Nova)" style="shape=image;html=1;imageAspect=0;image=https://serper.dev/apple-touch-icon.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2206" y="746" width="48" height="48" as="geometry" />
+        <mxCell id="serper" value="Serper&#10;web search + pricing" style="shape=image;html=1;imageAspect=0;image=https://serper.dev/apple-touch-icon.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="2236" y="866" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="CJ" value="CJ Dropshipping" style="shape=image;html=1;imageAspect=0;image=https://cjdropshipping.com/favicon.ico;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
-          <mxGeometry x="186" y="906" width="48" height="48" as="geometry" />
+        <mxCell id="cj" value="CJ Dropshipping" style="shape=image;html=1;imageAspect=0;image=https://cjdropshipping.com/favicon.ico;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="416" y="976" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="SHOPADM" value="Shopify Admin API" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/shopify.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
-          <mxGeometry x="506" y="906" width="48" height="48" as="geometry" />
+        <mxCell id="shopadm" value="Shopify Admin API" style="shape=image;html=1;imageAspect=0;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;image=https://img.icons8.com/color/48/shopify.png;" vertex="1" parent="1">
+          <mxGeometry x="105" y="970" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="TIKTOK" value="TikTok Marketing API" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/tiktok.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
-          <mxGeometry x="826" y="906" width="48" height="48" as="geometry" />
+        <mxCell id="tiktokapi" value="TikTok Marketing API" style="shape=image;html=1;imageAspect=0;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;image=https://img.icons8.com/color/48/tiktok.png;" vertex="1" parent="1">
+          <mxGeometry x="1785" y="970" width="48" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="CLARITYAPI" value="Microsoft Clarity&#10;Data Export API" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/microsoft.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
-          <mxGeometry x="1146" y="906" width="48" height="48" as="geometry" />
+        <mxCell id="litellm" value="get_llm(role)&#10;role -&gt; LiteLLM model alias&#10;(used by every agent + the legacy pipeline)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#3b82f6;fontSize=11;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1160" width="280" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="GMAILEXT" value="Gmail" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/gmail.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
-          <mxGeometry x="1436" y="906" width="48" height="48" as="geometry" />
+        <mxCell id="claude" value="Anthropic Claude&#10;Ava Sonnet-tier, Sol Haiku-tier" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#3b82f6;fontSize=11;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="400" y="1160" width="260" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="GOOGLEAPI" value="Google Veo + Gemini APIs" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/google.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
-          <mxGeometry x="1726" y="906" width="48" height="48" as="geometry" />
+        <mxCell id="qwen" value="Local qwen3&#10;default fallback — ORG_LOCAL_LLM=1&#10;or over the $100/mo budget cap" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#3b82f6;fontSize=11;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1160" width="220" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="SERPERAPI" value="Serper API" style="shape=image;html=1;imageAspect=0;image=https://serper.dev/apple-touch-icon.png;whiteSpace=wrap;fontSize=10;fontColor=#334155;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2026" y="906" width="48" height="48" as="geometry" />
+        <mxCell id="note_pipe" value="legacy pipeline also pushes to&#10;Shopify + uses LiteLLM routing" style="text;html=1;align=left;verticalAlign=top;fontSize=10;fontColor=#666666;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1620" y="770" width="280" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="LITELLM" value="get_llm(role)&#10;role -&gt; LiteLLM model alias" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e3a5f;strokeColor=#2563eb;fontColor=#e2e8f0;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="80" y="1050" width="300" height="70" as="geometry" />
+        <mxCell id="falkor" value="alpha_org graph&#10;Agent -CAN_USE-&gt; Tool&#10;Agent -EXECUTED-&gt; Tool&#10;Agent -ASSIGNED-&gt; Agent" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="1160" width="420" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="CLAUDE" value="Anthropic Claude&#10;Ava Sonnet-tier, Sol Haiku-tier" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e3a5f;strokeColor=#2563eb;fontColor=#e2e8f0;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="420" y="1050" width="280" height="70" as="geometry" />
+        <mxCell id="note_falkor" value="used by all 7 agents,&#10;best-effort / non-blocking" style="text;html=1;align=left;verticalAlign=top;fontSize=10;fontColor=#666666;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="1250" width="300" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="QWEN" value="Local qwen3&#10;default fallback — ORG_LOCAL_LLM=1&#10;or over the $100/mo budget cap" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e3a5f;strokeColor=#2563eb;fontColor=#e2e8f0;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="740" y="1050" width="300" height="70" as="geometry" />
+        <mxCell id="sqlite" value="SQLite&#10;org_agents, org_meetings, org_company,&#10;agent_runs, product_mappings" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="1160" width="300" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="SQLITE" value="SQLite&#10;org_agents, org_meetings, org_company,&#10;agent_runs, tickets, product_mappings" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#312e81;strokeColor=#6366f1;fontColor=#e0e7ff;fontSize=11;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1020" y="1050" width="300" height="90" as="geometry" />
+        <mxCell id="redis" value="Redis&#10;RAG: CJ catalog + Sol&#x27;s + Nova&#x27;s playbook" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="1920" y="1160" width="280" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="REDIS" value="Redis&#10;RAG: CJ catalog + Sol&#x27;s + Nova&#x27;s playbook" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#312e81;strokeColor=#6366f1;fontColor=#e0e7ff;fontSize=11;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1360" y="1050" width="280" height="90" as="geometry" />
+        <mxCell id="note_sqlite" value="every agent reads/writes its own state" style="text;html=1;align=left;verticalAlign=top;fontSize=10;fontColor=#666666;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="1250" width="320" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="FALKOR" value="alpha_org graph&#10;Agent -CAN_USE-&gt; Tool&#10;Agent -EXECUTED-&gt; Tool&#10;Agent -ASSIGNED-&gt; Agent" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#0b3d2e;strokeColor=#10b981;fontColor=#d1fae5;fontSize=11;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1760" y="1050" width="420" height="90" as="geometry" />
+        <mxCell id="docs" value="platform-app&#10;My Stores" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#cffafe;strokeColor=#06b6d4;fontSize=11;fontStyle=1;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1340" width="220" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="DOCS" value="platform-app&#10;My Stores" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#065f46;strokeColor=#059669;fontColor=#d1fae5;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="80" y="1230" width="220" height="60" as="geometry" />
+        <mxCell id="runner" value="Storefront Runner&#10;host :8788" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#cffafe;strokeColor=#06b6d4;fontSize=11;fontStyle=1;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="1340" width="220" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="RUNNER" value="Storefront Runner&#10;host :8788" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#065f46;strokeColor=#059669;fontColor=#d1fae5;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="340" y="1230" width="220" height="60" as="geometry" />
+        <mxCell id="cli" value="shopify theme&#10;pull . dev . push" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#cffafe;strokeColor=#06b6d4;fontSize=11;fontStyle=1;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="1340" width="220" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="CLI" value="shopify theme&#10;pull . dev . push" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#065f46;strokeColor=#059669;fontColor=#d1fae5;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="600" y="1230" width="220" height="60" as="geometry" />
+        <mxCell id="themedir" value="Liquid themes&#10;stores/shopify/*" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#cffafe;strokeColor=#06b6d4;fontSize=11;fontStyle=1;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="860" y="1340" width="220" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="THEMEDIR" value="Liquid themes&#10;stores/shopify/*" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#065f46;strokeColor=#059669;fontColor=#d1fae5;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="860" y="1230" width="220" height="60" as="geometry" />
+        <mxCell id="stockw" value="check_store_stock()&#10;fails closed - 2 consecutive zero-stock&#10;checks before removal - cap 3/cycle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#cffafe;strokeColor=#06b6d4;fontSize=11;fontStyle=1;arcSize=8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="1340" width="380" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="STOCKW" value="check_store_stock()&#10;fails closed - 2 consecutive zero-stock&#10;checks before removal - cap 3/cycle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#065f46;strokeColor=#059669;fontColor=#d1fae5;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1320" y="1230" width="380" height="90" as="geometry" />
-        </mxCell>
-        <mxCell id="e_ss_da" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="SS" target="DA">
+        <mxCell id="e_tg_org" value="chats" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#0891b2;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="tg" target="ava">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_da_fr" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="DA" target="FR">
+        <mxCell id="e_api_org" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="api" target="ava">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_fr_tsn" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="FR" target="TSN">
+        <mxCell id="e_hb_org" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="hb" target="ava">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_tsn_ev" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="TSN" target="EV">
+        <mxCell id="e_orgd_org" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="orgd" target="ava">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_ev_em" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="EV" target="EM">
+        <mxCell id="e_supl_nora" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="supl" target="nora">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_em_ma" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="EM" target="MA">
+        <mxCell id="e_ceor_ava" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="ceor" target="ava">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_ma_fa" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="MA" target="FA">
+        <mxCell id="e_mgr_ava" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="mgr" target="ava">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_sol_cjrest" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="SOL" target="CJREST">
+        <mxCell id="e_wh_milo" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="wh" target="milo">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_sol_cjmcp" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="SOL" target="CJMCP">
+        <mxCell id="e_ss_da" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="ss" target="da">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_sol_shop" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="SOL" target="SHOP">
+        <mxCell id="e_da_fr" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="da" target="fr">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_ava_shop" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="AVA" target="SHOP">
+        <mxCell id="e_fr_tsn" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="fr" target="tsn">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_kai_tt" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="KAI" target="TT">
+        <mxCell id="e_tsn_ev" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="tsn" target="ev">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_kai_clarity" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="KAI" target="CLARITY">
+        <mxCell id="e_ev_em" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="ev" target="em">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_nora_gmail" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="NORA" target="GMAIL">
+        <mxCell id="e_em_ma" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="em" target="ma">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_milo_gmail" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="MILO" target="GMAIL">
+        <mxCell id="e_ma_fa" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="ma" target="fa">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_milo_cjrest" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="MILO" target="CJREST">
+        <mxCell id="e_org_pipe" value="build_store / boost_store&#10;meeting decisions" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#d97706;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="org_anchor" target="ss">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_milo_shop" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="MILO" target="SHOP">
+        <mxCell id="e_legd_pipe" value="disabled by default" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="legd" target="ss">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_reel_veo" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="REEL" target="VEO">
+        <mxCell id="e_sol_cjrest" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="sol" target="cjrest">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_nova_serper" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;dashed=1;" edge="1" parent="1" source="NOVA" target="SERPER">
+        <mxCell id="e_sol_cjmcp" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="sol" target="cjmcp">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_nova_tt" value="read-only reporting" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;dashed=1;" edge="1" parent="1" source="NOVA" target="TT">
+        <mxCell id="e_sol_shop" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="sol" target="shop">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_pipe_shop" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;dashed=1;" edge="1" parent="1" source="FA" target="SHOP">
+        <mxCell id="e_kai_tt" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="kai" target="tt">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_reelimgl_reel" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="REELIMGL" target="REEL">
+        <mxCell id="e_kai_clarity" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="kai" target="clarity">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_cjrest_cj" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="CJREST" target="CJ">
+        <mxCell id="e_nora_gmail" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="nora" target="gmail">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_cjmcp_cj" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="CJMCP" target="CJ">
+        <mxCell id="e_milo_cjrest" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="milo" target="cjrest">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_shop_shopadm" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="SHOP" target="SHOPADM">
+        <mxCell id="e_milo_shop" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="milo" target="shop">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_tt_tiktok" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="TT" target="TIKTOK">
+        <mxCell id="e_milo_gmail" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="milo" target="gmail">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_clarity_api" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="CLARITY" target="CLARITYAPI">
+        <mxCell id="e_reel_veo" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="reel" target="veo">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_gmail_ext" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="GMAIL" target="GMAILEXT">
+        <mxCell id="e_nova_serper" value="read-only reporting" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="nova" target="serper">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_veo_google" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="VEO" target="GOOGLEAPI">
+        <mxCell id="e_imgl_reel" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="imgl" target="reel">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_serper_api" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="SERPER" target="SERPERAPI">
+        <mxCell id="e_cjrest_cj" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="cjrest" target="cj">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_litellm_claude" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="LITELLM" target="CLAUDE">
+        <mxCell id="e_cjmcp_cj" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="cjmcp" target="cj">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_litellm_qwen" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="LITELLM" target="QWEN">
+        <mxCell id="e_shop_shopadm" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="shop" target="shopadm">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_org_litellm" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;dashed=1;" edge="1" parent="1" source="AVA" target="LITELLM">
+        <mxCell id="e_tt_tiktokapi" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="tt" target="tiktokapi">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_pipe_litellm" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;dashed=1;" edge="1" parent="1" source="FA" target="LITELLM">
+        <mxCell id="e_litellm_claude" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="litellm" target="claude">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_org_sqlite" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;dashed=1;" edge="1" parent="1" source="AVA" target="SQLITE">
+        <mxCell id="e_litellm_qwen" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="litellm" target="qwen">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_sol_redis" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="SOL" target="REDIS">
+        <mxCell id="e_sol_redis" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="sol" target="redis">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_nova_redis" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;dashed=1;" edge="1" parent="1" source="NOVA" target="REDIS">
+        <mxCell id="e_docs_runner" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="docs" target="runner">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_org_falkor" value="best-effort, non-blocking" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;dashed=1;" edge="1" parent="1" source="AVA" target="FALKOR">
+        <mxCell id="e_runner_cli" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="runner" target="cli">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_nova_falkor" value="find_capability_gaps" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;dashed=1;" edge="1" parent="1" source="NOVA" target="FALKOR">
+        <mxCell id="e_cli_themedir" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="cli" target="themedir">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_docs_runner" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="DOCS" target="RUNNER">
+        <mxCell id="e_runner_api" value="/stores/{id}/theme-creds" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="runner" target="api">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_runner_cli" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="RUNNER" target="CLI">
+        <mxCell id="e_cli_shopadm" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="cli" target="shopadm">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_cli_themedir" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="CLI" target="THEMEDIR">
+        <mxCell id="e_stockw_cj" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="stockw" target="cj">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_runner_api" value="/stores/{id}/theme-creds" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="RUNNER" target="API">
+        <mxCell id="e_stockw_shopadm" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="stockw" target="shopadm">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_cli_shopadm" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="CLI" target="SHOPADM">
-          <mxGeometry relative="1" as="geometry" />
+
+        <!-- ═══ Legend ═══ -->
+        <mxCell id="legend" value="Legend" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1510" width="2480" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="e_stockw_cj" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="STOCKW" target="CJ">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="legend-purple" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4B0082;strokeColor=#6d28d9;" vertex="1" parent="1">
+          <mxGeometry x="60" y="1545" width="30" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="e_stockw_shopadm" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="STOCKW" target="SHOPADM">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="legend-purple-txt" value="Agent hub (LLM tool loop)" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1543" width="230" height="24" as="geometry" />
         </mxCell>
-        <mxCell id="e_tg_ava" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="TG" target="AVA">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="legend-green" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="670" y="1545" width="30" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="e_api_ava" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;dashed=1;" edge="1" parent="1" source="API" target="AVA">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="legend-green-txt" value="Real MCP protocol tool (stdio)" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="710" y="1543" width="250" height="24" as="geometry" />
         </mxCell>
-        <mxCell id="e_hb_ava" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;dashed=1;" edge="1" parent="1" source="HB" target="AVA">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="legend-lavender" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#6366f1;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="1545" width="30" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="e_orgd_ava" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;dashed=1;" edge="1" parent="1" source="ORGD" target="AVA">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="legend-lavender-txt" value="Plain Python tool / existing code" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="1543" width="270" height="24" as="geometry" />
         </mxCell>
-        <mxCell id="e_supl_nora" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="SUPL" target="NORA">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="legend-gray" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="1900" y="1545" width="30" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="e_ceor_ava" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="CEOR" target="AVA">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="legend-gray-txt" value="Trigger / loop / legacy pipeline stage" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1940" y="1543" width="300" height="24" as="geometry" />
         </mxCell>
-        <mxCell id="e_mgr_ava" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="MGR" target="AVA">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="legend-modelblue" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#3b82f6;" vertex="1" parent="1">
+          <mxGeometry x="60" y="1580" width="30" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="e_wh_milo" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;" edge="1" parent="1" source="WH" target="MILO">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="legend-modelblue-txt" value="Model routing (LiteLLM proxy)" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1578" width="250" height="24" as="geometry" />
         </mxCell>
-        <mxCell id="e_ava_ss" value="build_store / boost_store&#10;meeting decisions" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;dashed=1;" edge="1" parent="1" source="AVA" target="SS">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="legend-datablue" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="670" y="1580" width="30" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="e_legd_ss" value="disabled by default" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#94a3b8;strokeWidth=1.5;fontSize=9;fontColor=#64748b;dashed=1;" edge="1" parent="1" source="LEGD" target="SS">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="legend-datablue-txt" value="Data store (SQLite / Redis / FalkorDB)" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="710" y="1578" width="300" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-cyan" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#cffafe;strokeColor=#06b6d4;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="1580" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-cyan-txt" value="Storefront &amp; deploy tooling" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="1578" width="250" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-icon" value="" style="shape=image;html=1;imageAspect=0;image=https://img.icons8.com/color/48/shopify.png;" vertex="1" parent="1">
+          <mxGeometry x="1900" y="1573" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-icon-txt" value="External system / 3rd-party API" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1940" y="1578" width="270" height="24" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
