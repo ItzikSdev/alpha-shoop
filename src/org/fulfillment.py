@@ -181,7 +181,12 @@ async def _escalate(payload: ShopifyOrderWebhook, store: StoreConfig, errors: li
     ticket and hand the specific failure to Sol's LLM loop so it can investigate,
     retry with judgment, and email the customer about the delay if warranted."""
     desc = f"Order {payload.id} ({payload.email}) fulfillment error(s): " + "; ".join(errors)
-    await _say(f"⚠️ Order #{payload.id} ({store.name}) hit a problem: {'; '.join(errors)[:300]} — opening a ticket for Sol to investigate.")
+    from src.org.telegram import post_escalation
+    await post_escalation(
+        AGENT_NAME, AGENT_ROLE,
+        f"Order #{payload.id} ({store.name}) hit a problem: {'; '.join(errors)[:300]} — "
+        "opening a ticket for Sol to investigate.",
+    )
     ticket = open_ticket(
         title=f"Fulfillment failed for order {payload.id}",
         description=desc, source="order_failure", store_id=store.store_id,

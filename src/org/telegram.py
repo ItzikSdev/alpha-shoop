@@ -309,6 +309,16 @@ async def post_as(name: str, role: str, text: str, thread_override=_UNSET) -> bo
     return await _send(body, thread_id=thread, token=token)
 
 
+async def post_escalation(name: str, role: str, text: str) -> bool:
+    """A GENUINE 'a human needs to look at this' escalation — distinct from the
+    routine tool-narration/status pings `post_as` sends into an agent's own
+    topic, which you don't necessarily open every day. Lands in the MAIN topic
+    instead (same place CEO reports/standups already post), and is prefixed so
+    it reads as urgent at a glance rather than blending into routine chatter."""
+    body = text if text.strip().startswith("🚨") else f"🚨 *ESCALATION*\n{text}"
+    return await post_as(name, role, body, thread_override=_main_thread_id())
+
+
 async def post_as_role(role: str, text: str) -> bool:
     """Post a message AS whichever active agent currently holds `role`."""
     name = role

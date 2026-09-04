@@ -540,10 +540,10 @@ async def process_central_inbox(max_results: int = 10) -> list[dict]:
         )
         if needs_attention:
             try:
-                from src.org.telegram import post_as
-                await post_as(
+                from src.org.telegram import post_escalation
+                await post_escalation(
                     "Nora", "Customer Support",
-                    f"🚨 *Needs your attention* — {customer} ({store.name})\n"
+                    f"Needs your attention — {customer} ({store.name})\n"
                     f"Subject: {subject}\n"
                     f"Why: {reason or 'not confident enough to handle alone'}\n\n"
                     f"Their message:\n{msg['body'][:1000]}",
