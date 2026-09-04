@@ -7,10 +7,14 @@ Two directions:
      same role Slack used to play. `post_as` routes verbose tool-call/result
      lines to a separate "log" topic (TELEGRAM_LOG_THREAD_ID) when configured,
      so the main topic stays readable.
-  2. IN — a python-telegram-bot Application polls Telegram for YOUR messages
-     (locked to TELEGRAM_ALLOWED_USER_ID) and feeds them straight into the
-     real orchestrator, `route_and_respond` (src/org/conversation.py) — the
-     same entry point Slack's two-way chat used to call.
+  2. IN — a python-telegram-bot Application polls Telegram for messages and
+     feeds them straight into the real orchestrator, `route_and_respond`
+     (src/org/conversation.py) — the same entry point Slack's two-way chat
+     used to call. Plain chat messages are answered from anyone writing
+     inside the ONE configured company chat (TELEGRAM_CHAT_ID), not just the
+     owner — see `_is_group_message`. Commands (/agents, /manager, /report)
+     and the media approve/reject buttons stay locked to TELEGRAM_ALLOWED_USER_ID
+     (`_is_authorized`) since those touch production/publish state.
 
 Setup:
   1. Message @BotFather on Telegram → /newbot → get the token → TELEGRAM_BOT_TOKEN.
@@ -501,6 +505,31 @@ def _is_authorized(update) -> bool:
     return bool(allowed and update.effective_user and update.effective_user.id == allowed)
 
 
+def _is_group_message(update) -> bool:
+    """True if this message came from inside the ONE configured company chat
+    (TELEGRAM_CHAT_ID) — i.e. anyone already in that group/topic, not just the
+    owner. Lets teammates other than the owner ask questions in the shared
+    channel and get answered, without opening the bot up to arbitrary 1:1 DMs
+    from strangers (a stranger's own chat with the bot has a different chat id
+    and fails this check)."""
+    chat = update.effective_chat
+    configured = _chat_id()
+    return bool(chat and configured and str(chat.id) == configured)
+
+
+def _sender_name(update) -> str:
+    """Display name for whoever sent this — "You" for the owner (existing
+    behavior/history relies on that label), otherwise the Telegram sender's
+    own name, so replies address a teammate by name instead of assuming
+    they're the owner."""
+    if _is_authorized(update):
+        return "You"
+    user = update.effective_user
+    if not user:
+        return "Someone in the channel"
+    return user.full_name or (f"@{user.username}" if user.username else "Someone in the channel")
+
+
 # ── Media review: ✅/❌ buttons on everything Reel posts ──────────────────────
 # Reel posted every generated image/video to Telegram "for approval", but the bot
 # had NO approve path at all — no inline buttons, no callback handler, no
@@ -657,7 +686,8 @@ async def _handle_report(update, context) -> None:
 
 
 async def _handle_message(update, context) -> None:
-    if not _is_authorized(update):
+    owner = _is_authorized(update)
+    if not owner and not _is_group_message(update):
         uid = update.effective_user.id if update.effective_user else "?"
         logger.warning("Ignored Telegram message from unauthorized user id %s", uid)
         return
@@ -666,13 +696,14 @@ async def _handle_message(update, context) -> None:
     if not text and not has_media:
         return
 
+    sender = _sender_name(update)
     bot = context.bot
     chat_id = _chat_id() or update.effective_chat.id
     thread_id = _main_thread_id()
     if thread_id is None and update.message.message_thread_id:
         thread_id = update.message.message_thread_id  # honor the topic you actually wrote in
 
-    log_message("You", "You", text or "(image)")
+    log_message(sender, sender, text or "(image)")
     images = await _extract_images(update, bot) if has_media else []
     if has_media and not images and not text:
         text = "[Attached a file I can't read as an image — describe what you need.]"
@@ -689,7 +720,7 @@ async def _handle_message(update, context) -> None:
         from src.org.conversation import route_and_respond
         # reply_thread_id: answers land wherever you asked (General -> General,
         # an agent's own topic -> that topic), not each agent's default topic.
-        replies = await route_and_respond(text, author="You", images=images, reply_thread_id=thread_id)
+        replies = await route_and_respond(text, author=sender, images=images, reply_thread_id=thread_id)
         if not replies:
             await _send("(no response — check the litellm proxy is up)", thread_id=thread_id)
     except Exception as exc:
