@@ -6,6 +6,31 @@ found, what was done, current status.
 
 ---
 
+## 2026-09-04 — Agent-communication routing rework; Nora's dispatch_to_agent gap flagged (not fixed)
+
+**Ask**: change how the org communicates — stop private DMs to Itzik, increase real inter-agent talk where a real gap exists, and make the shared Telegram channel answer questions from anyone in it, not just Itzik. Explicitly out of scope: ticket creation, real-blocker escalation to Itzik, and the merge/deploy human-review gate — none of those touched.
+
+**Found first, before changing anything**: there was no private-DM path to begin with — `TELEGRAM_CHAT_ID` was already configured as a shared group (confirmed against the real `.env`, not just code), with per-agent Telegram Topics for organization, not privacy. That item needed no fix.
+
+**Built** (`src/org/telegram.py`, `src/org/heartbeat.py`, `src/org/fulfillment.py`, `src/mcp_tools/support_inbox.py` — uncommitted, sitting on `inline-product-expand`, see below):
+1. `_is_group_message`/`_sender_name` in `telegram.py` — plain chat messages are now answered for anyone writing inside the one configured group chat, routed through the existing `route_and_respond` triage with their real name, not hardcoded as "You". Commands (`/agents`, `/manager`, `/report`) and the media approve/reject buttons stay locked to `TELEGRAM_ALLOWED_USER_ID` — those touch production/publish state, deliberately untouched.
+2. `post_escalation()` — genuine "needs a human" escalations (Nora's `needs_owner_attention`, Milo's fulfillment `_escalate`) now land in the main Telegram topic with a consistent 🚨 marker, instead of being buried in an agent's own per-agent topic alongside routine tool-narration. `flag_blocker` and the Shopify-401 escalation already posted to the main topic correctly — left alone.
+3. `_sourcing_tick` now asks Kai for recent ad/Clarity signal before locking in a sourcing keyword each cycle (currently a no-op in practice — sourcing is still paused per the 2026-08-17 freeze — but wired for when it resumes).
+4. `_media_sweep_tick` still opens its ticket assigned to Sol (had to keep that — `_ticket_tick` only ever works tickets assigned to Sol, the only agent with a real tool loop; reassigning would have made the ticket invisible to the one thing that works it) but now also pings Reel directly and immediately with the top gaps, instead of Reel only finding out once Sol gets to the ticket.
+5. Milo's fulfillment `_escalate` now pings Nora directly the moment a fulfillment error hits, in parallel with Sol's investigation — see the gap below for the limit on what that ping actually guarantees.
+
+**Structural gap found, not fixed — same treatment as Sol's git-tooling gap (2026-08-29 entry above)**: `dispatch_to_agent` (`src/org/conversation.py`) has no real execution path for Nora. Every other specialist role it dispatches to (Shopify doers, Product Hunter, Video Producer, Growth Marketing Analyst, Nova) hits a real handler that actually does something; Nora falls through to the generic `_agent_reply` in-persona chat branch, which only produces an LLM-narrated acknowledgment — no tool call behind it. Her real, working send mechanism is `send_reply_via_resend` (`src/mcp_tools/support_inbox.py`), a deterministic function used only by her own inbox poll (`process_central_inbox`), never wired into an LLM-callable tool or into `dispatch_to_agent`'s Nora branch.
+
+Net effect: the new Milo→Nora ping (#5 above) is a genuine, real communication link — Nora is now actually informed the moment an order fails, instead of finding out later or not at all. But her response in that flow is **narrated, not verified** — a "on it, I'll email them" reply does not confirm `send_reply_via_resend` (or any send) actually fired. Nobody should read a Nora reply in this flow as confirmation the customer was actually emailed until this gap is closed.
+
+**What would be needed to close it**: give Nora a real execution branch in `dispatch_to_agent` (mirroring `_agent_act_video`/`_agent_act_growth`) that can actually call `send_reply_via_resend` for a customer-facing task like this. **Not built today** — out of scope for a communication-routing session, deserves its own scoped pass same as Sol's git/PR tooling still does.
+
+**Verified**: `py_compile` clean on all four touched files. Nothing in this session's changes reaches ticket-status transitions, escalation-to-Itzik-for-real-blockers, or the merge/deploy gate — all three confirmed unchanged.
+
+**Not committed** — sitting as uncommitted local changes on `inline-product-expand` (a branch unrelated to this work by name/purpose), same "real but uncommitted local work" situation flagged in the 2026-08-30 PR-merge-notify entry below for other in-progress work. Committing/branching this is Itzik's call, not made unilaterally here.
+
+---
+
 ## 2026-09-02 — Kai can now actually pull and report real Clarity data
 
 **Ask**: Kai should get real Clarity data (not just know it's installed) and be able to understand/post about it — upgrading the "ANALYTICS AWARENESS, no API access" note added 2026-08-28.
