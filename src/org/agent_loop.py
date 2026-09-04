@@ -906,6 +906,31 @@ async def ask_teammate(agent: str, question: str) -> dict:
     return {"asked": agent, "question": question, "reply": reply}
 
 
+@tool
+async def escalate_and_ticket(issue: str, store_slug: str = "alphaforbaby") -> dict:
+    """Flag something that genuinely needs a HUMAN — a bug in the system itself
+    (e.g. conflicting/incorrect data blocking a product for no real reason), NOT
+    routine work blocked on a teammate (ask_teammate them for that instead — see
+    PUBLISHING/PUBLISH GATE above). Use this INSTEAD OF just narrating the problem
+    in prose: narration alone lands quietly in your own topic and nothing tracks
+    it once this run ends. This posts a loud escalation to the main channel AND
+    opens a ticket, so it's both seen now and not lost later. `issue` = the
+    concrete problem, plainly stated — name the product/PID and what's actually
+    wrong, not "something's broken"."""
+    from src.org.telegram import post_escalation
+    from src.org.tickets import open_ticket
+    await post_escalation(AGENT_NAME, AGENT_ROLE, issue)
+    ticket = await asyncio.to_thread(
+        open_ticket, title=issue[:200], description=issue, source="sol_escalation",
+        created_by=AGENT_NAME, store_id=store_slug,
+        dedupe_key=f"sol_escalation:{issue[:100].strip().lower()}",
+    )
+    text = (f"🚨 escalated + ticketed ({ticket.id}): {issue[:80]}" if ticket
+            else f"🚨 escalated (ticket already open for this): {issue[:80]}")
+    await _record_step("tool_result", tool_name="escalate_and_ticket", text=text, ok=True)
+    return {"escalated": True, "ticket_id": ticket.id if ticket else None}
+
+
 # A reply this generic isn't a real answer — just an LLM narrating its own charter
 # back rather than reporting a result. Don't let it block a legitimate re-ask.
 _INCONCLUSIVE_REPLY_PREFIXES = (
@@ -1100,6 +1125,11 @@ _TOOLS = [
     # Without this he had no way to reach the teammate who does, from inside the
     # loop where the work actually happens — so he shipped around the problem.
     ask_teammate,
+    # A genuine "a human needs to look at this" (a bug, not a routine blocker) —
+    # without this his only outlet was prose narration into his own topic, where
+    # a real bug (e.g. the 2026-09-04 PID-mismatch incident) could sit unticketed
+    # and unseen indefinitely.
+    escalate_and_ticket,
     # Local RAG (Redis) — Corpus A: seen CJ candidates; Corpus B: Sol's own playbook docs
     search_local_catalog, search_playbook, refresh_playbook,
 ]
@@ -1184,6 +1214,13 @@ def _system_prompt(store_slug: str) -> str:
         f"the blocker, decide who on YOUR TEAM below owns the missing piece, and ask_teammate "
         f"them. Never publish anyway, never retry the same publish in a loop, and never report a "
         f"product as live when the gate held it back.\n\n"
+        f"WHEN SOMETHING IS ACTUALLY BROKEN (not just routine work waiting on a teammate): if "
+        f"you conclude the SYSTEM itself has a bug — wrong/conflicting data, a check referencing "
+        f"the wrong product, anything that isn't a normal 'waiting on media/stock' blocker — call "
+        f"escalate_and_ticket with the concrete issue INSTEAD OF just writing it in your summary. "
+        f"Prose alone is not seen and is not tracked; a teammate who can actually fix routine work "
+        f"beats a blocker nobody acts on, but a real bug needs a human, loudly, with a ticket — not "
+        f"a paragraph that scrolls away.\n\n"
         f"YOUR TEAM — the live roster. You are not alone and you are not stuck; every one of "
         f"these is an agent you can ask, and they answer for themselves:\n{_team_block()}\n\n"
         f"CJ DATA TOOLS: for product SEARCH/detail use cj_search_products (CJ REST — already "
