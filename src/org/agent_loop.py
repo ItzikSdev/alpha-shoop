@@ -895,6 +895,12 @@ async def ask_teammate(agent: str, question: str) -> dict:
                         "check, wait a few minutes or ask about something that's actually changed."}
     from src.org.conversation import dispatch_to_agent
     reply = await dispatch_to_agent(agent, question, requested_by=AGENT_NAME, return_reply=True)
+    if await _repeated_without_progress(agent, question, reply):
+        from src.org.telegram import post_escalation
+        await post_escalation(
+            AGENT_NAME, AGENT_ROLE,
+            f"Stuck — asked {agent} the same thing repeatedly with no real progress: {question[:200]}",
+        )
     await _record_step("tool_result", tool_name="ask_teammate",
                        text=f"🤝 asked {agent}: {question[:80]}", ok=True)
     return {"asked": agent, "question": question, "reply": reply}
@@ -952,6 +958,50 @@ async def _recent_substantive_answer(agent: str, question: str) -> str | None:
         if not _looks_inconclusive(reply):
             return reply
     return None
+
+
+def _reply_signature(reply: str) -> str:
+    return re.sub(r"\s+", " ", (reply or "").strip().lower())[:60]
+
+
+async def _repeated_without_progress(agent: str, question: str, reply: str, threshold: int = 2) -> bool:
+    """True once we've asked `agent` about the same subject (same topic key as
+    `_recent_substantive_answer`) at least `threshold` prior times in the last
+    30 minutes and gotten either (a) a generically inconclusive reply, or (b)
+    essentially the SAME reply back every time — e.g. Reel saying "I'll queue a
+    360° rotation video for PID X" four separate times with no video ever
+    landing. (b) matters because that reply reads as substantive on its own —
+    `_looks_inconclusive` alone won't catch it, and `_recent_substantive_answer`
+    would happily keep caching/reusing it as a "real answer" forever, masking
+    the fact that nothing is actually progressing."""
+    m = re.search(r"\d{10,}", question)
+    if not m:
+        return False
+    key = m.group(0)
+    sig = _reply_signature(reply)
+    try:
+        import sqlite3
+        db = sqlite3.connect(str(ROOT / "data" / "traces.db"))
+        rows = db.execute(
+            "SELECT result_json FROM agent_steps "
+            "WHERE tool_name='ask_teammate' AND result_json LIKE ? "
+            "AND ts >= datetime('now', '-30 minutes')",
+            (f"%{key}%",),
+        ).fetchall()
+    except Exception:  # noqa: BLE001
+        return False
+    count = 0
+    for (result_json,) in rows:
+        try:
+            prev = json.loads(result_json)
+        except Exception:
+            continue
+        if prev.get("asked") != agent:
+            continue
+        prev_reply = prev.get("reply") or ""
+        if _looks_inconclusive(prev_reply) or (sig and _reply_signature(prev_reply) == sig):
+            count += 1
+    return count >= threshold
 
 
 @tool
@@ -1244,7 +1294,11 @@ async def run_sol_task(task: str, store_slug: str = "alphaforbaby", max_steps: i
     try:
         for _ in range(max_steps):
             if max_minutes and (time.monotonic() - start_time) > max_minutes * 60:
-                await say(f":alarm_clock: Reached the {max_minutes}-minute time budget — stopping.")
+                from src.org.telegram import post_escalation
+                await post_escalation(
+                    AGENT_NAME, AGENT_ROLE,
+                    f"Ran out of time ({max_minutes} min) mid-task: {task[:200]}",
+                )
                 await asyncio.to_thread(finish_run, run_id, "max_minutes", f"{max_minutes}-minute budget reached")
                 if ticket_id:
                     try:
@@ -1297,6 +1351,11 @@ async def run_sol_task(task: str, store_slug: str = "alphaforbaby", max_steps: i
     except Exception as exc:  # noqa: BLE001
         await asyncio.to_thread(finish_run, run_id, "error", str(exc)[:1500])
         await record("status", text=f":x: Sol hit an error: {exc}"[:1500])
+        from src.org.telegram import post_escalation
+        await post_escalation(
+            AGENT_NAME, AGENT_ROLE,
+            f"Hit an error working on: {task[:200]} — {str(exc)[:300]}",
+        )
         if ticket_id:
             # Revert to 'todo' rather than leaving it stuck at 'doing' forever —
             # a ticket only started "doing" because we, not the caller, said so.
@@ -1306,7 +1365,11 @@ async def run_sol_task(task: str, store_slug: str = "alphaforbaby", max_steps: i
                 pass
         raise
 
-    await say(":warning: Reached max steps — stopping. Tell me to continue.")
+    from src.org.telegram import post_escalation
+    await post_escalation(
+        AGENT_NAME, AGENT_ROLE,
+        f"Ran out of steps ({max_steps}) without finishing: {task[:200]} — tell me to continue.",
+    )
     await asyncio.to_thread(finish_run, run_id, "max_steps", "max_steps reached")
     if ticket_id:
         try:
