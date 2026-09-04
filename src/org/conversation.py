@@ -191,21 +191,23 @@ async def _agent_reply(agent: Agent, message: str, author: str, company,
         + f"{author} just wrote:\n\"{caption}\"\n\nReply as {agent.name}, using the "
         "conversation above as context."
     )
-    try:
-        # Images need the vision-capable model — use the smart tier when present.
-        role = "executive" if images else (agent.model_role or "standup")
-        llm = get_llm(role, temperature=0.7, max_tokens=400)
-        resp = await llm.ainvoke([
-            SystemMessage(content=system),
-            HumanMessage(content=_human_content(user, images)),
-        ])
-        text = str(resp.content).strip()
-        if text:
-            return text
-    except Exception as exc:
-        logger.warning("Agent %s reply failed: %s", agent.name, exc)
-    # Fallback so the channel still hears from them.
-    return f"(On it — {agent.role} here. {agent.skill.split('.')[0]}.)"
+    # Images need the vision-capable model — use the smart tier when present.
+    role = "executive" if images else (agent.model_role or "standup")
+    for attempt_role in dict.fromkeys([role, "executive"]):  # dedupe, preserve order
+        try:
+            llm = get_llm(attempt_role, temperature=0.7, max_tokens=400)
+            resp = await llm.ainvoke([
+                SystemMessage(content=system),
+                HumanMessage(content=_human_content(user, images)),
+            ])
+            text = str(resp.content).strip()
+            if text:
+                return text
+        except Exception as exc:
+            logger.warning("Agent %s reply failed on %s tier: %s", agent.name, attempt_role, exc)
+    # Both attempts produced nothing usable — say so honestly rather than
+    # faking an in-character answer the model never actually gave.
+    return f"⚠️ {agent.name} couldn't generate a reply right now (model call failed) — try again in a moment."
 
 
 async def _post_replies(items: list[tuple[Agent, str]], reply_thread_id: int | None = None) -> list[dict]:
