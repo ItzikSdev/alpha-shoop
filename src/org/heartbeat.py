@@ -524,6 +524,42 @@ async def _nova_playbook_grounding(recent_activity: str) -> str:
     )
 
 
+_CJ_VERDICT_REJECT_WORDS = (
+    "reject", "fewer than 3", "less than 3", "<3", "no images", "duplicate",
+    "out of stock", "no stock", "low quality",
+)
+
+
+async def _cj_catalog_spot_check(n: int = 10) -> str:
+    """Lightweight, code-level (NOT another LLM call — proportionate to the
+    actual risk, per 2026-09-05 sizing) scan over Sol's N most recent
+    cj_catalog verdicts, flagging one whose stated reason looks inconsistent
+    with its own verdict (e.g. "accepted" with a reason describing a reject
+    condition). This never auto-acts — it surfaces the FACT into Nova's
+    weekly context; she decides via her own judgment (record_lesson /
+    flag_blocker / do) whether it's worth acting on."""
+    try:
+        from src.rag.index import list_all
+        entries = await list_all("cj_catalog", limit=n)
+    except Exception:
+        return ""
+    flagged = []
+    for e in entries:
+        verdict = (e.get("verdict") or "").lower()
+        reason = (e.get("reason") or "").lower()
+        if verdict == "accepted" and any(w in reason for w in _CJ_VERDICT_REJECT_WORDS):
+            flagged.append(f"pid {e.get('pid', '?')}: verdict=accepted but reason says "
+                            f"\"{(e.get('reason') or '')[:100]}\"")
+        elif verdict == "rejected" and not reason.strip():
+            flagged.append(f"pid {e.get('pid', '?')}: verdict=rejected with no reason given")
+    if not flagged:
+        return ""
+    return (
+        "\nSOL'S RECENT CJ VERDICTS — SPOT-CHECK (a code-level scan, not a judgment call — "
+        "verify before acting on it):\n" + "\n".join(f"- {f}" for f in flagged[:5]) + "\n"
+    )
+
+
 async def _agent_take_turn(agent: Agent, company: Company) -> dict:
     # Sol is a real tool-using agent (src/org/agent_loop.py's run_sol_task), not the
     # old sandboxed "propose only, no tools" persona _dev_turn was built for — his
@@ -557,7 +593,8 @@ async def _agent_take_turn(agent: Agent, company: Company) -> dict:
         snapshot=snapshot, build_running=build_running,
         run_health=run_health_summary(),
         recent_activity=recent_activity,
-        knowledge=await _nova_playbook_grounding(recent_activity) if agent.role == "Nova" else "",
+        knowledge=(await _nova_playbook_grounding(recent_activity) + await _cj_catalog_spot_check())
+                   if agent.role == "Nova" else "",
         language=company_language(),
         budget_line=budget_line(),
         teammates=_teammates(agent),

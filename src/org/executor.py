@@ -80,6 +80,86 @@ def _is_false_doom(text: str) -> bool:
     return any(k.lower() in t for k in _FALSE_CLAIMS)
 
 
+async def _verify_lesson_against_evidence(lesson: str) -> dict:
+    """One bounded Claude call (executive tier) — the same deliberate, scoped,
+    budget-capped exception to local-only compute as agents-training/'s
+    visual critique, just text instead of vision. Extends _is_false_doom's
+    "don't trust an unverified claim" principle with a real check instead of
+    a keyword blocklist: verifies a lesson Nova wants to promote into the
+    shared playbook is actually supported by real recent activity, not an
+    inference or hallucination other agents would then treat as a confirmed
+    standard. Returns {"verdict": "CLEAN"|"NEEDS_REVIEW", "critique": str}."""
+    from src.llm.client import get_llm
+    from langchain_core.messages import HumanMessage, SystemMessage
+    from src.org.heartbeat import _recent_activity
+
+    system = (
+        "You verify whether a claimed lesson about how the team should operate is "
+        "actually supported by real recent activity, before it's promoted into the "
+        "shared playbook as a confirmed standard other agents will rely on. Flag "
+        "anything that's an unsupported inference, a guess, or contradicted by the "
+        "evidence. End your response with EXACTLY one line, verbatim:\n"
+        "VERDICT: CLEAN\nor\nVERDICT: NEEDS REVIEW"
+    )
+    user = f"CLAIMED LESSON:\n{lesson}\n\nRECENT ACTIVITY (the only evidence available):\n{_recent_activity()}"
+    try:
+        llm = get_llm("executive", temperature=0.1, max_tokens=400, timeout=60)
+        resp = await llm.ainvoke([SystemMessage(content=system), HumanMessage(content=user)])
+        text = str(resp.content).strip()
+    except Exception as exc:  # noqa: BLE001
+        return {"verdict": "NEEDS_REVIEW", "critique": f"Critique call failed: {exc}"}
+    verdict = "CLEAN" if re.search(r"VERDICT:\s*CLEAN", text, re.IGNORECASE) else "NEEDS_REVIEW"
+    return {"verdict": verdict, "critique": text}
+
+
+async def _promote_lesson_to_playbook(lesson: str) -> dict:
+    """Tier 1 (sanity + semantic dedup, src/rag/quality.py — same functions
+    agents-training/'s store_building_patterns loop uses) + tier 2 (the text
+    critique above) before a Nova-recorded lesson reaches the real playbook
+    RAG. Never raises — a failure here must not break record_lesson itself,
+    which already succeeded (company.lessons / the target agent's memory)."""
+    import hashlib
+    from src.rag.index import upsert
+    from src.rag.quality import passes_sanity_check, is_new_entry
+
+    ok, reason = passes_sanity_check(lesson)
+    if not ok:
+        return {"promoted": False, "held": True, "reason": reason}
+    if not await is_new_entry("playbook", lesson):
+        return {"promoted": False, "held": False, "reason": "duplicate of an existing playbook entry"}
+    result = await _verify_lesson_against_evidence(lesson)
+    if result["verdict"] != "CLEAN":
+        return {"promoted": False, "held": True, "reason": result["critique"]}
+    doc_id = "nova-" + hashlib.sha1(lesson.strip().lower().encode()).hexdigest()[:16]
+    saved = await upsert(
+        "playbook", doc_id=doc_id, text=lesson,
+        metadata={"source_path": "nova/record_lesson", "doc_title": "Nova-recorded lesson", "section": "Nova"},
+    )
+    return {"promoted": saved, "held": not saved, "reason": "" if saved else "RAG upsert failed"}
+
+
+async def _maybe_promote_nova_lesson(attendee, lesson: str, actions: list[str]) -> None:
+    """Only Nova's record_lesson attempts playbook promotion — see
+    2026-09-05 investigation: Ava/Kai/Reel's real decision code has no
+    genuine fit for this. A held lesson gets a routine note in Nova's OWN
+    topic (never the main channel) — not an escalation, same pattern as the
+    training loop's daily summary."""
+    if not (attendee and attendee.role == "Nova"):
+        return
+    result = await _promote_lesson_to_playbook(lesson)
+    if result["promoted"]:
+        actions.append(f"promoted to playbook: {lesson[:50]}")
+        agent_log(f"📚 Promoted to playbook: {lesson[:60]}", "info")
+    elif result["held"]:
+        actions.append(f"held, not promoted to playbook: {lesson[:50]}")
+        from src.org.telegram import post_as
+        await post_as(
+            attendee.name, attendee.role,
+            f"⏸️ A lesson I recorded didn't clear the playbook promotion gate — holding it:\n"
+            f"\"{lesson[:200]}\"\nReason: {result['reason'][:300]}",
+        )
+
+
 def _words(text: str) -> set[str]:
     return {w for w in re.findall(r"\w+", (text or "").lower()) if len(w) > 3}
 
@@ -109,6 +189,7 @@ async def execute_decisions(meeting: Meeting) -> list[str]:
     actions: list[str] = []
     senior = next((a for a in list_agents(active_only=True) if a.role in ("CTO", "HR", "CEO")), None)
     mentor_name = senior.name if senior else "Leadership"
+    attendee = next((a for a in list_agents(active_only=True) if a.agent_id in meeting.attendees), None)
 
     for d in meeting.decisions:
         dtype = d.get("type")
@@ -257,6 +338,7 @@ async def execute_decisions(meeting: Meeting) -> list[str]:
                     update_agent(target.agent_id, _add_agent_lesson)
                     actions.append(f"record_lesson({target.name}): {lesson[:50]}")
                     agent_log(f"📝 Lesson for {target.name}: {lesson}", "info")
+                    await _maybe_promote_nova_lesson(attendee, lesson, actions)
             elif lesson:
                 def _add_lesson(c: Company, lesson: str = lesson) -> None:
                     c.lessons.append(lesson)
@@ -264,6 +346,7 @@ async def execute_decisions(meeting: Meeting) -> list[str]:
                 company = update_company(_add_lesson)
                 actions.append(f"record_lesson: {lesson[:50]}")
                 agent_log(f"📝 Lesson: {lesson}", "info")
+                await _maybe_promote_nova_lesson(attendee, lesson, actions)
 
         elif dtype == "cancel_stuck_runs":
             # Self-healing: the team cleans up its own hung runs.

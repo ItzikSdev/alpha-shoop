@@ -275,42 +275,18 @@ def is_url_processed(url: str) -> bool:
     return url in load_state()["processed_urls"]
 
 
-# ── Automated sanity check (tier 1 of the quality gate) ───────────────────
+# ── Quality gate tier 1 (sanity + dedup) — shared with Nova's playbook
+# promotion (src/org/executor.py), see src/rag/quality.py. Thin wrappers kept
+# here (same names, corpus baked in) so nothing else in this file/run_session.py
+# needs to change. ─────────────────────────────────────────────────────────
 def passes_sanity_check(lesson: str) -> tuple[bool, str]:
-    """Cheap, deterministic, no-LLM-call gate applied to every candidate
-    lesson before it's even considered for RAG promotion. Rejects the
-    obviously-broken cases: empty/near-empty fragments, and suspiciously
-    long "lessons" that read more like leaked marketing prose than a
-    concise structural principle."""
-    words = lesson.split()
-    if len(lesson.strip()) < 15:
-        return False, "too short to be a real structural principle"
-    if len(words) > 45:
-        return False, "too long — reads like prose, not a concise structural lesson"
-    if lesson.count("!") >= 2 or lesson.count("$") >= 2:
-        return False, "reads like ad copy, not a structural observation"
-    return True, ""
-
-
-# ── Real RAG storage (Redis, via src.rag.index — same infra as Sol's
-# "playbook" corpus). lessons.md is NOT the source of truth: a lesson is
-# either promoted into the real "store_building_patterns" corpus (queryable
-# via search_training_patterns) or it isn't in the system at all. Session
-# markdown files are the human-readable audit trail behind each promotion,
-# not the retrieval mechanism. ─────────────────────────────────────────────
-_RAG_DEDUP_THRESHOLD = 0.90  # cosine similarity — near-duplicate rewording
+    from src.rag.quality import passes_sanity_check as _check
+    return _check(lesson)
 
 
 async def is_new_lesson_via_rag(lesson: str) -> bool:
-    """True if nothing already in the real store_building_patterns RAG is a
-    near-duplicate of `lesson` (semantic similarity, not the old markdown
-    word-overlap heuristic)."""
-    from src.rag.index import search
-    hits = await search("store_building_patterns", lesson, top_k=1)
-    if not hits:
-        return True
-    score = hits[0].get("score")
-    return score is None or score < _RAG_DEDUP_THRESHOLD
+    from src.rag.quality import is_new_entry
+    return await is_new_entry("store_building_patterns", lesson)
 
 
 async def promote_lesson(category: str, lesson: str, session_date: str,
