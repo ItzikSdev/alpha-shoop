@@ -75,7 +75,13 @@ AGENT_TOOL_GROUPS: dict[str, dict[str, list[str]]] = {
         # reporting matches Kai's scope so a weekly check is grounded in real
         # numbers, not a guess.
         "oversight": ["create_ticket", "close_ticket"],
-        "knowledge": ["search_playbook", "search_local_catalog", "read_org_docs"],
+        # search_playbook here is real as of 2026-09-05: baked unconditionally into
+        # her heartbeat turn (heartbeat.py::_nova_playbook_grounding), same pattern
+        # as Nora's store_products lookup — not an open tool she chooses to call
+        # (she has no tool-choice loop). search_local_catalog was REMOVED here —
+        # it was never actually wired for her (confirmed by grep, zero call sites);
+        # this entry used to claim it falsely.
+        "knowledge": ["search_playbook", "read_org_docs"],
         "ads_reporting": ["get_ads_report", "list_campaigns"],
         "shopify_reporting": ["get_sales_summary"],
         # Outside-world context (competitor pricing, marketing trends, industry

@@ -132,7 +132,7 @@ OUR OPERATIONAL HEALTH right now:
 
 WHAT THE TEAM HAS ALREADY DONE RECENTLY (most recent first):
 {recent_activity}
-
+{knowledge}
 Think before you act. Two things to watch for and FIX YOURSELVES:
 1. Redundancy — if a move was already tried recently and hasn't produced
    revenue, do NOT repeat it. Pick a genuinely DIFFERENT next step.
@@ -499,6 +499,31 @@ async def _dev_turn(agent: Agent, company: Company) -> dict:
             "actions": actions, "result": result_record}
 
 
+async def _nova_playbook_grounding(recent_activity: str) -> str:
+    """Real read access to the SAME playbook corpus Sol works from (Redis,
+    src/rag/index.py) — unconditional call baked into Nova's existing
+    drift-catching decision path, same pattern as Nora's baked-in
+    store_products lookup (src/mcp_tools/support_inbox.py::_product_context).
+    Not a tool she chooses to call — there is no open tool-choice loop for
+    her to choose from; this closes the tool_catalog.py gap (2026-09-05
+    finding: her catalog entry claimed this access but no code ever actually
+    called search_playbook for her). Queries on recent team activity so the
+    playbook sections surfaced are whatever's actually relevant to what
+    she's about to judge, not a fixed generic string every turn."""
+    try:
+        from src.rag.index import search
+        hits = await search("playbook", recent_activity or "product sourcing and display standards", top_k=4)
+    except Exception:
+        return ""
+    if not hits:
+        return ""
+    lines = "\n".join(f"- {h['text'][:300]}" for h in hits)
+    return (
+        "\nPLAYBOOK STANDARDS (the same guidance Sol works from — judge whether recent "
+        f"activity above is actually on-standard against this, don't just guess):\n{lines}\n"
+    )
+
+
 async def _agent_take_turn(agent: Agent, company: Company) -> dict:
     # Sol is a real tool-using agent (src/org/agent_loop.py's run_sol_task), not the
     # old sandboxed "propose only, no tools" persona _dev_turn was built for — his
@@ -522,6 +547,7 @@ async def _agent_take_turn(agent: Agent, company: Company) -> dict:
     current_node.set(f"agent:{agent.role}")
     snapshot = await gather_snapshot()
     build_running = _build_running()
+    recent_activity = _recent_activity()
 
     is_manager = agent.role in _MANAGER_ROLES
     system = _TURN_SYS.format(
@@ -530,7 +556,8 @@ async def _agent_take_turn(agent: Agent, company: Company) -> dict:
         lessons=company.lessons[-5:],
         snapshot=snapshot, build_running=build_running,
         run_health=run_health_summary(),
-        recent_activity=_recent_activity(),
+        recent_activity=recent_activity,
+        knowledge=await _nova_playbook_grounding(recent_activity) if agent.role == "Nova" else "",
         language=company_language(),
         budget_line=budget_line(),
         teammates=_teammates(agent),
