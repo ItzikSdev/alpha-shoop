@@ -1086,6 +1086,19 @@ async def refresh_playbook() -> dict:
 
 
 @tool
+async def search_training_patterns(query: str, count: int = 5) -> dict:
+    """Search the store-building-patterns corpus — structural/layout design
+    patterns (agents-training/'s training loop extracted these from real
+    reference e-commerce sites and they've each cleared a visual-critique
+    quality gate before landing here). Call this for "how should I lay out
+    a good product page" / "where does urgency/CTA/reviews usually go"
+    questions — a general LAYOUT answer, not sourcing or copy guidance
+    (that's search_playbook)."""
+    from src.rag.index import search
+    return {"patterns": await search("store_building_patterns", query, top_k=count)}
+
+
+@tool
 async def send_customer_email(to: str, subject: str, body: str, in_reply_to: str | None = None) -> dict:
     """Send an email to a customer from THIS STORE'S support address (never your own
     identity). Sign as store support, never disclose internal costs/margins/system
@@ -1130,8 +1143,9 @@ _TOOLS = [
     # a real bug (e.g. the 2026-09-04 PID-mismatch incident) could sit unticketed
     # and unseen indefinitely.
     escalate_and_ticket,
-    # Local RAG (Redis) — Corpus A: seen CJ candidates; Corpus B: Sol's own playbook docs
-    search_local_catalog, search_playbook, refresh_playbook,
+    # Local RAG (Redis) — Corpus A: seen CJ candidates; Corpus B: Sol's own playbook docs;
+    # Corpus C: quality-gated structural layout patterns from agents-training/'s training loop
+    search_local_catalog, search_playbook, refresh_playbook, search_training_patterns,
 ]
 _TOOLS_BY_NAME = {t.name: t for t in _TOOLS}
 

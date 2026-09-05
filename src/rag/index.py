@@ -74,6 +74,26 @@ _CORPUS_SCHEMAS: dict[str, dict[str, Any]] = {
             {"name": "garment_description", "type": "text"},  # vision-extracted, reused for prompts
         ],
     },
+    "store_building_patterns": {
+        # Structural/layout design patterns Sol's landing-page training loop
+        # (agents-training/) extracts from reference e-commerce sites — e.g.
+        # "a countdown-style element sits directly below the price block".
+        # One document PER LESSON (not per session/file) — the natural
+        # retrieval unit for "how do I build a good product page" is a single
+        # pattern, not a whole day's dump. Only lessons that clear that
+        # session's visual critique get upserted here (see
+        # agents-training/pipeline.py::promote_lesson) — this corpus is the
+        # post-quality-gate destination, not a raw capture of everything a
+        # session considered. session_path links back to the human-readable
+        # SESSION.md that has the full context/reasoning behind the lesson.
+        "prefix": "training_patterns",
+        "fields": [
+            {"name": "session_date", "type": "tag"},
+            {"name": "category", "type": "text"},
+            {"name": "source_domain", "type": "tag"},
+            {"name": "session_path", "type": "text"},
+        ],
+    },
 }
 
 # Cache of created/connected AsyncSearchIndex objects, one per corpus.

@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Soft Bamboo Baby Onesie</title>
+  <style>
+    body {font-family:sans-serif;margin:0;padding:0;background:#f9f9f9}
+    header {text-align:center;padding:2rem 1rem;background:#fff}
+    header img {max-width:80%;height:auto}
+    .hero {text-align:center;padding:1rem 2rem}
+    .price {color:#e63946;font-size:1.5rem;font-weight:bold;margin:1rem 0}
+    .trust {color:#555;font-size:0.9rem;margin-top:0.5rem}
+    .cta {display:inline-block;margin:1.5rem 0;padding:0.75rem 1.5rem;background:#2a9d8f;color:#fff;text-decoration:none;border-radius:4px}
+    .gallery {display:flex;overflow-x:auto;gap:1rem;padding:1rem;margin:1rem auto;max-width:90%}
+    .gallery img {width:150px;height:auto;border:2px solid #ddd}
+    .nav-btn {position:absolute;top:50%;transform:translateY(-50%);background:#fff;border:1px solid #ccc;padding:0.5rem}
+    .features {max-width:800px;margin:2rem auto;padding:1rem;background:#fff}
+    .features h2 {text-align:center}
+    .features ul {list-style:none;padding:0;margin:1rem 0}
+    .features li {padding:0.5rem 0;border-bottom:1px solid #eee}
+    footer {text-align:center;padding:1rem;background:#2a9d8f;color:#fff}
+  </style>
+</head>
+<body>
+  <header>
+    <img src="https://cdn.shopify.com/s/files/1/0686/0993/3383/files/b1397e4a-cdf1-472b-bace-3c9032f6c92c.jpg?v=1788585184" alt="Soft Bamboo Baby Onesie">
+    <h1>Soft Bamboo Baby Onesie</h1>
+    <div class="price">$19.9</div>
+    <div class="trust">✔ Free shipping on all orders | ✔ 30-day hassle-free returns | ✔ Satisfaction guaranteed</div>
+    <a href="#purchase" class="cta">Buy Now</a>
+  </header>
+  <div class="hero">
+    <p>Gentle on Skin, Easy on You — All Day Long. When your baby's skin is new to the world, every layer matters — and this onesie wraps them in breathable bamboo fabric that stays soft through every nap, feed, and cuddle.</p>
+  </div>
+  <div class="gallery" id="gallery">
+    <img src="https://cdn.shopify.com/s/files/1/0686/0993/3383/files/0cd0bc3d-b411-42bf-a93b-29f56c1cd144.jpg?v=1788585184" alt="Style 1">
+    <img src="https://cdn.shopify.com/s/files/1/0686/0993/3383/files/6cccaea0-69e7-4684-8462-61c742d6fd54.jpg?v=1788585184" alt="Style 2">
+    <img src="https://cdn.shopify.com/s/files/1/0686/0993/3383/files/18c80dc0-b2e7-41ab-b0b7-a8ba6ebaaa1c.jpg?v=1788585184" alt="Style 3">
+    <img src="https://cdn.shopify.com/s/files/1/0686/0993/3383/files/188e1bc0-4fdf-41f3-aeaf-c3d2f7cf627e.jpg?v=1788585184" alt="Style 4">
+    <img src="https://cdn.shopify.com/s/files/1/0686/0993/3383/files/eb4f85b7-547b-48fd-868d-45056e971e1c.jpg?v=1788585184" alt="Style 5">
+    <img src="https://cdn.shopify.com/s/files/1/0686/0993/3383/files/b1397e4a-cdf1-472b-bace-3c9032f6c92c.jpg?v=1788585184" alt="Style 6">
+  </div>
+  <div class="nav-btn" id="prevBtn">←</div>
+  <div class="nav-btn" id="nextBtn">→</div>
+  <div class="features">
+    <h2>Key Features</h2>
+    <ul>
+      <li><strong>Bamboo Fabric:</strong> Naturally smooth and breathable for sensitive newborn skin</li>
+      <li><strong>Zip-Up Design:</strong> Easy to dress/change even at 3 a.m.</li>
+      <li><strong>Temperature Regulation:</strong> Keeps baby comfortable in all seasons</li>
+      <li><strong>Grow With Your Baby:</strong> Available in 5 sizes (59 cm to 90 cm)</li>
+      <li><strong>8 Fun Styles:</strong> Khaki plaid, pink clouds, Christmas panda, black cat, and more</li>
+      <li><strong>Hassle-Free Returns:</strong> No questions asked</li>
+    </ul>
+    <a href="#purchase" class="cta">Buy Now</a>
+  </div>
+  <footer>
+    <p>© 2023 Soft Bamboo Baby Onesie | All rights reserved</p>
+  </footer>
+  <script>
+    const gallery = document.getElementById('gallery');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    let scrollAmount = 0;
+    const imgWidth = 150 + 2*1; // 150px image + 2px border
+
+    nextBtn.addEventListener('click', () => {
+      scrollAmount += imgWidth * 2;
+      gallery.scrollLeft = scrollAmount;
+    });
+
+    prevBtn.addEventListener('click', () => {
+      scrollAmount -= imgWidth * 2;
+      gallery.scrollLeft = scrollAmount;
+    });
+  </script>
+</body>
+</html>

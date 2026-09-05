@@ -1,23 +1,41 @@
 """
 Shared library for the landing-page training loop (agents-training/).
 
-Everything here runs on the FREE local qwen3:14b model via the existing
-Ollama/LiteLLM setup (src.llm.client.get_llm("standup", ...)) — never the
-paid Anthropic API. No new third-party dependencies: HTML structure is
-parsed with the stdlib html.parser, not BeautifulSoup.
+Pattern extraction and HTML-building run on the FREE local qwen3:14b model
+via the existing Ollama/LiteLLM setup (call_local_model, "standup" role) —
+never the paid Anthropic tiers. The ONE deliberate, scoped exception is the
+per-session visual critique (vision_critique, below), which uses Claude
+vision ("executive" role) because qwen3 has no vision capability at all —
+bounded to one call per session, not per lesson, and protected by the
+existing monthly budget cap.
+
+HTML structure is parsed with the stdlib html.parser (no BeautifulSoup).
+Screenshots use Playwright (a real new dependency — see requirements.txt).
 
 HARD RULES enforced by design, not just by prompt:
 - We only ever extract STRUCTURE from a reference page — tag types, class-
   name hints, and content-type classification (price-like / review-like /
   countdown-like, via regex) — never the actual text. The skeleton handed
   to the model never contains a reference site's real copy, so the model
-  physically cannot echo it back into lessons.md.
+  physically cannot echo a reference site's copy into a lesson.
 - Product HTML is built only from real Shopify catalog data (title, price,
   images, description fetched live via the Admin GraphQL API) — never
   invented facts.
+- A lesson is NOT "in the system" until it clears BOTH the automated sanity
+  check (passes_sanity_check) AND that session's visual critique coming
+  back CLEAN — see promote_lesson / run_session.py's quality-gate logic.
+  lessons.md (Step 1/2-v1, superseded) is no longer read or written by
+  anything here; the real source of truth is the store_building_patterns
+  RAG corpus (src/rag/index.py), queried via the search_training_patterns
+  tool. Session markdown files (sessions/YYYY-MM-DD/SESSION.md) are the
+  human-readable audit trail behind each promotion, not the retrieval path.
 """
 from __future__ import annotations
 
+import base64
+import hashlib
+import json
+import logging
 import re
 import sys
 from dataclasses import dataclass, field
@@ -37,8 +55,10 @@ from src.mcp_tools.shopify import _shopify_gql  # noqa: E402
 
 TRAINING_DIR = Path(__file__).resolve().parent
 URLS_FILE = TRAINING_DIR / "urls.md"
-LESSONS_FILE = TRAINING_DIR / "lessons.md"
-OUTPUT_DIR = TRAINING_DIR / "output"
+OUTPUT_DIR = TRAINING_DIR / "output"  # legacy Step-1/Step-2-v1 location — superseded by sessions/
+SESSIONS_DIR = TRAINING_DIR / "sessions"
+CHANGELOG_FILE = TRAINING_DIR / "CHANGELOG.md"
+STATE_FILE = TRAINING_DIR / "state.json"
 
 
 # ── URL handling ──────────────────────────────────────────────────────────
@@ -226,109 +246,233 @@ async def fetch_one_real_product(status_query: str = "status:active") -> dict | 
     return nodes[0] if nodes else None
 
 
-# ── lessons.md read/append with dedup ────────────────────────────────────
-_LESSONS_HEADER = """# Landing Page Design Lessons
-
-Cumulative structural-pattern insights extracted from reference e-commerce
-stores, session over session. **Read this file FIRST** at the start of every
-training session — before analyzing any new reference site — so later
-sessions build on prior findings instead of starting from zero.
-
-Hard rules governing every entry below (never violate when adding more):
-- Structural / placement / hierarchy patterns only — what's near what, in
-  what order, how it's grouped.
-- NEVER copy actual marketing text, images, logos, or exact CSS from a
-  reference site — every lesson is a general, reusable design principle.
-- Skip a pattern here if it's already covered by an existing lesson below
-  (check before appending, even if the new source phrases it differently).
-
-## Sources processed
-"""
-
-_PATTERNS_HEADING = "## Patterns"
+# ── State: which reference URLs have been processed, and when ────────────
+# Replaces the old approach of grepping lessons.md's text for a URL — lessons
+# are no longer stored as text at all (see the RAG section below), so URL
+# coverage needs its own small, explicit record.
+def load_state() -> dict:
+    if STATE_FILE.exists():
+        try:
+            return json.loads(STATE_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {"processed_urls": {}}
 
 
-def ensure_lessons_file() -> None:
-    if not LESSONS_FILE.exists():
-        LESSONS_FILE.write_text(_LESSONS_HEADER + "\n" + _PATTERNS_HEADING + "\n", encoding="utf-8")
+def save_state(state: dict) -> None:
+    STATE_FILE.write_text(json.dumps(state, indent=2), encoding="utf-8")
 
 
-def read_lessons() -> str:
-    ensure_lessons_file()
-    return LESSONS_FILE.read_text(encoding="utf-8")
+def mark_url_processed(url: str, date_str: str) -> None:
+    state = load_state()
+    entry = state["processed_urls"].setdefault(url, {"first_processed": date_str, "times": 0})
+    entry["last_processed"] = date_str
+    entry["times"] += 1
+    save_state(state)
 
 
-def existing_lesson_lines(lessons_text: str) -> list[str]:
-    """Every bullet already recorded, lower-cased, for a cheap dedup check."""
-    return [ln.strip("- ").strip().lower() for ln in lessons_text.splitlines()
-            if ln.strip().startswith("- ")]
+def is_url_processed(url: str) -> bool:
+    return url in load_state()["processed_urls"]
 
 
-def is_new_lesson(candidate: str, existing_lower: list[str]) -> bool:
-    """True if `candidate` isn't already covered — simple word-overlap check
-    (Jaccard), same technique already used elsewhere in this org
-    (src/org/executor.py::_is_restated_goal) to catch reworded duplicates."""
-    cand_words = set(re.findall(r"\w+", candidate.lower()))
-    if not cand_words:
+# ── Automated sanity check (tier 1 of the quality gate) ───────────────────
+def passes_sanity_check(lesson: str) -> tuple[bool, str]:
+    """Cheap, deterministic, no-LLM-call gate applied to every candidate
+    lesson before it's even considered for RAG promotion. Rejects the
+    obviously-broken cases: empty/near-empty fragments, and suspiciously
+    long "lessons" that read more like leaked marketing prose than a
+    concise structural principle."""
+    words = lesson.split()
+    if len(lesson.strip()) < 15:
+        return False, "too short to be a real structural principle"
+    if len(words) > 45:
+        return False, "too long — reads like prose, not a concise structural lesson"
+    if lesson.count("!") >= 2 or lesson.count("$") >= 2:
+        return False, "reads like ad copy, not a structural observation"
+    return True, ""
+
+
+# ── Real RAG storage (Redis, via src.rag.index — same infra as Sol's
+# "playbook" corpus). lessons.md is NOT the source of truth: a lesson is
+# either promoted into the real "store_building_patterns" corpus (queryable
+# via search_training_patterns) or it isn't in the system at all. Session
+# markdown files are the human-readable audit trail behind each promotion,
+# not the retrieval mechanism. ─────────────────────────────────────────────
+_RAG_DEDUP_THRESHOLD = 0.90  # cosine similarity — near-duplicate rewording
+
+
+async def is_new_lesson_via_rag(lesson: str) -> bool:
+    """True if nothing already in the real store_building_patterns RAG is a
+    near-duplicate of `lesson` (semantic similarity, not the old markdown
+    word-overlap heuristic)."""
+    from src.rag.index import search
+    hits = await search("store_building_patterns", lesson, top_k=1)
+    if not hits:
+        return True
+    score = hits[0].get("score")
+    return score is None or score < _RAG_DEDUP_THRESHOLD
+
+
+async def promote_lesson(category: str, lesson: str, session_date: str,
+                          source_domain: str, session_path: str) -> bool:
+    """Upsert one lesson into the real store_building_patterns RAG — the
+    ONLY way a lesson becomes retrievable via search_training_patterns.
+    Doc id is a stable hash of the lesson text so re-promoting identical
+    text overwrites rather than duplicating."""
+    from src.rag.index import upsert
+    doc_id = hashlib.sha1(lesson.strip().lower().encode()).hexdigest()[:16]
+    return await upsert(
+        "store_building_patterns",
+        doc_id=doc_id,
+        text=lesson,
+        metadata={
+            "session_date": session_date,
+            "category": category,
+            "source_domain": source_domain,
+            "session_path": session_path,
+        },
+    )
+
+
+# ── Screenshots (Playwright — the visual feedback loop) ───────────────────
+async def screenshot_url(url: str, out_path: Path, timeout_ms: int = 20000) -> bool:
+    """Screenshot a live reference page as actually rendered (not just its
+    raw HTML — this is what a vision model needs to critique layout)."""
+    from playwright.async_api import async_playwright
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch()
+            page = await browser.new_page(viewport={"width": 1280, "height": 900})
+            await page.goto(url, timeout=timeout_ms, wait_until="load")
+            await page.screenshot(path=str(out_path), full_page=False)
+            await browser.close()
+        return True
+    except Exception as exc:
+        logging.getLogger(__name__).warning("Screenshot failed for %s: %s", url, exc)
         return False
-    for existing in existing_lower:
-        ex_words = set(re.findall(r"\w+", existing))
-        if not ex_words:
-            continue
-        overlap = len(cand_words & ex_words) / len(cand_words | ex_words)
-        if overlap > 0.55:
-            return False
-    return True
 
 
-def append_source_processed(url: str, date: str, note: str = "") -> None:
-    """Insert a new row into the Sources-processed TABLE — not the end of the
-    whole file, which (bug, fixed after the first real run) landed rows after
-    the entire Patterns section instead of inside their own table."""
-    text = read_lessons()
-    row = f"| {date} | {url} | {note} |"
-    if "| Date | URL | Notes |" not in text:
-        # First source row for a fresh file — add the table header too.
-        text = text.replace(
-            "## Sources processed\n",
-            "## Sources processed\n| Date | URL | Notes |\n|---|---|---|\n",
-        )
-    if _PATTERNS_HEADING in text:
-        idx = text.index(_PATTERNS_HEADING)
-        text = text[:idx].rstrip("\n") + "\n" + row + "\n\n" + text[idx:]
-    else:
-        text = text.rstrip("\n") + "\n" + row + "\n"
-    LESSONS_FILE.write_text(text, encoding="utf-8")
+async def screenshot_local_html(html_path: Path, out_path: Path) -> bool:
+    """Screenshot our OWN generated (self-contained) HTML file, loaded
+    directly as a file:// URL — no local server needed."""
+    from playwright.async_api import async_playwright
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch()
+            page = await browser.new_page(viewport={"width": 1280, "height": 900})
+            await page.goto(html_path.resolve().as_uri(), timeout=10000, wait_until="load")
+            await page.screenshot(path=str(out_path), full_page=False)
+            await browser.close()
+        return True
+    except Exception as exc:
+        logging.getLogger(__name__).warning("Screenshot failed for %s: %s", html_path, exc)
+        return False
 
 
-def append_new_lessons(category: str, lessons: list[str], source_domain: str) -> list[str]:
-    """Appends only genuinely-new lessons under `category` (creating the
-    section if needed, right before ## Patterns' next top-level heading or
-    at the end). Returns the ones actually added."""
-    text = read_lessons()
-    existing_lower = existing_lesson_lines(text)
-    added: list[str] = []
-    for lesson in lessons:
-        lesson = lesson.strip("-* ").strip()
-        if not lesson:
-            continue
-        if is_new_lesson(lesson, existing_lower):
-            added.append(lesson)
-            existing_lower.append(lesson.lower())
-    if not added:
-        return []
+def image_to_data_url(path: Path) -> str:
+    data = base64.b64encode(path.read_bytes()).decode()
+    return f"data:image/png;base64,{data}"
 
-    heading = f"### {category}"
-    if heading in text:
-        idx = text.index(heading) + len(heading)
-        # Insert right after the heading line.
-        nl = text.index("\n", idx) + 1
-        block = "".join(f"- {ls} _(source: {source_domain})_\n" for ls in added)
-        text = text[:nl] + block + text[nl:]
-    else:
-        block = f"\n{heading}\n" + "".join(f"- {ls} _(source: {source_domain})_\n" for ls in added)
-        if not text.endswith("\n"):
-            text += "\n"
-        text += block
-    LESSONS_FILE.write_text(text, encoding="utf-8")
-    return added
+
+# ── Visual critique (Claude vision — the ONE deliberate, scoped exception
+# to local-only compute in this pipeline; extraction + HTML-building stay
+# on free qwen3). One call per session, not per lesson. ───────────────────
+_CRITIQUE_SYSTEM = """You are a meticulous UI/layout reviewer comparing two screenshots:
+IMAGE 1 is a reference e-commerce product page (for structural inspiration only).
+IMAGE 2 is a newly-built training page for a DIFFERENT real product, which was
+supposed to apply certain STRUCTURAL patterns (placement/hierarchy only) taken
+from IMAGE 1 — never its text, images, or exact styling.
+
+Critique IMAGE 2 on its own merits as a product page, and specifically comment
+on whether the intended structural patterns are visibly present and used
+sensibly (not whether the content matches IMAGE 1 — it's a different product
+and content SHOULD differ). Flag anything structurally broken: overlapping
+elements, unreadable contrast, a CTA that's missing entirely, obviously broken
+layout, or a pattern applied in a way that doesn't make sense for this product.
+
+End your response with EXACTLY one line, verbatim:
+VERDICT: CLEAN
+or
+VERDICT: NEEDS REVIEW"""
+
+
+async def vision_critique(reference_screenshot: Path, generated_screenshot: Path,
+                           product_title: str, lessons_applied: list[str]) -> dict:
+    """The one Claude-vision call per session (executive/worker-smart tier —
+    Sonnet). Returns {"critique": str, "verdict": "CLEAN"|"NEEDS_REVIEW"}."""
+    llm = get_llm("executive", temperature=0.2, max_tokens=1000, timeout=120)
+    lessons_block = "\n".join(f"- {ls}" for ls in lessons_applied) or "(none extracted this session)"
+    user_text = (
+        f"Product on the generated page: {product_title}\n\n"
+        f"Structural patterns it was supposed to apply:\n{lessons_block}"
+    )
+    content = [
+        {"type": "text", "text": user_text},
+        {"type": "image_url", "image_url": {"url": image_to_data_url(reference_screenshot)}},
+        {"type": "image_url", "image_url": {"url": image_to_data_url(generated_screenshot)}},
+    ]
+    resp = await llm.ainvoke([
+        SystemMessage(content=_CRITIQUE_SYSTEM),
+        HumanMessage(content=content),
+    ])
+    text = str(resp.content).strip()
+    verdict = "NEEDS_REVIEW"
+    m = re.search(r"VERDICT:\s*(CLEAN|NEEDS REVIEW)", text, re.IGNORECASE)
+    if m and m.group(1).upper() == "CLEAN":
+        verdict = "CLEAN"
+    return {"critique": text, "verdict": verdict}
+
+
+# ── Session folders + CHANGELOG ────────────────────────────────────────────
+def session_dir(date_str: str) -> Path:
+    d = SESSIONS_DIR / date_str
+    (d / "output").mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def write_session_md(date_str: str, entries: list[dict]) -> Path:
+    """`entries`: one dict per reference URL processed this session —
+    {url, domain, product_title, categorized_lessons, promoted, held,
+    critique, verdict}. Overwrites the day's SESSION.md wholesale (a session
+    is everything processed under one date, written once per URL-processing
+    loop iteration via append semantics at the call site — see run_session.py)."""
+    d = session_dir(date_str)
+    path = d / "SESSION.md"
+    lines = [f"# Training Session — {date_str}", ""]
+    for e in entries:
+        lines.append(f"## {e['domain']} → {e['product_title']}")
+        lines.append(f"**Reference URL**: {e['url']}")
+        lines.append("")
+        lines.append("### Patterns found this session")
+        for category, lessons in e["categorized_lessons"].items():
+            if not lessons:
+                continue
+            lines.append(f"**{category}**")
+            for lesson in lessons:
+                lines.append(f"- {lesson}")
+            lines.append("")
+        lines.append("### Visual critique")
+        lines.append(e["critique"])
+        lines.append("")
+        lines.append(f"**Verdict**: {e['verdict']}")
+        lines.append("")
+        if e["promoted"]:
+            lines.append(f"✅ Promoted {len(e['promoted'])} lesson(s) to the store_building_patterns RAG.")
+        if e["held"]:
+            lines.append(f"⏸️ Held {len(e['held'])} lesson(s) pending review (visual critique flagged this session).")
+        lines.append("")
+        lines.append("---")
+        lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
+
+
+def append_changelog(date_str: str, summary: str) -> None:
+    header = "# Training Sessions Changelog\n\nAppend-only — one entry per session date. This is the human-readable audit trail; the real retrieval mechanism is the store_building_patterns RAG.\n\n"
+    if not CHANGELOG_FILE.exists():
+        CHANGELOG_FILE.write_text(header, encoding="utf-8")
+    line = f"- [{date_str}](sessions/{date_str}/SESSION.md) — {summary}\n"
+    with CHANGELOG_FILE.open("a", encoding="utf-8") as f:
+        f.write(line)

@@ -966,15 +966,22 @@ async def _run_training_session() -> None:
 
 async def _post_training_summary(summary: dict) -> None:
     """Routine training work, not an escalation — lands in Sol's own topic
-    (default post_as destination), never the main channel."""
+    (default post_as destination), never the main channel. A clean day
+    auto-promotes with no separate ping; this one daily heads-up just notes
+    that plainly. Only when the visual critique flagged something does the
+    note actually ask for a look before promotion — no second message."""
     from src.org.agent_loop import AGENT_NAME, AGENT_ROLE
     lines = [
         "📚 Daily training session",
         f"Reference sites processed: {summary.get('sites_processed', 0)}",
-        f"New lessons added: {summary.get('new_lessons', 0)}",
+        f"Lessons promoted to the RAG: {summary.get('lessons_promoted', 0)}",
         f"Product HTML files generated/refined: {summary.get('htmls_generated_or_refined', 0)}",
         f"Elapsed: {summary.get('elapsed_minutes', '?')} min",
     ]
+    held = summary.get("lessons_held", 0)
+    if summary.get("needs_review") and held:
+        lines.append(f"⏸️ {held} lesson(s) held pending review — visual critique flagged this "
+                      f"session (see {summary.get('session_path', 'agents-training/sessions/')}).")
     for note in summary.get("notes", []):
         lines.append(f"Note: {note}")
     await post_as(AGENT_NAME, AGENT_ROLE, "\n".join(lines))
