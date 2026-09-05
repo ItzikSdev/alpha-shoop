@@ -16,6 +16,9 @@ interface RagEntry {
   price?: string;
   handle?: string;
   store_id?: string;
+  session_date?: string;
+  source_domain?: string;
+  session_path?: string;
 }
 interface RagResp { corpus: string; count: number; entries: RagEntry[] }
 
@@ -31,6 +34,7 @@ const CORPORA: { id: string; label: string; icon: string }[] = [
   { id: 'cj_catalog', label: 'CJ Catalog', icon: '📦' },
   { id: 'playbook', label: 'Playbook', icon: '📖' },
   { id: 'store_products', label: 'Store Products', icon: '🛍️' },
+  { id: 'store_building_patterns', label: 'Training Patterns', icon: '🎓' },
 ];
 
 const VIEWS: { id: 'rag' | 'sqlite' | 'redis'; label: string; icon: string }[] = [
