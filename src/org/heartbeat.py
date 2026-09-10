@@ -943,114 +943,6 @@ async def _stock_watch_tick(company: Company) -> None:
                 len(report.get("out_of_stock") or []), report.get("removed"))
 
 
-_training_session_task: asyncio.Task | None = None  # tracks the in-flight background daily session
-
-
-async def _training_tick(company: Company) -> None:
-    """Once-daily landing-page training session (agents-training/) — Sol
-    practices applying structural design patterns pulled from reference
-    Shopify stores to real catalog products, entirely on the free local
-    qwen3:14b model (never the paid Anthropic tiers). Capped at 4 hours.
-
-    This tick only checks the once-per-day gate and LAUNCHES the work as a
-    background subprocess — it must never await the session directly. A
-    4-hour blocking call here would freeze every other tick (sourcing,
-    tickets, stock watch, every agent's proactive turn) for that whole
-    duration, since agent_heartbeat() runs all ticks in sequence on one
-    shared asyncio task every 60s — the same class of failure as the
-    2026-08-09 org-freeze incident (see docs/DECISIONS_LOG.md)."""
-    global _training_session_task
-    if _training_session_task is not None and not _training_session_task.done():
-        return  # still running from an earlier trigger
-    interval_min = 24 * 60
-    last = company.daemon.get("last_training_run_at")
-    if last:
-        try:
-            since_min = (datetime.now(timezone.utc) - datetime.fromisoformat(last)).total_seconds() / 60
-            if since_min < interval_min:
-                return
-        except Exception:
-            pass
-    mem_ok, mem_detail = _system_memory_ok()
-    if not mem_ok:
-        logger.info("Training tick skipped: %s", mem_detail)
-        return
-    company.daemon["last_training_run_at"] = datetime.now(timezone.utc).isoformat()
-    save_company(company)
-    _training_session_task = asyncio.create_task(_run_training_session())
-
-
-async def _run_training_session() -> None:
-    """Runs agents-training/run_session.py --daily as a separate process (real
-    isolation — a crash in the training script can't take down the org
-    process) and posts a summary once it exits or is killed for overrunning
-    its own cap."""
-    root = Path(__file__).resolve().parents[2]
-    script = root / "agents-training" / "run_session.py"
-    python = root / ".venv" / "bin" / "python3"
-    summary_file = root / "agents-training" / "last_run_summary.json"
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            str(python), str(script), "--daily", "--max-minutes", "240",
-            cwd=str(root),
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT,
-        )
-        try:
-            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=240 * 60 + 300)
-        except asyncio.TimeoutError:
-            proc.kill()
-            await proc.communicate()
-            logger.warning("Training session exceeded its own 4h cap + grace period — killed")
-            await _post_training_summary({
-                "sites_processed": 0, "new_lessons": 0, "htmls_generated_or_refined": 0,
-                "elapsed_minutes": 245,
-                "notes": ["Subprocess had to be killed — exceeded its own time cap."],
-            })
-            return
-        summary = None
-        if summary_file.exists():
-            try:
-                summary = json.loads(summary_file.read_text(encoding="utf-8"))
-            except Exception:
-                pass
-        if summary is None:
-            tail = (stdout or b"")[-2000:].decode(errors="replace")
-            logger.warning("Training session produced no summary file (exit %s): %s",
-                            proc.returncode, tail)
-            summary = {
-                "sites_processed": 0, "new_lessons": 0, "htmls_generated_or_refined": 0,
-                "elapsed_minutes": 0,
-                "notes": [f"Session failed to produce a summary (exit code {proc.returncode}) — "
-                          "check agents-training/ manually."],
-            }
-        await _post_training_summary(summary)
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("Training session failed to launch: %s", exc)
-
-
-async def _post_training_summary(summary: dict) -> None:
-    """Routine training work, not an escalation — lands in Sol's own topic
-    (default post_as destination), never the main channel. A clean day
-    auto-promotes with no separate ping; this one daily heads-up just notes
-    that plainly. Only when the visual critique flagged something does the
-    note actually ask for a look before promotion — no second message."""
-    from src.org.agent_loop import AGENT_NAME, AGENT_ROLE
-    lines = [
-        "📚 Daily training session",
-        f"Reference sites processed: {summary.get('sites_processed', 0)}",
-        f"Lessons promoted to the RAG: {summary.get('lessons_promoted', 0)}",
-        f"Product HTML files generated/refined: {summary.get('htmls_generated_or_refined', 0)}",
-        f"Elapsed: {summary.get('elapsed_minutes', '?')} min",
-    ]
-    held = summary.get("lessons_held", 0)
-    if summary.get("needs_review") and held:
-        lines.append(f"⏸️ {held} lesson(s) held pending review — visual critique flagged this "
-                      f"session (see {summary.get('session_path', 'agents-training/sessions/')}).")
-    for note in summary.get("notes", []):
-        lines.append(f"Note: {note}")
-    await post_as(AGENT_NAME, AGENT_ROLE, "\n".join(lines))
-
-
 # Substrings that mark a ticket as originating from _sourcing_tick's own work
 # (its task text is always 'Autonomous sourcing cycle: search CJ for "<kw>"...',
 # and the failure tickets filed about it describe the same thing in prose) — NOT
@@ -1493,7 +1385,6 @@ async def agent_heartbeat() -> dict | None:
     await _order_poll_tick(company)
     await _nova_tick(company)
     await _clarity_report_tick(company)
-    await _training_tick(company)
 
     # Respect the global kill-switch (lazy import avoids a route import cycle).
     try:

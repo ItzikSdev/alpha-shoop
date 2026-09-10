@@ -4,6 +4,21 @@ Every change to the store is recorded here. **Newest on top.**
 
 ---
 
+## 2026-09-07 20:13 (Asia/Jerusalem) — Ava: dedupe (from chat)
+**By:** Ava
+**Context:** Owner asked in chat: Sol asked you to do this now: Review the duplicate product entries (PIDs 2609031000531616200, 2609030854571611000, 26083
+**Changed:** Removed 0 duplicate(s) (of 0 found).
+
+## 2026-09-06 18:16 (Asia/Jerusalem) — Ava: dedupe (from chat)
+**By:** Ava
+**Context:** Owner asked in chat: Sol asked you to do this now: PID 2609030854571611000 and 2608310641091626700 are failing due to duplicates. Check if th
+**Changed:** Removed 0 duplicate(s) (of 0 found).
+
+## 2026-09-05 10:17 (Asia/Jerusalem) — Ava: dedupe (from chat)
+**By:** Ava
+**Context:** Owner asked in chat: Sol asked you to do this now: Check if PID 2609031000531616200 and 2608291321281630700 are already present in Shopify's 
+**Changed:** Removed 0 duplicate(s) (of 0 found).
+
 ## 2026-08-28 06:21 (Asia/Jerusalem) — Ava: dedupe (from chat)
 **By:** Ava
 **Context:** Owner asked in chat: Sol asked you to do this now: Investigate why multiple CJ product PIDs are mapping to the same Shopify product 'Cozy Bab
