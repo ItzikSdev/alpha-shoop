@@ -42,6 +42,18 @@ export default async function handleRequest(
       'https://alphaforbaby.com', 'https://kgg8n0-k0.myshopify.com',
       'https://www.clarity.ms', 'https://*.clarity.ms',
     ],
+    // Buyer photos attached to imported third-party reviews are hosted on the
+    // review source's own object storage, not Shopify's CDN, so they fall under
+    // the default-src 'self' fallback and are blocked without this — silently,
+    // as 32 console errors and a row of broken avatars rather than a page
+    // failure. Same override rule as scriptSrc: the defaults must be repeated.
+    imgSrc: [
+      "'self'", 'data:', 'https://cdn.shopify.com', 'https://*.myshopify.com',
+      'https://cc-west-usa.oss-us-west-1.aliyuncs.com',
+      'https://cc-west-usa.oss-accelerate.aliyuncs.com',
+      'https://oss-cf.cjdropshipping.com', 'https://cf.cjdropshipping.com',
+      'https://c.clarity.ms',
+    ],
   });
 
   const body = await renderToReadableStream(

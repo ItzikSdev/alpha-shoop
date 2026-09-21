@@ -21,6 +21,10 @@ export function Header({cart, isLoggedIn}) {
   return (
     <header className="tob-header">
       <div className="tob-wrap tob-hrow">
+        {/* 7.D #15: the hamburger must be the FIRST element of the row so it
+            pins to the true left edge; the copy inside HeaderCtas is hidden on
+            mobile so the cart alone sits right. */}
+        <MobileMenuButton />
         <NavLink prefetch="intent" to="/" end className="tob-hlogo">
           {LOGO_PARTS ? (
             <span>
@@ -72,7 +76,7 @@ function HeaderSearch() {
   }, [open, fetcher]);
 
   return (
-    <div className="tob-hsearch-wrap" ref={wrapRef}>
+    <div className="tob-hsearch-wrap tob-hsearch-desktop-only" ref={wrapRef}>
       <SearchFormPredictive className="tob-hsearch" role="search">
         {({fetchResults, goToSearch, inputRef}) => (
           <>
@@ -207,11 +211,23 @@ function DesktopNav() {
 /**
  * @param {{isLoggedIn: Promise<boolean>, cart: Promise<CartApiQueryFragment|null>}}
  */
+function MobileMenuButton() {
+  const {open} = useAside();
+  return (
+    <button
+      className="tob-hburger reset"
+      aria-label="Open menu"
+      onClick={() => open('mobile')}
+    >
+      <IconMenu />
+    </button>
+  );
+}
+
 function HeaderCtas({isLoggedIn, cart}) {
   const {open} = useAside();
   return (
     <nav className="tob-hcta" role="navigation" aria-label="Header actions">
-      <AccountLink isLoggedIn={isLoggedIn} />
       <CartToggle cart={cart} />
       <button
         className="tob-hmob reset"

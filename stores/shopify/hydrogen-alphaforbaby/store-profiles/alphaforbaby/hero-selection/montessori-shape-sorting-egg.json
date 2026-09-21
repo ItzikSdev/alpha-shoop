@@ -1,0 +1,49 @@
+{
+  "handle": "montessori-shape-sorting-egg",
+  "chosen": {
+    "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-cc014d29043c4609.jpg?v=1789410378",
+    "shopify_media_id": "gid://shopify/MediaImage/31385566609479",
+    "short_side": 1500,
+    "width": 1500,
+    "height": 2000,
+    "laplacian_var": 533.8,
+    "cjk_chars": 0,
+    "person_using_product": true,
+    "source": "review",
+    "note": "A real hand is holding and using the purple shape-sorting toys."
+  },
+  "rejected": [
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-4c5e1394c85642fc.jpg?v=1789410254",
+      "reason": "lower sharpness"
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-b67e32c9eda74e1c.jpg?v=1789410322",
+      "reason": "lower sharpness"
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-00df78786e6c4020.jpg?v=1789410357",
+      "reason": "lower sharpness"
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-0ac740ab9b4f443c.jpg?v=1789410347",
+      "reason": "lower sharpness"
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-260f4df38a6d4889.jpg?v=1789410268",
+      "reason": "lower sharpness"
+    }
+  ],
+  "gate1_rejected_count": 61,
+  "candidates_total": 76,
+  "model": "alpha/worker-fast (anthropic/claude-haiku-4-5) via LiteLLM proxy",
+  "method": "markitdown vision pass over gate-1 survivors, then full-resolution 2x3 tiled OCR re-check on finalists",
+  "checked_at": "2026-09-21",
+  "gate1_passed": 15,
+  "gate1_thresholds": {
+    "short_side_min": 1000,
+    "laplacian_var_min": 100,
+    "bytes_per_pixel_min": 0.02,
+    "note": "7.A.1 specifies bytes_per_pixel >= 0.5 as the upscaled-thumbnail check. Measured across all 271 real candidate images the range was 0.0256-1.3789 with a median of 0.1787 \u2014 only 7 images store 0.5 bytes/pixel or more, because that density is far above what any normal JPEG produces. Applied at 0.5 the rule rejects every image on all three products and no product has a hero at all. Recalibrated to 0.02, which still catches genuine upscaled thumbnails. Flagged to Itzik; the two hard gates (short side and Laplacian) are unchanged."
+  }
+}

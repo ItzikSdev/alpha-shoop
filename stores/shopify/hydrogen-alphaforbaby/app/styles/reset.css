@@ -1,5 +1,10 @@
 body {
+  /* Assistant is the store's webfont (self-hosted, see app.css @font-face).
+     This reset rule is loaded after Tailwind's preflight and was silently
+     overriding it, so the whole page rendered in system-ui even once the
+     Tailwind `sans` token was corrected. */
   font-family:
+    'Assistant',
     system-ui,
     -apple-system,
     BlinkMacSystemFont,

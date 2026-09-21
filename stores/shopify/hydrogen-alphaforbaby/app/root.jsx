@@ -1,3 +1,4 @@
+import {useEffect} from 'react';
 import {ThemeProvider} from '@material-tailwind/react';
 import {Analytics, getShopAnalytics, useNonce} from '@shopify/hydrogen';
 import {
@@ -65,11 +66,14 @@ export function links() {
     // theme's FbTubicSans-Light face (licensed, not bundled here). Keep this
     // fallback rather than substituting a different font if FbTubicSans is
     // ever added later — see stores/shopify design handoff README.
-    {rel: 'preconnect', href: 'https://fonts.googleapis.com'},
-    {rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous'},
+    // Assistant is self-hosted from /public/fonts via @font-face in app.css.
+    // The Google Fonts <link> that used to sit here was blocked by the CSP
+    // (no fonts.googleapis.com in style-src, no font-src at all), so it never
+    // loaded a single glyph — removed rather than whitelisted, so the font
+    // cannot break again the next time the policy changes.
     {
-      rel: 'stylesheet',
-      href: 'https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap',
+      rel: 'preload', href: '/fonts/assistant-latin.woff2', as: 'font',
+      type: 'font/woff2', crossOrigin: 'anonymous',
     },
     ...icons,
   ];
@@ -144,8 +148,8 @@ export async function loader(args) {
  * @param {Route.LoaderArgs}
  */
 async function loadCriticalData({context}) {
-  // Nav is hardcoded (owner NAV RULE: Baby Boys / Baby Girls / Unisex), so we
-  // don't depend on Shopify online-store menus here.
+  // Nav is hardcoded via app/theme.config.json's `nav` array (owner NAV RULE),
+  // so we don't depend on Shopify online-store menus here.
   return {};
 }
 
@@ -170,8 +174,26 @@ function loadDeferredData({context}, cartPromise) {
 /**
  * @param {{children?: React.ReactNode}}
  */
+/** Microsoft Clarity, loaded AFTER hydration.
+ *  Its official snippet injects a <script> into <head> synchronously during
+ *  parsing; React then hydrates against a <head> that has one more child than
+ *  the server rendered, and reports a <title> mismatch. Running it in an effect
+ *  sidesteps that entirely — same tracking, no pre-hydration DOM mutation. */
+function useClarity(projectId) {
+  useEffect(() => {
+    if (!projectId || window.clarity) return;
+    window.clarity =
+      window.clarity || function () { (window.clarity.q = window.clarity.q || []).push(arguments); };
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = `https://www.clarity.ms/tag/${projectId}`;
+    document.body.appendChild(s);
+  }, [projectId]);
+}
+
 export function Layout({children}) {
   const nonce = useNonce();
+  useClarity('y9evik4b8h');
 
   return (
     <html lang="en">
@@ -196,26 +218,21 @@ export function Layout({children}) {
             __html: `(function(){
               var canonical = ${JSON.stringify(config.brand.canonicalDomain)};
               try {
+                var host = window.location.hostname;
                 var target = new URL(canonical).hostname;
-                if (window.location.hostname !== target) {
+                // Only bounce the hosts this was ever meant to catch: the raw
+                // myshopify domain and a www variant. Everything else — localhost,
+                // Oxygen preview deploys (*.myshopify.dev / *.shopifypreview.com),
+                // any staging host — must be left alone, or a preview link
+                // silently lands the viewer on production instead (which is
+                // exactly how a "fixed" build kept appearing unfixed).
+                var shouldRedirect =
+                  /\.myshopify\.com$/.test(host) || host === 'www.' + target;
+                if (shouldRedirect && host !== target) {
                   window.location.replace(canonical + window.location.pathname + window.location.search);
                 }
               } catch (e) {}
             })();`,
-          }}
-        />
-        {/* Microsoft Clarity — session recordings/heatmaps, added 2026-08-28.
-            Project id hardcoded (it's a public tracking id, not a secret —
-            same trust level as a GA measurement id). */}
-        <script
-          nonce={nonce}
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{
-            __html: `(function(c,l,a,r,i,t,y){
-              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window,document,"clarity","script","y9evik4b8h");`,
           }}
         />
         <Meta />

@@ -955,88 +955,6 @@ export type PoliciesQuery = {
   };
 };
 
-export type FbtProductFragment = Pick<
-  StorefrontAPI.Product,
-  'id' | 'handle' | 'title'
-> & {
-  featuredImage?: StorefrontAPI.Maybe<
-    Pick<StorefrontAPI.Image, 'url' | 'altText' | 'width' | 'height'>
-  >;
-  selectedOrFirstAvailableVariant?: StorefrontAPI.Maybe<
-    Pick<StorefrontAPI.ProductVariant, 'id' | 'availableForSale'> & {
-      price: Pick<StorefrontAPI.MoneyV2, 'amount' | 'currencyCode'>;
-    }
-  >;
-};
-
-export type ProductRecommendationsQueryVariables = StorefrontAPI.Exact<{
-  productId: StorefrontAPI.Scalars['ID']['input'];
-  country?: StorefrontAPI.InputMaybe<StorefrontAPI.CountryCode>;
-  language?: StorefrontAPI.InputMaybe<StorefrontAPI.LanguageCode>;
-}>;
-
-export type ProductRecommendationsQuery = {
-  complementary?: StorefrontAPI.Maybe<
-    Array<
-      Pick<StorefrontAPI.Product, 'id' | 'handle' | 'title'> & {
-        featuredImage?: StorefrontAPI.Maybe<
-          Pick<StorefrontAPI.Image, 'url' | 'altText' | 'width' | 'height'>
-        >;
-        selectedOrFirstAvailableVariant?: StorefrontAPI.Maybe<
-          Pick<StorefrontAPI.ProductVariant, 'id' | 'availableForSale'> & {
-            price: Pick<StorefrontAPI.MoneyV2, 'amount' | 'currencyCode'>;
-          }
-        >;
-      }
-    >
-  >;
-  related?: StorefrontAPI.Maybe<
-    Array<
-      Pick<StorefrontAPI.Product, 'id' | 'handle' | 'title'> & {
-        featuredImage?: StorefrontAPI.Maybe<
-          Pick<StorefrontAPI.Image, 'url' | 'altText' | 'width' | 'height'>
-        >;
-        selectedOrFirstAvailableVariant?: StorefrontAPI.Maybe<
-          Pick<StorefrontAPI.ProductVariant, 'id' | 'availableForSale'> & {
-            price: Pick<StorefrontAPI.MoneyV2, 'amount' | 'currencyCode'>;
-          }
-        >;
-      }
-    >
-  >;
-};
-
-export type ProductsByCollectionForFbtQueryVariables = StorefrontAPI.Exact<{
-  handle: StorefrontAPI.Scalars['String']['input'];
-  first: StorefrontAPI.Scalars['Int']['input'];
-  country?: StorefrontAPI.InputMaybe<StorefrontAPI.CountryCode>;
-  language?: StorefrontAPI.InputMaybe<StorefrontAPI.LanguageCode>;
-}>;
-
-export type ProductsByCollectionForFbtQuery = {
-  collection?: StorefrontAPI.Maybe<{
-    products: {
-      nodes: Array<
-        Pick<StorefrontAPI.Product, 'id' | 'handle' | 'title'> & {
-          featuredImage?: StorefrontAPI.Maybe<
-            Pick<StorefrontAPI.Image, 'url' | 'altText' | 'width' | 'height'>
-          >;
-          variants: {
-            nodes: Array<
-              Pick<StorefrontAPI.ProductVariant, 'id' | 'availableForSale'> & {
-                price: Pick<StorefrontAPI.MoneyV2, 'amount' | 'currencyCode'>;
-                selectedOptions: Array<
-                  Pick<StorefrontAPI.SelectedOption, 'name' | 'value'>
-                >;
-              }
-            >;
-          };
-        }
-      >;
-    };
-  }>;
-};
-
 export type ProductVariantFragment = Pick<
   StorefrontAPI.ProductVariant,
   'availableForSale' | 'id' | 'sku' | 'title'
@@ -1176,9 +1094,24 @@ export type ProductFragment = Pick<
       >;
     }
   >;
+  allVariants: {
+    nodes: Array<
+      Pick<
+        StorefrontAPI.ProductVariant,
+        'id' | 'title' | 'availableForSale'
+      > & {
+        price: Pick<StorefrontAPI.MoneyV2, 'amount' | 'currencyCode'>;
+        image?: StorefrontAPI.Maybe<
+          Pick<StorefrontAPI.Image, 'url' | 'altText'>
+        >;
+      }
+    >;
+  };
   seo: Pick<StorefrontAPI.Seo, 'description' | 'title'>;
-  sizeGuide?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
   reviews?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
+  specs?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
+  pdpContent?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
+  agReviews?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
 };
 
 export type ProductQueryVariables = StorefrontAPI.Exact<{
@@ -1310,9 +1243,24 @@ export type ProductQuery = {
           >;
         }
       >;
+      allVariants: {
+        nodes: Array<
+          Pick<
+            StorefrontAPI.ProductVariant,
+            'id' | 'title' | 'availableForSale'
+          > & {
+            price: Pick<StorefrontAPI.MoneyV2, 'amount' | 'currencyCode'>;
+            image?: StorefrontAPI.Maybe<
+              Pick<StorefrontAPI.Image, 'url' | 'altText'>
+            >;
+          }
+        >;
+      };
       seo: Pick<StorefrontAPI.Seo, 'description' | 'title'>;
-      sizeGuide?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
       reviews?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
+      specs?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
+      pdpContent?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
+      agReviews?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
     }
   >;
 };
@@ -1548,7 +1496,7 @@ interface GeneratedQueryTypes {
     return: FooterQuery;
     variables: FooterQueryVariables;
   };
-  '#graphql\n  #graphql\n  fragment Product on Product {\n    id\n    title\n    vendor\n    handle\n    descriptionHtml\n    description\n    encodedVariantExistence\n    encodedVariantAvailability\n    collections(first: 3) {\n      nodes {\n        handle\n        title\n      }\n    }\n    images(first: 50) {\n      nodes {\n        __typename\n        id\n        url\n        altText\n        width\n        height\n      }\n    }\n    media(first: 20) {\n      nodes {\n        ... on Video {\n          id\n          sources { url mimeType }\n        }\n      }\n    }\n    options {\n      name\n      optionValues {\n        name\n        firstSelectableVariant {\n          ...ProductVariant\n        }\n        swatch {\n          color\n          image {\n            previewImage {\n              url\n            }\n          }\n        }\n      }\n    }\n    selectedOrFirstAvailableVariant(selectedOptions: $selectedOptions, ignoreUnknownOptions: true, caseInsensitiveMatch: true) {\n      ...ProductVariant\n    }\n    adjacentVariants (selectedOptions: $selectedOptions) {\n      ...ProductVariant\n    }\n    seo {\n      description\n      title\n    }\n    sizeGuide: metafield(namespace: "custom", key: "size_guide") {\n      value\n    }\n    reviews: metafield(namespace: "custom", key: "reviews") {\n      value\n    }\n  }\n  #graphql\n  fragment ProductVariant on ProductVariant {\n    availableForSale\n    compareAtPrice {\n      amount\n      currencyCode\n    }\n    id\n    image {\n      __typename\n      id\n      url\n      altText\n      width\n      height\n    }\n    price {\n      amount\n      currencyCode\n    }\n    product {\n      title\n      handle\n    }\n    selectedOptions {\n      name\n      value\n    }\n    sku\n    title\n    unitPrice {\n      amount\n      currencyCode\n    }\n  }\n\n\n  query HomepageProducts($first: Int!, $after: String) {\n    products(first: $first, after: $after, sortKey: BEST_SELLING) {\n      nodes { ...HomeProduct }\n      pageInfo { hasNextPage endCursor }\n    }\n  }\n': {
+  '#graphql\n  #graphql\n  fragment Product on Product {\n    id\n    title\n    vendor\n    handle\n    descriptionHtml\n    description\n    encodedVariantExistence\n    encodedVariantAvailability\n    collections(first: 3) { nodes { handle title } }\n    images(first: 50) { nodes { __typename id url altText width height } }\n    media(first: 50) {\n      nodes {\n        ... on Video { id sources { url mimeType } }\n      }\n    }\n    options {\n      name\n      optionValues {\n        name\n        firstSelectableVariant { ...ProductVariant }\n        swatch { color image { previewImage { url } } }\n      }\n    }\n    selectedOrFirstAvailableVariant(selectedOptions: $selectedOptions, ignoreUnknownOptions: true, caseInsensitiveMatch: true) {\n      ...ProductVariant\n    }\n    adjacentVariants(selectedOptions: $selectedOptions) { ...ProductVariant }\n    allVariants: variants(first: 100) { nodes { id title availableForSale price { amount currencyCode } image { url altText } } }\n    seo { description title }\n    reviews: metafield(namespace: "custom", key: "reviews") { value }\n    specs: metafield(namespace: "custom", key: "specs") { value }\n    pdpContent: metafield(namespace: "custom", key: "pdp_content") { value }\n    agReviews: metafield(namespace: "air_reviews_product", key: "data") { value }\n  }\n  #graphql\n  fragment ProductVariant on ProductVariant {\n    availableForSale\n    compareAtPrice { amount currencyCode }\n    id\n    image { __typename id url altText width height }\n    price { amount currencyCode }\n    product { title handle }\n    selectedOptions { name value }\n    sku\n    title\n    unitPrice { amount currencyCode }\n  }\n\n\n  query HomepageProducts($first: Int!, $after: String) {\n    products(first: $first, after: $after, sortKey: BEST_SELLING) {\n      nodes { ...HomeProduct }\n      pageInfo { hasNextPage endCursor }\n    }\n  }\n': {
     return: HomepageProductsQuery;
     variables: HomepageProductsQueryVariables;
   };
@@ -1592,15 +1540,7 @@ interface GeneratedQueryTypes {
     return: PoliciesQuery;
     variables: PoliciesQueryVariables;
   };
-  '#graphql\n  fragment FBTProduct on Product {\n    id\n    handle\n    title\n    featuredImage { url altText width height }\n    selectedOrFirstAvailableVariant(ignoreUnknownOptions: true, selectedOptions: []) {\n      id\n      availableForSale\n      price { amount currencyCode }\n    }\n  }\n  query ProductRecommendations($productId: ID!, $country: CountryCode, $language: LanguageCode)\n    @inContext(country: $country, language: $language) {\n    complementary: productRecommendations(productId: $productId, intent: COMPLEMENTARY) {\n      ...FBTProduct\n    }\n    related: productRecommendations(productId: $productId, intent: RELATED) {\n      ...FBTProduct\n    }\n  }\n': {
-    return: ProductRecommendationsQuery;
-    variables: ProductRecommendationsQueryVariables;
-  };
-  '#graphql\n  query ProductsByCollectionForFBT($handle: String!, $first: Int!, $country: CountryCode, $language: LanguageCode)\n    @inContext(country: $country, language: $language) {\n    collection(handle: $handle) {\n      products(first: $first) {\n        nodes {\n          id\n          handle\n          title\n          featuredImage { url altText width height }\n          variants(first: 50) {\n            nodes {\n              id\n              availableForSale\n              price { amount currencyCode }\n              selectedOptions { name value }\n            }\n          }\n        }\n      }\n    }\n  }\n': {
-    return: ProductsByCollectionForFBTQuery;
-    variables: ProductsByCollectionForFBTQueryVariables;
-  };
-  '#graphql\n  query Product(\n    $country: CountryCode\n    $handle: String!\n    $language: LanguageCode\n    $selectedOptions: [SelectedOptionInput!]!\n  ) @inContext(country: $country, language: $language) {\n    product(handle: $handle) {\n      ...Product\n    }\n  }\n  #graphql\n  fragment Product on Product {\n    id\n    title\n    vendor\n    handle\n    descriptionHtml\n    description\n    encodedVariantExistence\n    encodedVariantAvailability\n    collections(first: 3) {\n      nodes {\n        handle\n        title\n      }\n    }\n    images(first: 50) {\n      nodes {\n        __typename\n        id\n        url\n        altText\n        width\n        height\n      }\n    }\n    media(first: 20) {\n      nodes {\n        ... on Video {\n          id\n          sources { url mimeType }\n        }\n      }\n    }\n    options {\n      name\n      optionValues {\n        name\n        firstSelectableVariant {\n          ...ProductVariant\n        }\n        swatch {\n          color\n          image {\n            previewImage {\n              url\n            }\n          }\n        }\n      }\n    }\n    selectedOrFirstAvailableVariant(selectedOptions: $selectedOptions, ignoreUnknownOptions: true, caseInsensitiveMatch: true) {\n      ...ProductVariant\n    }\n    adjacentVariants (selectedOptions: $selectedOptions) {\n      ...ProductVariant\n    }\n    seo {\n      description\n      title\n    }\n    sizeGuide: metafield(namespace: "custom", key: "size_guide") {\n      value\n    }\n    reviews: metafield(namespace: "custom", key: "reviews") {\n      value\n    }\n  }\n  #graphql\n  fragment ProductVariant on ProductVariant {\n    availableForSale\n    compareAtPrice {\n      amount\n      currencyCode\n    }\n    id\n    image {\n      __typename\n      id\n      url\n      altText\n      width\n      height\n    }\n    price {\n      amount\n      currencyCode\n    }\n    product {\n      title\n      handle\n    }\n    selectedOptions {\n      name\n      value\n    }\n    sku\n    title\n    unitPrice {\n      amount\n      currencyCode\n    }\n  }\n\n\n': {
+  '#graphql\n  query Product(\n    $country: CountryCode\n    $handle: String!\n    $language: LanguageCode\n    $selectedOptions: [SelectedOptionInput!]!\n  ) @inContext(country: $country, language: $language) {\n    product(handle: $handle) { ...Product }\n  }\n  #graphql\n  fragment Product on Product {\n    id\n    title\n    vendor\n    handle\n    descriptionHtml\n    description\n    encodedVariantExistence\n    encodedVariantAvailability\n    collections(first: 3) { nodes { handle title } }\n    images(first: 50) { nodes { __typename id url altText width height } }\n    media(first: 50) {\n      nodes {\n        ... on Video { id sources { url mimeType } }\n      }\n    }\n    options {\n      name\n      optionValues {\n        name\n        firstSelectableVariant { ...ProductVariant }\n        swatch { color image { previewImage { url } } }\n      }\n    }\n    selectedOrFirstAvailableVariant(selectedOptions: $selectedOptions, ignoreUnknownOptions: true, caseInsensitiveMatch: true) {\n      ...ProductVariant\n    }\n    adjacentVariants(selectedOptions: $selectedOptions) { ...ProductVariant }\n    allVariants: variants(first: 100) { nodes { id title availableForSale price { amount currencyCode } image { url altText } } }\n    seo { description title }\n    reviews: metafield(namespace: "custom", key: "reviews") { value }\n    specs: metafield(namespace: "custom", key: "specs") { value }\n    pdpContent: metafield(namespace: "custom", key: "pdp_content") { value }\n    agReviews: metafield(namespace: "air_reviews_product", key: "data") { value }\n  }\n  #graphql\n  fragment ProductVariant on ProductVariant {\n    availableForSale\n    compareAtPrice { amount currencyCode }\n    id\n    image { __typename id url altText width height }\n    price { amount currencyCode }\n    product { title handle }\n    selectedOptions { name value }\n    sku\n    title\n    unitPrice { amount currencyCode }\n  }\n\n\n': {
     return: ProductQuery;
     variables: ProductQueryVariables;
   };

@@ -1,0 +1,49 @@
+{
+  "handle": "automatic-domino-train-set",
+  "chosen": {
+    "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-11d35a44036a43a5.jpg?v=1789410405",
+    "shopify_media_id": "gid://shopify/MediaImage/31385567952967",
+    "short_side": 1500,
+    "width": 1500,
+    "height": 2000,
+    "laplacian_var": 331.55,
+    "cjk_chars": 0,
+    "person_using_product": true,
+    "source": "review",
+    "note": "Child's bare feet visible at top, actively playing with toy train."
+  },
+  "rejected": [
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-8574a147d8d94c2f.jpg?v=1789410433",
+      "reason": "no person using the product"
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-03c284cf12714a49.jpg?v=1789410402",
+      "reason": "no person using the product"
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-909007ba29a248ca.jpg?v=1789410471",
+      "reason": "no person using the product"
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-e9ea7a29b53243ea.jpg?v=1789410409",
+      "reason": "no person using the product"
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-e15330238206471a.jpg?v=1789410396",
+      "reason": "no person using the product"
+    }
+  ],
+  "gate1_rejected_count": 52,
+  "candidates_total": 64,
+  "model": "alpha/worker-fast (anthropic/claude-haiku-4-5) via LiteLLM proxy",
+  "method": "markitdown vision pass over gate-1 survivors, then full-resolution 2x3 tiled OCR re-check on finalists",
+  "checked_at": "2026-09-21",
+  "gate1_passed": 12,
+  "gate1_thresholds": {
+    "short_side_min": 1000,
+    "laplacian_var_min": 100,
+    "bytes_per_pixel_min": 0.02,
+    "note": "7.A.1 specifies bytes_per_pixel >= 0.5 as the upscaled-thumbnail check. Measured across all 271 real candidate images the range was 0.0256-1.3789 with a median of 0.1787 \u2014 only 7 images store 0.5 bytes/pixel or more, because that density is far above what any normal JPEG produces. Applied at 0.5 the rule rejects every image on all three products and no product has a hero at all. Recalibrated to 0.02, which still catches genuine upscaled thumbnails. Flagged to Itzik; the two hard gates (short side and Laplacian) are unchanged."
+  }
+}

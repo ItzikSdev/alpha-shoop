@@ -4,9 +4,10 @@
     "name": "ALPHA FOR BABY",
     "logoText": "ALPHA FOR BABY",
     "logoImage": "/favicon.svg",
-    "tagline": "Thoughtfully designed baby essentials in premium organic cotton. Made for the moments that matter.",
+    "tagline": "Thoughtfully chosen gear, toys, and nursery essentials for baby's first years.",
     "supportEmail": "support@alphaforbaby.com",
-    "copyright": "© 2026 ALPHA FOR BABY · Free shipping on all orders · 30-day returns"
+    "copyright": "© 2026 ALPHA FOR BABY · Free shipping on all orders · 30-day returns",
+    "canonicalDomain": "https://alphaforbaby.com"
   },
   "favicons": {
     "svg": "/favicon.svg",
@@ -135,41 +136,74 @@
   "announcement": [
     "FREE SHIPPING ON ALL ORDERS",
     "30-DAY RETURNS",
-    "ORGANIC COTTON",
     "DESIGNED FOR LITTLE ONES",
-    "WE ACCEPT VISA · MASTERCARD · AMEX · JCB · DISCOVER · DINERS · PAYPAL · APPLE PAY · GOOGLE PAY",
     "SECURE CHECKOUT"
   ],
   "paymentIcons": [
-    {"src": "/images/pay-visa.svg", "alt": "Visa"},
-    {"src": "/images/pay-mastercard.svg", "alt": "Mastercard"},
-    {"src": "/images/pay-amex.svg", "alt": "American Express"},
-    {"src": "/images/pay-jcb.svg", "alt": "JCB"},
-    {"src": "/images/pay-discover.svg", "alt": "Discover"},
-    {"src": "/images/pay-diners.svg", "alt": "Diners Club"},
-    {"src": "/images/pay-paypal.svg", "alt": "PayPal"},
-    {"src": "/images/pay-apple-pay.svg", "alt": "Apple Pay"},
-    {"src": "/images/pay-google-pay.svg", "alt": "Google Pay"}
+    {
+      "src": "/images/pay-visa.svg",
+      "alt": "Visa"
+    },
+    {
+      "src": "/images/pay-mastercard.svg",
+      "alt": "Mastercard"
+    },
+    {
+      "src": "/images/pay-amex.svg",
+      "alt": "American Express"
+    },
+    {
+      "src": "/images/pay-jcb.svg",
+      "alt": "JCB"
+    },
+    {
+      "src": "/images/pay-discover.svg",
+      "alt": "Discover"
+    },
+    {
+      "src": "/images/pay-diners.svg",
+      "alt": "Diners Club"
+    },
+    {
+      "src": "/images/pay-paypal.svg",
+      "alt": "PayPal"
+    },
+    {
+      "src": "/images/pay-apple-pay.svg",
+      "alt": "Apple Pay"
+    },
+    {
+      "src": "/images/pay-google-pay.svg",
+      "alt": "Google Pay"
+    }
   ],
   "nav": [
     {
-      "label": "Baby Boys",
-      "url": "/collections/baby-boys"
+      "label": "Toys",
+      "url": "/collections/toys"
     },
     {
-      "label": "Baby Girls",
-      "url": "/collections/baby-girls"
+      "label": "Carriers",
+      "url": "/collections/carriers"
     },
     {
-      "label": "Unisex",
-      "url": "/collections/unisex"
+      "label": "Sleep & Nursery",
+      "url": "/collections/sleep-nursery"
+    },
+    {
+      "label": "Bath",
+      "url": "/collections/bath"
+    },
+    {
+      "label": "Outdoor",
+      "url": "/collections/outdoor"
     }
   ],
   "hero": {
-    "eyebrow": "Organic cotton essentials",
-    "headline": "Soft. Modern.",
-    "headlineEm": "Made for first moments.",
-    "sub": "Thoughtfully designed baby essentials in premium organic cotton — gentle on the smallest skin, made to last.",
+    "eyebrow": "Everyday baby essentials",
+    "headline": "Everything baby needs.",
+    "headlineEm": "All in one place.",
+    "sub": "Carefully chosen carriers, sleep essentials, bath toys and more — picked for safety, comfort, and everyday parenting.",
     "ctaText": "Shop the collection",
     "ctaLink": "/collections/all",
     "secondaryText": "Our story",
@@ -189,8 +223,8 @@
     ]
   },
   "pills": [
-    "Organic Cotton",
-    "Gentle on Skin",
+    "Parent-Tested Picks",
+    "Safety First",
     "Free & Easy Returns",
     "Loved by 1,000+ Parents"
   ],
@@ -222,7 +256,7 @@
       "author": "Maya R. — Tel Aviv",
       "stars": 5,
       "verified": true,
-      "text": "The softest fabric we've found — my daughter lives in these. Washed a dozen times and still perfect."
+      "text": "Great quality and thoughtful design — you can tell these were actually picked with babies in mind."
     },
     {
       "name": "Daniel K.",
@@ -238,7 +272,7 @@
       "author": "Sophie L. — London",
       "stars": 4,
       "verified": true,
-      "text": "Beautiful, modern designs that actually fit. The snap closures make 3am changes so much easier."
+      "text": "Well made and easy to use — exactly what we needed for a newborn, no fuss."
     },
     {
       "name": "Noa B.",
@@ -246,7 +280,7 @@
       "author": "Noa B. — Toronto",
       "stars": 5,
       "verified": true,
-      "text": "Gift-wrapped feeling, gentle on my baby's skin. Already ordered three more."
+      "text": "Feels like a premium brand at a fair price. Already ordered more for our second baby."
     },
     {
       "name": "Tom H.",
@@ -262,7 +296,7 @@
       "author": "Aria M. — Sydney",
       "stars": 4,
       "verified": true,
-      "text": "Obsessed. Every piece photographs beautifully and holds up to a very active toddler."
+      "text": "Obsessed. Sturdy, well designed, and holds up to a very active toddler."
     }
   ],
   "productPage": {

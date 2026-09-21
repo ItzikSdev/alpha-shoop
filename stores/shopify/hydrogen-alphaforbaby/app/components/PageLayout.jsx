@@ -3,7 +3,7 @@ import {Suspense, useId, useState, useEffect, useRef} from 'react';
 import {Aside, useAside} from '~/components/Aside';
 import {Footer} from '~/components/Footer';
 import {Header} from '~/components/Header';
-import {SignInPromo} from '~/components/SignInPromo';
+import {AnnouncementTicker} from '~/components/AnnouncementTicker';
 import {CartMain} from '~/components/CartMain';
 import {
   SEARCH_ENDPOINT,
@@ -57,10 +57,10 @@ export function PageLayout({cart, children = null, isLoggedIn}) {
         <MobileMenuAside />
         <CartAside cart={cart} />
         <SearchAside />
+        <AnnouncementTicker />
         <Header cart={cart} isLoggedIn={isLoggedIn} />
         <main>{children}</main>
         <Footer />
-        <SignInPromo isLoggedIn={isLoggedIn} />
       </div>
     </Aside.Provider>
   );
@@ -197,6 +197,13 @@ function MobileMenuNav() {
           {l.label}
         </NavLink>
       ))}
+      <NavLink
+        to="/account/login"
+        className={({isActive}) => (isActive ? 'tob-mob-link tob-mob-link--active' : 'tob-mob-link')}
+        onClick={close}
+      >
+        Sign In
+      </NavLink>
     </nav>
   );
 }

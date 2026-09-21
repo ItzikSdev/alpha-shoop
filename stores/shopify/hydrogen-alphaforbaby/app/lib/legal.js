@@ -51,7 +51,6 @@ export function getPolicy(slug) {
       const entity = L.legalEntityName || BRAND;
       let line = `${BRAND} is operated by ${entity}`;
       if (L.companyNumber) line += ` (registration no. ${L.companyNumber})`;
-      if (L.registeredCountry) line += `, registered in ${L.registeredCountry}`;
       line += '.';
       const bits = [{p: line}];
       if (L.businessAddress) bits.push({p: `Business address: ${L.businessAddress}.`});

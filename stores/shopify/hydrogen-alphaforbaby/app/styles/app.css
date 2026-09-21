@@ -2,6 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Webfont: Assistant, self-hosted ─────────────────────────────────────────
+   Previously loaded from fonts.googleapis.com, which never actually applied:
+   the Hydrogen CSP sets style-src without fonts.googleapis.com and declares no
+   font-src at all, so the stylesheet AND the font files were both blocked and
+   every page silently fell through to system-ui (document.fonts.size === 0).
+   Serving the files ourselves removes the CSP dependency entirely rather than
+   widening the policy — fewer third-party origins, no render-blocking request
+   to Google, and it cannot regress the next time the CSP is edited.
+   Assistant is licensed under the SIL Open Font License, which permits this.
+   One variable file per subset covers 400-700, so `font-weight: 400 700`. */
+@font-face {
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/assistant-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/assistant-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Assistant';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/assistant-hebrew.woff2') format('woff2');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+
 /* ============================================================================
    "CLASSICAL" DESIGN SYSTEM (2026-08-02 handoff) — the real component layer
    from the provided reference/classical-styles.css, ported 1:1 onto this
@@ -884,8 +923,11 @@ img { max-width:100%; }
   --hero-ink: var(--tob-hero-ink, #2e2722);
   --hero-accent: var(--tob-hero-accent, #b07a5f);
   --hero-eyebrow: var(--tob-hero-eyebrow, #9a7a6a);
+  /* Assistant leads: it is the webfont actually served. The previous stack had
+     no webfont in it at all, so --font-body always resolved to -apple-system. */
   --font-body: var(
     --tob-font-body,
+    'Assistant',
     -apple-system,
     'Helvetica Neue',
     Inter,
@@ -1974,102 +2016,6 @@ img { max-width:100%; }
   width: 22px;
   background: var(--hero-ink);
 }
-.tob .tob-eh-video {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  background: #000;
-  transform: translateX(100%);
-  pointer-events: none;
-  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.tob .tob-eh-video-open {
-  transform: translateX(0);
-  pointer-events: auto;
-}
-.tob .tob-eh-video-el {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
-.tob .tob-eh-video-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 5;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-.tob .tob-eh-video-close:hover {
-  background: rgba(0, 0, 0, 0.7);
-}
-.tob .tob-eh-video-close svg {
-  width: 16px;
-  height: 16px;
-}
-.tob .tob-eh-video-mute {
-  position: absolute;
-  top: 16px;
-  right: 64px;
-  z-index: 5;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-.tob .tob-eh-video-mute:hover {
-  background: rgba(0, 0, 0, 0.7);
-}
-.tob .tob-eh-video-mute svg {
-  width: 18px;
-  height: 18px;
-}
-.tob .tob-eh-video-play {
-  position: absolute;
-  left: 24px;
-  bottom: 26px;
-  z-index: 3;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition:
-    transform 0.2s ease,
-    background 0.2s ease;
-}
-.tob .tob-eh-video-play:hover {
-  transform: scale(1.08);
-  background: #fff;
-}
-.tob .tob-eh-video-play svg {
-  width: 20px;
-  height: 20px;
-  color: var(--hero-ink);
-  margin-left: 2px;
-}
 @media (max-width: 860px) {
   .tob .tob-eh {
     grid-template-columns: 1fr;
@@ -2969,3 +2915,217 @@ a.login-underline-link:hover{color:var(--tob-ink,#161616)}
 .collection-item h5{font-family:var(--font-display,"Newsreader",Georgia,serif);font-size:1.05rem;font-weight:600;margin:0;text-align:center}
 .collections-page a:not(.collection-item){display:block;width:max-content;margin:32px auto 0;font-size:0.9rem;color:var(--tob-muted,#8d8d8d);text-decoration:underline}
 .collections-page a:not(.collection-item):hover{color:var(--tob-ink,#161616)}
+
+
+/* v1.31 item 1: the reference's mobile header is hamburger + wordmark + cart
+   only. Search stays on desktop, where there's room for it. */
+@media (max-width: 767px) {
+  .tob .tob-hsearch-desktop-only { display: none !important; }
+}
+
+
+/* ── v1.36: announcement ticker (own strip, above the header row) ── */
+.tob .tob-ticker {
+  overflow: hidden;
+  background: var(--tob-ink, #201f1d);
+  color: #fff;
+}
+.tob .tob-ticker-track {
+  display: flex;
+  width: max-content;
+  animation: tob-ticker 70s linear infinite;
+}
+.tob .tob-ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.45rem 0.9rem;
+  font-size: var(--tob-fs-marquee, 0.72rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.tob .tob-ticker-sep { opacity: 0.5; }
+@keyframes tob-ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .tob .tob-ticker-track { animation: none; }
+}
+
+/* v1.36 item 1: mobile header = hamburger left, wordmark CENTERED, cart right. */
+@media (max-width: 819px) {
+  .tob .tob-hrow { position: relative; justify-content: space-between; }
+  .tob .tob-hrow .tob-hlogo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+  }
+}
+
+
+/* ── 7.D #15: mobile header zones — hamburger LEFT, wordmark CENTER, cart RIGHT ── */
+.tob .tob-hburger { display: none; }
+@media (max-width: 819px) {
+  .tob .tob-hrow {
+    display: grid !important;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    position: static;
+  }
+  .tob .tob-hburger {
+    display: inline-flex;
+    justify-self: start;
+    align-items: center;
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+  .tob .tob-hrow .tob-hlogo {
+    position: static;
+    transform: none;
+    justify-self: center;
+    margin: 0;
+  }
+  .tob .tob-hcta { justify-self: end; }
+  /* the duplicate hamburger that lives inside the CTA group */
+  .tob .tob-hcta .tob-hmob { display: none !important; }
+}
+
+
+/* v1.40: hamburger flush left — kill inherited button padding so the glyph
+   sits on the same gutter line as the cart icon on the right. */
+@media (max-width: 819px) {
+  /* Both icon buttons keep a 44px tap target (Section 9); the row gutter is
+     reduced so the GLYPHS — not the invisible button boxes — land level with
+     each other and with the page gutter. */
+  .tob .tob-hrow { padding-left: 4px; padding-right: 4px; }
+  .tob .tob-hburger { /* tob-hburger flush */
+    margin: 0;
+    padding: 0;
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tob .tob-hcta { margin: 0; padding: 0; gap: 0; }
+  /* cart button carries its own padding — strip it so its glyph lands on the
+     same 14px gutter as the hamburger, instead of floating 36px in. */
+  .tob .tob-hcta > * { margin: 0; padding: 0; }
+}
+
+
+/* v1.44 #10: mini review cards are borderless */
+.tob [data-mini-reviews] li { border: 0 !important; }
+
+/* v1.44 #6: verified checkmark badge on each avatar */
+.tob [data-avatar-strip] .tob-avatar { position: relative; display: inline-block; }
+.tob [data-avatar-strip] .tob-avatar::after {
+  content: '✓';
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--tob-verified, #3a9d5a);
+  color: #fff;
+  font-size: 9px;
+  line-height: 13px;
+  text-align: center;
+  border: 1.5px solid #fff;
+}
+
+/* v1.44 #11 + #2: global density pass — the page read far too airy. */
+.tob .pdp section { padding-top: 1.1rem; }
+.tob .pdp h2 { margin-bottom: 0.35rem; }
+.tob-home .tob-eh { padding-top: 1.25rem; padding-bottom: 0.75rem; }
+.tob-home .tob-eh-copy > * + * { margin-top: 0.6rem; }
+.tob-home section { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+
+/* v1.45: the density pass above tightened the gaps *between* hero children but
+   left the two biggest blocks of dead space on the homepage untouched, which is
+   why the page still read airy after it shipped. Measured at 390px:
+     - stat line → first product card was 104px, 48 of it .tob-eh-copy's own
+       bottom padding sitting underneath the stats
+     - last card → first footer text was 132px (72 margin + 60 padding)
+   Both are collapsed here rather than by re-tuning the child-margin rule, which
+   never controlled either distance. */
+/* v1.47: measured every section-to-section gap on the homepage at 390px and
+   held each one under 50px combined (margin + padding on both sides of the
+   seam). Values chosen against measurements, not by eye:
+     header  -> eyebrow      68px -> 44px  (hero pt 20 + copy pt 24)
+     stats   -> first card   64px -> 40px  (copy pb 16 + hero pb 8 + grid pt 16)
+     card    -> footer text  96px -> 48px  (grid pb 16 + footer mt 12 + pt 20)
+   The footer's own combined top (margin + padding) lands at 32px. */
+.tob-home .tob-eh { padding-top: 1.25rem; padding-bottom: 0.5rem; }
+.tob-home .tob-eh-copy { padding-top: 1.5rem; padding-bottom: 1rem; }
+.tob .tob-footer { margin-top: 0.75rem; padding-top: 1.25rem; }
+
+/* .tob-eh's 620px min-height was sized for the old two-column hero, where the
+   copy column had to match the height of the image panel beside it. v1.43
+   deleted that panel, so on mobile the copy is now a lone column stretched to a
+   height it no longer needs — the hero is centred inside it and the leftover
+   space lands under the stat line. Size to content instead. */
+.tob-home .tob-eh { min-height: 0; }
+
+/* v1.49 #5: at 375px the hero filled 528px of an 812px screen, so no product
+   was visible without scrolling. The fix is the three blocks that actually
+   carry the height — not a uniform shave:
+     eyebrow's 28px margin-bottom  -> 12px
+     40px H1 wrapping to 3 lines   -> 30px, wraps to 2
+     stat block's internal padding -> tightened
+   Desktop keeps the large display size; this is a max-width query. */
+@media (max-width: 860px) {
+  .tob-home .tob-eh-eyebrow { margin-bottom: 12px; }
+  .tob-home .tob-eh-title { font-size: 30px; line-height: 1.12; }
+  .tob-home .tob-eh-sub { font-size: 14px; line-height: 1.45; }
+  .tob-home .tob-eh-stats { margin-top: 10px; gap: 24px; }
+  .tob-home .tob-eh-statnum { font-size: 1.4rem; }
+  .tob-home .tob-eh-copy { padding-top: 14px; padding-bottom: 12px; }
+  .tob-home .tob-eh { padding-top: 12px; }
+}
+
+/* v1.49 #5, footer: 693px tall on mobile — bigger than the product grid and
+   37% of the page. It was already 2 columns at this width; the height came
+   from a 30px row gap between four stacked link blocks plus two large stacked
+   margins under them (36px above the payment row, 20px + 22px above the bottom
+   bar). Tightened to ~16px each, which is what the brief asked for. */
+@media (max-width: 860px) {
+  .tob .tob-fcols { gap: 16px 20px; }
+  .tob .tob-fpay { margin-top: 16px; }
+  .tob .tob-fbottom { margin-top: 16px; padding-top: 14px; }
+  .tob .tob-footer { padding-bottom: 20px; }
+  /* The link blocks were 453px of the footer's height on their own: 11px of
+     margin under every single link, times ~17 links, plus a 16px heading gap
+     on each of four blocks. Tightening the per-link rhythm is what actually
+     shrinks this; the tap target stays >=40px via the padding. */
+  .tob .tob-fcol b { margin-bottom: 0; }
+  .tob .tob-fcol a { margin-bottom: 0; padding: 7px 0; line-height: 1.25; }
+  .tob .tob-fchoices { margin-top: 16px; }
+  /* collapsed by default on mobile — one 40px heading row per column */
+  .tob .tob-fcol > summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 40px;
+  }
+  .tob .tob-fcol > summary::-webkit-details-marker { display: none; }
+  .tob .tob-fcol > summary::after {
+    content: '+';
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1;
+  }
+  .tob .tob-fcol[open] > summary::after { content: '–'; }
+  .tob .tob-fcol > .tob-fcol-links { padding-bottom: 6px; }
+}
+
+/* Desktop: no accordion — always expanded, marker hidden. */
+@media (min-width: 861px) {
+  .tob .tob-fcol > summary { list-style: none; display: block; }
+  .tob .tob-fcol > summary::-webkit-details-marker { display: none; }
+  .tob .tob-fcol > .tob-fcol-links { display: block !important; }
+}
