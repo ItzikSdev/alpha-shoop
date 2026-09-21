@@ -36,7 +36,7 @@ on the rendered page (not read off the component source):
 | 2 | Header: centered wordmark, hamburger flush left, cart flush right | yes |
 | 3 | Gallery with dot pagination (see the dot-count rule below) | yes |
 | 4 | Urgency ticker line — "SELLING QUICK, LOW STOCK" (v1.45 decision) | yes |
-| 5 | "Join [N] verified buyers" count pill, no line wrap. **No avatar photos** — removed 2026-09-21, see the v2.4 note below | yes |
+| 5 | "Join [N] verified buyers" strip: real avatar photos, each with a checkmark badge, headline text present, no line wrap | yes |
 | 6 | Product title below the gallery/urgency/avatar block | yes |
 | 7 | Star row + "([N] Reviews)" — real imported count, single clean row | yes |
 | 8 | "Buy more, save more" heading | yes |
@@ -103,27 +103,27 @@ reviews renders no strip at all, which is the correct empty state.
 gate reported entire sections missing on pages that were serving them
 correctly — see 7.D #38 before acting on any such finding.
 
-## v2.4 — the buyer avatar photos are removed (Itzik, 2026-09-21)
+## v2.4 — avatar strip: removed, then restored the same day (2026-09-21)
 
-Row 5 used to require a row of real buyer avatar thumbnails, each with a
-green checkmark badge, sitting directly under the gallery. Itzik looked at
-it on a phone and called it: **the avatars go, the count stays.** They sat
-immediately below the first product image — the single most valuable piece
-of screen on the page — and pushed the title and price further down for a
-signal the count already carries on its own.
+Recorded because the round-trip is the lesson, not the outcome. Itzik
+wrote, in Hebrew, "the users' photos in the first image of the product —
+take that down." That was read as the avatar thumbnail row under the
+gallery, and the row was deleted. He then said the images were missing
+from "Join 60 verified buyers" — so the strip is **unchanged and stays
+exactly as row 5 describes it**, avatars and checkmark badges included.
 
-What this means in practice:
-- `PdpUrgencyStrip` no longer takes an `avatars` prop, and no longer
-  renders any image. It renders the urgency line and the
-  "Join [N] verified buyers" pill, nothing else.
-- The pill is gated on `buyerCount > 0` rather than on having avatars, so
-  a product with reviews but no review photos still shows its real count.
-- The `[data-avatar-strip] .tob-avatar` checkmark-badge CSS (v1.44 #6) is
-  deleted, not just unused — it was unreachable once the markup went.
-- `[data-urgency-strip]` is unchanged, so the Level 14 parity snapshot
-  still finds the strip; the new count pill carries `[data-buyer-count]`.
+What he was actually pointing at was the **hero image itself**: v2.3 had
+just made every live product's first gallery image a customer review
+photo (7.A.1 ranks "a person using the product" first, and CJ's own
+gallery shots mostly fail the 1000px gate, so buyer photos won on all
+three). "The customers' photos are the first image of the product" was a
+complaint about that, not about the strip.
 
-Do not re-add the avatars in a later "parity with the carrier" pass — the
-carrier does not have them either any more. This supersedes 7.D #21 (the
-v1.44 bug about avatars missing their checkmark badges), which is now moot.
-
+Two things to carry forward:
+- When a request names a page element ambiguously, resolve it against
+  **what changed most recently** before assuming the older element. The
+  hero had changed minutes earlier; the avatar strip had been there for
+  weeks.
+- 7.A.1's ranking can put a buyer's phone snapshot in the single most
+  valuable slot on the page. That is the rule working as written, and it
+  is still a product decision Itzik gets to make per store.

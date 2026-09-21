@@ -3018,6 +3018,24 @@ a.login-underline-link:hover{color:var(--tob-ink,#161616)}
 /* v1.44 #10: mini review cards are borderless */
 .tob [data-mini-reviews] li { border: 0 !important; }
 
+/* v1.44 #6: verified checkmark badge on each avatar */
+.tob [data-avatar-strip] .tob-avatar { position: relative; display: inline-block; }
+.tob [data-avatar-strip] .tob-avatar::after {
+  content: '✓';
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--tob-verified, #3a9d5a);
+  color: #fff;
+  font-size: 9px;
+  line-height: 13px;
+  text-align: center;
+  border: 1.5px solid #fff;
+}
+
 /* v1.44 #11 + #2: global density pass — the page read far too airy. */
 .tob .pdp section { padding-top: 1.1rem; }
 .tob .pdp h2 { margin-bottom: 0.35rem; }
