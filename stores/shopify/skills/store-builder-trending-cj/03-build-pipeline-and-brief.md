@@ -173,3 +173,30 @@ works for free/organic traffic; if a paid ad costs more than ~$3 per
 sale, every sale loses money. Know the ad cost per sale before choosing
 the low end.
 
+**Step 3b — the 20% price is a FLOOR, and it must also admit a Buy 2
+(v2.5).** Step 3's `(landed + $0.30) / (1 − 0.029 − 0.20)` rounded up to
+`.90` gives the *lowest* compliant unit price, not the only one. Before
+settling on it, check that a compliant Buy-2 total exists at that price:
+
+    floor_total(2 units) = (2 × landed + 0.30) / (1 − 0.029 − 0.20)
+    valid Buy-2 totals   = values ending in .90, >= floor_total, < 2 × unit
+
+If that set is empty, the unit price does not work — **step up to the
+next `.90` and re-check**, because `.90`-ending totals are $1.00 apart
+and a two-unit price only clears the floor by a few cents at the
+minimum. Do NOT drop the bundle to make the arithmetic close: it is
+required on every product (Level 06 row 9), and 7.D #34's exemption is
+about the product, not the price. Worked example, the hip carrier
+(landed $32.74): $42.90 is the bare 20% price and admits **no** valid
+Buy 2 ($0.48 of headroom); $43.90 admits $85.90 at $1.90 off — Buy 1
+21.8%, Buy 2 20.5%. See 7.D #42.
+
+**Recording an above-median price (v2.5).** Step 5 says never price
+above the market median. Itzik can override that per product, but the
+override goes in the pricing record as a `market_override` block
+(`approved_by_itzik`, `reason`, `approved_at`) — not as an unexplained
+high price. `TestPricingRule::test_not_above_market_median` passes on a
+complete override and re-emits it as a warning on every run, so the
+deviation stays visible instead of quietly becoming the baseline; an
+absent or partial override still fails.
+

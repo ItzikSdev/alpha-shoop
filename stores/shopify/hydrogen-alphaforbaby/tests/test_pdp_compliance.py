@@ -30,10 +30,9 @@ import os
 import re
 import urllib.error
 import urllib.request
+import warnings
 
 import pytest
-
-from conftest import NO_BUNDLE_HANDLES
 
 # Products confirmed as the store's trending set. TestCatalogCoverage asserts
 # the live storefront serves exactly these — no more, no fewer — so a product
@@ -1007,11 +1006,9 @@ class TestHeroImage:
 class TestPricingRule:
     """v2.3 -- Itzik's pricing decision: ~20% gross margin, market check on
     record, Buy 2 also >= 20% where a bundle exists, approved by Itzik before
-    shipping. Adapted from the Level 14 spec: NO_BUNDLE_HANDLES products
-    (Level 03, no compliant .90-ending Buy-2 total at the approved price)
-    have no buy2_total to check -- test that half as skipped, not crashed,
-    for exactly those recorded handles; anything else missing buy2_total
-    still fails, per 7.D #36's rule that a skip must be a recorded decision.
+    shipping. A missing buy2_total FAILS: the bundle is required on every
+    product (Level 06 row 9), and a unit price that admits no compliant
+    Buy-2 total is a pricing bug to fix, not a product exemption (7.D #42).
     """
 
     FEE_PCT, FEE_FIXED, MIN_MARGIN = 0.029, 0.30, 0.20
@@ -1049,13 +1046,14 @@ class TestPricingRule:
             f"{handle}: Buy 1 margin {m1:.1%} on the most expensive variant "
             f"(landed ${worst}) is below the 20% floor"
         )
-        if rec.get("buy2_total") is None:
-            assert handle in NO_BUNDLE_HANDLES, (
-                f"{handle}: no buy2_total recorded and not on NO_BUNDLE_HANDLES "
-                f"-- a missing Buy 2 must be a recorded decision (7.D #36), not "
-                f"an unauthored gap"
-            )
-            pytest.skip(f"{handle}: no Buy-2 bundle -- {NO_BUNDLE_HANDLES[handle]}")
+        assert rec.get("buy2_total") is not None, (
+            f"{handle}: no buy2_total in the pricing record -- the Buy 1 / Buy 2 "
+            f"tier block is REQUIRED on every product (Level 06 row 9, 7.D #34). "
+            f"If no .90-ending Buy-2 total clears the 20% floor at the current "
+            f"unit price, move the unit price to the next .90 that admits one "
+            f"(7.D #42) -- do not drop the bundle and do not reconfigure this "
+            f"check to stop asking."
+        )
         m2 = self._margin(rec["buy2_total"], 2 * worst)
         assert m2 >= self.MIN_MARGIN, (
             f"{handle}: Buy 2 margin {m2:.1%} on the most expensive variant "
@@ -1063,12 +1061,32 @@ class TestPricingRule:
         )
 
     def test_not_above_market_median(self, handle):
+        """Level 03 step 5: never price above the market median.
+
+        Itzik can override this per product -- it is his store and his
+        margin -- but the override has to be WRITTEN DOWN in the pricing
+        record, not implied by the price being high. A recorded override
+        passes and re-emits itself as a warning on every run, so it stays
+        visible instead of quietly becoming the new normal. No override, or
+        an incomplete one, still fails.
+        """
         rec = self._record(handle)
         market = rec.get("market", [])
         assert len(market) >= 3, f"{handle}: need >= 3 market comparables"
-        assert rec["price"] <= rec["market_median"], (
+        if rec["price"] <= rec["market_median"]:
+            return
+        ov = rec.get("market_override") or {}
+        assert ov.get("approved_by_itzik") is True and ov.get("reason"), (
             f"{handle}: ${rec['price']} is above the market median "
-            f"${rec['market_median']} (Level 03 pricing rule). Recorded note: "
-            f"{rec.get('note', '(none)')}"
+            f"${rec['market_median']} (Level 03 pricing rule) and there is no "
+            f"complete `market_override` block ({{approved_by_itzik: true, "
+            f"reason, approved_at}}) in the pricing record to account for it."
+        )
+        warnings.warn(
+            f"{handle} is priced ${rec['price']} against a ${rec['market_median']} "
+            f"market median -- allowed only by Itzik's recorded override "
+            f"({ov.get('approved_at', 'no date')}): {ov['reason']}",
+            UserWarning,
+            stacklevel=2,
         )
 

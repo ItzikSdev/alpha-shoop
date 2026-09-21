@@ -120,12 +120,12 @@
   },
   "margin_floor": 0.2,
   "price_at_20pct": 42.9,
-  "price": 42.9,
-  "buy2_total": null,
-  "buy2_discount_amount": null,
-  "margin_pct": 20.1,
-  "buy2_margin_pct": null,
-  "profit_per_order": 8.62,
+  "price": 43.9,
+  "buy2_total": 85.9,
+  "buy2_discount_amount": 1.9,
+  "margin_pct": 21.8,
+  "buy2_margin_pct": 20.5,
+  "profit_per_order": 9.59,
   "market": [
     {
       "source": "Walmart",
@@ -178,11 +178,15 @@
   ],
   "market_median": 29.99,
   "viable_at_20pct": false,
-  "note": "Itzik overrode: applied the 20% price ($42.90) despite it being above the $29.99 market median. Confirmed not competitive with the median at this price -- flagged, applied anyway on his explicit instruction. The Buy-2 bundle could not be preserved at this price (see bundle_removed_reason) and was removed rather than faking a discount or breaking the margin floor.",
+  "note": "Above the market median by Itzik's explicit, recorded override (see market_override). $43.90 vs a $29.99 median. Flagged before applying; applied on his instruction.",
   "approved_by_itzik": true,
   "checked_at": "2026-09-21",
-  "bundle_removed": true,
-  "bundle_removed_reason": "At $42.90, 2x gross ($85.80) is only $0.48 above the 20%-floor total ($85.32). .90-ending totals are $1.00 apart, so none both clears the floor and undercuts 2x gross -- no compliant Buy-2 discount exists. Shopify automatic discount deleted; quantityTiers set to [] in pdp_content; registered in tests/conftest.py NO_BUNDLE_HANDLES.",
   "approved_at": "2026-09-21",
-  "applied_at": "2026-09-21"
+  "applied_at": "2026-09-21",
+  "price_note": "Priced at $43.90, not the bare 20% price of $42.90. At $42.90 two units gross $85.80 against a 20%-floor total of $85.32 -- only $0.48 of headroom -- and .90-ending charged totals are $1.00 apart, so no value is both a real discount and above the floor. $43.90 is the next .90 that admits a compliant Buy 2 ($85.90, $1.90 off, 20.5%). The bundle is required on every product (Level 06 row 9), so the unit price moves to fit it -- see 7.D #42.",
+  "market_override": {
+    "approved_by_itzik": true,
+    "approved_at": "2026-09-21",
+    "reason": "Itzik instructed all three products repriced after being shown that the carrier's 20% price was above the $29.99 generic-hip-seat median. Accepted knowingly: CJ's $18.84 US shipping on this item makes the market median unreachable without selling at a loss."
+  }
 }

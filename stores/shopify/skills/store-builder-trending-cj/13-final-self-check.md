@@ -152,3 +152,32 @@ repeated correction rounds on the first real build.
 - [ ] **PRODUCT IMAGES + HERO (v2.2, Level 01 rule 8)**: the gallery and hero use ONLY images from the product's own CJ listing — no review photo anywhere outside the reviews sections; every uploaded image passed markitdown + OCR stage 1 (short side ≥ 1000px, Laplacian ≥ 100, zero Chinese characters) and failing images were never uploaded; the hero is the best stage-1 image, preferring a person using the product; recorded in `store-profiles/alphaforbaby/hero-selection/<handle>.json` with `"source": "cj"` on every entry
 - [ ] **PRICING (v2.3)**: every live product has `store-profiles/alphaforbaby/pricing/<handle>.json` with real CJ item + shipping cost per variant, ≥ 3 market comparables with links and dates, a price at or below the market median, ≥ 20% margin on Buy 1 AND Buy 2 after the 2.9% + $0.30 payment fee, "Cost per item" filled in Shopify, and `approved_by_itzik: true` (Level 03, pricing rule)
 
+## The push gate (v2.5, Itzik's instruction)
+
+**A green suite is a precondition for pushing to production, not a
+report you file afterwards.** Itzik, after the carrier shipped without
+its bundle: *"make sure it not happens again — you have rule in skill,
+use the skill and make all passed before you push to prd."*
+
+Before `git push` to `alphaforbaby/production`, in this order:
+
+1. Restart the dev server so it is serving current Shopify data — a
+   metafield or price write does not reach a running dev server (7.D's
+   caching note, and Level 07's "writing the metafield is not shipping
+   it").
+2. Run the full suite at `-n 4` against it.
+3. **Zero failures.** Not "two expected failures" — if a check is red
+   because of a real decision, encode the decision (a recorded override,
+   `PAUSED_HANDLES`) so the check passes *and* keeps announcing itself;
+   if it is red because something is broken, fix the thing. A red run is
+   never a thing to explain in the hand-off message and push anyway.
+4. Read the skip list (`-rs`). Every skip must name a recorded reason.
+5. Only then commit and push.
+
+The failure this rule comes from is instructive: the suite was red on two
+`test_not_above_market_median` checks, the redness was explained at
+length in the hand-off as "expected", and the genuinely broken thing —
+a required bundle deleted from a live product — sat in the same push
+unnoticed, because a run that is already red hides the next red thing.
+Green runs are what make new failures visible.
+

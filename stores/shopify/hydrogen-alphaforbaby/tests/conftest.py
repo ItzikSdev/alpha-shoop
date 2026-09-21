@@ -46,22 +46,17 @@ def deliberate_no_bundle():
     """
     # Paused products cannot have a bundle authored for them either — the same
     # decision covers both, so they are folded in rather than listed twice.
-    return set(PAUSED_HANDLES) | set(NO_BUNDLE_HANDLES)
-
-
-# Products that ARE live and built, but for which no Buy-2 discount can be
-# offered — recorded with the reason, same discipline as PAUSED_HANDLES.
-NO_BUNDLE_HANDLES = {
-    # 2026-09-21, Level 03's 20% pricing rule (v2.3): at the repriced $42.90
-    # unit, 2x gross is $85.80 and the floor total (2x landed cost, >=20%
-    # margin) is $85.32 -- only $0.48 of headroom. Real charged totals must
-    # end in .90 (v1.31/v1.32), and .90-ending values are $1.00 apart, so no
-    # value both clears the floor and is actually below 2x gross: $84.90
-    # breaks the floor, $85.90 is a surcharge, not a discount. No compliant
-    # Buy-2 total exists at this price -- the bundle is removed rather than
-    # either breaking the 20% floor or faking a discount.
-    "ergonomic-baby-hip-carrier": "no .90-ending Buy-2 total clears the 20% floor at $42.90 (Level 03 pricing rule)",
-}
+    #
+    # NOTHING ELSE BELONGS HERE. 2026-09-21: a `NO_BUNDLE_HANDLES` set was
+    # added to this fixture for the hip carrier, on the grounds that no
+    # .90-ending Buy-2 total cleared the 20% margin floor at its new $42.90
+    # price. That was the 7.D #36 mistake repeated exactly: the bundle is
+    # REQUIRED on every product (Level 06 row 9), the arithmetic problem was
+    # solvable by moving the unit price $1.00 to $43.90, and instead the
+    # check was reconfigured to stop asking. 7.D #34's only escape hatch is
+    # "a second unit genuinely makes no sense" — a product decision, never a
+    # pricing-arithmetic one. See 7.D #42.
+    return set(PAUSED_HANDLES)
 
 
 # Products deliberately held out of the build pipeline by an explicit owner

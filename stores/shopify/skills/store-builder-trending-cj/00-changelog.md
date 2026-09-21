@@ -1833,4 +1833,34 @@ corrected here. Also fixed `TestHeroImage`'s two tests crashing with
 domino, both `blocked_no_compliant_image` from v2.2's hero rework) — they
 now skip with the recorded reason instead of erroring, matching this
 codebase's rule that every skip must be a recorded decision, not a crash.
+v2.5 — Itzik caught the hip carrier shipped to production with no Buy 1 /
+Buy 2 block at all, and told me to use the skill's own rules and get the
+suite green before pushing, not after. Both were fair. The bundle had
+been deleted in v2.4 because at $42.90 no `.90`-ending Buy-2 total both
+cleared the 20% margin floor and stayed below 2x the unit price — the
+arithmetic was right, the conclusion was not. The bundle is required on
+every product (Level 06 row 9) and 7.D #34's exemption is about the
+PRODUCT ("a second unit makes no sense"), never about pricing
+arithmetic; a second carrier plainly makes sense and its own
+`tierBenefits` said so. Worse, a `NO_BUNDLE_HANDLES` set had been added
+to `conftest.py` so the bundle tests would stop asking — 7.D #36's exact
+anti-pattern, re-invented three rounds after #36 was written up. Fixed by
+moving the free variable instead of the requirement: the carrier goes to
+$43.90 (the next `.90` that admits a compliant Buy 2), giving Buy 2 at
+$85.90 / $1.90 off — Buy 1 21.8%, Buy 2 20.5%, both above the floor,
+charged total ending `.90`, struck-through anchor an honest 2 x $43.90 =
+$87.80. `NO_BUNDLE_HANDLES` deleted; a missing `buy2_total` now FAILS
+with a message pointing at 7.D #42. Recorded as 7.D #42, with Level 03
+gaining step 3b (the 20% price is a floor, and it must admit a Buy 2 —
+step up to the next `.90` if it doesn't) and Level 13 gaining the push
+gate (green suite is a precondition for pushing, not a footnote
+afterwards). Above-median prices now carry a `market_override` block
+(`approved_by_itzik`, `reason`, `approved_at`) that
+`test_not_above_market_median` accepts and re-emits as a warning every
+run, so the two deliberate deviations stay loud instead of sitting red
+and masking the next real failure — which is precisely how the missing
+bundle slipped through. Real run: **153 passed, 7 skipped, 0 failed, 2
+warnings in 1:24** at `-n 4`; all 7 skips carry recorded reasons; real
+qty-1/qty-2 carts verified on all three products ($43.90/$85.90,
+$26.90/$52.90, $24.90/$47.90 with the discounts actually allocating).
 

@@ -126,9 +126,14 @@
   ],
   "market_median": 15.49,
   "viable_at_20pct": false,
-  "note": "Itzik overrode: applied the 20% price ($26.90) despite it being above the $15.49 market median. Confirmed not competitive with the median at this price -- flagged, applied anyway on his explicit instruction.",
+  "note": "Above the market median by Itzik's explicit, recorded override (see market_override). $26.90 vs a $15.49 median. Flagged before applying; applied on his instruction.",
   "approved_by_itzik": true,
   "checked_at": "2026-09-21",
   "approved_at": "2026-09-21",
-  "applied_at": "2026-09-21"
+  "applied_at": "2026-09-21",
+  "market_override": {
+    "approved_by_itzik": true,
+    "approved_at": "2026-09-21",
+    "reason": "Itzik instructed all three products repriced after being shown the egg's 20% price was above the $15.49 median. Accepted knowingly: CJ's $9.33-$14.01 US shipping exceeds what Walmart charges for the whole comparable set."
+  }
 }

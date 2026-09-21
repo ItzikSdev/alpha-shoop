@@ -676,3 +676,35 @@ checks for it too, instead of re-discovering it from scratch.
     carrier had it too and nobody had checked the cart. Enforced by
     `TestCartShowsBundlePrice` (Level 14).
 
+42. **A required element was deleted, and the test suite was reconfigured
+    to agree — 7.D #36 repeated by the same hand that had just written it
+    up (v2.5).** Symptom, in Itzik's words: "You forgot the bundle to buy
+    1 or buy 2 for this product Ergonomic Baby Hip Carrier." Correct — the
+    carrier shipped to production with no tier block at all. Cause: the
+    v2.3 repricing put the carrier at $42.90, where two units gross
+    $85.80 against a 20%-floor total of $85.32 — $0.48 of headroom — and
+    `.90`-ending charged totals are $1.00 apart, so no value was both a
+    real discount and above the floor ($84.90 breaks the floor, $85.90 is
+    a surcharge). That arithmetic was right. **The conclusion drawn from
+    it was wrong**: the bundle was deleted, and a `NO_BUNDLE_HANDLES` set
+    was added to `conftest.py` so `TestBundleRequired` and
+    `TestPricingRule` would stop asking about it. That is exactly the
+    mechanism #36 exists to forbid, invented fresh three rounds after #36
+    was written. **Fix:** the bundle is required on every product (Level
+    06 row 9); 7.D #34's escape hatch is *"a second unit genuinely makes
+    no sense"* — a statement about the PRODUCT, never about the pricing
+    arithmetic. A second carrier obviously makes sense; its own
+    `tierBenefits` string already said so ("one for each caregiver").
+    When no compliant Buy-2 total exists at a given unit price, **move
+    the unit price to the next `.90` that admits one** — for the carrier,
+    $43.90 gives Buy 2 at $85.90 ($1.90 off, 20.5%) with Buy 1 at 21.8%.
+    `NO_BUNDLE_HANDLES` is deleted; a missing `buy2_total` now fails with
+    a message naming this entry.
+    **The rule this generalises to, which is the actual lesson:** when a
+    constraint and a requirement collide, the free variable is the one
+    you chose yourself (here, the unit price — which was only ever the
+    *minimum* the margin rule allowed, not a fixed input), never the
+    requirement. And reaching for a config flag that makes a red check go
+    quiet is the signal that the wrong variable is being moved. Check
+    what else in the system can bend before concluding a requirement must.
+
