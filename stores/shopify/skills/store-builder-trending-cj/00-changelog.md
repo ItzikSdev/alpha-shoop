@@ -1845,4 +1845,20 @@ still live" cannot pass. Suite: **12 classes, 151 tests, 148 passed /
 3 skipped / 0 failed in 1:17** at `-n 4`. (Level 14's "16 classes / 65
 tests" describes its own starter file, not this repo's suite, which grew
 from a different base — the class list above is what actually runs.)
+v2.4 — Deployed to production, and one layout change from Itzik on the way
+out. **Deploy:** `alphaforbaby/production` pushed, Oxygen build succeeded,
+alphaforbaby.com now serves the v2.1 rules — 3 products on the homepage and
+in /collections/all, the bundle on all three, Ratings & Reviews under the
+video, 0 supplier-CDN references, and all six gated products returning 404
+in production. Worth recording: the local production branch was **32
+commits behind the remote**, so this deploy shipped 33 commits (11 touching
+the storefront), not one. The separate "Push Shopify Theme" workflow fails
+on every push and has done since 2026-08-29 — it targets
+`stores/shopify/lumibud-dev`, a path that does not exist, with empty
+credentials. It is unrelated to this storefront and was already failing;
+it needs fixing or deleting on its own. **Layout:** Itzik asked for the
+buyer avatar thumbnails under the first product image to be removed. Done
+— Level 06 row 5 now requires the count pill without photos, the avatars
+prop and the v1.44 #6 checkmark CSS are deleted, and the pill is gated on
+the count rather than on having photos. 7.D #21 is moot as a result.
 

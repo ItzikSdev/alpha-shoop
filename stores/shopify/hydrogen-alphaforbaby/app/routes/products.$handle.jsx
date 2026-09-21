@@ -185,11 +185,7 @@ export default function Product() {
           </div>
 
           <div className="md:min-w-0">
-            <PdpUrgencyStrip
-              line={content?.urgencyLine}
-              avatars={reviews.flatMap((r) => r.photos || []).slice(0, 5)}
-              buyerCount={agBuyerCount}
-            />
+            <PdpUrgencyStrip line={content?.urgencyLine} buyerCount={agBuyerCount} />
 
             <section className="px-4 pt-1.5 md:px-0">
               <h1 className="m-0 text-ch1 font-normal">{title}</h1>
