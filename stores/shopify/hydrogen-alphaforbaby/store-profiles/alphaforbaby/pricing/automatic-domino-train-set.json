@@ -1,0 +1,115 @@
+{
+  "handle": "automatic-domino-train-set",
+  "pid": "1441350234507710464",
+  "variant_costs": [
+    {
+      "variant": "1set / 100pieces 5packs",
+      "cj_item": 1.99,
+      "cj_shipping": 8.55,
+      "cj_shipping_method": "CJPacket Pure Electricity",
+      "cj_shipping_days": "7-14",
+      "landed": 10.54,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Blue / 60pcs",
+      "cj_item": 3.79,
+      "cj_shipping": 14.3,
+      "cj_shipping_method": "YunExpress Sensitive",
+      "cj_shipping_days": "4-7",
+      "landed": 18.09,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Blue / 120pcsdominoes and 3pcsdomin",
+      "cj_item": 4.13,
+      "cj_shipping": 14.13,
+      "cj_shipping_method": "YunExpress Sensitive",
+      "cj_shipping_days": "4-7",
+      "landed": 18.26,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Pink / 60pcs",
+      "cj_item": 3.75,
+      "cj_shipping": 12.59,
+      "cj_shipping_method": "YunExpress Sensitive",
+      "cj_shipping_days": "4-7",
+      "landed": 16.34,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Purple / 60pcs",
+      "cj_item": 3.75,
+      "cj_shipping": 12.59,
+      "cj_shipping_method": "YunExpress Sensitive",
+      "cj_shipping_days": "4-7",
+      "landed": 16.34,
+      "checked_at": "2026-09-21"
+    }
+  ],
+  "worst_variant": "Blue / 120pcsdominoes and 3pcsdomin",
+  "worst_landed": 18.26,
+  "fee_model": {
+    "pct": 0.029,
+    "fixed": 0.3,
+    "note": "2.9% + $0.30 per order"
+  },
+  "margin_floor": 0.2,
+  "price_at_20pct": 24.9,
+  "price": 24.9,
+  "buy2_total": 47.9,
+  "buy2_discount_amount": 1.9,
+  "margin_pct": 22.6,
+  "buy2_margin_pct": 20.2,
+  "profit_per_order": 5.62,
+  "market": [
+    {
+      "source": "Walmart (owner-confirmed range, low)",
+      "title": "comparable 80-200 piece automatic domino train sets",
+      "price": 19.99,
+      "url": "https://www.walmart.com/c/kp/automatic-domino-train",
+      "checked_at": "2026-09-21",
+      "evidence": "owner-confirmed"
+    },
+    {
+      "source": "Walmart (owner-confirmed range, high)",
+      "title": "comparable 80-200 piece automatic domino train sets",
+      "price": 25.19,
+      "url": "https://www.walmart.com/c/kp/automatic-domino-train",
+      "checked_at": "2026-09-21",
+      "evidence": "owner-confirmed"
+    },
+    {
+      "source": "Atlasonix (brand direct)",
+      "title": "Domino Train Set - 80 Pcs (was $59.99)",
+      "price": 29.99,
+      "url": "https://www.atlasonix.com/products/domino-train-set",
+      "checked_at": "2026-09-21",
+      "evidence": "page-verified"
+    },
+    {
+      "source": "Walmart",
+      "title": "UQN 120PCS Domino Train Set with music and light",
+      "price": 33.99,
+      "url": "https://www.walmart.com/c/kp/automatic-domino-train",
+      "checked_at": "2026-09-21",
+      "evidence": "search-snippet"
+    },
+    {
+      "source": "Walmart",
+      "title": "Atlasonix Domino Train Set 80 Pcs (was $58.49, out of stock)",
+      "price": 39.99,
+      "url": "https://www.walmart.com/ip/Atlasonix-Domino-Train-Set-80-Pcs-Dominoes-Kids-Automatic-Laying-Toy-Machine-Sound-Light-Fun-Educational-Game-Boys-Girls-Age-3-8/857087899",
+      "checked_at": "2026-09-21",
+      "evidence": "search-snippet"
+    }
+  ],
+  "market_median": 29.99,
+  "viable_at_20pct": true,
+  "note": "",
+  "approved_by_itzik": true,
+  "checked_at": "2026-09-21",
+  "approved_at": "2026-09-21",
+  "applied_at": "2026-09-21"
+}

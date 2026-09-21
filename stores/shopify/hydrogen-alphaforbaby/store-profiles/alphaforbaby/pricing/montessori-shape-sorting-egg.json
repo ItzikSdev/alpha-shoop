@@ -1,0 +1,134 @@
+{
+  "handle": "montessori-shape-sorting-egg",
+  "pid": "1419174980897345536",
+  "variant_costs": [
+    {
+      "variant": "Green",
+      "cj_item": 4.53,
+      "cj_shipping": 9.33,
+      "cj_shipping_method": "LuWei Ordinary US",
+      "cj_shipping_days": "5-11",
+      "landed": 13.86,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "1style",
+      "cj_item": 3.26,
+      "cj_shipping": 9.34,
+      "cj_shipping_method": "LuWei Ordinary US",
+      "cj_shipping_days": "5-11",
+      "landed": 12.6,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "2style",
+      "cj_item": 3.26,
+      "cj_shipping": 9.33,
+      "cj_shipping_method": "LuWei Ordinary US",
+      "cj_shipping_days": "5-11",
+      "landed": 12.59,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "3style",
+      "cj_item": 5.76,
+      "cj_shipping": 13.1,
+      "cj_shipping_method": "LuWei Ordinary US",
+      "cj_shipping_days": "5-11",
+      "landed": 18.86,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "4style",
+      "cj_item": 3.26,
+      "cj_shipping": 9.33,
+      "cj_shipping_method": "LuWei Ordinary US",
+      "cj_shipping_days": "5-11",
+      "landed": 12.59,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "5style",
+      "cj_item": 5.93,
+      "cj_shipping": 13.01,
+      "cj_shipping_method": "LuWei Ordinary US",
+      "cj_shipping_days": "5-11",
+      "landed": 18.94,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Car.",
+      "cj_item": 3.26,
+      "cj_shipping": 9.33,
+      "cj_shipping_method": "LuWei Ordinary US",
+      "cj_shipping_days": "5-11",
+      "landed": 12.59,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "SetA",
+      "cj_item": 5.97,
+      "cj_shipping": 14.01,
+      "cj_shipping_method": "LuWei Ordinary US",
+      "cj_shipping_days": "5-11",
+      "landed": 19.98,
+      "checked_at": "2026-09-21"
+    }
+  ],
+  "worst_variant": "SetA",
+  "worst_landed": 19.98,
+  "fee_model": {
+    "pct": 0.029,
+    "fixed": 0.3,
+    "note": "2.9% + $0.30 per order"
+  },
+  "margin_floor": 0.2,
+  "price_at_20pct": 26.9,
+  "price": 26.9,
+  "buy2_total": 52.9,
+  "buy2_discount_amount": 0.9,
+  "margin_pct": 21.7,
+  "buy2_margin_pct": 21.0,
+  "profit_per_order": 5.84,
+  "market": [
+    {
+      "source": "Walmart (owner-confirmed)",
+      "title": "matching eggs shape sorter, 12 pcs",
+      "price": 7.99,
+      "url": "https://www.walmart.com/c/kp/matching-egg-toy",
+      "checked_at": "2026-09-21",
+      "evidence": "owner-confirmed"
+    },
+    {
+      "source": "Walmart",
+      "title": "Beefunni Color Shape Matching Eggs with egg box (low)",
+      "price": 14.99,
+      "url": "https://www.walmart.com/c/kp/matching-egg-toy",
+      "checked_at": "2026-09-21",
+      "evidence": "search-snippet"
+    },
+    {
+      "source": "Walmart",
+      "title": "Beefunni Color Shape Matching Eggs with egg box (high)",
+      "price": 15.99,
+      "url": "https://www.walmart.com/c/kp/matching-egg-toy",
+      "checked_at": "2026-09-21",
+      "evidence": "search-snippet"
+    },
+    {
+      "source": "Boutique Montessori retailer (owner-confirmed)",
+      "title": "Montessori matching eggs",
+      "price": 39.97,
+      "url": "https://www.walmart.com/ip/Montessori-Geometric-Eggs-12-pcs-Set-Color-Shape-Egg-Puzzle-Toys-Matching-Eggs-Toddlers-Preschool-Educational-Sorting-Game-Fine-Motor-Toy-Gifts-1-2-3/18115723227",
+      "checked_at": "2026-09-21",
+      "evidence": "owner-confirmed"
+    }
+  ],
+  "market_median": 15.49,
+  "viable_at_20pct": false,
+  "note": "Itzik overrode: applied the 20% price ($26.90) despite it being above the $15.49 market median. Confirmed not competitive with the median at this price -- flagged, applied anyway on his explicit instruction.",
+  "approved_by_itzik": true,
+  "checked_at": "2026-09-21",
+  "approved_at": "2026-09-21",
+  "applied_at": "2026-09-21"
+}

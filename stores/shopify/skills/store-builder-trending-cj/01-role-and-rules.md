@@ -180,11 +180,15 @@ honest one.
    every sales channel — never delete it, so it can come back the day
    it reaches 15). Full procedure and the current per-product count:
    Level 02, Section 2.G.
-8. **Every product's hero image is chosen by the Level 09 hero-image
-   procedure (v2.1, Itzik's rule)** — read with markitdown + OCR, and it
-   must (a) not be pixelated, (b) contain no Chinese text, and (c) show a
-   person using the product whenever such a photo exists. Full
-   procedure: Level 09, Section 7.A.1.
+8. **Product images come ONLY from the product's own CJ listing, and
+   every one passes the image checks before it is uploaded (v2.2,
+   Itzik's rule, corrects v2.1).** Customer review photos are never
+   product images and never the hero — they stay in the reviews
+   section only. Each CJ image is read with markitdown + OCR and must
+   (a) not be pixelated and (b) contain no Chinese text, or it is not
+   uploaded at all. The hero is then chosen from the images that
+   passed, preferring (c) a person using the product. Full procedure:
+   Level 09, Section 7.A.1.
 
 If the input product itself would require breaking one of these rules to
 sell (e.g., it only "works" if you lie about it), flag that back instead

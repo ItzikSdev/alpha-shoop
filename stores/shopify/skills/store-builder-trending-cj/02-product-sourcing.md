@@ -612,3 +612,26 @@ Two things this measurement settles, so no future round re-opens them:
 - **Glow Whale would pass the review gate** (27 photo reviews available)
   and is hidden only because of its unrelated 16%-defect pause. If that
   pause is lifted, import its reviews before re-publishing.
+
+## v2.4 — the gate can be silently undone by other automation (2026-09-21)
+
+Found while verifying a pricing deploy, not looking for it: three gated
+products (Cozy Portable Baby Nest, Foldable Baby Bed Canopy Set, Glow
+Whale Bath Buddy) had been **re-published** to Online Store and the
+alphaforbaby Hydrogen channel — all four sales channels showing
+`isPublished: true` — despite being correctly unpublished earlier the
+same day. Re-hidden; not yet root-caused, but the leading suspect is the
+**CJ stock sweep** (`Level 06` / `[[cj_stock_and_media_gate]]`-style daily
+job that republishes a product once it's back in stock at the supplier),
+which predates the v2.1 review gate and has no reason to know about it —
+a product coming back in stock is exactly the trigger that job watches
+for, and the gate's hidden state and CJ's stock state are two independent
+facts about the same product with no shared source of truth.
+
+**This needs a real fix, not a re-hide-when-noticed habit**: whatever
+process republishes on a stock change must check `REVIEW_GATE_HIDDEN` (or
+re-run the photo-review count) before publishing, or every future stock
+sweep silently undoes this section's work. Until that's wired in,
+treat the live catalog as unverified until re-checked, even right after a
+round that hid the right six.
+

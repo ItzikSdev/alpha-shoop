@@ -124,3 +124,52 @@ badge must then show the real resulting percentage, rounded DOWN if it
 must be rounded at all — never overstate the discount (Rule 2). Verify
 every tier's real charged total in an actual test cart, not just the
 displayed number.
+
+**Pricing rule — market check + ~20% margin (v2.3, Itzik's decision).**
+An outside review of the store found the prices far above market
+(domino $53.90 vs $19.99–$25.19 for comparable 80–200-piece sets at
+Walmart; matching eggs $58.90 vs $7.99 at Walmart and $39.97 at a
+boutique Montessori store; hip-seat carrier $94.90 vs $25.99–$59.99,
+above real brands like Momcozy at $49.99). Itzik's decision: price for
+roughly **20% gross margin**. How to set every product's price:
+
+1. **Landed cost** = the CJ item price for that variant + the real CJ
+   shipping cost to the US for the shipping method actually used.
+   Record both, with the date checked. Also write it into Shopify's
+   "Cost per item" on every variant so Shopify shows margin itself.
+2. **Payment fee** = 2.9% + $0.30 per order.
+3. **20% price** = (landed cost + $0.30) / (1 − 0.029 − 0.20), rounded
+   UP to the next price ending in `.90`.
+4. **Market check**: collect at least 3 comparable listings for the same
+   kind of product (Walmart, Amazon, Target, Temu — same piece count /
+   size where possible) with prices and links. Take the median.
+5. **Final price**:
+   - If the 20% price is at or below the market median → price at the
+     20% price, or up to just under the median (`.90` ending) if Itzik
+     approves the higher margin. Never price above the median.
+   - If the 20% price is ABOVE the market median → the product can't
+     compete at 20%. Do not raise the price to hit 20% and do not drop
+     below 20%; report it to Itzik — the product may not be viable.
+6. **Buy 2 tier**: the Buy 2 charged total (ending `.90`) must also
+   keep ≥ 20% on two units' landed cost. If a 10%-off Buy 2 would drop
+   below 20%, use a smaller real discount rather than breaking the
+   floor.
+7. **Compare-at prices**: only show a struck-through price if it is an
+   honest `qty × unit price` (the Buy 2 anchor) — no invented "was"
+   price on single units.
+8. Save the decision to
+   `store-profiles/alphaforbaby/pricing/<handle>.json`:
+   `{handle, variant_costs: [{variant, cj_item, cj_shipping, landed}],
+   fee_model, price, buy2_total, margin_pct, buy2_margin_pct,
+   market: [{source, title, price, url, checked_at}], market_median,
+   approved_by_itzik: true|false}`. Nothing ships with
+   `approved_by_itzik: false`.
+
+Worked example (domino, landed ≈ $10.54): the exact 20% price is
+$14.06 → $14.90 (≈ $3.63 profit, 24%). The market median is ~$22, so
+$14.90 is allowed, and anything up to $19.90 (≈ $8.48, 43%) stays under
+the market. **Be aware:** 20% on a $15 item is about $3 per order. That
+works for free/organic traffic; if a paid ad costs more than ~$3 per
+sale, every sale loses money. Know the ad cost per sale before choosing
+the low end.
+

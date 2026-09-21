@@ -33,6 +33,8 @@ import urllib.request
 
 import pytest
 
+from conftest import NO_BUNDLE_HANDLES
+
 # Products confirmed as the store's trending set. TestCatalogCoverage asserts
 # the live storefront serves exactly these — no more, no fewer — so a product
 # that silently stops being published fails the suite instead of vanishing
@@ -948,7 +950,17 @@ class TestHeroImage:
             return json.load(fh)
 
     def test_hero_decision_passes_the_three_rules(self, handle):
-        d = self._decision(handle)["chosen"]
+        rec = self._decision(handle)
+        if rec.get("chosen") is None:
+            assert rec.get("status") == "blocked_no_compliant_image", (
+                f"{handle}: chosen is null but status is {rec.get('status')!r}, not "
+                "the recorded 'no usable CJ image' state -- a null hero must be an "
+                "explicit, reasoned decision (7.A.1: report it, don't lower the bar)"
+            )
+            pytest.skip(
+                f"{handle}: no CJ image passes Stage 1 -- {rec.get('note', '(no note)')}"
+            )
+        d = rec["chosen"]
         assert d["short_side"] >= 1000, (
             f"{handle}: recorded hero short side {d['short_side']}px < 1000 (7.A.1 rule 1)"
         )
@@ -963,7 +975,13 @@ class TestHeroImage:
     def test_recorded_hero_is_really_first_on_the_page(self, page, base_url, handle):
         """Shopify appends a uniqueness suffix when a file is copied into product
         media, so compare on the filename STEM, not the full URL."""
-        d = self._decision(handle)["chosen"]
+        rec = self._decision(handle)
+        if rec.get("chosen") is None:
+            pytest.skip(
+                f"{handle}: no recorded hero to check position for -- "
+                f"{rec.get('note', '(no note)')}"
+            )
+        d = rec["chosen"]
         stem = d["url"].split("?")[0].rsplit("/", 1)[-1].rsplit(".", 1)[0]
         _goto(page, base_url, handle)
         src = page.evaluate(
@@ -984,3 +1002,73 @@ class TestHeroImage:
             " return i ? i.naturalWidth : 0; }"
         )
         assert nw > 0, f"{handle}: the hero image is in the DOM but does not load"
+
+@pytest.mark.parametrize("handle", PRODUCT_HANDLES)
+class TestPricingRule:
+    """v2.3 -- Itzik's pricing decision: ~20% gross margin, market check on
+    record, Buy 2 also >= 20% where a bundle exists, approved by Itzik before
+    shipping. Adapted from the Level 14 spec: NO_BUNDLE_HANDLES products
+    (Level 03, no compliant .90-ending Buy-2 total at the approved price)
+    have no buy2_total to check -- test that half as skipped, not crashed,
+    for exactly those recorded handles; anything else missing buy2_total
+    still fails, per 7.D #36's rule that a skip must be a recorded decision.
+    """
+
+    FEE_PCT, FEE_FIXED, MIN_MARGIN = 0.029, 0.30, 0.20
+
+    def _record(self, handle):
+        path = os.path.join(
+            os.path.dirname(HERO_SELECTION_DIR.rstrip("/")), "pricing", f"{handle}.json"
+        )
+        assert os.path.exists(path), (
+            f"no pricing record for {handle} at {path} -- run the Level 03 "
+            f"pricing rule (landed cost, market check, 20% floor)"
+        )
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+
+    def _margin(self, price, landed):
+        return (price - price * self.FEE_PCT - self.FEE_FIXED - landed) / price
+
+    def test_price_approved_and_matches_shopify(self, handle, shop_domain):
+        rec = self._record(handle)
+        assert rec.get("approved_by_itzik") is True, (
+            f"{handle}'s price hasn't been approved by Itzik yet"
+        )
+        data = TestV151Blockers()._shopify_product_json(handle, shop_domain)
+        live = {v["price"] / 100 for v in data["variants"]}
+        assert live == {rec["price"]}, (
+            f"{handle}: Shopify price {sorted(live)} != approved {rec['price']}"
+        )
+
+    def test_margin_at_least_20_percent(self, handle):
+        rec = self._record(handle)
+        worst = max(v["landed"] for v in rec["variant_costs"])
+        m1 = self._margin(rec["price"], worst)
+        assert m1 >= self.MIN_MARGIN, (
+            f"{handle}: Buy 1 margin {m1:.1%} on the most expensive variant "
+            f"(landed ${worst}) is below the 20% floor"
+        )
+        if rec.get("buy2_total") is None:
+            assert handle in NO_BUNDLE_HANDLES, (
+                f"{handle}: no buy2_total recorded and not on NO_BUNDLE_HANDLES "
+                f"-- a missing Buy 2 must be a recorded decision (7.D #36), not "
+                f"an unauthored gap"
+            )
+            pytest.skip(f"{handle}: no Buy-2 bundle -- {NO_BUNDLE_HANDLES[handle]}")
+        m2 = self._margin(rec["buy2_total"], 2 * worst)
+        assert m2 >= self.MIN_MARGIN, (
+            f"{handle}: Buy 2 margin {m2:.1%} on the most expensive variant "
+            f"is below the 20% floor"
+        )
+
+    def test_not_above_market_median(self, handle):
+        rec = self._record(handle)
+        market = rec.get("market", [])
+        assert len(market) >= 3, f"{handle}: need >= 3 market comparables"
+        assert rec["price"] <= rec["market_median"], (
+            f"{handle}: ${rec['price']} is above the market median "
+            f"${rec['market_median']} (Level 03 pricing rule). Recorded note: "
+            f"{rec.get('note', '(none)')}"
+        )
+

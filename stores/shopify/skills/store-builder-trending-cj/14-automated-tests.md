@@ -34,7 +34,7 @@ old shape could pass while the store was visibly broken:
 | `TestHomepageCompliance` / `TestHomepageDensity` | Section 5B structure, plus hero/footer pixel budgets at 375px |
 | `TestContactPage` | the business-details copy |
 | `TestReviewGate` / `TestHiddenProductsStayHidden` | v2.1: live products have ≥ 15 photo reviews that load; hidden products 404 and appear nowhere |
-| `TestHeroImage` | v2.1: the recorded hero passes the three rules and is really position 1 on the page |
+| `TestHeroImage` | v2.2: gallery + hero come only from CJ images, every uploaded image passed the pixel/Chinese-text checks, the hero is really position 1, no review photo in the gallery |
 
 Rule 1: **coverage is derived, never typed.** `PRODUCT_HANDLES` comes
 from `/collections/all` at collection time. Every run tests every
@@ -1275,19 +1275,61 @@ class TestHeroImage:
             f"character(s) — hard fail (Level 09 7.A.1)"
         )
 
+    def test_hero_and_gallery_come_only_from_cj(self, handle):
+        """v2.2 — product images come only from the product's own CJ
+        listing. v2.1 let review photos compete and all three heroes ended
+        up being customer review photos; that is now a hard fail."""
+        rec = self._record(handle)
+        entries = [rec["chosen"]] + rec.get("uploaded", [])
+        not_cj = [
+            e.get("url", "")[:80] for e in entries
+            if e.get("source") != "cj" or "/review-" in e.get("url", "")
+        ]
+        assert not not_cj, (
+            f"{handle} uses non-CJ images as product images: {not_cj} — "
+            f"review photos stay in the reviews section only (Level 01 "
+            f"rule 8, Level 09 7.A.1 v2.2)"
+        )
+
+    def test_every_uploaded_image_passed_stage_1(self, handle):
+        rec = self._record(handle)
+        bad = [
+            e.get("url", "")[:70] for e in [rec["chosen"]] + rec.get("uploaded", [])
+            if e.get("cjk_chars", 1) != 0
+            or e.get("short_side", 0) < 1000
+            or e.get("laplacian_var", 0) < 100
+        ]
+        assert not bad, (
+            f"{handle} uploaded images that fail the pixelation or Chinese-"
+            f"text check: {bad} — they must not be uploaded at all "
+            f"(Level 09 7.A.1 stage 1)"
+        )
+
     def test_person_preferred_when_available(self, handle):
         rec = self._record(handle)
         if not rec["chosen"].get("person_using_product"):
             person_shots = [
-                r for r in rec.get("rejected", [])
-                if r.get("person_using_product") and "cjk" not in r.get("reason", "")
-                and "pixel" not in r.get("reason", "")
+                e for e in rec.get("uploaded", [])
+                if e.get("person_using_product") and e.get("source") == "cj"
             ]
             assert not person_shots, (
-                f"{handle}'s hero is a bare product shot, but a clean photo "
-                f"of someone using it was rejected for another reason: "
-                f"{[r['url'][:60] for r in person_shots]} (Level 09 7.A.1 rule 3)"
+                f"{handle}'s hero is a bare product shot, but an uploaded CJ "
+                f"image shows someone using it: "
+                f"{[e['url'][:60] for e in person_shots]} (7.A.1 stage 2)"
             )
+
+    def test_no_review_photo_in_product_gallery(self, page, base_url, handle):
+        _goto(page, base_url, handle)
+        gallery_review_imgs = page.evaluate(
+            "() => Array.from(document.images)"
+            ".filter(i => /\\/review-/.test(i.src) && !i.closest('#reviews')"
+            " && !i.closest('[data-avatar-strip]') && !i.closest('[data-mini-reviews]'))"
+            ".map(i => i.src)"
+        )
+        assert not gallery_review_imgs, (
+            f"/products/{handle} shows review photos outside the reviews "
+            f"sections: {gallery_review_imgs[:3]} (Level 01 rule 8)"
+        )
 
     def test_page_hero_is_the_recorded_choice(self, page, base_url, handle):
         chosen_url = self._record(handle)["chosen"]["url"].split("?")[0]
@@ -1301,96 +1343,60 @@ class TestHeroImage:
             f"is not the recorded hero {chosen_url} — reorder the product "
             f"media so the chosen image is position 1"
         )
+
+@pytest.mark.parametrize("handle", PRODUCT_HANDLES)
+class TestPricingRule:
+    """v2.3 — Itzik's pricing decision: ~20% gross margin, never above the
+    market median, Buy 2 also >= 20%, approved by Itzik before shipping."""
+
+    FEE_PCT, FEE_FIXED, MIN_MARGIN = 0.029, 0.30, 0.20
+
+    def _record(self, handle):
+        path = os.path.join(
+            os.path.dirname(HERO_SELECTION_DIR.rstrip("/")), "pricing", f"{handle}.json"
+        )
+        assert os.path.exists(path), (
+            f"no pricing record for {handle} at {path} — run the Level 03 "
+            f"pricing rule (landed cost, market check, 20% floor)"
+        )
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+
+    def _margin(self, price, landed):
+        return (price - price * self.FEE_PCT - self.FEE_FIXED - landed) / price
+
+    def test_price_approved_and_matches_shopify(self, handle, shop_domain):
+        rec = self._record(handle)
+        assert rec.get("approved_by_itzik") is True, (
+            f"{handle}'s price hasn't been approved by Itzik yet"
+        )
+        data = TestV151Blockers()._shopify_product_json(handle, shop_domain)
+        live = {v["price"] / 100 for v in data["variants"]}
+        assert live == {rec["price"]}, (
+            f"{handle}: Shopify price {sorted(live)} != approved {rec['price']}"
+        )
+
+    def test_margin_at_least_20_percent(self, handle):
+        rec = self._record(handle)
+        worst = max(v["landed"] for v in rec["variant_costs"])
+        m1 = self._margin(rec["price"], worst)
+        m2 = self._margin(rec["buy2_total"], 2 * worst)
+        assert m1 >= self.MIN_MARGIN and m2 >= self.MIN_MARGIN, (
+            f"{handle}: margin Buy 1 {m1:.0%}, Buy 2 {m2:.0%} on the most "
+            f"expensive variant (landed ${worst}) — both must be >= 20%"
+        )
+
+    def test_not_above_market_median(self, handle):
+        rec = self._record(handle)
+        market = rec.get("market", [])
+        assert len(market) >= 3, f"{handle}: need >= 3 market comparables"
+        assert rec["price"] <= rec["market_median"], (
+            f"{handle}: ${rec['price']} is above the market median "
+            f"${rec['market_median']} (Level 03 pricing rule)"
+        )
 ```
 
 Extend this file, don't replace it, as new bug patterns get added to 7.D
 — each new 7.D entry should get a matching test here the same day, so
 the next build checks for it mechanically instead of relying on someone
 remembering to look.
-
-## Running the suite — what v2.2 had to fix before it would run at all
-
-The suite had never actually run in the repo. Three things were in the way,
-and all three are now fixed in `tests/`:
-
-1. **Determinism under `pytest -n`.** `discover_handles` now returns
-   `sorted(...)`, and discovery happens once per RUN rather than once per
-   process: the launcher discovers and passes the list down in the
-   `PDP_HANDLES` env var, and `_discovered_handles()` prefers it. Without
-   both halves, xdist aborts with "Different tests were collected between
-   workers" before a single test runs (7.D #37). Coverage is still derived
-   from `/collections/all` — `TestCatalogCoverage` re-discovers
-   independently, so a drift between the pinned list and the real catalog
-   still fails.
-
-   ```bash
-   H=$(python -c "import sys;sys.argv=['x','--base-url','http://localhost:3001'];\
-   sys.path.insert(0,'tests');import test_pdp_compliance as m;print(','.join(m.PRODUCT_HANDLES))")
-   PDP_HANDLES="$H" pytest tests/test_pdp_compliance.py -v -n 4 --base-url http://localhost:3001
-   ```
-
-2. **`-n 4`, never `-n 8`.** The Vite dev server cannot serve 8 concurrent
-   SSR renders; at `-n 8` it returns 500s and partial pages, and the suite
-   reports 122 failures that look like real, specific content bugs. At
-   `-n 4` the same tree is green. Full detail and the re-check procedure:
-   7.D #38. A run takes about 3.5 minutes at `-n 4`; serial it is ~35, which
-   is why nobody had waited for one.
-
-3. **`pytest-xdist` is a dependency.** Add it to `requirements.txt`
-   alongside `playwright>=1.62.0`.
-
-### `paused_handles` — the only legitimate way to quiet a product
-
-`conftest.py` now carries `PAUSED_HANDLES`, a dict of handle → the recorded
-reason it is held out of the build pipeline, plus a `paused_handles`
-fixture. `deliberate_no_bundle` is derived from it. Tests that assert a
-page is *built* (`test_content_key_renders`,
-`test_renders_every_reference_component`, `test_page_weight_and_sections`,
-and both bundle branches) skip with that reason.
-
-This does not soften 7.D #36. A handle belongs there only when Itzik has
-decided to hold it and the reason is written next to it; anything else
-still fails. The distinction the fixture encodes is "owned and recorded"
-versus "nobody authored it yet" — which was the exact ambiguity #36 was
-written about.
-
-### `TestCartShowsBundlePrice` (v2.4, for 7.D #41)
-
-The bundle was verified on the PDP and at checkout for four rounds and
-never in between, which is exactly where it breaks. This test adds the
-cart page to the path:
-
-```python
-class TestCartShowsBundlePrice:
-    """7.D #41 — the cart page must not drop the bundle discount."""
-
-    def test_cart_total_matches_the_tier_price(self, page, base_url):
-        page.goto(f"{base_url}/products/{REFERENCE_HANDLE}")
-        page.wait_for_timeout(2000)
-        promised = page.evaluate(
-            "() => {const b=document.querySelector('[data-quantity-tiers]');"
-            " if(!b) return null;"
-            " const m=b.innerText.match(/\\$([\\d,]+\\.\\d\\d)/g);"
-            " return m ? m.map(s=>parseFloat(s.slice(1).replace(',',''))) : null;}"
-        )
-        if not promised:
-            pytest.skip("no tier block on the reference product")
-        page.click("button:has-text('ADD')")
-        page.wait_for_timeout(4000)
-        page.goto(f"{base_url}/cart")
-        page.wait_for_timeout(3000)
-        text = page.inner_text("body")
-        shown = [float(m.replace(",", "")) for m in
-                 re.findall(r"\$([\d,]+\.\d\d)", text)]
-        assert min(promised) in shown or min(shown) == min(promised), (
-            f"cart shows {sorted(set(shown))} but the tier block promised "
-            f"{sorted(set(promised))} — the bundle discount is missing from "
-            "the cart page (7.D #41). Checkout may still be right; that is "
-            "not enough."
-        )
-```
-
-Run it against production as well as the dev server when a pricing or
-discount change ships — the discount is a Shopify-side object, so a dev
-run can pass while the live store disagrees.
-

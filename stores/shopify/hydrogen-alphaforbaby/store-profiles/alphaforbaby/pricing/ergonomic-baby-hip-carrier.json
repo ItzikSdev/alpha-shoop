@@ -1,0 +1,188 @@
+{
+  "handle": "ergonomic-baby-hip-carrier",
+  "pid": "FDE0817B-91FC-42D2-A6FE-8AFF85E23A78",
+  "variant_costs": [
+    {
+      "variant": "Blue",
+      "cj_item": 12.89,
+      "cj_shipping": 18.84,
+      "cj_shipping_method": "CJPacket Eub",
+      "cj_shipping_days": "12-50",
+      "landed": 31.73,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Green",
+      "cj_item": 12.51,
+      "cj_shipping": 18.84,
+      "cj_shipping_method": "CJPacket Eub",
+      "cj_shipping_days": "12-50",
+      "landed": 31.35,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Breathable blue",
+      "cj_item": 11.85,
+      "cj_shipping": 18.84,
+      "cj_shipping_method": "CJPacket Eub",
+      "cj_shipping_days": "12-50",
+      "landed": 30.69,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Pink flower",
+      "cj_item": 11.5,
+      "cj_shipping": 18.84,
+      "cj_shipping_method": "CJPacket Eub",
+      "cj_shipping_days": "12-50",
+      "landed": 30.34,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Claret",
+      "cj_item": 11.5,
+      "cj_shipping": 18.84,
+      "cj_shipping_method": "CJPacket Eub",
+      "cj_shipping_days": "12-50",
+      "landed": 30.34,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Breathable powder",
+      "cj_item": 11.5,
+      "cj_shipping": 18.84,
+      "cj_shipping_method": "CJPacket Eub",
+      "cj_shipping_days": "12-50",
+      "landed": 30.34,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Blue Flower",
+      "cj_item": 11.5,
+      "cj_shipping": 19.52,
+      "cj_shipping_method": "LuWei Ordinary US",
+      "cj_shipping_days": "5-11",
+      "landed": 31.02,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Breathable Dark blue",
+      "cj_item": 11.85,
+      "cj_shipping": 18.84,
+      "cj_shipping_method": "CJPacket Eub",
+      "cj_shipping_days": "12-50",
+      "landed": 30.69,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Green flower",
+      "cj_item": 11.5,
+      "cj_shipping": 18.84,
+      "cj_shipping_method": "CJPacket Eub",
+      "cj_shipping_days": "12-50",
+      "landed": 30.34,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Powder",
+      "cj_item": 12.51,
+      "cj_shipping": 18.84,
+      "cj_shipping_method": "CJPacket Eub",
+      "cj_shipping_days": "12-50",
+      "landed": 31.35,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Breathable Green",
+      "cj_item": 11.5,
+      "cj_shipping": 18.84,
+      "cj_shipping_method": "CJPacket Eub",
+      "cj_shipping_days": "12-50",
+      "landed": 30.34,
+      "checked_at": "2026-09-21"
+    },
+    {
+      "variant": "Navy",
+      "cj_item": 13.9,
+      "cj_shipping": 18.84,
+      "cj_shipping_method": "CJPacket Eub",
+      "cj_shipping_days": "12-50",
+      "landed": 32.74,
+      "checked_at": "2026-09-21"
+    }
+  ],
+  "worst_variant": "Navy",
+  "worst_landed": 32.74,
+  "fee_model": {
+    "pct": 0.029,
+    "fixed": 0.3,
+    "note": "2.9% + $0.30 per order"
+  },
+  "margin_floor": 0.2,
+  "price_at_20pct": 42.9,
+  "price": 42.9,
+  "buy2_total": null,
+  "buy2_discount_amount": null,
+  "margin_pct": 20.1,
+  "buy2_margin_pct": null,
+  "profit_per_order": 8.62,
+  "market": [
+    {
+      "source": "Walmart",
+      "title": "AGUDAN Ergonomic Hip Seat Baby Carrier with Storage Pocket",
+      "price": 25.99,
+      "url": "https://www.walmart.com/ip/AGUDAN-Baby-Carrier-with-Hip-Seat-6-in-1-Ergonomic-Unisex-Waist-Stool-0-36-Months/3320716294",
+      "checked_at": "2026-09-21",
+      "evidence": "search-snippet"
+    },
+    {
+      "source": "Walmart",
+      "title": "6-in-1 Ergonomic Baby Carrier with Hip Seat, Diaper Pocket, Waist Stool",
+      "price": 29.99,
+      "url": "https://www.walmart.com/ip/Baby-Carrier-Hip-Seat-Ergonomic-Newborn-Toddler-0-36-Month-6-in-1-Kangaroo-Infant-Dad-Mom-Front-Back-Adjustable-Removable-All-Seasons/5332116844",
+      "checked_at": "2026-09-21",
+      "evidence": "search-snippet"
+    },
+    {
+      "source": "Walmart",
+      "title": "MOONORAH Baby Carrier with Hip Seat, M position 6-in-1 (from)",
+      "price": 29.99,
+      "url": "https://www.walmart.com/ip/OTDLIGHT-Baby-Carrier-Hip-Seat-Ergonomic-M-Position-6-1-Baby-Wraps-Carrier-Adjustable-Holder-Newborn-Toddler-Head-Support-Breathable-Mesh-Green/5147869395",
+      "checked_at": "2026-09-21",
+      "evidence": "search-snippet"
+    },
+    {
+      "source": "Walmart",
+      "title": "AGUDAN Baby Carrier with Hip Seat 6-in-1 (colour-dependent)",
+      "price": 33.29,
+      "url": "https://www.walmart.com/ip/AGUDAN-Baby-Carrier-with-Hip-Seat-6-in-1-Ergonomic-Unisex-Waist-Stool-0-36-Months/3320716294",
+      "checked_at": "2026-09-21",
+      "evidence": "search-snippet"
+    },
+    {
+      "source": "Walmart",
+      "title": "AGUDAN Baby Carrier with Hip Seat 6-in-1 (colour-dependent, high)",
+      "price": 36.99,
+      "url": "https://www.walmart.com/ip/AGUDAN-Baby-Carrier-with-Hip-Seat-6-in-1-Ergonomic-Unisex-Waist-Stool-0-36-Months/3320716294",
+      "checked_at": "2026-09-21",
+      "evidence": "search-snippet"
+    },
+    {
+      "source": "Walmart (branded reference)",
+      "title": "Momcozy Hip Seat Baby Carrier with Storage Pockets",
+      "price": 47.97,
+      "url": "https://www.walmart.com/ip/Momcozy-Hip-Seat-Baby-Carrier-Black/7353124001",
+      "checked_at": "2026-09-21",
+      "evidence": "search-snippet"
+    }
+  ],
+  "market_median": 29.99,
+  "viable_at_20pct": false,
+  "note": "Itzik overrode: applied the 20% price ($42.90) despite it being above the $29.99 market median. Confirmed not competitive with the median at this price -- flagged, applied anyway on his explicit instruction. The Buy-2 bundle could not be preserved at this price (see bundle_removed_reason) and was removed rather than faking a discount or breaking the margin floor.",
+  "approved_by_itzik": true,
+  "checked_at": "2026-09-21",
+  "bundle_removed": true,
+  "bundle_removed_reason": "At $42.90, 2x gross ($85.80) is only $0.48 above the 20%-floor total ($85.32). .90-ending totals are $1.00 apart, so none both clears the floor and undercuts 2x gross -- no compliant Buy-2 discount exists. Shopify automatic discount deleted; quantityTiers set to [] in pdp_content; registered in tests/conftest.py NO_BUNDLE_HANDLES.",
+  "approved_at": "2026-09-21",
+  "applied_at": "2026-09-21"
+}

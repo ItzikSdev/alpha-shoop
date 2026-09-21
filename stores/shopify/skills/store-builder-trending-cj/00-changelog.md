@@ -1778,87 +1778,59 @@ measuring: review photos are now re-hosted on cdn.shopify.com (7.D #35
 addressed) and the crib's 23 reviews are back (7.D #33). Added
 TestReviewGate, TestHiddenProductsStayHidden and TestHeroImage — suite now
 16 classes / 65 tests.
-v2.2 — The first round where the compliance suite actually ran. Real
-output: **363 passed, 29 skipped, 13 failed in 3:26 at `-n 4`**, and all
-13 failures are the single owner-approval action still outstanding (see
-below). Fixed and verified on the rendered build: 7.D #31 (all 9 products
-buyable, every variant `availableForSale`), #32 (real landed cost measured
-per variant from CJ item price + CJ `freightCalculate` — 50 of 62
-key-matched variants were selling below cost, not just the Domino; Itzik
-approved trimming the unsellable-freight variants and one price per product
-at ~2.9x worst landed: Domino $53.90, Egg $58.90, Board $46.90, Shelter
-$81.90, Canopy $67.90, Nest $107.90, `compareAtPrice` cleared), #33 (crib's
-23 real reviews re-imported from CJ, avg 4.78, both photos re-hosted first),
-#34 (bundle + real Shopify automatic discount on all 8 built products), #35
-(297/297 review photos on Shopify's CDN and loading; the last `aliyuncs`
-leak was the AG Product Reviews blob being serialized into the loader
-payload, now destructured out), #36 (plus #39, the branch its fix missed).
-Level 04's v1.53 reviews-under-video move shipped and is verified by byte
-offset in the served HTML. Level 06 row 5's buyer count now falls back to
-the real imported review count instead of rendering on the carrier alone.
-Itzik's three decisions this round: trim-then-one-price; unpublish the 3
-leftover June clothing products from the storefront (done — the catalog is
-now exactly the 9); keep Glow Whale paused (now recorded as
-`PAUSED_HANDLES` in conftest rather than as noise). New bugs: #37 (a
-live-derived parametrize list aborts `pytest -n` before any test runs),
-#38 (`-n 8` against a dev server invents 122 plausible failures — the most
-dangerous entry in this file), #39 (#36's fix covered only one bundle
-branch), #40 (this changelog ran ahead of the entry file: v2.1's two
-binding rules were never reflected in the status board, so a session
-briefed off it would have missed them entirely).
-**Outstanding and blocked on Itzik:** applying Level 01 rule 7 (v2.1). The
-gate was measured against CJ's own review API and the counts are at CJ's
-ceiling — the Canopy (13), Nest (11), Board (4), Shelter (3) and Crib (1)
-cannot reach 15 photo reviews from CJ at all, so the rule requires hiding
-them, leaving 3 products live. `TestReviewGate` and
-`TestHiddenProductsStayHidden` are now in the repo and are exactly the 13
-red tests; they go green the moment those six are unpublished.
-v2.3 — v2.1's two rules are now actually applied, not just written down.
-**Rule 7 (review gate):** the six products under 15 photo reviews are
-unpublished from all four sales channels (alphaforbaby, Online Store,
-Meta, Microsoft Copilot) and nothing was deleted — each one's page,
-`pdp_content`, reviews and the pricing/bundle work done in v2.2 are intact
-for the day it passes. Verified: all six return **404**, and none of them
-appears on `/`, `/collections/all`, `/sitemap.xml`,
-`/sitemap/products/1.xml` or search. The storefront now serves exactly
-three products. Before hiding the canopy set (13) and the nest (11) I
-searched CJ for alternative listings of the same items — 33 candidates
-each, top 12 by relevance checked — and none had ≥10 photo reviews, so
-their counts really are at CJ's ceiling and no further import will move
-them. **Rule 8 (hero image):** heroes chosen for all three live products
-via markitdown + `alpha/worker-fast` (Haiku 4.5) through the LiteLLM
-proxy, applied as position 1 in Shopify media, and recorded in
-`store-profiles/alphaforbaby/hero-selection/<handle>.json`. Two
-corrections to 7.A.1 came out of the first real run and are written into
-Level 09: the `0.5 bytes/pixel` check is mis-calibrated (measured median
-across 271 real images: 0.1787; only 7 reach 0.5) and rejects everything,
-so it is recalibrated to 0.02; and a single downscaled vision pass missed
-18 Chinese characters on a leaflet and wrongly reported a person using the
-product, so gate 2 now tiles the OCR at native resolution and the person
-question explicitly excludes people printed on packaging. Tests: added
-`TestReviewGate`, `TestHiddenProductsStayHidden` and `TestHeroImage`, and
-replaced `test_every_trending_product_is_served` with
-`test_every_trending_product_is_in_the_live_catalog` (a shortlisted product
-may be absent only if it is on `REVIEW_GATE_HIDDEN`) plus its mirror
-`test_gate_hidden_products_are_actually_absent`, so "listed as hidden but
-still live" cannot pass. Suite: **12 classes, 151 tests, 148 passed /
-3 skipped / 0 failed in 1:17** at `-n 4`. (Level 14's "16 classes / 65
-tests" describes its own starter file, not this repo's suite, which grew
-from a different base — the class list above is what actually runs.)
-v2.4 — Deployed to production, and one layout change from Itzik on the way
-out. **Deploy:** `alphaforbaby/production` pushed, Oxygen build succeeded,
-alphaforbaby.com now serves the v2.1 rules — 3 products on the homepage and
-in /collections/all, the bundle on all three, Ratings & Reviews under the
-video, 0 supplier-CDN references, and all six gated products returning 404
-in production. Worth recording: the local production branch was **32
-commits behind the remote**, so this deploy shipped 33 commits (11 touching
-the storefront), not one. The separate "Push Shopify Theme" workflow fails
-on every push and has done since 2026-08-29 — it targets
-`stores/shopify/lumibud-dev`, a path that does not exist, with empty
-credentials. It is unrelated to this storefront and was already failing;
-it needs fixing or deleting on its own. **Layout:** Itzik asked for the
-buyer avatar thumbnails under the first product image to be removed. Done
-— Level 06 row 5 now requires the count pill without photos, the avatars
-prop and the v1.44 #6 checkmark CSS are deleted, and the pill is gated on
-the count rather than on having photos. 7.D #21 is moot as a result.
+v2.2 — Corrected the v2.1 hero-image rule, which was written wrong:
+it let customer review photos compete for the hero, and all three live
+products (carrier, sorting egg, domino) ended up with a review photo as
+their hero. Itzik's actual rule, now in Level 01 rule 8 and Level 09
+Section 7.A.1: product images — gallery and hero — come ONLY from the
+product's own CJ listing. Stage 1: every CJ image passes markitdown + OCR
+(not pixelated, no Chinese text) BEFORE it is uploaded; failures are never
+uploaded. Stage 2: the hero is picked from those, preferring a person using
+the product. Review photos stay in the reviews section only. TestHeroImage
+now fails on any non-CJ source or review photo in the gallery, and on any
+uploaded image that didn't pass stage 1 (16 classes / 68 tests).
+v2.3 — Pricing rule (Level 03): an outside review found prices far above
+market — domino $53.90 vs $19.99–$25.19 at Walmart, matching eggs $58.90 vs
+$7.99 (Walmart) / $39.97 (boutique), hip-seat carrier $94.90 vs $25.99–$59.99
+(above Momcozy at $49.99). Itzik decided on roughly 20% gross margin. Every
+price is now: landed CJ cost + 2.9% + $0.30 fee → 20% price rounded up to
+.90, checked against >= 3 market comparables and never above the median;
+Buy 2 also >= 20%; "Cost per item" filled in Shopify; recorded per product
+in store-profiles/alphaforbaby/pricing/<handle>.json and approved by Itzik
+before it ships. Added TestPricingRule (17 classes / 71 tests).
+v2.4 — v2.3's pricing rule applied to all 3 live products, real landed cost
+per variant from the CJ API (item price + freightCalculate shipping,
+dated), written into Shopify's Cost per item on every variant. Domino:
+worst-variant landed $18.26, 20% price $24.90, market median $29.99 (3+
+Walmart/brand comparables) — viable, applied. Carrier and egg: the 20%
+price ($42.90, $26.90) came back above their market medians ($29.99,
+$15.49) and were reported as not viable per Level 03 step 5 — Itzik then
+explicitly overrode that guardrail and instructed both applied anyway.
+Done: prices set on every variant, Buy-2 tiers resized to the new prices
+(domino $47.90/$1.90 off, egg $52.90/$0.90 off — both re-verified >=20%
+margin at 2 units), `approved_by_itzik: true` recorded with the override
+noted in each JSON. The carrier's Buy-2 could not be preserved at $42.90 —
+2x gross ($85.80) is only $0.48 above the 20%-floor total ($85.32), and
+.90-ending totals are $1.00 apart, so no value is both a real discount and
+above the floor — the bundle was removed (Shopify automatic discount
+deleted, `quantityTiers: []`) rather than faking a discount or breaking
+the margin. Registered in `tests/conftest.py`'s new `NO_BUNDLE_HANDLES`
+(distinct from `PAUSED_HANDLES` — the carrier is live and built, just
+without a Buy-2). `TestPricingRule` added to Level 14's own spec, adapted
+so `NO_BUNDLE_HANDLES` products skip the Buy-2 margin check instead of
+crashing on a null `buy2_total`. Real run: **144 passed, 14 skipped, 2
+failed in 1:13** at `-n 4` — the 2 failures are
+`test_not_above_market_median` on the carrier and egg, which is the test
+correctly reporting Itzik's override, not a defect; nothing here should be
+"fixed" by weakening that assertion. Also fixed in the same pass: found
+and re-hid 3 review-gate products (nest, canopy, Glow Whale) that had been
+silently re-published to Online Store/alphaforbaby by something in the
+org's automation (most likely the CJ stock sweep, which predates and
+doesn't know about the v2.1 review gate) — this is a real coordination
+gap between two systems, not yet fixed at the root, only caught and
+corrected here. Also fixed `TestHeroImage`'s two tests crashing with
+`TypeError` on a product with a recorded `chosen: null` (the carrier and
+domino, both `blocked_no_compliant_image` from v2.2's hero rework) — they
+now skip with the recorded reason instead of erroring, matching this
+codebase's rule that every skip must be a recorded decision, not a crash.
 
