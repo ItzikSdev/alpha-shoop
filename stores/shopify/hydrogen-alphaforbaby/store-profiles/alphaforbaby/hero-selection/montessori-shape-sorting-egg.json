@@ -1,49 +1,81 @@
 {
   "handle": "montessori-shape-sorting-egg",
+  "status": "ok",
+  "cj_listing_url": "https://cjdropshipping.com/product/-p-1419174980897345536.html",
   "chosen": {
-    "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-cc014d29043c4609.jpg?v=1789410378",
-    "shopify_media_id": "gid://shopify/MediaImage/31385566609479",
-    "short_side": 1500,
-    "width": 1500,
-    "height": 2000,
-    "laplacian_var": 533.8,
+    "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/00d374ca-46ad-4e3f-b58d-783e220165e9.jpg",
+    "source": "cj",
+    "cj_source_url": "https://cf.cjdropshipping.com/00d374ca-46ad-4e3f-b58d-783e220165e9.jpg",
+    "short_side": 1276,
+    "width": 1276,
+    "height": 1702,
+    "laplacian_var": 940.47,
     "cjk_chars": 0,
-    "person_using_product": true,
-    "source": "review",
-    "note": "A real hand is holding and using the purple shape-sorting toys."
+    "person_using_product": false
   },
-  "rejected": [
+  "uploaded": [
     {
-      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-4c5e1394c85642fc.jpg?v=1789410254",
-      "reason": "lower sharpness"
+      "url": "(in Shopify media)",
+      "source": "cj",
+      "cj_source_url": "https://cf.cjdropshipping.com/00d374ca-46ad-4e3f-b58d-783e220165e9.jpg",
+      "short_side": 1276,
+      "laplacian_var": 940.47,
+      "cjk_chars": 0
     },
     {
-      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-b67e32c9eda74e1c.jpg?v=1789410322",
-      "reason": "lower sharpness"
-    },
-    {
-      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-00df78786e6c4020.jpg?v=1789410357",
-      "reason": "lower sharpness"
-    },
-    {
-      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-0ac740ab9b4f443c.jpg?v=1789410347",
-      "reason": "lower sharpness"
-    },
-    {
-      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-260f4df38a6d4889.jpg?v=1789410268",
-      "reason": "lower sharpness"
+      "url": "(in Shopify media)",
+      "source": "cj",
+      "cj_source_url": "https://cf.cjdropshipping.com/194f340a-a789-445e-9eba-2309c152ffae.jpg",
+      "short_side": 1919,
+      "laplacian_var": 264.08,
+      "cjk_chars": 0
     }
   ],
-  "gate1_rejected_count": 61,
-  "candidates_total": 76,
+  "rejected": [
+    {
+      "cj_source_url": "https://oss-cf.cjdropshipping.com/product/2023/10/16/11/781114bb-dc36-4570-8d3b-be11ed8c5cc5.jpg",
+      "reason": "pixelated: short side 750px < 1000; pixelated: laplacian 55.14 < 100"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/b04ae824-3535-4cfc-bfdc-5d55c3cb0b2d.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/6639908b-a539-4fbd-ac99-fafe8685c32d.jpg",
+      "reason": "pixelated: short side 800px < 1000; pixelated: laplacian 97.84 < 100"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/88b4d072-2df9-4c6d-86e7-634f63d18564.jpg",
+      "reason": "pixelated: short side 400px < 1000; pixelated: laplacian 56.48 < 100"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/fbcab5da-f8c2-4c7f-bf9e-5d4c6a9f7933.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/820e0949-403f-4296-8996-b4f97e0f5a75.png",
+      "reason": "pixelated: short side 533px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/b3448024-85d3-4d9f-95bd-6eaf904c2839.png",
+      "reason": "pixelated: short side 630px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/d6171946-ec0f-4897-bca8-aa01adace411.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/bf3bab0f-4849-4f85-98c8-ea6d00700788.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/14e90879-c9b7-4626-9e3b-a655a183732d.jpg",
+      "reason": "pixelated: short side 432px < 1000"
+    }
+  ],
+  "stage1_passed": 2,
+  "stage1_total": 15,
+  "note": "Stage-2 tie-break: neither passer shows a person, so the higher Laplacian variance wins (940.47 over 264.08). Only 2 of 15 CJ images clear Stage 1, which is fewer than the gallery needs - reported to Itzik.",
   "model": "alpha/worker-fast (anthropic/claude-haiku-4-5) via LiteLLM proxy",
-  "method": "markitdown vision pass over gate-1 survivors, then full-resolution 2x3 tiled OCR re-check on finalists",
-  "checked_at": "2026-09-21",
-  "gate1_passed": 15,
-  "gate1_thresholds": {
-    "short_side_min": 1000,
-    "laplacian_var_min": 100,
-    "bytes_per_pixel_min": 0.02,
-    "note": "7.A.1 specifies bytes_per_pixel >= 0.5 as the upscaled-thumbnail check. Measured across all 271 real candidate images the range was 0.0256-1.3789 with a median of 0.1787 \u2014 only 7 images store 0.5 bytes/pixel or more, because that density is far above what any normal JPEG produces. Applied at 0.5 the rule rejects every image on all three products and no product has a hero at all. Recalibrated to 0.02, which still catches genuine upscaled thumbnails. Flagged to Itzik; the two hard gates (short side and Laplacian) are unchanged."
-  }
+  "checked_at": "2026-09-21"
 }

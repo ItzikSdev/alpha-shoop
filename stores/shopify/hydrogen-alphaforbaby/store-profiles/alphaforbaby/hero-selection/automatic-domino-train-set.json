@@ -1,49 +1,54 @@
 {
   "handle": "automatic-domino-train-set",
-  "chosen": {
-    "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-11d35a44036a43a5.jpg?v=1789410405",
-    "shopify_media_id": "gid://shopify/MediaImage/31385567952967",
-    "short_side": 1500,
-    "width": 1500,
-    "height": 2000,
-    "laplacian_var": 331.55,
-    "cjk_chars": 0,
-    "person_using_product": true,
-    "source": "review",
-    "note": "Child's bare feet visible at top, actively playing with toy train."
-  },
+  "status": "blocked_no_compliant_image",
+  "cj_listing_url": "https://cjdropshipping.com/product/-p-1441350234507710464.html",
+  "chosen": null,
+  "uploaded": [],
   "rejected": [
     {
-      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-8574a147d8d94c2f.jpg?v=1789410433",
-      "reason": "no person using the product"
+      "cj_source_url": "https://cf.cjdropshipping.com/eddac702-b8c8-4041-9700-06ea1714c955.jpg",
+      "reason": "pixelated: laplacian 92.55 < 100 (large flat white background depresses the score); AND cjk_text: 17 chars on the retail box (\u9002\u54083\u5c81\u4ee5\u4e0a / \u706f\u5149 / \u97f3\u6548 / \u81ea\u52a8\u6f14\u64ad / \u65b9\u5411\u53ef\u8c03)"
     },
     {
-      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-03c284cf12714a49.jpg?v=1789410402",
-      "reason": "no person using the product"
+      "cj_source_url": "https://cf.cjdropshipping.com/9e5672fb-59e9-439c-b4ba-5f7a4e5c3f95.jpg",
+      "reason": "pixelated: short side 660px < 1000"
     },
     {
-      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-909007ba29a248ca.jpg?v=1789410471",
-      "reason": "no person using the product"
+      "cj_source_url": "https://cf.cjdropshipping.com/b8f73199-719c-4f94-a827-2a3012fb607e.jpg",
+      "reason": "pixelated: short side 800px < 1000"
     },
     {
-      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-e9ea7a29b53243ea.jpg?v=1789410409",
-      "reason": "no person using the product"
+      "cj_source_url": "https://oss-cf.cjdropshipping.com/product/2026/08/07/09/85a7a093-155f-4128-8af9-3aeba31f5e84.jpg",
+      "reason": "pixelated: short side 382px < 1000"
     },
     {
-      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-e15330238206471a.jpg?v=1789410396",
-      "reason": "no person using the product"
+      "cj_source_url": "https://cf.cjdropshipping.com/eeda69ce-1a05-4dce-b4c9-64d4b2feb45d.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/ea25fa49-3124-4f2b-8a16-b928723f1589.png",
+      "reason": "pixelated: short side 888px < 1000"
+    },
+    {
+      "cj_source_url": "https://oss-cf.cjdropshipping.com/product/2024/03/11/03/d40e0616-a973-49f6-b7ae-5798a47092b4.jpg",
+      "reason": "pixelated: short side 705px < 1000; pixelated: laplacian 48.5 < 100"
+    },
+    {
+      "cj_source_url": "https://oss-cf.cjdropshipping.com/product/2023/12/27/06/9222045a-fac0-4ecb-a277-f1880cce66f9.jpg",
+      "reason": "pixelated: short side 455px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/a6ab18ff-209e-456d-ae59-5e0a42033028.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/88a6219f-b43e-4251-87a7-ae641d5bd29d.png",
+      "reason": "pixelated: short side 745px < 1000"
     }
   ],
-  "gate1_rejected_count": 52,
-  "candidates_total": 64,
+  "stage1_passed": 0,
+  "stage1_total": 22,
+  "note": "0 of 22 CJ images pass Stage 1. Only one reaches 1000px (1601x1601) and it fails both checks: Laplacian 92.55 and 17 Chinese characters on the packaging. Per 7.A.1 this product has no usable CJ imagery and was reported to Itzik before building.",
   "model": "alpha/worker-fast (anthropic/claude-haiku-4-5) via LiteLLM proxy",
-  "method": "markitdown vision pass over gate-1 survivors, then full-resolution 2x3 tiled OCR re-check on finalists",
-  "checked_at": "2026-09-21",
-  "gate1_passed": 12,
-  "gate1_thresholds": {
-    "short_side_min": 1000,
-    "laplacian_var_min": 100,
-    "bytes_per_pixel_min": 0.02,
-    "note": "7.A.1 specifies bytes_per_pixel >= 0.5 as the upscaled-thumbnail check. Measured across all 271 real candidate images the range was 0.0256-1.3789 with a median of 0.1787 \u2014 only 7 images store 0.5 bytes/pixel or more, because that density is far above what any normal JPEG produces. Applied at 0.5 the rule rejects every image on all three products and no product has a hero at all. Recalibrated to 0.02, which still catches genuine upscaled thumbnails. Flagged to Itzik; the two hard gates (short side and Laplacian) are unchanged."
-  }
+  "checked_at": "2026-09-21"
 }

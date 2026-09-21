@@ -1,49 +1,65 @@
 {
   "handle": "ergonomic-baby-hip-carrier",
-  "chosen": {
-    "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-bbeaf69f3ccc48ff.jpg?v=1789410053",
-    "shopify_media_id": "gid://shopify/MediaImage/31385565691975",
-    "short_side": 1500,
-    "width": 1500,
-    "height": 2000,
-    "laplacian_var": 221.99,
+  "status": "blocked_no_compliant_image",
+  "cj_listing_url": "https://cjdropshipping.com/product/-p-FDE0817B-91FC-42D2-A6FE-8AFF85E23A78.html",
+  "chosen": null,
+  "current_first_image": {
+    "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/hero-carrier.jpg",
+    "source": "unknown",
+    "short_side": 1000,
+    "width": 1000,
+    "height": 1000,
+    "laplacian_var": 101.92,
     "cjk_chars": 0,
-    "person_using_product": true,
-    "source": "review",
-    "note": "Real woman actively wearing and using baby carrier with child."
+    "person_using_product": false,
+    "note": "Passes both hard checks but is NOT one of the 13 images on the CJ listing, so it fails the v2.2 provenance rule. Origin unknown - predates this round."
   },
+  "uploaded": [],
   "rejected": [
     {
-      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-08348b8def5d45b6.jpg?v=1789409949",
-      "reason": "cjk_text: 18 chars"
+      "cj_source_url": "https://cf.cjdropshipping.com/20200521/307674343984.jpg",
+      "reason": "pixelated: short side 800px < 1000"
     },
     {
-      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-62f03cc9be444962.jpg?v=1789410056",
-      "reason": "lower sharpness"
+      "cj_source_url": "https://cf.cjdropshipping.com/20200521/2026304065028.jpg",
+      "reason": "pixelated: short side 480px < 1000; pixelated: laplacian 88.69 < 100"
     },
     {
-      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-55479d0549154319.jpg?v=1789409952",
-      "reason": "no person using the product"
+      "cj_source_url": "https://cf.cjdropshipping.com/20200521/977502878523.jpg",
+      "reason": "pixelated: short side 480px < 1000"
     },
     {
-      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-d34789c9638440af.jpg?v=1789409942",
-      "reason": "no person using the product"
+      "cj_source_url": "https://cf.cjdropshipping.com/20200923/2289140396200.jpg",
+      "reason": "pixelated: short side 800px < 1000"
     },
     {
-      "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/review-9942e4669c6246a3.jpg?v=1789409932",
-      "reason": "cjk_text: 2 chars"
+      "cj_source_url": "https://cf.cjdropshipping.com/20200923/565995251337.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/20200521/1775333548077.jpg",
+      "reason": "pixelated: short side 480px < 1000; pixelated: laplacian 85.41 < 100"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/20200521/927682396908.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/20200923/51949050913.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/20200923/8261364542185.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/20200923/2220511375443.jpg",
+      "reason": "pixelated: short side 800px < 1000"
     }
   ],
-  "gate1_rejected_count": 123,
-  "candidates_total": 131,
+  "stage1_passed": 0,
+  "stage1_total": 13,
+  "note": "0 of 13 CJ images pass Stage 1. Every one is 800x800 or 480x480 - they are SHARP (Laplacian up to 538) and carry no Chinese text; they fail on resolution alone. Per 7.A.1 this product has no usable CJ imagery and was reported to Itzik before building.",
   "model": "alpha/worker-fast (anthropic/claude-haiku-4-5) via LiteLLM proxy",
-  "method": "markitdown vision pass over gate-1 survivors, then full-resolution 2x3 tiled OCR re-check on finalists",
-  "checked_at": "2026-09-21",
-  "gate1_passed": 8,
-  "gate1_thresholds": {
-    "short_side_min": 1000,
-    "laplacian_var_min": 100,
-    "bytes_per_pixel_min": 0.02,
-    "note": "7.A.1 specifies bytes_per_pixel >= 0.5 as the upscaled-thumbnail check. Measured across all 271 real candidate images the range was 0.0256-1.3789 with a median of 0.1787 \u2014 only 7 images store 0.5 bytes/pixel or more, because that density is far above what any normal JPEG produces. Applied at 0.5 the rule rejects every image on all three products and no product has a hero at all. Recalibrated to 0.02, which still catches genuine upscaled thumbnails. Flagged to Itzik; the two hard gates (short side and Laplacian) are unchanged."
-  }
+  "checked_at": "2026-09-21"
 }
