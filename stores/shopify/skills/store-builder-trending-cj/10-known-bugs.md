@@ -646,3 +646,33 @@ checks for it too, instead of re-discovering it from scratch.
     the same edit as the level file, and when a new rule creates
     outstanding work, it goes in "Top blockers" too. Until then, read
     Level 01 to the END (rules 7 and 8 live past the six older ones).
+
+41. **The cart page shows the undiscounted total, so the bundle silently
+    disappears between the product page and checkout (v2.4).** Symptom,
+    measured on production: the Domino PDP promises Buy 2 for **$96.90**
+    (with $107.80 struck through), Add to Cart works, and the cart page
+    then shows **$107.80** for both the line and the Subtotal, with no
+    discount line anywhere. Checkout is correct — it renders "Discounted
+    price", $107.80 struck, and charges **$96.90** — so nothing dishonest
+    ships and nobody is overcharged. The damage is conversion: the
+    shopper sees the saving vanish at exactly the step where they decide
+    to continue, and has to trust a checkout they have not reached yet.
+    Cause is NOT the render: `CartSummary` reads
+    `cart.cost.subtotalAmount` and the cart fragment requests it. It is
+    the data — a cart built fresh through `cartCreate` with
+    `quantity: 2` comes back with `subtotalAmount` **96.90** and a line
+    `discountAllocations` of **10.90**, while the browser's cart, built
+    by `cartLinesAdd` through the Add-to-Cart button, reports
+    `subtotalAmount` **107.80**. So Shopify is not applying the automatic
+    discount to that cart object until checkout. Fix: render the line's
+    own `discountAllocations` (already in the Storefront response) rather
+    than trusting `subtotalAmount`, and show the saving as its own line
+    so the cart page and the PDP agree — or re-query the cart after
+    `cartLinesAdd` if the allocation appears on a later read. **Verify
+    the way this was found:** compare `cartCreate` against the real
+    browser cart, and read the checkout total, not just the cart page.
+    This affects every product with a `quantityTiers` bundle, so it
+    predates the six products the bundle was added to in v2.2 — the
+    carrier had it too and nobody had checked the cart. Enforced by
+    `TestCartShowsBundlePrice` (Level 14).
+

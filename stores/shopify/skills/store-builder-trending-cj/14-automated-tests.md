@@ -1353,3 +1353,44 @@ decided to hold it and the reason is written next to it; anything else
 still fails. The distinction the fixture encodes is "owned and recorded"
 versus "nobody authored it yet" — which was the exact ambiguity #36 was
 written about.
+
+### `TestCartShowsBundlePrice` (v2.4, for 7.D #41)
+
+The bundle was verified on the PDP and at checkout for four rounds and
+never in between, which is exactly where it breaks. This test adds the
+cart page to the path:
+
+```python
+class TestCartShowsBundlePrice:
+    """7.D #41 — the cart page must not drop the bundle discount."""
+
+    def test_cart_total_matches_the_tier_price(self, page, base_url):
+        page.goto(f"{base_url}/products/{REFERENCE_HANDLE}")
+        page.wait_for_timeout(2000)
+        promised = page.evaluate(
+            "() => {const b=document.querySelector('[data-quantity-tiers]');"
+            " if(!b) return null;"
+            " const m=b.innerText.match(/\\$([\\d,]+\\.\\d\\d)/g);"
+            " return m ? m.map(s=>parseFloat(s.slice(1).replace(',',''))) : null;}"
+        )
+        if not promised:
+            pytest.skip("no tier block on the reference product")
+        page.click("button:has-text('ADD')")
+        page.wait_for_timeout(4000)
+        page.goto(f"{base_url}/cart")
+        page.wait_for_timeout(3000)
+        text = page.inner_text("body")
+        shown = [float(m.replace(",", "")) for m in
+                 re.findall(r"\$([\d,]+\.\d\d)", text)]
+        assert min(promised) in shown or min(shown) == min(promised), (
+            f"cart shows {sorted(set(shown))} but the tier block promised "
+            f"{sorted(set(promised))} — the bundle discount is missing from "
+            "the cart page (7.D #41). Checkout may still be right; that is "
+            "not enough."
+        )
+```
+
+Run it against production as well as the dev server when a pricing or
+discount change ships — the discount is a Shopify-side object, so a dev
+run can pass while the live store disagrees.
+
