@@ -708,3 +708,48 @@ checks for it too, instead of re-discovering it from scratch.
     quiet is the signal that the wrong variable is being moved. Check
     what else in the system can bend before concluding a requirement must.
 
+43. **The picture doesn't follow the customer's choice (v2.6, found by
+    Itzik).** In Buy 2 each unit has a type dropdown; the picture
+    doesn't change to match. Causes, measured 21 Sep 2026: (a) the
+    sorting egg's 8 variants have no image at all, so every unit row
+    shows a grey box; (b) the domino's two blue variants (60 vs 120
+    pieces) share one image and the refill variant's image shows a
+    tiny block; (c) the carrier's "Green" and "Breathable Green" images
+    show a light-blue carrier; (d) `PdpGallery` takes
+    `selectedVariantImage` and never uses it, and the dropdowns only
+    change local state, so the main gallery never moves. Fix per Level
+    09 Section 7.A.2 and Level 01 rule 9; test: `TestVariantImages`.
+
+**#43 status (v2.7, fixed).** All four causes closed. (a) The egg's 8
+variants now have images — but the deeper finding was that its variant
+list mixed in *different products*: "5style" is a numbers/maths set and
+"Car." is play-dough cups, both removed, along with three more. (b) The
+domino's shared/odd images are gone with the variants that carried them.
+(c) The carrier's "Green" is confirmed mislabelled **by CJ**, not by us —
+CJ's own photo for it is light blue; Green, Green flower and Breathable
+Green removed on Itzik's instruction. (d) `PdpGallery` now consumes
+`selectedVariantImage`, and both the Buy 1 dropdown and every Buy 2 unit
+report their choice upward, so the gallery follows. Two further defects
+surfaced while fixing it, neither in the original report:
+
+44. **Buy 1 had no variant picker at all (v2.7).** The per-unit dropdown
+    block was gated on `q > 1`, so the Buy 1 card rendered no way to
+    choose a colour — a shopper buying one carrier could not pick one.
+    Only visible once the gallery was wired to follow the choice and
+    there was nothing to follow. Fix: gate on `variants.length > 1`, and
+    label it "Choose your colour" at qty 1 / "Choose each one" above.
+    Lesson: a control that is missing entirely reads as "nothing to see"
+    in a way a broken control does not — the parity gate counted the
+    buy box as present because the *tier cards* were there.
+45. **The gallery's own scroll handler overwrote the programmatic jump
+    (v2.7).** `scrollIntoView({behavior:'smooth'})` emits an onScroll for
+    every intermediate frame, and that handler recomputes the active
+    index from `scrollLeft` — so after choosing a variant the active
+    slide settled on whatever the animation happened to pass through.
+    It presented as flaky (a different wrong image each run), which is
+    the tell. Fix: a `programmatic` ref suppresses the handler for the
+    duration, and variant jumps use `behavior:'auto'` — the picture
+    should change immediately anyway. **When a UI test fails with a
+    different wrong value each run, suspect two writers to one piece of
+    state before suspecting the test.**
+

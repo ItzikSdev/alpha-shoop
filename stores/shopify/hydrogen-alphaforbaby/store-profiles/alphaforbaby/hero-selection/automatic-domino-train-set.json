@@ -7,7 +7,7 @@
   "rejected": [
     {
       "cj_source_url": "https://cf.cjdropshipping.com/eddac702-b8c8-4041-9700-06ea1714c955.jpg",
-      "reason": "pixelated: laplacian 92.55 < 100 (large flat white background depresses the score); AND cjk_text: 17 chars on the retail box (\u9002\u54083\u5c81\u4ee5\u4e0a / \u706f\u5149 / \u97f3\u6548 / \u81ea\u52a8\u6f14\u64ad / \u65b9\u5411\u53ef\u8c03)"
+      "reason": "pixelated: laplacian 92.55 < 100 (large flat white background depresses the score); AND cjk_text: 17 chars on the retail box (适合3岁以上 / 灯光 / 音效 / 自动演播 / 方向可调)"
     },
     {
       "cj_source_url": "https://cf.cjdropshipping.com/9e5672fb-59e9-439c-b4ba-5f7a4e5c3f95.jpg",
@@ -50,5 +50,6 @@
   "stage1_total": 22,
   "note": "0 of 22 CJ images pass Stage 1. Only one reaches 1000px (1601x1601) and it fails both checks: Laplacian 92.55 and 17 Chinese characters on the packaging. Per 7.A.1 this product has no usable CJ imagery and was reported to Itzik before building.",
   "model": "alpha/worker-fast (anthropic/claude-haiku-4-5) via LiteLLM proxy",
-  "checked_at": "2026-09-21"
+  "checked_at": "2026-09-21",
+  "v2_6_note": "Variant set reduced by 7.A.2 (see variant-images record). The hero remains blocked: no CJ image of this product reaches the >=1000px hero gate. Itzik confirmed 2026-09-21 that the pixel gate applies to the hero only, so the variant images below 1000px are allowed; the hero itself is still unresolved."
 }

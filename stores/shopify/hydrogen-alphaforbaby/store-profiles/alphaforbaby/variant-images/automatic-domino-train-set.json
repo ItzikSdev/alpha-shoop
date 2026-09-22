@@ -1,0 +1,54 @@
+{
+  "handle": "automatic-domino-train-set",
+  "pixel_gate": "Itzik, 2026-09-21: the >=1000px Stage-1 check applies to the HERO image only. CJ publishes variant images at 800x800 max, so applying it here would have left the carrier and the domino with zero sellable variants. Sharpness (Laplacian >= 100), zero Chinese text and colour-must-match are unchanged and were enforced.",
+  "variants": [
+    {
+      "variant_id": 43185805295687,
+      "title": "Blue / 60 pieces",
+      "previous_title": "Blue / 60pcs",
+      "image_url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/a83920b7-15ae-4827-b4fe-a2497a9e9a11.jpg?v=1789053741",
+      "cj_source_url": "https://oss-cf.cjdropshipping.com/product/2025/10/15/02/a83920b7-15ae-4827-b4fe-a2497a9e9a11.jpg",
+      "short_side": 800,
+      "width": 800,
+      "height": 800,
+      "laplacian_var": 414.2,
+      "cjk_chars": 0,
+      "vision_match": true,
+      "vision_answer": "The product is a blue domino-laying train toy set matching the variant colour, though the 60-piece count is not visible in the photo.",
+      "vision_colour_seen": "Blue and red",
+      "shares_image_with": null
+    },
+    {
+      "variant_id": 43185805393991,
+      "title": "Pink / 60 pieces",
+      "previous_title": "Pink / 60pcs",
+      "image_url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/2d050736-24ab-441e-8a78-7d18611374e6.jpg?v=1789053742",
+      "cj_source_url": "https://oss-cf.cjdropshipping.com/product/2025/10/15/02/2d050736-24ab-441e-8a78-7d18611374e6.jpg",
+      "short_side": 800,
+      "width": 800,
+      "height": 800,
+      "laplacian_var": 378.85,
+      "cjk_chars": 0,
+      "vision_match": true,
+      "vision_answer": "This is the correct product in pink colour; piece count is not visible in the photo.",
+      "vision_colour_seen": "pink and light blue/mint",
+      "shares_image_with": null
+    }
+  ],
+  "removed_variants": [
+    {
+      "title": "1set / 100pieces 5packs",
+      "reason": "soft image (Laplacian 66 < 100)"
+    },
+    {
+      "title": "Blue / 120pcsdominoes and 3pcsdomin",
+      "reason": "3 Chinese characters on the image; wrong_colour: photo shows teal/dark cyan and multicoloured"
+    },
+    {
+      "title": "Purple / 60pcs",
+      "reason": "9 Chinese characters on the image; wrong_colour: photo shows orange, purple, and red"
+    }
+  ],
+  "model": "alpha/worker-fast (anthropic/claude-haiku-4-5) via LiteLLM proxy",
+  "checked_at": "2026-09-21"
+}

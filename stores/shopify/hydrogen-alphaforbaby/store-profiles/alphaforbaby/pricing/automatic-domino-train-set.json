@@ -3,53 +3,28 @@
   "pid": "1441350234507710464",
   "variant_costs": [
     {
-      "variant": "1set / 100pieces 5packs",
-      "cj_item": 1.99,
-      "cj_shipping": 8.55,
-      "cj_shipping_method": "CJPacket Pure Electricity",
-      "cj_shipping_days": "7-14",
-      "landed": 10.54,
-      "checked_at": "2026-09-21"
-    },
-    {
-      "variant": "Blue / 60pcs",
+      "variant_id": 43185805295687,
+      "variant": "Blue / 60 pieces",
+      "previous_title": "Blue / 60pcs",
       "cj_item": 3.79,
       "cj_shipping": 14.3,
       "cj_shipping_method": "YunExpress Sensitive",
-      "cj_shipping_days": "4-7",
       "landed": 18.09,
       "checked_at": "2026-09-21"
     },
     {
-      "variant": "Blue / 120pcsdominoes and 3pcsdomin",
-      "cj_item": 4.13,
-      "cj_shipping": 14.13,
-      "cj_shipping_method": "YunExpress Sensitive",
-      "cj_shipping_days": "4-7",
-      "landed": 18.26,
-      "checked_at": "2026-09-21"
-    },
-    {
-      "variant": "Pink / 60pcs",
+      "variant_id": 43185805393991,
+      "variant": "Pink / 60 pieces",
+      "previous_title": "Pink / 60pcs",
       "cj_item": 3.75,
       "cj_shipping": 12.59,
       "cj_shipping_method": "YunExpress Sensitive",
-      "cj_shipping_days": "4-7",
-      "landed": 16.34,
-      "checked_at": "2026-09-21"
-    },
-    {
-      "variant": "Purple / 60pcs",
-      "cj_item": 3.75,
-      "cj_shipping": 12.59,
-      "cj_shipping_method": "YunExpress Sensitive",
-      "cj_shipping_days": "4-7",
       "landed": 16.34,
       "checked_at": "2026-09-21"
     }
   ],
-  "worst_variant": "Blue / 120pcsdominoes and 3pcsdomin",
-  "worst_landed": 18.26,
+  "worst_variant": "Blue / 60 pieces",
+  "worst_landed": 18.09,
   "fee_model": {
     "pct": 0.029,
     "fixed": 0.3,
@@ -60,9 +35,9 @@
   "price": 24.9,
   "buy2_total": 47.9,
   "buy2_discount_amount": 1.9,
-  "margin_pct": 22.6,
-  "buy2_margin_pct": 20.2,
-  "profit_per_order": 5.62,
+  "margin_pct": 23.2,
+  "buy2_margin_pct": 20.9,
+  "profit_per_order": 5.79,
   "market": [
     {
       "source": "Walmart (owner-confirmed range, low)",
@@ -111,5 +86,23 @@
   "approved_by_itzik": true,
   "checked_at": "2026-09-21",
   "approved_at": "2026-09-21",
-  "applied_at": "2026-09-21"
+  "applied_at": "2026-09-21",
+  "removed_variants": [
+    {
+      "variant": "1set / 100pieces 5packs",
+      "landed": 10.54,
+      "reason": "soft image (Laplacian 66 < 100)"
+    },
+    {
+      "variant": "Blue / 120pcsdominoes and 3pcsdomin",
+      "landed": 18.26,
+      "reason": "3 Chinese characters on the image; wrong_colour: photo shows teal/dark cyan and multicoloured"
+    },
+    {
+      "variant": "Purple / 60pcs",
+      "landed": 16.34,
+      "reason": "9 Chinese characters on the image; wrong_colour: photo shows orange, purple, and red"
+    }
+  ],
+  "variant_set_changed": "v2.6: variants removed per Level 09 7.A.2 (wrong colour, Chinese text on the image, soft image, or a different product in the photo). Landed costs re-derived for the surviving set; margins re-checked against the new worst variant."
 }

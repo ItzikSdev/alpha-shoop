@@ -151,6 +151,73 @@ Every entry in `chosen` and `uploaded` must have `"source": "cj"`.
 Level 14's `TestHeroImage` enforces this and checks the rendered page
 against the record.
 
+### 7.A.2 — Variant images: the picture matches the choice (v2.6, Itzik's rule)
+
+Found on the live dev build (21 Sep 2026): in Buy 2 the customer picks a
+type for each unit, and the picture doesn't follow. Measured per product
+from Shopify's own `/products/<handle>.js` (variant `featured_image`):
+
+| Product | Variants | What's wrong |
+|---|---|---|
+| Sorting egg | 8 | **No variant has an image** → every Buy 2 unit row shows a grey box. The variant names ("1style" … "5style", "Car.", "SetA") also tell the customer nothing, and the option is called "Size" although it isn't a size. |
+| Domino | 5 | "Blue / 60pcs" and "Blue / 120pcs…" share one image (the box says neither count). "1set / 100pieces 5packs" is a refill of loose dominoes with no train, and its image is a tiny block on white — a buyer can't tell what it is. |
+| Carrier | 12 | Each has its own image, but **"Green" and "Breathable Green" both show a light-blue carrier.** Must be checked against the CJ variant photos; if CJ's own photo for green is blue, the variant is mislabelled. |
+| All | — | **The main gallery never changes.** `PdpGallery` receives `selectedVariantImage` and ignores it, and the dropdowns only change local state in `PdpQuantityTiers`, so the big picture stays on the hero whatever is chosen. |
+
+**Procedure, per product, before it goes live:**
+
+1. **Map every variant to its CJ variant image.** CJ lists an image per
+   variant (`variantImage` in the CJ API). Take it, run it through the
+   7.A.1 Stage 1 checks (not pixelated, no Chinese text), and upload it
+   as a product image.
+2. **Confirm the image shows that variant.** Ask the vision model, with
+   the image: *"Does this photo show a `<product>` in `<variant title>`?
+   Answer yes/no and name the colour, pattern and piece count you see."*
+   Save the answer. A "no" is a failure, not a warning.
+3. **One image per visually different variant.** Two variants may share
+   an image only if they look identical and differ in something the
+   photo can't show (e.g. a size) — and the record must say so.
+   Different colours or different contents (60 vs 120 pieces, train vs
+   refill) must have different images.
+4. **Name variants for humans.** Rename CJ codes to what the customer
+   sees ("Car", "Dinosaur", "5 eggs"), and name the option for what it
+   is ("Style", "Color", "Set"). If a variant can't be named or shown
+   honestly, remove it.
+5. **Assign** each image as that variant's image in Shopify.
+6. **Record** it in `store-profiles/alphaforbaby/variant-images/<handle>.json`:
+
+```json
+{
+  "handle": "montessori-shape-sorting-egg",
+  "variants": [
+    {"variant_id": 43185801461831, "title": "Green",
+     "image_url": "https://cdn.shopify.com/...",
+     "cj_source_url": "https://cf.cjdropshipping.com/...",
+     "short_side": 1200, "laplacian_var": 210.5, "cjk_chars": 0,
+     "vision_match": true, "vision_answer": "yes — green egg, 12 shapes",
+     "shares_image_with": null}
+  ],
+  "removed_variants": [{"title": "SetA", "reason": "no CJ image shows it"}],
+  "checked_at": "2026-09-21"
+}
+```
+
+**Storefront behaviour (both required):**
+
+- **Main gallery follows the choice.** Choosing a variant in the Buy 1
+  dropdown, or for any unit in Buy 2, moves the gallery to that
+  variant's image (slide index = position of that image in the
+  gallery). With Buy 2 open, the most recently changed unit wins.
+  The active slide carries `data-gallery-active`, and each tier card
+  carries `data-tier-card="<qty>"` (the tests click them).
+- **Every Buy 2 unit row shows its own variant image** (`[data-unit-preview]`,
+  40×40), which changes the moment that unit's dropdown changes. A grey
+  placeholder is never acceptable on a live product — it means step 5
+  was skipped.
+
+Level 14's `TestVariantImages` checks the record, Shopify's data, and
+the rendered page.
+
 ## 7.B — Video (two separate slots: hero background is mandatory; product-demo video prefers the real thing)
 
 **Slot 1 — hero background video (mandatory, generate if no real option exists).**

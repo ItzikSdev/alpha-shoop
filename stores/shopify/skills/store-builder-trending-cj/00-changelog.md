@@ -1863,4 +1863,48 @@ bundle slipped through. Real run: **153 passed, 7 skipped, 0 failed, 2
 warnings in 1:24** at `-n 4`; all 7 skips carry recorded reasons; real
 qty-1/qty-2 carts verified on all three products ($43.90/$85.90,
 $26.90/$52.90, $24.90/$47.90 with the discounts actually allocating).
+v2.6 — Itzik found that in Buy 2 the picture doesn't change to match the
+type chosen for each unit ("the image must match the choice — very
+important"). Measured 21 Sep: the sorting egg's 8 variants have no image
+(grey boxes in Buy 2), the domino's two blue variants (60 vs 120 pcs)
+share one image and the refill's image is a tiny block, the carrier's
+"Green"/"Breathable Green" images show a blue carrier, and PdpGallery
+receives selectedVariantImage but never uses it, so the main picture never
+moves. New Level 01 rule 9, Level 09 Section 7.A.2 (each variant gets its
+own CJ image, stage-1 checked and vision-checked that it shows THAT
+variant; human variant names; gallery and every Buy 2 unit row follow the
+choice), 7.D #43, TestVariantImages (4 tests), Level 13 items. Also new
+Level 15: owner audit before paid ads (🔴 must fix before ads / 🟡
+recommended / 🟢 fine), adapted from an outside audit format Itzik brought.
+v2.7 — Itzik: "in Buy 2, each unit has a type dropdown, but the picture
+doesn't change to match... this is very important." Fixed end to end, and
+the data turned out to be worse than the symptom. Code: `PdpGallery` now
+uses the `selectedVariantImage` it had been receiving and ignoring, the
+Buy 1 dropdown and every Buy 2 unit report their choice upward (most
+recent wins), the active slide carries `data-gallery-active`, tier cards
+carry `data-tier-card`, and each unit row shows its own image. Data, per
+7.A.2: every variant checked against its own CJ image with a vision pass.
+**12 of 25 variants were removed** — the carrier's "Green", "Green
+flower" and "Breathable Green" because CJ's own photos for them are blue
+and turquoise (Itzik's call: drop them), others for Chinese text on the
+image, a soft photo, or being a different product. The egg was the worst:
+"5style" is a numbers/maths set and "Car." play-dough cups, and **the
+1276x1702 numbers-set photo had been the egg's live hero since v2.2** —
+chosen then precisely because it was one of only two images clearing the
+>=1000px hero gate. Both high-res images were photos of other toys. The
+hero is now the genuine "Learn Color & Shape Egg Set" packshot at
+800x800, recorded with a `hero_resolution_override`: rule 9 says never
+show a wrong image, so the right product at 800px beats the wrong product
+at 1276px. Itzik also ruled that the >=1000px gate applies to the hero
+only, not to variant images — CJ tops out at 800x800 for those, and
+applying it would have left the carrier and the domino with zero sellable
+variants. Options and variants renamed for humans (egg's option was
+"Size" though it is not a size; "1style" -> "Shapes & Colours"). Margins
+re-derived for the surviving variant sets: carrier 21.8%/20.5%, egg
+44.5%/44.1%, domino 23.2%/20.9%. Found while fixing: 7.D #44 (Buy 1 had
+no variant picker at all) and #45 (the gallery's scroll handler fought
+its own programmatic jump, presenting as flaky). Real run: **165 passed,
+7 skipped, 0 failed, 3 warnings in 1:18** at `-n 4`; `TestVariantImages`
+12/12. Cart verified: Buy 2 with two different colours produces two cart
+lines with the right colours.
 

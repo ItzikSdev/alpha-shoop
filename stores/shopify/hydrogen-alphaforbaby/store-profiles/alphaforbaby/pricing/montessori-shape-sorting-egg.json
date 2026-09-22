@@ -3,80 +3,38 @@
   "pid": "1419174980897345536",
   "variant_costs": [
     {
-      "variant": "Green",
+      "variant_id": 43185801461831,
+      "variant": "Green Carton",
+      "previous_title": "Green",
       "cj_item": 4.53,
       "cj_shipping": 9.33,
       "cj_shipping_method": "LuWei Ordinary US",
-      "cj_shipping_days": "5-11",
       "landed": 13.86,
       "checked_at": "2026-09-21"
     },
     {
-      "variant": "1style",
+      "variant_id": 43185801560135,
+      "variant": "Shapes & Colours",
+      "previous_title": "1style",
       "cj_item": 3.26,
       "cj_shipping": 9.34,
       "cj_shipping_method": "LuWei Ordinary US",
-      "cj_shipping_days": "5-11",
       "landed": 12.6,
       "checked_at": "2026-09-21"
     },
     {
-      "variant": "2style",
+      "variant_id": 43185801658439,
+      "variant": "Matching Eggs",
+      "previous_title": "4style",
       "cj_item": 3.26,
       "cj_shipping": 9.33,
       "cj_shipping_method": "LuWei Ordinary US",
-      "cj_shipping_days": "5-11",
       "landed": 12.59,
-      "checked_at": "2026-09-21"
-    },
-    {
-      "variant": "3style",
-      "cj_item": 5.76,
-      "cj_shipping": 13.1,
-      "cj_shipping_method": "LuWei Ordinary US",
-      "cj_shipping_days": "5-11",
-      "landed": 18.86,
-      "checked_at": "2026-09-21"
-    },
-    {
-      "variant": "4style",
-      "cj_item": 3.26,
-      "cj_shipping": 9.33,
-      "cj_shipping_method": "LuWei Ordinary US",
-      "cj_shipping_days": "5-11",
-      "landed": 12.59,
-      "checked_at": "2026-09-21"
-    },
-    {
-      "variant": "5style",
-      "cj_item": 5.93,
-      "cj_shipping": 13.01,
-      "cj_shipping_method": "LuWei Ordinary US",
-      "cj_shipping_days": "5-11",
-      "landed": 18.94,
-      "checked_at": "2026-09-21"
-    },
-    {
-      "variant": "Car.",
-      "cj_item": 3.26,
-      "cj_shipping": 9.33,
-      "cj_shipping_method": "LuWei Ordinary US",
-      "cj_shipping_days": "5-11",
-      "landed": 12.59,
-      "checked_at": "2026-09-21"
-    },
-    {
-      "variant": "SetA",
-      "cj_item": 5.97,
-      "cj_shipping": 14.01,
-      "cj_shipping_method": "LuWei Ordinary US",
-      "cj_shipping_days": "5-11",
-      "landed": 19.98,
       "checked_at": "2026-09-21"
     }
   ],
-  "worst_variant": "SetA",
-  "worst_landed": 19.98,
+  "worst_variant": "Green Carton",
+  "worst_landed": 13.86,
   "fee_model": {
     "pct": 0.029,
     "fixed": 0.3,
@@ -87,9 +45,9 @@
   "price": 26.9,
   "buy2_total": 52.9,
   "buy2_discount_amount": 0.9,
-  "margin_pct": 21.7,
-  "buy2_margin_pct": 21.0,
-  "profit_per_order": 5.84,
+  "margin_pct": 44.5,
+  "buy2_margin_pct": 44.1,
+  "profit_per_order": 11.96,
   "market": [
     {
       "source": "Walmart (owner-confirmed)",
@@ -135,5 +93,33 @@
     "approved_by_itzik": true,
     "approved_at": "2026-09-21",
     "reason": "Itzik instructed all three products repriced after being shown the egg's 20% price was above the $15.49 median. Accepted knowingly: CJ's $9.33-$14.01 US shipping exceeds what Walmart charges for the whole comparable set."
-  }
+  },
+  "removed_variants": [
+    {
+      "variant": "2style",
+      "landed": 12.59,
+      "reason": "soft image (Laplacian 56 < 100)"
+    },
+    {
+      "variant": "3style",
+      "landed": 18.86,
+      "reason": "wrong_product: photo shows yellow, multicoloured (rainbow colours)"
+    },
+    {
+      "variant": "5style",
+      "landed": 18.94,
+      "reason": "different product: Number Stamps Set"
+    },
+    {
+      "variant": "Car.",
+      "landed": 12.59,
+      "reason": "different product: Dough Set with Molds"
+    },
+    {
+      "variant": "SetA",
+      "landed": 19.98,
+      "reason": "soft image (Laplacian 55 < 100)"
+    }
+  ],
+  "variant_set_changed": "v2.6: variants removed per Level 09 7.A.2 (wrong colour, Chinese text on the image, soft image, or a different product in the photo). Landed costs re-derived for the surviving set; margins re-checked against the new worst variant."
 }

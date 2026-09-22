@@ -23,7 +23,19 @@ import {AddToCartButton} from '~/components/AddToCartButton';
  */
 export function PdpQuantityTiers({
   tiers = [], variant, inStock, variants = [], benefits = {}, optionName = 'Option',
+  onVariantPreview,
 }) {
+  // 7.D #43: every place a shopper picks a variant reports it upward, so the
+  // main gallery can follow. With Buy 2 open the most recently changed unit
+  // wins, which falls out of this being called on each change.
+  const pickVariant = (id) => {
+    const v = variants.find((x) => x.id === id);
+    if (v && onVariantPreview) onVariantPreview(v);
+  };
+  const chooseUnit = (key, id) => {
+    setUnits((p) => ({...p, [key]: id}));
+    pickVariant(id);
+  };
   // Real per-unit selection: each unit keeps its own variant id, and the cart
   // receives one line per distinct variant. A picker that didn't actually
   // change what ships would be decoration, same problem as a fake add-on.
@@ -72,7 +84,7 @@ export function PdpQuantityTiers({
               id={optionSlug}
               name={optionSlug}
               value={unitVariant(1, 0)}
-              onChange={(e) => setUnits((p) => ({...p, '1-0': e.target.value}))}
+              onChange={(e) => chooseUnit('1-0', e.target.value)}
               className="min-h-[44px] w-full rounded-md border border-divider bg-white px-2 text-[14px]"
             >
               {variants.map((v) => (
@@ -117,6 +129,7 @@ export function PdpQuantityTiers({
               <button
                 type="button"
                 role="radio"
+                data-tier-card={q}
                 aria-checked={on}
                 onClick={() => setQty(q)}
                 className={`mb-2 flex w-full cursor-pointer items-center gap-3 rounded-lg border-2 p-3 text-left transition hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
@@ -167,14 +180,20 @@ export function PdpQuantityTiers({
                 </span>
               </button>
 
-              {on && q > 1 && variants.length > 1 && (
+              {/* v2.6: this used to be `q > 1`, so a shopper buying ONE could not
+                  choose a colour at all — the Buy 1 card rendered no picker.
+                  Level 09 7.A.2 requires the Buy 1 dropdown to exist and to
+                  move the gallery, same as each Buy 2 unit row. */}
+              {on && variants.length > 1 && (
                 <div className="mb-3 -mt-1 rounded-b-lg border-2 border-t-0 border-accent bg-accent/5 px-3 pb-3 pt-1">
                   <span className="mb-1 block text-[11px] uppercase tracking-[.08em] text-ink/50">
-                    Choose each one
+                    {q > 1 ? 'Choose each one' : `Choose your ${optionName.toLowerCase()}`}
                   </span>
                   {Array.from({length: q}, (_, unit) => (
                     <div key={unit} className="mb-2 flex items-center gap-2 last:mb-0">
-                      <span className="w-6 flex-none text-[12px] text-ink/50">#{unit + 1}</span>
+                      {q > 1 && (
+                        <span className="w-6 flex-none text-[12px] text-ink/50">#{unit + 1}</span>
+                      )}
                       {(() => {
                         const sel = variants.find((v) => v.id === unitVariant(q, unit));
                         return sel?.image?.url ? (
@@ -195,7 +214,7 @@ export function PdpQuantityTiers({
                         id={`tier${q}-u${unit}-color`}
                         name={`tier${q}-u${unit}-color`}
                         value={unitVariant(q, unit)}
-                        onChange={(e) => setUnits((p) => ({...p, [`${q}-${unit}`]: e.target.value}))}
+                        onChange={(e) => chooseUnit(`${q}-${unit}`, e.target.value)}
                         className="min-h-[40px] w-full min-w-0 flex-1 rounded-md border border-divider bg-white px-2 text-[13px]"
                       >
                         {variants.map((v) => (

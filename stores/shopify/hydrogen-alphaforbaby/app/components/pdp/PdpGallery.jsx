@@ -1,4 +1,4 @@
-import {useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {Image} from '@shopify/hydrogen';
 import {ChevronLeft, ChevronRight} from 'lucide-react';
 
@@ -22,10 +22,46 @@ const DOT_WINDOW = 5;
  *   title: string,
  * }}
  */
+/** Compare two Shopify image URLs by file name — the CDN serves one file under
+ * many sizes and query strings, so a string compare on the whole URL misses. */
+function sameImage(a, b) {
+  const key = (u) => (u || '').split('?')[0].split('/').pop().toLowerCase();
+  return !!a && !!b && key(a) === key(b);
+}
+
 export function PdpGallery({images = [], selectedVariantImage, title}) {
   const slides = images.map((i) => ({kind: 'image', ...i}));
   const [index, setIndex] = useState(0);
   const trackRef = useRef(null);
+
+  // 7.D #43 / Level 01 rule 9: the picture follows the choice. This prop was
+  // being received and ignored, which is why the gallery never moved no matter
+  // what the shopper picked in Buy 1 or in any Buy 2 unit row.
+  const targetUrl = selectedVariantImage?.url;
+  // A programmatic scroll emits onScroll for every intermediate frame, and that
+  // handler recomputes `index` from scrollLeft — so a smooth jump would leave
+  // the active slide on whatever it happened to pass through. Suppress the
+  // handler for the duration of our own scroll, and jump instantly: "the
+  // picture matches the choice" should be immediate, not animated.
+  const programmatic = useRef(false);
+  useEffect(() => {
+    if (!targetUrl) return;
+    const i = slides.findIndex((s) => sameImage(s.url, targetUrl));
+    if (i < 0) return;
+    programmatic.current = true;
+    setIndex(i);
+    trackRef.current?.children[i]?.scrollIntoView({
+      behavior: 'auto',
+      inline: 'center',
+      block: 'nearest',
+    });
+    const t = setTimeout(() => {
+      programmatic.current = false;
+    }, 150);
+    return () => clearTimeout(t);
+    // slides is derived from `images`, which is stable for a given product
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetUrl]);
 
   if (!slides.length) return null;
 
@@ -54,12 +90,18 @@ export function PdpGallery({images = [], selectedVariantImage, title}) {
         ref={trackRef}
         className="m-0 flex list-none snap-x snap-mandatory gap-2 overflow-x-auto p-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         onScroll={(e) => {
+          if (programmatic.current) return;
           const w = e.currentTarget.clientWidth || 1;
           setIndex(Math.round(e.currentTarget.scrollLeft / w));
         }}
       >
         {slides.map((slide, i) => (
-          <li key={slide.id ?? i} data-gallery-slide className="w-full flex-none snap-center">
+          <li
+            key={slide.id ?? i}
+            data-gallery-slide
+            {...(i === index ? {'data-gallery-active': ''} : {})}
+            className="w-full flex-none snap-center"
+          >
             <Image
               data={slide}
               alt={slide.altText || title}

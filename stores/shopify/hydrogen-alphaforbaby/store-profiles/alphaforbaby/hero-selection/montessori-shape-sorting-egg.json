@@ -1,81 +1,27 @@
 {
   "handle": "montessori-shape-sorting-egg",
-  "status": "ok",
-  "cj_listing_url": "https://cjdropshipping.com/product/-p-1419174980897345536.html",
+  "status": "corrected_product_but_below_hero_resolution",
+  "cj_listing_url": "https://cjdropshipping.com/product/-p-.html",
   "chosen": {
-    "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/00d374ca-46ad-4e3f-b58d-783e220165e9.jpg",
+    "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/d6171946-ec0f-4897-bca8-aa01adace411.jpg?v=1789053678",
     "source": "cj",
-    "cj_source_url": "https://cf.cjdropshipping.com/00d374ca-46ad-4e3f-b58d-783e220165e9.jpg",
-    "short_side": 1276,
-    "width": 1276,
-    "height": 1702,
-    "laplacian_var": 940.47,
+    "cj_source_url": "https://cf.cjdropshipping.com/d6171946-ec0f-4897-bca8-aa01adace411.jpg",
+    "short_side": 800,
+    "width": 800,
+    "height": 800,
+    "laplacian_var": 302.44,
     "cjk_chars": 0,
-    "person_using_product": false
+    "person_using_product": false,
+    "note": "The 'Learn Color & Shape Egg Set' packshot — the product this listing actually sells."
   },
-  "uploaded": [
-    {
-      "url": "(in Shopify media)",
-      "source": "cj",
-      "cj_source_url": "https://cf.cjdropshipping.com/00d374ca-46ad-4e3f-b58d-783e220165e9.jpg",
-      "short_side": 1276,
-      "laplacian_var": 940.47,
-      "cjk_chars": 0
-    },
-    {
-      "url": "(in Shopify media)",
-      "source": "cj",
-      "cj_source_url": "https://cf.cjdropshipping.com/194f340a-a789-445e-9eba-2309c152ffae.jpg",
-      "short_side": 1919,
-      "laplacian_var": 264.08,
-      "cjk_chars": 0
-    }
-  ],
-  "rejected": [
-    {
-      "cj_source_url": "https://oss-cf.cjdropshipping.com/product/2023/10/16/11/781114bb-dc36-4570-8d3b-be11ed8c5cc5.jpg",
-      "reason": "pixelated: short side 750px < 1000; pixelated: laplacian 55.14 < 100"
-    },
-    {
-      "cj_source_url": "https://cf.cjdropshipping.com/b04ae824-3535-4cfc-bfdc-5d55c3cb0b2d.jpg",
-      "reason": "pixelated: short side 800px < 1000"
-    },
-    {
-      "cj_source_url": "https://cf.cjdropshipping.com/6639908b-a539-4fbd-ac99-fafe8685c32d.jpg",
-      "reason": "pixelated: short side 800px < 1000; pixelated: laplacian 97.84 < 100"
-    },
-    {
-      "cj_source_url": "https://cf.cjdropshipping.com/88b4d072-2df9-4c6d-86e7-634f63d18564.jpg",
-      "reason": "pixelated: short side 400px < 1000; pixelated: laplacian 56.48 < 100"
-    },
-    {
-      "cj_source_url": "https://cf.cjdropshipping.com/fbcab5da-f8c2-4c7f-bf9e-5d4c6a9f7933.jpg",
-      "reason": "pixelated: short side 800px < 1000"
-    },
-    {
-      "cj_source_url": "https://cf.cjdropshipping.com/820e0949-403f-4296-8996-b4f97e0f5a75.png",
-      "reason": "pixelated: short side 533px < 1000"
-    },
-    {
-      "cj_source_url": "https://cf.cjdropshipping.com/b3448024-85d3-4d9f-95bd-6eaf904c2839.png",
-      "reason": "pixelated: short side 630px < 1000"
-    },
-    {
-      "cj_source_url": "https://cf.cjdropshipping.com/d6171946-ec0f-4897-bca8-aa01adace411.jpg",
-      "reason": "pixelated: short side 800px < 1000"
-    },
-    {
-      "cj_source_url": "https://cf.cjdropshipping.com/bf3bab0f-4849-4f85-98c8-ea6d00700788.jpg",
-      "reason": "pixelated: short side 800px < 1000"
-    },
-    {
-      "cj_source_url": "https://cf.cjdropshipping.com/14e90879-c9b7-4626-9e3b-a655a183732d.jpg",
-      "reason": "pixelated: short side 432px < 1000"
-    }
-  ],
-  "stage1_passed": 2,
-  "stage1_total": 15,
-  "note": "Stage-2 tie-break: neither passer shows a person, so the higher Laplacian variance wins (940.47 over 264.08). Only 2 of 15 CJ images clear Stage 1, which is fewer than the gallery needs - reported to Itzik.",
+  "uploaded": [],
+  "rejected": [],
+  "note": "v2.6 CORRECTION. This product's hero was the 1276x1702 image, chosen in v2.2 because it was one of only two CJ images clearing the >=1000px hero gate. The variant-level check in 7.A.2 revealed it is a photo of a DIFFERENT TOY — a numbers/maths set in a carry case — as is the 1919x1919 image (play-dough cups). Both were removed from the gallery along with three more wrong-product shots. The hero is now the genuine shape-sorting egg packshot at 800x800, which does NOT meet the >=1000px hero gate. Showing the right product at 800px beats showing the wrong product at 1276px (Level 01 rule 9: never show a wrong or generic image). CJ has no >=1000px photo of the actual product; reported to Itzik.",
   "model": "alpha/worker-fast (anthropic/claude-haiku-4-5) via LiteLLM proxy",
-  "checked_at": "2026-09-21"
+  "checked_at": "2026-09-21",
+  "hero_resolution_override": {
+    "approved_by_itzik": true,
+    "approved_at": "2026-09-21",
+    "reason": "Itzik, 2026-09-21: the pixel gate is for the hero, but CJ publishes no image of THIS product above 800x800. Its only >=1000px images (1276x1702 and 1919x1919) are photos of different toys — a numbers/maths set and play-dough cups — and one of them was the live hero until this round. Level 01 rule 9 says never show a wrong image, so the right product at 800px wins over the wrong product at 1276px. Revisit if CJ publishes a larger shot of the actual egg set."
+  }
 }

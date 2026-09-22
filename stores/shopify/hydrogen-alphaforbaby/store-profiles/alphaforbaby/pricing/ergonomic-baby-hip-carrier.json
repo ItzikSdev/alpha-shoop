@@ -3,110 +3,52 @@
   "pid": "FDE0817B-91FC-42D2-A6FE-8AFF85E23A78",
   "variant_costs": [
     {
+      "variant_id": 43185803264071,
       "variant": "Blue",
+      "previous_title": "Blue",
       "cj_item": 12.89,
       "cj_shipping": 18.84,
       "cj_shipping_method": "CJPacket Eub",
-      "cj_shipping_days": "12-50",
       "landed": 31.73,
       "checked_at": "2026-09-21"
     },
     {
-      "variant": "Green",
-      "cj_item": 12.51,
-      "cj_shipping": 18.84,
-      "cj_shipping_method": "CJPacket Eub",
-      "cj_shipping_days": "12-50",
-      "landed": 31.35,
-      "checked_at": "2026-09-21"
-    },
-    {
-      "variant": "Breathable blue",
+      "variant_id": 43185803395143,
+      "variant": "Blue & Cream",
+      "previous_title": "Breathable blue",
       "cj_item": 11.85,
       "cj_shipping": 18.84,
       "cj_shipping_method": "CJPacket Eub",
-      "cj_shipping_days": "12-50",
       "landed": 30.69,
       "checked_at": "2026-09-21"
     },
     {
-      "variant": "Pink flower",
+      "variant_id": 43185803427911,
+      "variant": "Pink Floral",
+      "previous_title": "Pink flower",
       "cj_item": 11.5,
       "cj_shipping": 18.84,
       "cj_shipping_method": "CJPacket Eub",
-      "cj_shipping_days": "12-50",
       "landed": 30.34,
       "checked_at": "2026-09-21"
     },
     {
-      "variant": "Claret",
-      "cj_item": 11.5,
-      "cj_shipping": 18.84,
-      "cj_shipping_method": "CJPacket Eub",
-      "cj_shipping_days": "12-50",
-      "landed": 30.34,
-      "checked_at": "2026-09-21"
-    },
-    {
-      "variant": "Breathable powder",
-      "cj_item": 11.5,
-      "cj_shipping": 18.84,
-      "cj_shipping_method": "CJPacket Eub",
-      "cj_shipping_days": "12-50",
-      "landed": 30.34,
-      "checked_at": "2026-09-21"
-    },
-    {
-      "variant": "Blue Flower",
-      "cj_item": 11.5,
-      "cj_shipping": 19.52,
-      "cj_shipping_method": "LuWei Ordinary US",
-      "cj_shipping_days": "5-11",
-      "landed": 31.02,
-      "checked_at": "2026-09-21"
-    },
-    {
-      "variant": "Breathable Dark blue",
+      "variant_id": 43185803558983,
+      "variant": "Navy & Cream",
+      "previous_title": "Breathable Dark blue",
       "cj_item": 11.85,
       "cj_shipping": 18.84,
       "cj_shipping_method": "CJPacket Eub",
-      "cj_shipping_days": "12-50",
       "landed": 30.69,
       "checked_at": "2026-09-21"
     },
     {
-      "variant": "Green flower",
-      "cj_item": 11.5,
-      "cj_shipping": 18.84,
-      "cj_shipping_method": "CJPacket Eub",
-      "cj_shipping_days": "12-50",
-      "landed": 30.34,
-      "checked_at": "2026-09-21"
-    },
-    {
-      "variant": "Powder",
-      "cj_item": 12.51,
-      "cj_shipping": 18.84,
-      "cj_shipping_method": "CJPacket Eub",
-      "cj_shipping_days": "12-50",
-      "landed": 31.35,
-      "checked_at": "2026-09-21"
-    },
-    {
-      "variant": "Breathable Green",
-      "cj_item": 11.5,
-      "cj_shipping": 18.84,
-      "cj_shipping_method": "CJPacket Eub",
-      "cj_shipping_days": "12-50",
-      "landed": 30.34,
-      "checked_at": "2026-09-21"
-    },
-    {
+      "variant_id": 43185803690055,
       "variant": "Navy",
+      "previous_title": "Navy",
       "cj_item": 13.9,
       "cj_shipping": 18.84,
       "cj_shipping_method": "CJPacket Eub",
-      "cj_shipping_days": "12-50",
       "landed": 32.74,
       "checked_at": "2026-09-21"
     }
@@ -188,5 +130,85 @@
     "approved_by_itzik": true,
     "approved_at": "2026-09-21",
     "reason": "Itzik instructed all three products repriced after being shown that the carrier's 20% price was above the $29.99 generic-hip-seat median. Accepted knowingly: CJ's $18.84 US shipping on this item makes the market median unreachable without selling at a loss."
-  }
+  },
+  "removed_variant_costs": [
+    {
+      "variant": "Green",
+      "landed": 31.35
+    },
+    {
+      "variant": "Breathable blue",
+      "landed": 30.69
+    },
+    {
+      "variant": "Pink flower",
+      "landed": 30.34
+    },
+    {
+      "variant": "Claret",
+      "landed": 30.34
+    },
+    {
+      "variant": "Breathable powder",
+      "landed": 30.34
+    },
+    {
+      "variant": "Blue Flower",
+      "landed": 31.02
+    },
+    {
+      "variant": "Breathable Dark blue",
+      "landed": 30.69
+    },
+    {
+      "variant": "Green flower",
+      "landed": 30.34
+    },
+    {
+      "variant": "Powder",
+      "landed": 31.35
+    },
+    {
+      "variant": "Breathable Green",
+      "landed": 30.34
+    }
+  ],
+  "removed_variants": [
+    {
+      "variant": "Green",
+      "landed": 31.35,
+      "reason": "soft image (Laplacian 89 < 100); wrong_colour: photo shows light blue, pale blue"
+    },
+    {
+      "variant": "Claret",
+      "landed": 30.34,
+      "reason": "2 Chinese characters on the image"
+    },
+    {
+      "variant": "Breathable powder",
+      "landed": 30.34,
+      "reason": "wrong_colour: photo shows pink and cream/white"
+    },
+    {
+      "variant": "Blue Flower",
+      "landed": 31.02,
+      "reason": "2 Chinese characters on the image"
+    },
+    {
+      "variant": "Green flower",
+      "landed": 30.34,
+      "reason": "2 Chinese characters on the image; wrong_colour: photo shows turquoise/light blue"
+    },
+    {
+      "variant": "Powder",
+      "landed": 31.35,
+      "reason": "soft image (Laplacian 85 < 100); wrong_colour: photo shows coral pink, light gray"
+    },
+    {
+      "variant": "Breathable Green",
+      "landed": 30.34,
+      "reason": "wrong_colour: photo shows Blue and cream/beige"
+    }
+  ],
+  "variant_set_changed": "v2.6: variants removed per Level 09 7.A.2 (wrong colour, Chinese text on the image, soft image, or a different product in the photo). Landed costs re-derived for the surviving set; margins re-checked against the new worst variant."
 }

@@ -130,6 +130,9 @@ REVIEW_GATE_HIDDEN = [
 HERO_SELECTION_DIR = os.environ.get(
     "HERO_SELECTION_DIR", "store-profiles/alphaforbaby/hero-selection"
 )
+VARIANT_IMAGES_DIR = os.environ.get(
+    "VARIANT_IMAGES_DIR", "store-profiles/alphaforbaby/variant-images"
+)
 
 
 def _catalog_handles(base_url):
@@ -1394,7 +1397,131 @@ class TestPricingRule:
             f"{handle}: ${rec['price']} is above the market median "
             f"${rec['market_median']} (Level 03 pricing rule)"
         )
+
+
+def _img_key(url):
+    """Shopify serves one file under many sizes/params; compare the file name."""
+    return (url or "").split("?")[0].rsplit("/", 1)[-1].lower()
+
+
+@pytest.mark.parametrize("handle", PRODUCT_HANDLES)
+class TestVariantImages:
+    """v2.6 — Level 01 rule 9 / Level 09 Section 7.A.2 / 7.D #43: the
+    picture always matches what the customer chose. Every variant has its
+    own verified CJ image, the main gallery follows the Buy 1 dropdown and
+    every Buy 2 unit, and each Buy 2 unit row shows that unit's image.
+    A missing image FAILS — it is never skipped (7.D #36)."""
+
+    def _record(self, handle):
+        path = os.path.join(VARIANT_IMAGES_DIR, f"{handle}.json")
+        assert os.path.exists(path), (
+            f"no variant-image record for {handle} at {path} — run Level 09 "
+            f"7.A.2 and save it"
+        )
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+
+    def test_every_variant_has_its_own_image_in_shopify(self, handle, shop_domain):
+        data = TestV151Blockers()._shopify_product_json(handle, shop_domain)
+        variants = data["variants"]
+        if len(variants) < 2:
+            return
+        missing = [v["title"] for v in variants if not v.get("featured_image")]
+        assert not missing, (
+            f"{handle}: {len(missing)} variant(s) have no image, so Buy 2 "
+            f"shows a grey box for them: {missing[:8]} (7.D #43)"
+        )
+        rec = {str(v["variant_id"]): v for v in self._record(handle)["variants"]}
+        by_img = {}
+        for v in variants:
+            by_img.setdefault(_img_key(v["featured_image"]["src"]), []).append(v)
+        for group in by_img.values():
+            if len(group) < 2:
+                continue
+            for v in group:
+                r = rec.get(str(v["id"]), {})
+                assert r.get("shares_image_with"), (
+                    f"{handle}: variants {[g['title'] for g in group]} share "
+                    f"one image. Different colours or contents need different "
+                    f"images; if they truly look identical, record "
+                    f"shares_image_with and the reason (Level 09 7.A.2 step 3)"
+                )
+
+    def test_record_is_cj_checked_and_vision_matched(self, handle, shop_domain):
+        data = TestV151Blockers()._shopify_product_json(handle, shop_domain)
+        if len(data["variants"]) < 2:
+            return
+        rec = self._record(handle)
+        ids = {str(v["variant_id"]) for v in rec["variants"]}
+        live = {str(v["id"]) for v in data["variants"]}
+        assert live <= ids, f"{handle}: variants not in the record: {live - ids}"
+        for v in rec["variants"]:
+            assert v.get("cj_source_url"), f"{handle}/{v['title']}: not from CJ"
+            assert v["short_side"] >= 1000 and v["laplacian_var"] >= 100, (
+                f"{handle}/{v['title']}: variant image is pixelated/soft"
+            )
+            assert v["cjk_chars"] == 0, f"{handle}/{v['title']}: Chinese text"
+            assert v.get("vision_match") is True, (
+                f"{handle}/{v['title']}: the image does not show this variant "
+                f"({v.get('vision_answer')!r}) — fix the image or remove the "
+                f"variant (Level 01 rule 9)"
+            )
+
+    def test_gallery_follows_buy1_choice(self, page, base_url, handle, shop_domain):
+        data = TestV151Blockers()._shopify_product_json(handle, shop_domain)
+        variants = [v for v in data["variants"] if v.get("available")]
+        if len(variants) < 2:
+            return
+        _goto(page, base_url, handle)
+        page.locator("[data-tier-card='1']").first.click()
+        select = page.locator("[data-quantity-tiers] select").first
+        for v in variants[:4]:
+            value = select.locator(f"option[value$='{v['id']}']").first.get_attribute("value")
+            select.select_option(value)
+            page.wait_for_timeout(400)
+            active = page.locator("[data-gallery-active] img").first
+            assert active.count() > 0, (
+                f"/products/{handle}: gallery has no [data-gallery-active] slide"
+            )
+            assert _img_key(active.get_attribute("src")) == _img_key(
+                v["featured_image"]["src"]
+            ), (
+                f"/products/{handle}: chose {v['title']!r} but the main "
+                f"gallery didn't move to its image (7.D #43)"
+            )
+
+    def test_buy2_unit_rows_show_the_chosen_variant(self, page, base_url, handle, shop_domain):
+        data = TestV151Blockers()._shopify_product_json(handle, shop_domain)
+        variants = [v for v in data["variants"] if v.get("available")]
+        if len(variants) < 2:
+            return
+        _goto(page, base_url, handle)
+        page.locator("[data-tier-card='2']").first.click()
+        page.wait_for_timeout(300)
+        for unit in (0, 1):
+            sel = page.locator(f"#tier2-u{unit}-color")
+            assert sel.count() > 0, f"/products/{handle}: no Buy 2 unit #{unit + 1} dropdown"
+            for v in variants[:4]:
+                value = sel.locator(f"option[value$='{v['id']}']").first.get_attribute("value")
+                sel.select_option(value)
+                page.wait_for_timeout(300)
+                thumb = sel.locator("xpath=..").locator("[data-unit-preview]")
+                assert thumb.count() > 0, (
+                    f"/products/{handle}: Buy 2 unit #{unit + 1} shows a grey "
+                    f"placeholder for {v['title']!r}, not its image (7.D #43)"
+                )
+                assert _img_key(thumb.get_attribute("src")) == _img_key(
+                    v["featured_image"]["src"]
+                ), f"/products/{handle}: unit #{unit + 1} thumbnail != {v['title']!r}"
+                active = page.locator("[data-gallery-active] img").first
+                assert _img_key(active.get_attribute("src")) == _img_key(
+                    v["featured_image"]["src"]
+                ), (
+                    f"/products/{handle}: changed Buy 2 unit #{unit + 1} to "
+                    f"{v['title']!r} but the main gallery didn't follow"
+                )
 ```
+
 
 Extend this file, don't replace it, as new bug patterns get added to 7.D
 — each new 7.D entry should get a matching test here the same day, so

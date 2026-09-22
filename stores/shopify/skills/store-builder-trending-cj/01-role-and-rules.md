@@ -189,6 +189,19 @@ honest one.
    uploaded at all. The hero is then chosen from the images that
    passed, preferring (c) a person using the product. Full procedure:
    Level 09, Section 7.A.1.
+9. **The image always matches what the customer chose (v2.6, Itzik's
+   rule — "very important").** Every variant has its own image that
+   shows exactly that variant (colour, pattern, piece count, set
+   contents), taken from the variant images on the product's CJ
+   listing and passing the same rule 8 checks. Whenever a customer
+   picks a variant — in the Buy 1 dropdown or for any unit inside
+   Buy 2 — the main gallery jumps to that variant's image, and each
+   Buy 2 unit row shows that unit's variant image next to its
+   dropdown. A grey placeholder, a shared image for two different
+   variants, or an image of a different colour is a bug. If CJ has
+   no correct image for a variant, that variant is not sold (remove
+   it from the product) — never show a wrong or generic image
+   instead. Full procedure: Level 09, Section 7.A.2.
 
 If the input product itself would require breaking one of these rules to
 sell (e.g., it only "works" if you lie about it), flag that back instead

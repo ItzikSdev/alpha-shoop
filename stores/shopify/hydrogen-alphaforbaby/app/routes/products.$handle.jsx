@@ -1,3 +1,4 @@
+import {useState} from 'react';
 import {useLoaderData} from 'react-router';
 import {Star} from 'lucide-react';
 import {
@@ -167,6 +168,11 @@ export default function Product() {
     ? reviews.reduce((a, r) => a + (r.rating || 0), 0) / reviews.length
     : 0;
 
+  // 7.D #43: the variant the shopper most recently picked anywhere on the page
+  // — the Buy 1 dropdown or any Buy 2 unit row. The gallery follows this, so
+  // the picture always matches the choice (Level 01 rule 9).
+  const [previewVariant, setPreviewVariant] = useState(null);
+
   const images = product.images?.nodes ?? [];
   const video = (product.media?.nodes ?? [])
     .flatMap((n) => n.sources ?? [])
@@ -179,7 +185,7 @@ export default function Product() {
           <div className="px-4 md:sticky md:top-24 md:px-0">
             <PdpGallery
               images={images}
-              selectedVariantImage={selectedVariant?.image}
+              selectedVariantImage={previewVariant?.image || selectedVariant?.image}
               title={title}
             />
           </div>
@@ -211,6 +217,7 @@ export default function Product() {
                 variants={product.allVariants?.nodes ?? []}
                 benefits={content?.tierBenefits || {}}
                 optionName={productOptions?.[0]?.name || 'Option'}
+                onVariantPreview={setPreviewVariant}
               />
             </section>
 

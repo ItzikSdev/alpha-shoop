@@ -1,6 +1,6 @@
 ---
 name: store-builder-skill
-version: 2.5
+version: 2.7
 description: >
   Build and verify complete, high-converting product pages for the
   alphaforbaby Shopify Hydrogen store from trending CJ Dropshipping
@@ -36,7 +36,8 @@ order to read them.
 
 1. **Always read Level 01 first** (role and non-negotiable honesty
    rules). Nothing in any other level overrides it.
-2. **For a new product, work the levels in order**, 02 → 14. For a fix,
+2. **For a new product, work the levels in order**, 02 → 14, then
+   Level 15 before any paid ads. For a fix,
    read the level that owns it **plus** Level 10 (known bugs), and still
    finish with Levels 13 and 14.
 3. **Read a whole level, not a grep of it.** Most repeated misses in this
@@ -56,8 +57,8 @@ developed yet, or broken · ⚪ reference only (nothing to develop)
 
 | Level | File | Old section | Status | Where it stands |
 |---|---|---|---|---|
-| 00 | [00-changelog.md](store-builder-trending-cj/00-changelog.md) | changelog | ⚪ | History v1.1 → v2.3. |
-| 01 | [01-role-and-rules.md](store-builder-trending-cj/01-role-and-rules.md) | ROLE, 1 | 🟢 Done | Rules in force across the whole store. New in v2.1: rule 7 (15 photo reviews or hidden) and rule 8 (product images only from CJ, checked before upload; v2.2). |
+| 00 | [00-changelog.md](store-builder-trending-cj/00-changelog.md) | changelog | ⚪ | History v1.1 → v2.6. |
+| 01 | [01-role-and-rules.md](store-builder-trending-cj/01-role-and-rules.md) | ROLE, 1 | 🟢 Done | Rules in force across the whole store. New in v2.1: rule 7 (15 photo reviews or hidden) and rule 8 (product images only from CJ, checked before upload; v2.2); rule 9 (the picture matches the chosen variant; v2.6). |
 | 02 | [02-product-sourcing.md](store-builder-trending-cj/02-product-sourcing.md) | 2 | 🟡 In progress | Reviews imported on 8, crib's 23 restored. New review gate (2.G): only 3 of 9 pass (carrier, sorting egg, domino) — the other 6 must be hidden. |
 | 03 | [03-build-pipeline-and-brief.md](store-builder-trending-cj/03-build-pipeline-and-brief.md) | 3, 4 | 🟢 Done | v2.3 pricing applied to all 3 live products: domino $24.90, egg $26.90, carrier $43.90 — each with a compliant Buy 2 and `approved_by_itzik: true`. Above-median prices on carrier and egg carry a recorded `market_override` that the suite re-warns on every run. v2.5 added step 3b: the unit price must admit a valid Buy-2 total. |
 | 04 | [04-product-page-blueprint.md](store-builder-trending-cj/04-product-page-blueprint.md) | 5 | 🟡 In progress | Built on the carrier page. Open: move Ratings & Reviews under the video (v1.53). |
@@ -65,15 +66,17 @@ developed yet, or broken · ⚪ reference only (nothing to develop)
 | 06 | [06-pdp-parity-gate.md](store-builder-trending-cj/06-pdp-parity-gate.md) | 5C | 🟡 In progress | 1 of 9 product pages matches the carrier (the carrier itself). |
 | 07 | [07-per-product-content-contract.md](store-builder-trending-cj/07-per-product-content-contract.md) | 5D | 🟡 In progress | Content written for 7 products. Open: tier bundle on 8 products, "How to use" on 8. |
 | 08 | [08-copywriting.md](store-builder-trending-cj/08-copywriting.md) | 6 | 🟢 Done | |
-| 09 | [09-assets-video-reviews-trust.md](store-builder-trending-cj/09-assets-video-reviews-trust.md) | 7.A–7.C, 7.E | 🟡 In progress | Review photos now re-hosted on Shopify's CDN. Open: all 3 live heroes are review photos — must be redone from CJ images only (7.A.1, v2.2); no video on 6 products. |
-| 10 | [10-known-bugs.md](store-builder-trending-cj/10-known-bugs.md) | 7.D | 🔴 Not done | Open: #31 unbuyable variants, #32 pricing below cost, #34 bundle, #36 skipped tests. #33 and #35 now fixed (crib reviews back, photos re-hosted). |
+| 09 | [09-assets-video-reviews-trust.md](store-builder-trending-cj/09-assets-video-reviews-trust.md) | 7.A–7.C, 7.E | 🟡 In progress | **7.A.2 done**: every live variant has its own CJ image, vision-checked; 12 of 25 variants removed (wrong colour, Chinese text, soft, or a different product). Gallery follows the choice in Buy 1 and every Buy 2 unit. **Open**: the hero. The carrier and domino still have no CJ image at ≥1000px; the egg's hero is the right product at 800px under a recorded override. |
+| 10 | [10-known-bugs.md](store-builder-trending-cj/10-known-bugs.md) | 7.D | 🔴 Not done | Open: #31 unbuyable variants, #32 pricing below cost, #34 bundle, #36 skipped tests. #33 and #35 now fixed (crib reviews back, photos re-hosted). New: #43 picture doesn't follow the chosen variant. |
 | 11 | [11-design-system-and-responsive.md](store-builder-trending-cj/11-design-system-and-responsive.md) | 8, 9 | 🟡 In progress | Open: the webfont is blocked by CSP (#28). |
 | 12 | [12-technical-implementation.md](store-builder-trending-cj/12-technical-implementation.md) | 10 | 🟢 Done | |
 | 13 | [13-final-self-check.md](store-builder-trending-cj/13-final-self-check.md) | 11 | 🟡 In progress | Checklist written; production gates still open. |
-| 14 | [14-automated-tests.md](store-builder-trending-cj/14-automated-tests.md) | 12 | 🔴 Not done | 71 tests written, not yet running in the repo; `conftest.py` still stale. |
+| 14 | [14-automated-tests.md](store-builder-trending-cj/14-automated-tests.md) | 12 | 🔴 Not done | 71 tests written, not yet running in the repo; `conftest.py` still stale. v2.6 adds TestVariantImages (4 tests). |
+| 15 | [15-owner-audit-before-ads.md](store-builder-trending-cj/15-owner-audit-before-ads.md) | new | 🔴 Not done | Written in v2.6, never run. Run after Level 14 passes, before any ad spend. |
 
 ## Top blockers right now, in order
 
+0. **The picture must match the chosen variant (v2.6, Itzik: very important).** Egg variants have no images, domino blue variants share one, carrier green shows blue, and the gallery never follows the choice (Level 09 7.A.2, 7.D #43).
 1. **Root-cause the auto-republish gap (Level 02, v2.4).** Something in
    the org's automation — most likely the CJ stock sweep — republished 3
    gated products the same day they were hidden, with no awareness of
