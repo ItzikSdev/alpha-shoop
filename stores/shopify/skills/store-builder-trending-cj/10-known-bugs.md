@@ -823,3 +823,40 @@ surfaced while fixing it, neither in the original report:
     v1.x note inside `_charter()` itself about lessons only reaching the
     meeting persona).
 
+48. **A code fix does not take effect until the process that runs it is
+    restarted (v3.0).** The v2.8 gates were written, syntax-checked,
+    unit-tested against real data — and did nothing. At **14:30 on
+    2026-09-22, two hours after they were written**, four gated products
+    (nest, Glow Whale, canopy, crib) were re-published anyway. The org
+    daemon (`uvicorn src.main:app`, pid 78529) had been up since
+    **11 Sep** and had imported `shopify.py` and `agent_loop.py` long
+    before the edit; Python does not reload a module because the file on
+    disk changed. Everything about the fix was correct except that
+    nothing was running it.
+    **Rule: after changing code that an always-on daemon executes,
+    restart the daemon and verify the new symbol is present in the
+    running process — `hasattr(module, 'new_function')` — before
+    reporting the behaviour as fixed.** Launch line for this one:
+    `TRACES_DB_PATH=./data/traces.db LITELLM_PROXY_URL=http://localhost:4000
+    .venv/bin/uvicorn src.main:app --host 127.0.0.1 --port 8000`.
+    Note also which fixes did NOT need a restart, and why: the agent
+    charters are read from the DB on every turn, so those took effect
+    immediately. Data changes propagate; imported code does not.
+
+49. **Publishing now needs Itzik's explicit permission, as an allowlist
+    (v3.0, his instruction).** *"Tell agents not push new products to
+    store without human permission."* Two softer measures had already
+    failed — a paused flag the tool never read (#46), then rules in a
+    charter the model could be talked out of. So this is not advice:
+    `owner_approval_blockers` is the FIRST check inside
+    `publish_blockers`, and a product publishes only if its handle is in
+    `company.daemon['publish_approved_handles']`. Agents cannot add to
+    that list. It is **fail-closed** — an empty or unreadable list
+    blocks everything, because the failure mode here has always been
+    products appearing, never products missing. Seeded with the three
+    Itzik approved: carrier, sorting egg, domino.
+    **Why an allowlist and not another rule:** the previous two attempts
+    both described the desired behaviour somewhere the agent had to
+    choose to honour. An allowlist doesn't describe behaviour, it
+    removes the capability — which is the only thing that has held.
+

@@ -1935,4 +1935,19 @@ and verified by building Sol's real `_charter()` and finding the rule in
 the returned string. Recorded as 7.D #47: after writing to an agent,
 assert against the function that builds the prompt, not against the
 database row.
+v3.0 — "The agents push again." They did, at 14:30, two hours after the
+v2.8 gates were written — because the org daemon had been running since
+11 Sep and still had the pre-fix modules in memory (7.D #48: a code fix
+does nothing until the process that runs it restarts). Four gated
+products were re-published; all four re-hidden, and the two leftover
+July clothing items deleted. Itzik's instruction this round — "tell
+agents not push new products to store without human permission" — is now
+an allowlist, not a rule: `owner_approval_blockers` is the first check in
+`publish_blockers`, a product publishes only if its handle is in
+`company.daemon['publish_approved_handles']`, agents cannot add to it,
+and it fails closed (7.D #49). Seeded with the three approved products.
+Written into the charter of all seven agents and verified in Sol's real
+`_charter()` output. Daemon restarted and the new symbols confirmed
+present in the running process. Store state: 100 products, 3 on the
+storefront, 6 gated ones hidden and 404.
 
