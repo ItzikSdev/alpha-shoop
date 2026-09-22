@@ -753,3 +753,44 @@ surfaced while fixing it, neither in the original report:
     different wrong value each run, suspect two writers to one piece of
     state before suspecting the test.**
 
+46. **Agents added a product a day for ten days, and re-published the
+    hidden ones, because every rule lived in prose the code never read
+    (v2.8, found by Itzik).** Symptom, his words: *"every time I see
+    another product are push again and again — maybe agents are pushing
+    them automatically and they are not know our rules."* Measured
+    2026-09-22: **14 products created between 13 and 22 Sep** that were
+    never sourced, priced or approved — roughly one a day, the newest
+    05:14 that morning — all live on the Meta and Microsoft Copilot
+    channels. Plus the three review-gate products (nest, canopy, Glow
+    Whale) re-published for the third time in two days. Two separate
+    causes, same shape:
+    - **`sourcing_paused` only ever gated the timer.**
+      `heartbeat._sourcing_tick` checks it; `cj_add_product` never did.
+      So the flag stopped the clock but not the agents — Sol called the
+      tool directly whenever a teammate message ("Reel asked you to do
+      this now…") or a ticket asked him to, and the tool complied. The
+      heartbeat's own comment had already diagnosed this for the timer
+      —*"the charter only ever reaches the model's own judgment calls"*—
+      and the same sentence was true of the tool the whole time.
+    - **The publish sweep and the review gate were two facts about one
+      product with no shared source of truth.**
+      `shopify_publish_products` sweeps every product with
+      `publishedAt is None` and publishes whatever clears images+video+
+      stock. The gated products clear all three. So every sweep undid
+      the gate, and re-hiding by hand was never going to hold.
+    **Fix (both in code, where a persuasive teammate cannot argue with
+    it):** `cj_add_product` refuses while `sourcing_paused` is set and
+    returns the skill's path plus a summary of the four rules, so the
+    refusal teaches instead of just blocking; and `publish_blockers`
+    now calls `review_gate_blockers`, putting Level 01 rule 7 inside the
+    single publish choke point that `_publish_product` already owns.
+    Verified: the 3 approved products publish, all 6 gated ones are
+    blocked with their real photo-review counts.
+    **The general lesson, which is the reason this entry is long:** a
+    rule that exists only in a skill file governs only the agents that
+    read it, on the turns they happen to read it. Anything that must
+    hold every time belongs in the narrowest piece of code that every
+    path goes through — and when you write such a rule, the question to
+    ask is not "did I document it" but "what is the function that
+    cannot be bypassed, and does it know?"
+

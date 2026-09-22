@@ -1907,4 +1907,20 @@ its own programmatic jump, presenting as flaky). Real run: **165 passed,
 7 skipped, 0 failed, 3 warnings in 1:18** at `-n 4`; `TestVariantImages`
 12/12. Cart verified: Buy 2 with two different colours produces two cart
 lines with the right colours.
+v2.8 — Itzik: products keep appearing on their own. They did. 14 products
+created 13–22 Sep by Sol calling `cj_add_product` directly whenever a
+teammate or a ticket asked, plus the three review-gate products
+re-published for the third time in two days. All 14 deleted; the gated
+ones re-hidden. Root cause was not the agents being careless — it was
+that `sourcing_paused` gated the heartbeat timer but never the tool, and
+`shopify_publish_products` re-published anything clearing images+video+
+stock with no knowledge of the review gate. Both now enforced in code:
+`cj_add_product` refuses while paused and answers with the skill's path
+and a four-rule summary so the refusal teaches; `publish_blockers` calls
+the new `review_gate_blockers`, so Level 01 rule 7 lives inside the one
+publish choke point. The rule was also written into the lessons of Sol,
+Reel, Ava and Nova, which is what actually reaches their prompt. Recorded
+as 7.D #46. Note for whoever runs this next: the two code fixes are in
+`src/`, which Itzik's standing instruction keeps out of the store commits
+— they are live on disk but need his go-ahead to commit.
 
