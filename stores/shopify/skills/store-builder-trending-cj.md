@@ -1,6 +1,6 @@
 ---
 name: store-builder-skill
-version: 2.8
+version: 2.9
 description: >
   Build and verify complete, high-converting product pages for the
   alphaforbaby Shopify Hydrogen store from trending CJ Dropshipping

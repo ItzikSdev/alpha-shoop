@@ -1923,4 +1923,16 @@ Reel, Ava and Nova, which is what actually reaches their prompt. Recorded
 as 7.D #46. Note for whoever runs this next: the two code fixes are in
 `src/`, which Itzik's standing instruction keeps out of the store commits
 — they are live on disk but need his go-ahead to commit.
+v2.9 — Itzik asked whether the agents had actually been told. They had
+not, in the sense that matters. v2.8 wrote the product rules into four
+agents' `lessons` and read them back successfully, but `_charter()`
+injects only `lessons[-5:]` and the entry had been prepended, so it was
+never in the prompt; and the retrospective loop appends on a timer, so
+even a correctly-appended lesson would have aged out within days. The
+rules now live in each agent's `skill`/charter, which is injected whole,
+with a short pointer kept in lessons. Applied to all seven active agents
+and verified by building Sol's real `_charter()` and finding the rule in
+the returned string. Recorded as 7.D #47: after writing to an agent,
+assert against the function that builds the prompt, not against the
+database row.
 

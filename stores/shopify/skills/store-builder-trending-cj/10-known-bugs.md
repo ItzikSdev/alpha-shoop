@@ -794,3 +794,32 @@ surfaced while fixing it, neither in the original report:
     ask is not "did I document it" but "what is the function that
     cannot be bypassed, and does it know?"
 
+47. **A lesson written to an agent reached the database but not the
+    prompt — twice, for two different reasons (v2.9).** Found only
+    because Itzik asked "did you update the agents about the skill?"
+    instead of taking the report at face value. The v2.8 fix wrote the
+    product rules into the `lessons` of Sol, Reel, Ava and Nova, and a
+    read-back confirmed all four had them. They still would not have
+    changed anything Sol does:
+    - `_charter()` injects only **`lessons[-5:]`** — the five most
+      recent. The lesson had been *prepended* (index 0 of 14), so it sat
+      permanently outside the window. Stored, verified present, never
+      read.
+    - Even appended, it would not have lasted: the retrospective loop
+      appends a lesson of its own on a timer ("After [set_goal, …],
+      7-day revenue was…"), so anything in that list is pushed out of
+      the 5-item window within days. **The lessons list is a rolling
+      log, not a place to put a standing rule.**
+    **Fix:** standing rules go in the agent's `skill` (the charter),
+    which is injected whole and never truncated; the lessons entry is
+    kept as a short pointer and appended at the END. Applied to all
+    seven active agents, and verified by building Sol's real
+    `_charter()` and finding the rule in it — not by reading the row
+    back out of the database.
+    **The check that matters:** after writing to an agent, assert
+    against the function that actually builds the prompt. "It is in the
+    table" and "the model will see it" are different claims, and this
+    file now has two entries where they came apart (#47 here, and the
+    v1.x note inside `_charter()` itself about lessons only reaching the
+    meeting persona).
+
