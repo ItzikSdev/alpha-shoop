@@ -911,3 +911,75 @@ Three things this taught, worth more than the fix:
     excluded. When a new test fails on the exact configuration the rule
     asks for, suspect the test.
 
+54. **A page can be "complete" and still be half-built (v3.3, found by
+    Itzik).** The restored domino passed the suite while, measured on the
+    live site 2026-09-25: no demo video at all (the carrier has one),
+    "Why it works" 280 characters against the carrier's 752, the full
+    description 245 against 1,255, and no spec table where the carrier
+    has "Product details" with 8 rows. Every heading existed, so nothing
+    went red — the parity gate compared the LIST of sections, never what
+    was inside them. In the same check the review photos turned out to
+    have no arrows, no swipe and no scroll container anywhere on the
+    site. Fix per Level 04 Section 5.E and Level 09 Section 7.C.1; tests:
+    `TestSectionDepth`, `TestReviewPhotosAreBrowsable`.
+
+**#54 status (v3.4): content fixed, the video is a real blocker.**
+Section depth is now measured, not assumed — every wrapper carries
+`data-pdp-section` and `TestSectionDepth` reads the characters inside.
+Domino after the fix: why-it-works 280 -> **783**, full description
+245 -> **1,480**, product details missing -> **381 (8 rows)**. The egg
+turned out to have no spec table either (0 chars) and was given one.
+**The demo video could not be fixed:** CJ's `productVideo` is null for
+this pid, no other CJ domino listing has one (all results checked), and
+the only orphaned video file left in the store turned out to be the
+sensory learning board's — verified by extracting a frame, not by its
+filename. Per 5.E a product with no usable clip is reported, not
+shipped without one, so this goes to Itzik.
+
+55. **Marking a decorative image with a tested attribute points the test
+    at the wrong element (v3.4).** Three separate failures this round,
+    all the same shape. `[data-review-photos]` was put on the mini
+    review carousel as well as the photo gallery; the carousel renders
+    only 4 cards, never overflows, so its "next" is correctly disabled
+    and `TestReviewPhotosAreBrowsable` — which takes `.first` — declared
+    the arrows broken. Then `[data-review-photo]` on the carousel's
+    avatar made the older lightbox test click an avatar that opens
+    nothing. **A `data-*` hook that a test selects by `.first` is a
+    claim about which element is THE one.** Put it only on the element
+    the rule is about: the gallery is the browsable strip, the carousel
+    avatar is decoration. The carousel keeps its own arrows under
+    `data-mini-prev/next`.
+
+56. **A page can be judged on a build that was never shipped (v3.4).**
+    The v3.3 work — `data-pdp-section`, the browsable photo gallery, the
+    new menu — was written, tested green on the dev server and correctly
+    held back from production because two tests were red. Itzik then
+    looked at alphaforbaby.com and reported the page still looked bad.
+    He was right about the page and it had nothing to do with the code:
+    the live site had no `data-pdp-section` attributes, no
+    `[data-review-photos]` strip and no video element, because it was
+    still running the previous build with the NEW metafield content
+    poured into it. Metafield writes go live instantly; code does not.
+    **When you hold a push, say which of the reported symptoms your
+    unshipped work would have fixed and which it would not** — otherwise
+    the next report measures a mixture of old code and new data, and
+    both of you draw conclusions from it.
+    And the real finding underneath: the domino's problem was never the
+    template. It has **2 images, both of the sealed retail box with a
+    "Blue sealing box" sales overlay**, no hero, no lifestyle shot and no
+    video, against the carrier's 13 photos and a clip. Its own
+    `hero-selection` record had said `blocked_no_compliant_image` since
+    v2.2. Deep sections cannot rescue a product with no pictures.
+
+57. **Tests learn one word for a decision and reject the second (v3.4).**
+    `test_approved_products_are_still_live` and
+    `test_every_trending_product_is_in_the_live_catalog` both allowed
+    exactly one explained absence: `verdict == "drop"`. Itzik took the
+    domino off the storefront on a **`no_ads`** verdict — equally
+    recorded, equally deliberate — and both tests called it a
+    regression. Fixed with one helper, `_absence_is_a_recorded_decision`,
+    that reads the record and accepts any supply-gate verdict that keeps
+    a product off the store, provided `decided_by_itzik` is set. Same
+    family as #53: when a test rejects a state the owner deliberately
+    created, the test has an incomplete vocabulary, not the state.
+

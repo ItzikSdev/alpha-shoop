@@ -247,7 +247,7 @@ export default function Product() {
             directly after the mini reviews. "Three ways to wear it" keeps its
             own explanatory steps lower down, without a second player. */}
         {video && (
-          <div className="px-4 pt-3 md:px-8">
+          <div className="px-4 pt-3 md:px-8" data-pdp-section="video">
             {/* eslint-disable-next-line jsx-a11y/media-has-caption -- supplier clip has no caption track */}
             <video
               className="w-full rounded-lg bg-black"
@@ -266,7 +266,7 @@ export default function Product() {
             block sits IMMEDIATELY after the product video, before the benefit
             sections — it is no longer the last section on the page. id="reviews"
             stays here so the star row's "(N Reviews)" anchor still lands on it. */}
-        <div id="reviews" className="mx-auto max-w-4xl px-4 md:px-6">
+        <div id="reviews" data-pdp-section="reviews" className="mx-auto max-w-4xl px-4 md:px-6">
           <PdpReviews reviews={reviews} />
         </div>
 
@@ -276,20 +276,20 @@ export default function Product() {
             pb-[100px] moved here: this block is now what the mobile sticky bar
             overlaps at the bottom of the page. */}
         <div className="mx-auto max-w-4xl px-4 pb-[100px] md:px-6">
-          <PdpBenefits items={content?.benefits} />
+          <div data-pdp-section="why-parents-choose-it"><PdpBenefits items={content?.benefits} /></div>
 
           <PdpAccordion heading="Size guide & shipping" items={content?.sizeAndShipping}
             sectionId="size-and-shipping" />
 
-          <PdpHowToUse content={content?.howToUse} images={images} video={null} title={title} />
+          <div data-pdp-section="how-to-use"><PdpHowToUse content={content?.howToUse} images={images} video={null} title={title} /></div>
 
-          <PdpWhyItWorks content={content?.whyItWorks} />
+          <div data-pdp-section="why-it-works"><PdpWhyItWorks content={content?.whyItWorks} /></div>
 
           <PdpLifestyle content={content?.lifestyle} images={images} title={title} />
 
-          <PdpComparison content={content?.comparison} />
+          <div data-pdp-section="comparison"><PdpComparison content={content?.comparison} /></div>
 
-          <section className="pt-10">
+          <section className="pt-10" data-pdp-section="full-description">
             <h2 className="m-0 text-ch2 font-normal">Full description</h2>
             <div
               className="mt-2 text-[15.5px] leading-[1.55] [&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:text-[17px] [&_h2]:font-semibold [&_li]:mb-1 [&_p:last-child]:mb-0 [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5"
@@ -297,9 +297,9 @@ export default function Product() {
             />
           </section>
 
-          <PdpSpecs specs={specs} />
+          <div data-pdp-section="product-details"><PdpSpecs specs={specs} /></div>
 
-          <PdpAccordion heading="Frequently asked questions" items={content?.faq} />
+          <div data-pdp-section="faq"><PdpAccordion heading="Frequently asked questions" items={content?.faq} /></div>
 
           <PdpGuarantee content={content?.guarantee} />
         </div>

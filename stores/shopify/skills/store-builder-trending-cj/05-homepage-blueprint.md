@@ -155,11 +155,14 @@ is exactly the doubt a new baby store cannot afford.
    nav — the collection itself may stay in Shopify, ready for the day
    it has stock.
 2. **With fewer than about 6 live products, don't use category nav at
-   all.** Home · Shop All · Contact is the honest shape. Categories
-   start earning their place when each one holds 3+ products.
-3. **No "Sign in" in the menu.** The store sells to guests; an account
-   link on a first visit is friction and an invitation to abandon. It
-   comes back only if we ever ship a real account area.
+   all** (see rule 3 for the shape Itzik chose). Categories start
+   earning their place when each one holds 3+ products.
+3. **The menu is Home and Products, and nothing else (v3.3, Itzik's
+   instruction, replacing the v3.2 wording).** Two items: `Home` and
+   `Products` (the all-products page). The account / sign-in control
+   stays as a control in the header — Itzik wants it — next to the cart
+   icon, not as a menu line item. Every other link comes out of both the
+   header and the mobile drawer.
 4. **The menu is validated against the live catalog on every build**,
    not written once. Level 14's `TestNavMatchesCatalog` fails the build
    on an empty nav target.

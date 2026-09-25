@@ -596,3 +596,41 @@ the carrier's served HTML: `<video>` 58883 → `id="reviews"` 59185 →
 "Ratings &amp; Reviews" 59297 → "Why parents" 88783 → "Full description"
 103452 → "Frequently asked" 107263 → "change your mind" 111957. Enforced
 by `TestReviewsUnderVideo`.
+
+## 5.E — Section depth and the section contract (v3.3, Itzik's rule)
+
+The restored domino page passed the suite and still looked half-built
+next to the carrier. Measured on alphaforbaby.com, 2026-09-25:
+
+| Section | Carrier | Domino |
+|---|---|---|
+| Demo video | 1 `<video>` | **none** |
+| "Why it works" | 752 chars | 280 |
+| Full description | full body (1,255 chars in its own titled block) | 245 |
+| Spec table ("Product details") | 242 chars, 8 rows | **missing** |
+
+Everything was *present as a heading*, so nothing failed. A heading with
+two sentences under it is not a section — the page has to be as deep as
+the reference page, not merely as long a list of titles.
+
+**Every live product page must carry all of these, with real content:**
+
+| `data-pdp-section` | Minimum | Notes |
+|---|---|---|
+| `video` | 1 `<video>` with a real product clip | The big demo video, not a GIF. Required — a product with no usable clip does not go live; report it instead. |
+| `why-it-works` | >= 450 characters of body text | The mechanism, in plain words: what it does to the problem. |
+| `full-description` | >= 700 characters | The full product story, in its own titled block. |
+| `product-details` | >= 6 spec rows | Age, size, materials, weight limit, what's in the box, care. |
+| `how-to-use` | 3 numbered steps + 1 image each | |
+| `why-parents-choose-it` | 4 benefit cards | |
+| `comparison` | the "by hand vs. with it" pair | |
+| `faq` | >= 4 questions | |
+| `reviews` | the reviews block, under the video | |
+
+**Every section wrapper carries `data-pdp-section="<key>"`** from the
+table above. That attribute is what Level 14 measures; without it a
+section cannot be checked and the build fails.
+
+The reference is always the carrier page. Before any product goes live,
+compare the two pages section by section and state the character counts
+in the report — not "all sections present".

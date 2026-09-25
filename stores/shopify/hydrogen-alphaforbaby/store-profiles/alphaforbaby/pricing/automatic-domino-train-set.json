@@ -232,18 +232,18 @@
       {
         "site": "Temu",
         "regular_price": null,
-        "checked_at": "2026-09-22",
-        "note": "Temu requires login for automated reads — blocked; no figure collected for this product.",
+        "checked_at": "2026-09-25",
+        "note": "Temu requires a logged-in session for any automated read — the search page returns a sign-in wall, checked again 2026-09-25. No regular price could be collected for this product; Itzik read the carrier figure off his own phone. This entry stays incomplete on purpose rather than carrying a guessed number.",
         "url": "https://www.temu.com/search_result.html?search_key=domino%20train%20set%20toy"
       },
       {
         "site": "AliExpress",
         "url": "https://www.aliexpress.com/w/wholesale-domino-train-set-toy.html",
-        "regular_price": 20.24,
+        "regular_price": 21.96,
         "shipping": 0,
-        "checked_at": "2026-09-22",
+        "checked_at": "2026-09-25",
         "screenshot": "scratchpad/market/aliexpress_domino.png",
-        "note": "median of 98 listing prices, ILS converted at 3.34 — AliExpress geo-locks this IP to Israel/ILS"
+        "note": "median of 84 listing prices on 2026-09-25, ILS converted at 3.34 — AliExpress geo-locks this IP to Israel/ILS. Screenshot: scratchpad/market/aliexpress_domino_v34.png"
       }
     ],
     "landed": 14.38,
@@ -254,12 +254,13 @@
     "profit_per_order": 4.64,
     "fails": [],
     "verdict": "no_ads",
-    "decided_by_itzik": false,
-    "decided_at": null,
+    "decided_by_itzik": true,
+    "decided_at": "2026-09-25",
     "checked_at": "2026-09-22",
-    "verdict_note": "Passes (a) and (b). At the CURRENT live price of $24.90 profit is $9.50, under the $12 ads floor, so today it is no_ads. It becomes 'sell' at the proposed $27.90 (profit $12.41, still below the $29.99 market median) — needs Itzik's approval to reprice.",
+    "verdict_note": "Itzik 2026-09-25: $5.79 profit per order is under the $12 ads floor whatever Temu charges, so this product gets no ad budget. It also stays UNPUBLISHED (Draft) until it has real assets and better shipping — it has 2 images, both of the sealed retail box, no hero, no lifestyle shot and no video, against the carrier's 13 photos and a clip.",
     "proposed_price": 27.9,
-    "proposed_profit_per_order": 12.41
+    "proposed_profit_per_order": 12.41,
+    "unpublished_at": "2026-09-25"
   },
   "restored_at": "2026-09-25",
   "restore_note": "Rebuilt 2026-09-25 after accidental deletion. Price, Buy-2 total and landed costs are the approved values, unchanged; only the Shopify variant IDs are new."

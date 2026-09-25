@@ -470,7 +470,10 @@ class TestCatalogCoverage:
         """v2.1 — a shortlisted product may be absent ONLY if the review gate
         hid it. Any other absence is still a publishing regression."""
         missing = sorted(EXPECTED_TRENDING - set(PRODUCT_HANDLES))
-        unexplained = [h for h in missing if h not in REVIEW_GATE_HIDDEN]
+        unexplained = [
+            h for h in missing
+            if h not in REVIEW_GATE_HIDDEN and not _absence_is_a_recorded_decision(h)
+        ]
         assert not unexplained, (
             f"confirmed-trending products the storefront does not serve: {unexplained}. "
             "They are not on REVIEW_GATE_HIDDEN, so this is not the review gate — "
@@ -1119,6 +1122,26 @@ class TestPricingRule:
             stacklevel=2,
         )
 
+def _absence_is_a_recorded_decision(handle):
+    """True when a product missing from the live catalog is missing because
+    Itzik decided so, and the decision is written down.
+
+    v3.4: the only explained absence used to be `verdict == "drop"`. Itzik then
+    took the domino off the storefront on a `no_ads` verdict — a real, recorded
+    decision that the tests called a regression, because they only knew one
+    word. Read the record, don't hardcode handles: any supply-gate verdict that
+    keeps a product off the store counts, as long as `decided_by_itzik` is set.
+    """
+    path = os.path.join(
+        os.path.dirname(HERO_SELECTION_DIR.rstrip("/")), "pricing", f"{handle}.json"
+    )
+    if not os.path.exists(path):
+        return False
+    with open(path, encoding="utf-8") as fh:
+        sc = (json.load(fh) or {}).get("supply_check") or {}
+    return sc.get("verdict") in {"drop", "no_ads"} and bool(sc.get("decided_by_itzik"))
+
+
 def _img_key(url):
     """Shopify serves one file under many sizes/params; compare the file name."""
     return (url or "").split("?")[0].rsplit("/", 1)[-1].lower()
@@ -1393,8 +1416,7 @@ class TestNavMatchesCatalog:
             with open(os.path.join(self.PRICING_DIR, name), encoding="utf-8") as fh:
                 rec = json.load(fh)
             approved = rec.get("approved_by_itzik") is True
-            sc = rec.get("supply_check") or {}
-            dropped = sc.get("verdict") == "drop" and sc.get("decided_by_itzik")
+            dropped = _absence_is_a_recorded_decision(handle)
             gated = handle in set(REVIEW_GATE_HIDDEN)
             if approved and not dropped and not gated and handle not in live:
                 missing.append(handle)
@@ -1403,5 +1425,123 @@ class TestNavMatchesCatalog:
             f"{missing}. Either Itzik decided to drop them (record it in "
             f"`supply_check`) or they were deleted by accident — restore them "
             f"from the repo records (Level 05 Section 5B.1 rule 5, 7.D #50)"
+        )
+
+@pytest.mark.parametrize("handle", PRODUCT_HANDLES)
+class TestSectionDepth:
+    """v3.3 — Level 04 Section 5.E / 7.D #54: a heading with two sentences
+    under it is not a section. Every live product page carries the same
+    sections as the carrier, with real content in them. Missing content
+    FAILS; it is never skipped (7.D #36)."""
+
+    MINIMUMS = {
+        "why-it-works": 450,
+        "full-description": 700,
+        "product-details": 200,
+        "how-to-use": 200,
+        "why-parents-choose-it": 300,
+        "faq": 150,
+    }
+
+    def _section_text(self, page, key):
+        loc = page.locator(f"[data-pdp-section='{key}']")
+        if loc.count() == 0:
+            return None
+        return re.sub(r"\s+", " ", loc.first.inner_text()).strip()
+
+    def test_every_required_section_exists_and_is_marked(self, page, base_url, handle):
+        _goto(page, base_url, handle)
+        _expand_all_accordions(page)
+        missing = [
+            k for k in list(self.MINIMUMS) + ["video", "comparison", "reviews"]
+            if page.locator(f"[data-pdp-section='{k}']").count() == 0
+        ]
+        assert not missing, (
+            f"/products/{handle} is missing section(s) {missing} — every "
+            f"section wrapper carries data-pdp-section from the Level 04 5.E "
+            f"table, and every product page carries all of them"
+        )
+
+    def test_sections_are_as_deep_as_the_reference(self, page, base_url, handle):
+        _goto(page, base_url, handle)
+        _expand_all_accordions(page)
+        thin = []
+        for key, minimum in self.MINIMUMS.items():
+            text = self._section_text(page, key)
+            if text is None:
+                continue  # the previous test owns absence
+            if len(text) < minimum:
+                thin.append(f"{key}: {len(text)} chars (needs {minimum})")
+        assert not thin, (
+            f"/products/{handle} has sections that are titles with almost "
+            f"nothing under them: {thin}. The carrier page is the reference — "
+            f"write the real content into custom.pdp_content (Level 04 5.E)"
+        )
+
+    def test_the_demo_video_is_there(self, page, base_url, handle):
+        _goto(page, base_url, handle)
+        videos = page.locator("[data-pdp-section='video'] video")
+        assert videos.count() >= 1, (
+            f"/products/{handle} has no demo video. Every live product needs "
+            f"one real clip (Level 04 5.E); a product with no usable clip is "
+            f"reported to Itzik, not shipped without it"
+        )
+        src = videos.first.get_attribute("src") or ""
+        assert src.startswith("http"), (
+            f"/products/{handle}: the video element has no real source ({src!r})"
+        )
+
+
+@pytest.mark.parametrize("handle", PRODUCT_HANDLES)
+class TestReviewPhotosAreBrowsable:
+    """v3.3 — Level 09 Section 7.C.1: review photos can be swiped on a phone
+    and stepped through with arrows on a desktop."""
+
+    def test_strip_scrolls_and_snaps(self, page, base_url, handle):
+        _goto(page, base_url, handle)
+        strip = page.locator("[data-review-photos]").first
+        assert strip.count() > 0, (
+            f"/products/{handle}: no [data-review-photos] strip — review "
+            f"photos still render as a static block (7.D #54)"
+        )
+        style = strip.evaluate(
+            "el => { const s = getComputedStyle(el);"
+            " return {x: s.overflowX, snap: s.scrollSnapType}; }"
+        )
+        assert style["x"] in ("auto", "scroll"), (
+            f"/products/{handle}: the review photo strip doesn't scroll "
+            f"horizontally (overflow-x: {style['x']}) — a finger drag does "
+            f"nothing (Level 09 7.C.1)"
+        )
+        assert "x" in (style["snap"] or ""), (
+            f"/products/{handle}: no scroll snapping on the review photos "
+            f"(scroll-snap-type: {style['snap']!r})"
+        )
+        assert page.locator("[data-review-photo]").count() >= 2, (
+            f"/products/{handle}: fewer than 2 marked review photos to browse"
+        )
+
+    def test_desktop_arrows_exist_and_move_the_strip(self, page, base_url, handle):
+        page.set_viewport_size({"width": 1280, "height": 900})
+        _goto(page, base_url, handle)
+        nxt = page.locator("[data-review-next]").first
+        prev = page.locator("[data-review-prev]").first
+        assert nxt.count() > 0 and prev.count() > 0, (
+            f"/products/{handle}: no previous/next controls on the review "
+            f"photos (Level 09 7.C.1)"
+        )
+        box = nxt.bounding_box()
+        assert box and box["width"] >= 44 and box["height"] >= 44, (
+            f"/products/{handle}: the next-photo control is smaller than 44px "
+            f"({box})"
+        )
+        strip = page.locator("[data-review-photos]").first
+        before = strip.evaluate("el => el.scrollLeft")
+        nxt.click()
+        page.wait_for_timeout(600)
+        after = strip.evaluate("el => el.scrollLeft")
+        assert after > before, (
+            f"/products/{handle}: clicking next didn't move the review photo "
+            f"strip ({before} -> {after})"
         )
 

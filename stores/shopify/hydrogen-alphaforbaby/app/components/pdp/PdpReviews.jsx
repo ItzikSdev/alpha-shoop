@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import {Star} from 'lucide-react';
-import {Lightbox} from '~/components/pdp/Lightbox';
+import {ReviewPhotoStrip} from '~/components/pdp/ReviewPhotoStrip';
 import {StarRating} from '~/components/pdp/StarRating';
 
 /** Parse the product's `custom.reviews` JSON metafield. Never throws — a missing
@@ -48,7 +48,7 @@ function Stars({value = 5, size = 17}) {
  * card rather than in a gallery detached from their author, and each opens in
  * a lightbox.
  */
-function ReviewCard({review, onOpenPhoto}) {
+function ReviewCard({review}) {
   const photos = Array.isArray(review.photos) ? review.photos : [];
   return (
     <li className="border-b border-divider py-4 last:border-b-0">
@@ -64,26 +64,19 @@ function ReviewCard({review, onOpenPhoto}) {
       <p className="mt-2 text-[14.5px] leading-[1.5] text-ink/85">{review.comment}</p>
 
       {photos.length > 0 && (
-        <ul className="mt-3 flex list-none flex-wrap gap-2 p-0">
-          {photos.map((src) => (
-            <li key={src}>
-              <button
-                type="button"
-                aria-label={`Enlarge photo from ${review.name}'s review`}
-                onClick={() => onOpenPhoto(src, `Photo from ${review.name}'s review`)}
-                className="block cursor-zoom-in"
-              >
-                <img
-                  data-review-photo
-                  src={src}
-                  alt={`Photo from ${review.name}'s review`}
-                  loading="lazy"
-                  className="h-20 w-20 rounded-md border border-divider object-cover transition hover:opacity-90 md:h-24 md:w-24"
-                />
-              </button>
-            </li>
-          ))}
-        </ul>
+        // 7.C.1: browsable, not a static wrapped block — swipe on a phone,
+        // arrows on desktop, and the reviewer's details beside the enlargement.
+        <ReviewPhotoStrip
+          className="mt-3"
+          marked={false}
+          size={88}
+          photos={photos.map((src) => ({
+            src,
+            name: review.name,
+            country: review.country,
+            rating: review.rating,
+          }))}
+        />
       )}
     </li>
   );
@@ -102,13 +95,14 @@ function ReviewCard({review, onOpenPhoto}) {
  */
 export function PdpReviews({reviews = []}) {
   const [showAll, setShowAll] = useState(false);
-  const [lightbox, setLightbox] = useState({src: null, alt: ''});
-  const openPhoto = (src, alt) => setLightbox({src, alt});
-  const closePhoto = () => setLightbox({src: null, alt: ''});
 
   const count = reviews.length;
   const average = count ? reviews.reduce((s, r) => s + (r.rating || 0), 0) / count : 0;
   const withPhotos = reviews.filter((r) => Array.isArray(r.photos) && r.photos.length);
+  // every customer photo, flattened, each carrying its reviewer's details
+  const allPhotos = withPhotos.flatMap((r) =>
+    r.photos.map((src) => ({src, name: r.name, country: r.country, rating: r.rating})),
+  );
 
   // Reviews carrying real customer photos lead the first page — they're the
   // most useful ones to a shopper, and burying them behind "View all" would
@@ -132,11 +126,25 @@ export function PdpReviews({reviews = []}) {
         <p className="mt-2 text-[14px] text-ink/60">Be the first to review this product.</p>
       )}
 
+      {/* 7.C.1: one browsable gallery of every customer photo, at the top of the
+          block where people look first — swipe on a phone, arrows on desktop,
+          tap to enlarge with the reviewer's name, country and rating. This is
+          the strip Level 14 measures; the per-card thumbnails below reuse the
+          same component unmarked so there is only ever one tested strip. */}
+      {allPhotos.length > 0 && (
+        <div className="mt-3">
+          <span className="mb-1.5 block text-[11px] uppercase tracking-[.08em] text-ink/50">
+            Photos from customers
+          </span>
+          <ReviewPhotoStrip photos={allPhotos} size={96} />
+        </div>
+      )}
+
       {count > 0 && (
         <>
           <ul className="mt-3 list-none p-0">
             {visible.map((r) => (
-              <ReviewCard key={r.id} review={r} onOpenPhoto={openPhoto} />
+              <ReviewCard key={r.id} review={r} />
             ))}
           </ul>
 
@@ -152,7 +160,6 @@ export function PdpReviews({reviews = []}) {
         </>
       )}
 
-      <Lightbox src={lightbox.src} alt={lightbox.alt} onClose={closePhoto} />
     </section>
   );
 }

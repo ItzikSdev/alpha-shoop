@@ -183,12 +183,8 @@
       "url": "/"
     },
     {
-      "label": "Shop All",
+      "label": "Products",
       "url": "/collections/all"
-    },
-    {
-      "label": "Contact",
-      "url": "/pages/contact"
     }
   ],
   "hero": {
@@ -298,6 +294,6 @@
       "✓ Guaranteed Safe & Secure Checkout"
     ]
   },
-  "_nav_note": "Level 05 5B.1 (v3.2): every item must resolve to a collection with at least one PUBLISHED product, and under ~6 live products we don't use category nav at all. On 2026-09-25 the nav offered Toys(1), Carriers(1), Sleep & Nursery(0), Bath(0), Outdoor(0) — three links to empty pages. The collections still exist in Shopify; they come back here when each holds 3+ live products.",
+  "_nav_note": "Level 05 5B.1 rule 3 (v3.3, Itzik): the menu holds exactly two items — Home and Products (the all-products page). Everything else is out of both the header and the mobile drawer. The account / sign-in control stays in the header next to the cart as a CONTROL, not as a menu line item.",
   "_tiles_note": "Dead config: no component reads `tiles` or `categoryHeading`. Kept for reference only; the category tiles they describe point at baby-boys/baby-girls/unisex, which are clothing collections this store no longer sells."
 }

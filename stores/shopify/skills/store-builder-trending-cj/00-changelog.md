@@ -1984,7 +1984,7 @@ $24.90 / Buy 2 $47.90 with the orphaned discount re-pointed at it, cost
 per item, stock, Toys collection, and its 121 reviews (19 with photos)
 re-imported from CJ with the photos re-hosted. `pdp_content` had to be
 re-authored — it existed only as a metafield and died with the product
-(7.D #51: anything we author into a metafield must also be a file in
+(7.D #54: anything we author into a metafield must also be a file in
 `store-profiles/`). Nav is now Home / Shop All / Contact per Level 05
 5B.1, Sign In is gone from the drawer and the account icon from the
 header, and the duplicate hardcoded Home link with it; the footer's Shop
@@ -1995,5 +1995,57 @@ homepage category tiles turned out to be dead config nothing renders.
 the deletion. Real run: **174 passed, 8 skipped, 3 failed in 1:25**; the
 3 reds are the v3.1 supply-gate items still waiting on Itzik's decision
 (Temu blocked automated reads for two products; the egg fails
-undercut-at-source on an undecided record). New: 7.D #51, #52, #53.
+undercut-at-source on an undecided record). New: 7.D #54, #52, #53.
+v3.3 — Itzik looked at the restored domino next to the carrier and saw a
+page that the suite called finished: no video, "Why it works" 280 chars
+against 752, full description 245 against 1,255, and no spec table.
+Everything was present as a heading, and the parity gate only ever compared
+the list of headings. New Level 04 Section 5.E: every section wrapper
+carries `data-pdp-section`, the demo video is required on every live
+product, and each section has a minimum real length measured against the
+carrier. New Level 09 Section 7.C.1: review photos are browsable — snapping
+horizontal scroll and swipe on mobile, 44px arrow controls plus keyboard on
+desktop, tap to enlarge with the reviewer's name and rating. Level 05 5B.1
+rule 3 replaced on Itzik's instruction: the menu is Home and Products only,
+and the account/sign-in control stays. Recorded as 7.D #54 with
+TestSectionDepth (3 tests) and TestReviewPhotosAreBrowsable (2 tests).
+v3.4 — Itzik: the restored domino looked half-built next to the carrier
+and the suite called it finished (7.D #54). Fixed the measurement first:
+every PDP section wrapper now carries `data-pdp-section` and
+`TestSectionDepth` counts the characters inside instead of ticking off
+headings. Domino content written — why-it-works 280 -> 783, full
+description 245 -> 1,480, product details missing -> 381 (8 rows); the
+egg had no spec table either and got one. **The domino's demo video is
+unresolved and goes to Itzik**: CJ has none for this pid or any other
+domino listing, and the one orphaned video left in the store proved to
+be the learning board's (checked by extracting a frame). Review photos
+are now browsable per 7.C.1 — a snapping, momentum-scrolling strip with
+44px arrows, keyboard support, and a tap-to-enlarge view carrying the
+reviewer's name, country and rating; the reviews block gained one
+aggregate "Photos from customers" gallery, which is the strip the tests
+measure. Menu is Home + Products per 5B.1 rule 3, with the account
+control restored to the header beside the cart where Itzik wants it.
+New: 7.D #55 — a tested `data-*` hook on a decorative element points the
+test at the wrong thing; it cost three false failures this round.
+Suite: **187 passed, 8 skipped, 5 failed**; the 5 reds are the domino
+video (2) and the v3.1 supply-gate items (3), both waiting on Itzik.
+v3.5 — Itzik's decisions. The domino is **unpublished (Draft, not
+deleted)** — records, reviews, pricing and its discount all kept. The
+reason is assets, not code: 2 images, both of the sealed retail box, no
+hero, no lifestyle shot, no video, which its own `hero-selection` record
+had flagged as `blocked_no_compliant_image` since v2.2. No Veo spend on
+a product whose price gate it hasn't passed. Supply gate finished:
+domino verdict **`no_ads`**, `decided_by_itzik: true` ($5.79/order is
+under the $12 ads floor whatever Temu charges); egg's fail (a)
+**re-confirmed on a larger sample** — AliExpress regular $9.05 against
+our $13.86 approved landed cost, so a customer buys it for less than we
+pay for it, and that goes to Itzik before anything else happens to it.
+Temu still returns a sign-in wall to any automated read; those entries
+are left incomplete on purpose rather than carrying a guessed number.
+Everything else shipped: `data-pdp-section` markup, the review-photo
+gallery with swipe/snap/arrows/enlarge, the egg's spec table, and the
+Home · Products menu with the account control back in the header.
+New: 7.D #56 (a page judged on a build that was never shipped — say what
+your held work would and would not have fixed) and #57 (tests that knew
+only `drop` and rejected a recorded `no_ads`).
 

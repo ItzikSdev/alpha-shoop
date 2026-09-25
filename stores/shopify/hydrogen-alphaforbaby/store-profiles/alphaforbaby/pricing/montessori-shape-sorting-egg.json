@@ -231,18 +231,18 @@
       {
         "site": "Temu",
         "regular_price": null,
-        "checked_at": "2026-09-22",
-        "note": "Temu requires login for automated reads \u2014 blocked; no figure collected for this product.",
+        "checked_at": "2026-09-25",
+        "note": "Temu requires a logged-in session for any automated read — sign-in wall, re-checked 2026-09-25. No figure collected; left incomplete rather than guessed.",
         "url": "https://www.temu.com/search_result.html?search_key=matching%20eggs%20shape%20sorter%20toy"
       },
       {
         "site": "AliExpress",
         "url": "https://www.aliexpress.com/w/wholesale-matching-eggs-shape-sorter-toy.html",
-        "regular_price": 8.87,
+        "regular_price": 9.05,
         "shipping": 0,
-        "checked_at": "2026-09-22",
+        "checked_at": "2026-09-25",
         "screenshot": "scratchpad/market/aliexpress_egg.png",
-        "note": "median of 36 listing prices, ILS converted at 3.34 \u2014 AliExpress geo-locks this IP to Israel/ILS"
+        "note": "median of 89 listing prices on 2026-09-25, ILS converted at 3.34 — AliExpress geo-locks this IP to Israel/ILS. Screenshot: scratchpad/market/aliexpress_egg_v34.png"
       }
     ],
     "landed": 12.91,
@@ -259,6 +259,8 @@
     "verdict": "drop",
     "decided_by_itzik": false,
     "decided_at": null,
-    "checked_at": "2026-09-22"
+    "checked_at": "2026-09-25",
+    "fail_a_detail": "AliExpress regular $9.05 is BELOW both our approved landed cost of $13.86 and the best-shipping landed cost of $12.91. A customer buys the same set for less than we pay to acquire it. Re-confirmed 2026-09-25 on a larger sample (89 listings vs 36).",
+    "awaiting_itzik": true
   }
 }

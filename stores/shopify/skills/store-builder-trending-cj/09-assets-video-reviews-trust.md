@@ -458,3 +458,27 @@ back to you." + an email field or the mailto link) — this is a trust
 signal (someone's there if something goes wrong), not a scripted bot
 flow, so don't over-build it with fake canned responses pretending to
 be a live conversation.
+
+### 7.C.1 — Review photos must be browsable (v3.3, Itzik's rule)
+
+The review photos render as a static strip today: no arrows, no swipe,
+no scroll container (checked on the live pages, 2026-09-25 — the reviews
+block contains no buttons and no scrollable element at all). Customers
+read photo reviews more than they read our copy, so they have to be able
+to move through them.
+
+- **Mobile:** the photo strip is a horizontally scrollable row with
+  scroll snapping (`overflow-x: auto`, `scroll-snap-type: x mandatory`,
+  one snap point per photo) and momentum scrolling. A finger drag moves
+  it; nothing traps the vertical page scroll.
+- **Desktop:** left and right arrow buttons, at least 44x44px, with
+  `aria-label="Previous photo"` / `"Next photo"`, disabled at the ends,
+  and the strip also responds to the keyboard arrows when focused.
+- **Both:** tapping a photo opens it large, with the same left/right
+  navigation and a close control; the reviewer's name, country and star
+  rating stay visible next to the enlarged photo.
+- The strip carries `data-review-photos`, each photo `data-review-photo`,
+  and the controls `data-review-prev` / `data-review-next`, so Level 14
+  can check them.
+- This applies to every place review photos appear: the mini carousel
+  near the buy box, the avatar strip, and the Ratings & Reviews block.
