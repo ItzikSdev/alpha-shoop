@@ -1520,7 +1520,155 @@ class TestVariantImages:
                     f"/products/{handle}: changed Buy 2 unit #{unit + 1} to "
                     f"{v['title']!r} but the main gallery didn't follow"
                 )
+
+
+@pytest.mark.parametrize("handle", PRODUCT_HANDLES)
+class TestSupplyPriceGate:
+    """v3.1 — Level 02 Section 2.H: we may not sell a product we buy for more
+    than the customer can buy it for, and we may not put ad budget behind an
+    order that is too thin to pay for a click. The gate lives in each pricing
+    record's `supply_check` block. A missing block FAILS (7.D #36)."""
+
+    AD_PROFIT_FLOOR = 12.0
+
+    def _check(self, handle):
+        path = os.path.join("store-profiles/alphaforbaby/pricing", f"{handle}.json")
+        assert os.path.exists(path), f"no pricing record for {handle} at {path}"
+        with open(path, encoding="utf-8") as fh:
+            rec = json.load(fh)
+        sc = rec.get("supply_check")
+        assert sc, (
+            f"{handle}: no `supply_check` block — run the Level 02 2.H price "
+            f"reality gate (cheapest CJ shipping, Temu/AliExpress consumer "
+            f"price, verdict)"
+        )
+        return rec, sc
+
+    def test_consumer_prices_were_actually_checked(self, handle):
+        _, sc = self._check(handle)
+        sites = {c["site"].lower() for c in sc.get("consumer_prices", [])}
+        assert {"temu", "aliexpress"} <= sites, (
+            f"{handle}: 2.H step 2 needs the regular Temu AND AliExpress price "
+            f"for the same item, not only western retail (have: {sites})"
+        )
+        for c in sc["consumer_prices"]:
+            assert c.get("url") and c.get("regular_price") and c.get("checked_at"), (
+                f"{handle}: {c.get('site')} entry is missing url/regular_price/date"
+            )
+        assert sc.get("methods_considered"), (
+            f"{handle}: 2.H step 1 — list the CJ shipping methods you compared "
+            f"before accepting {sc.get('cheapest_method')}"
+        )
+
+    def test_we_are_not_undercut_at_source(self, handle):
+        rec, sc = self._check(handle)
+        cheapest_consumer = min(
+            c["regular_price"] + c.get("shipping", 0) for c in sc["consumer_prices"]
+        )
+        landed = sc.get("landed", rec.get("worst_landed"))
+        if landed >= cheapest_consumer:
+            assert sc.get("verdict") in {"drop", "no_ads"} and sc.get("decided_by_itzik"), (
+                f"{handle}: landed ${landed} >= ${cheapest_consumer} that the "
+                f"customer pays on Temu/AliExpress (2.H fail (a)). Fix the "
+                f"shipping or take the product down — it may not stay live on "
+                f"an undecided record"
+            )
+
+    def test_ad_products_clear_the_profit_floor(self, handle):
+        rec, sc = self._check(handle)
+        profit = rec.get("profit_per_order")
+        assert profit is not None, f"{handle}: pricing record has no profit_per_order"
+        if profit < self.AD_PROFIT_FLOOR:
+            assert sc.get("verdict") in {"no_ads", "drop"}, (
+                f"{handle}: ${profit} profit per order is under the "
+                f"${self.AD_PROFIT_FLOOR} ads floor (2.H fail (c)), but the "
+                f"record still says verdict={sc.get('verdict')!r} — mark it "
+                f"`no_ads` so no budget goes behind it, or fix the cost"
+            )
+
+
+class TestNavMatchesCatalog:
+    """v3.2 — Level 05 Section 5B.1: the menu may only offer categories that
+    actually hold a live product, and a product we approved may not quietly
+    vanish from the catalog (7.D #50)."""
+
+    NAV_CONFIG = os.environ.get("NAV_CONFIG", "app/theme.config.json")
+    PRICING_DIR = "store-profiles/alphaforbaby/pricing"
+
+    def _nav(self):
+        assert os.path.exists(self.NAV_CONFIG), f"no {self.NAV_CONFIG}"
+        with open(self.NAV_CONFIG, encoding="utf-8") as fh:
+            return json.load(fh).get("nav", [])
+
+    def _collection_count(self, shop_domain, handle):
+        url = f"https://{shop_domain}/collections/{handle}/products.json?limit=50"
+        req = urllib.request.Request(url, headers={"User-Agent": "compliance-suite"})
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                return len(json.loads(resp.read().decode("utf-8", "replace"))["products"])
+        except Exception:
+            return -1
+
+    def test_every_nav_link_has_products(self, shop_domain):
+        empty = []
+        for item in self._nav():
+            url = item.get("url", "")
+            if "/collections/" not in url:
+                continue
+            handle = url.rstrip("/").split("/collections/")[-1]
+            n = self._collection_count(shop_domain, handle)
+            if n <= 0:
+                empty.append(f"{item.get('label')} -> /collections/{handle} ({n} products)")
+        assert not empty, (
+            f"the menu offers categories with nothing in them: {empty}. Remove "
+            f"them from `nav` in theme.config.json until they hold a product "
+            f"(Level 05 Section 5B.1)"
+        )
+
+    def test_no_account_link_in_the_menu(self):
+        labels = {i.get("label", "").strip().lower() for i in self._nav()}
+        assert not ({"sign in", "log in", "login", "account"} & labels), (
+            f"the menu carries an account link ({labels}) — the store sells to "
+            f"guests (Level 05 Section 5B.1 rule 3)"
+        )
+
+    def test_nav_is_not_bigger_than_the_catalog(self, base_url):
+        live = len(_catalog_handles(base_url))
+        cats = [i for i in self._nav() if "/collections/" in i.get("url", "")]
+        if live < 6:
+            assert not cats, (
+                f"{live} live products but {len(cats)} category links — with "
+                f"fewer than 6 products the nav is Home / Shop All / Contact "
+                f"(Level 05 Section 5B.1 rule 2)"
+            )
+
+    def test_approved_products_are_still_live(self, base_url, shop_domain):
+        if not os.path.isdir(self.PRICING_DIR):
+            pytest.fail(f"no pricing records at {self.PRICING_DIR}")
+        live = set(_catalog_handles(base_url))
+        missing = []
+        for name in sorted(os.listdir(self.PRICING_DIR)):
+            if not name.endswith(".json"):
+                continue
+            handle = name[:-5]
+            with open(os.path.join(self.PRICING_DIR, name), encoding="utf-8") as fh:
+                rec = json.load(fh)
+            approved = rec.get("approved_by_itzik") is True
+            dropped = (rec.get("supply_check") or {}).get("verdict") == "drop" and (
+                rec.get("supply_check") or {}
+            ).get("decided_by_itzik")
+            gated = handle in set(REVIEW_GATE_HIDDEN)
+            if approved and not dropped and not gated and handle not in live:
+                missing.append(handle)
+        assert not missing, (
+            f"approved, priced, built product(s) are not in the live catalog: "
+            f"{missing}. Either Itzik decided to drop them (record it in "
+            f"`supply_check`) or they were deleted by accident — restore them "
+            f"from the repo records (Level 05 Section 5B.1 rule 5, 7.D #50)"
+        )
 ```
+
+
 
 
 Extend this file, don't replace it, as new bug patterns get added to 7.D

@@ -860,3 +860,54 @@ surfaced while fixing it, neither in the original report:
     choose to honour. An allowlist doesn't describe behaviour, it
     removes the capability — which is the only thing that has held.
 
+50. **The menu advertises categories we don't stock, and an approved
+    product vanished from the catalog (v3.2, found by Itzik).** Checked
+    live 2026-09-25: the header and mobile menu offer Toys (1 product),
+    Carriers (1), Sleep & Nursery (0), Bath (0) and Outdoor (0) — three
+    links to empty pages — plus a "Sign in" item on a store that sells
+    to guests. In the same check the domino train was gone from the
+    storefront (404, absent from products.json) although its pricing
+    record, content, reviews and variant images are all still in the
+    repo: deleted by accident, with nothing watching. Fix per Level 05
+    Section 5B.1; tests: `TestNavMatchesCatalog`.
+
+**#50 status (v3.3, fixed).** Both halves.
+- **The domino was deleted outright**, not archived or unpublished:
+  `node(gid://shopify/Product/7655348633671)` returns `None` and no
+  status filter (`status:active|draft|archived`) finds it. Rebuilt from
+  the repo records — 2 variants with their own CJ images, the approved
+  $24.90 / Buy 2 $47.90, cost per item, stock, `pdp_content`, its 121
+  reviews (19 with photos) re-imported from the CJ cache with the photos
+  re-hosted, Toys collection, published to the same 4 channels as the
+  other two. **New product id 9056462897223** — Shopify never reissues a
+  deleted ID, so every record keyed by the old variant IDs had to be
+  re-bound.
+- **The nav now matches the catalog**: Home / Shop All / Contact, with
+  Sign In gone from the drawer and the account icon gone from the header.
+
+Three things this taught, worth more than the fix:
+
+51. **Content that lives only in a Shopify metafield is not backed up
+    (v3.3).** `pricing/`, `variant-images/` and `hero-selection/` were in
+    git and restored perfectly. `pdp_content` and the reviews existed
+    **only** as metafields on the product, so deleting the product
+    deleted them. The reviews survived by luck — a CJ API cache happened
+    to still be on disk. The persuasion copy did not, and had to be
+    re-authored; it is new text, not the original. **Every metafield we
+    author belongs in `store-profiles/` as a file, written at the same
+    time it is written to Shopify.** A record that exists in exactly one
+    place is not a record.
+52. **A deleted product takes its ID with it but leaves its discount
+    behind.** The "Domino Train Set — Buy 2 bundle" automatic discount
+    survived the deletion, scoped to nothing, and then blocked
+    recreating it ("Title must be unique"). Re-point the orphan at the
+    new product rather than making a second one — otherwise the store
+    accumulates dead discounts that still count against the limit.
+53. **A test can forbid the thing the rule prescribes.** Level 05 5B.1
+    rule 2 names the correct small-catalog nav as *Home / Shop All /
+    Contact*, and `TestNavMatchesCatalog::test_nav_is_not_bigger_than_the_catalog`
+    counted every `/collections/` link as a category — so the prescribed
+    nav failed its own test on the first run. `/collections/all` is now
+    excluded. When a new test fails on the exact configuration the rule
+    asks for, suspect the test.
+

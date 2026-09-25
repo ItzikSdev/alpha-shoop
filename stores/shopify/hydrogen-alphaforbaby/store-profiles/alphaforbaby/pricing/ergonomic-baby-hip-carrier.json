@@ -210,5 +210,154 @@
       "reason": "wrong_colour: photo shows Blue and cream/beige"
     }
   ],
-  "variant_set_changed": "v2.6: variants removed per Level 09 7.A.2 (wrong colour, Chinese text on the image, soft image, or a different product in the photo). Landed costs re-derived for the surviving set; margins re-checked against the new worst variant."
+  "variant_set_changed": "v2.6: variants removed per Level 09 7.A.2 (wrong colour, Chinese text on the image, soft image, or a different product in the photo). Landed costs re-derived for the surviving set; margins re-checked against the new worst variant.",
+  "supply_check": {
+    "cheapest_method": {
+      "name": "UniUni+",
+      "cost": 11.55,
+      "days": "3-8",
+      "from": "US"
+    },
+    "methods_considered": [
+      {
+        "name": "UniUni+",
+        "cost": 11.55,
+        "days": "3-8"
+      },
+      {
+        "name": "USPS+VIP",
+        "cost": 13.82,
+        "days": "3-7"
+      },
+      {
+        "name": "USPS+",
+        "cost": 15.3,
+        "days": "3-7"
+      },
+      {
+        "name": "USPS+WSC For VIP",
+        "cost": 15.3,
+        "days": "3-7"
+      },
+      {
+        "name": "GOFO+",
+        "cost": 15.48,
+        "days": "3-8"
+      },
+      {
+        "name": "GOFO GC parcel+",
+        "cost": 15.73,
+        "days": "3-8"
+      },
+      {
+        "name": "CJPacket Eub",
+        "cost": 18.84,
+        "days": "12-50"
+      },
+      {
+        "name": "LuWei Ordinary US",
+        "cost": 19.52,
+        "days": "5-11"
+      },
+      {
+        "name": "YunExpress Ordinary",
+        "cost": 20.6,
+        "days": "4-7"
+      },
+      {
+        "name": "CJPacket FJTY Eub Special Line",
+        "cost": 21.62,
+        "days": "15-25"
+      },
+      {
+        "name": "CJPacket Ordinary",
+        "cost": 23.92,
+        "days": "4-9"
+      },
+      {
+        "name": "YunExpress Sensitive",
+        "cost": 23.93,
+        "days": "4-7"
+      }
+    ],
+    "methods_total_found": 36,
+    "promise_max_days": 25,
+    "previous_method": {
+      "name": "CJPacket Eub",
+      "note": "what the earlier landed costs were based on"
+    },
+    "other_cj_suppliers": [
+      {
+        "pid": "2102291264286941186",
+        "name": "Elastic Band Hip Fitness Elastic Band Women's ",
+        "item": 0.76,
+        "ship": 4.94,
+        "method": "CJPacket Super Pure Electricity",
+        "days": "5-11",
+        "landed": 5.7
+      },
+      {
+        "pid": "2102238257029505026",
+        "name": "Cross-Border Knitted Hip Circle Fitness Yoga B",
+        "item": 0.66,
+        "ship": 5.55,
+        "method": "LuWei Ordinary US",
+        "days": "5-11",
+        "landed": 6.21
+      },
+      {
+        "pid": "2609220732141633100",
+        "name": "All-cotton Four-season Baby Swaddle Sleeping B",
+        "item": 4.21,
+        "ship": 6.18,
+        "method": "LuWei Ordinary US",
+        "days": "5-11",
+        "landed": 10.39
+      },
+      {
+        "pid": "2609220558081639100",
+        "name": "Breathable Four-season Baby Carrier Dual-shoul",
+        "item": 8.33,
+        "ship": 22.11,
+        "method": "LuWei Ordinary US",
+        "days": "5-11",
+        "landed": 30.44
+      }
+    ],
+    "other_cj_suppliers_note": "CJ keyword search returned mostly unrelated products; no genuine same-product listing was cheaper than ours.",
+    "consumer_prices": [
+      {
+        "site": "Temu",
+        "regular_price": 30.0,
+        "sale_price": 13.7,
+        "shipping": 0,
+        "checked_at": "2026-09-22",
+        "source": "Itzik, in-app 2026-09-22: flash ILS45.78 (~$13.70), regular ~ILS100 (~$30)",
+        "url": "https://www.temu.com/search_result.html?search_key=baby%20hip%20seat%20carrier"
+      },
+      {
+        "site": "AliExpress",
+        "url": "https://www.aliexpress.com/w/wholesale-baby-hip-seat-carrier.html",
+        "regular_price": 25.55,
+        "shipping": 0,
+        "checked_at": "2026-09-22",
+        "screenshot": "scratchpad/market/aliexpress_carrier.png",
+        "note": "median of 113 listing prices, ILS converted at 3.34 \u2014 AliExpress geo-locks this IP to Israel/ILS"
+      }
+    ],
+    "landed": 25.45,
+    "landed_previous": 32.74,
+    "market_median": 29.99,
+    "price_at_20pct": 33.9,
+    "price_for_12_profit": 38.9,
+    "profit_per_order": null,
+    "fails": [
+      "b",
+      "c"
+    ],
+    "verdict": "drop",
+    "decided_by_itzik": false,
+    "decided_at": null,
+    "checked_at": "2026-09-22"
+  }
 }

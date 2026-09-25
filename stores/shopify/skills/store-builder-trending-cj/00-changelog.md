@@ -1950,4 +1950,50 @@ Written into the charter of all seven agents and verified in Sol's real
 `_charter()` output. Daemon restarted and the new symbols confirmed
 present in the running process. Store state: 100 products, 3 on the
 storefront, 6 gated ones hidden and 404.
+v3.1 — Itzik found our own carrier on Temu at ₪45.78 (a 56% flash price;
+about $30 regular) while we buy it landed at $32.74, and asked for the
+sourcing price to be checked properly. New Level 02 Section 2.H, the price
+reality gate: cheapest compliant CJ shipping method and warehouse for every
+variant, the regular (not flash) Temu AND AliExpress consumer price for the
+same item, then three fail conditions — (a) landed >= what the customer pays
+on Temu/AliExpress, (b) no room for 20% at or below the market median, (c)
+profit per order under $12, which means no ad budget. Recorded as a
+`supply_check` block in each pricing record with a verdict of sell / no_ads /
+drop, which only Itzik confirms. Shipping is to be fixed before the price is:
+it is 58-79% of landed cost on all three live products (carrier $18.84 of
+$32.74, domino $14.30 of $18.09, egg $9.33 of $13.86). 2.A also gains the
+rule that a recognisable Temu commodity is a weak candidate whatever it
+trends at. New TestSupplyPriceGate (3 tests).
+v3.2 — Itzik deleted the domino train from the catalog by accident and
+noticed that the menu offers categories the store doesn't stock. Checked
+live 2026-09-25: Toys 1 product, Carriers 1, Sleep & Nursery 0, Bath 0,
+Outdoor 0, plus a "Sign in" item; the domino 404s and is absent from
+products.json while all of its repo records survive. New Level 05 Section
+5B.1: every menu item must resolve to a collection with at least one
+published product, no category nav at all below about 6 live products, no
+account link while the store sells to guests, the nav is validated against
+the live catalog on every build, and a product with an approved pricing
+record that disappears is a failure to report and restore, never a state to
+accept. Recorded as 7.D #50 with TestNavMatchesCatalog (4 tests).
+v3.3 — Itzik found the domino train gone from the store and the menu
+offering three empty categories. The domino had been **deleted outright**
+(confirmed: the node ID returns None and no status filter finds it), not
+archived or unpublished. Rebuilt from the repo records as product
+**9056462897223**: 2 variants with their own CJ images, the approved
+$24.90 / Buy 2 $47.90 with the orphaned discount re-pointed at it, cost
+per item, stock, Toys collection, and its 121 reviews (19 with photos)
+re-imported from CJ with the photos re-hosted. `pdp_content` had to be
+re-authored — it existed only as a metafield and died with the product
+(7.D #51: anything we author into a metafield must also be a file in
+`store-profiles/`). Nav is now Home / Shop All / Contact per Level 05
+5B.1, Sign In is gone from the drawer and the account icon from the
+header, and the duplicate hardcoded Home link with it; the footer's Shop
+column reads the same `nav` so it followed automatically, and the
+homepage category tiles turned out to be dead config nothing renders.
+`TestNavMatchesCatalog` added — its
+`test_approved_products_are_still_live` is the one that would have caught
+the deletion. Real run: **174 passed, 8 skipped, 3 failed in 1:25**; the
+3 reds are the v3.1 supply-gate items still waiting on Itzik's decision
+(Temu blocked automated reads for two products; the egg fails
+undercut-at-source on an undecided record). New: 7.D #51, #52, #53.
 

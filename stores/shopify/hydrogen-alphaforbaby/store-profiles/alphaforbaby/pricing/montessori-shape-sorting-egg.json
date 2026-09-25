@@ -121,5 +121,144 @@
       "reason": "soft image (Laplacian 55 < 100)"
     }
   ],
-  "variant_set_changed": "v2.6: variants removed per Level 09 7.A.2 (wrong colour, Chinese text on the image, soft image, or a different product in the photo). Landed costs re-derived for the surviving set; margins re-checked against the new worst variant."
+  "variant_set_changed": "v2.6: variants removed per Level 09 7.A.2 (wrong colour, Chinese text on the image, soft image, or a different product in the photo). Landed costs re-derived for the surviving set; margins re-checked against the new worst variant.",
+  "supply_check": {
+    "cheapest_method": {
+      "name": "UniUni+",
+      "cost": 8.38,
+      "days": "3-8",
+      "from": "US"
+    },
+    "methods_considered": [
+      {
+        "name": "UniUni+",
+        "cost": 8.38,
+        "days": "3-8"
+      },
+      {
+        "name": "GOFO GC parcel+",
+        "cost": 9.03,
+        "days": "3-8"
+      },
+      {
+        "name": "GOFO+",
+        "cost": 9.14,
+        "days": "3-8"
+      },
+      {
+        "name": "LuWei Ordinary US",
+        "cost": 9.33,
+        "days": "5-11"
+      },
+      {
+        "name": "YunExpress Ordinary",
+        "cost": 9.92,
+        "days": "4-7"
+      },
+      {
+        "name": "USPS+VIP",
+        "cost": 10.16,
+        "days": "3-7"
+      },
+      {
+        "name": "USPS+",
+        "cost": 10.66,
+        "days": "3-7"
+      },
+      {
+        "name": "USPS+WSC For VIP",
+        "cost": 10.66,
+        "days": "3-7"
+      },
+      {
+        "name": "CJPacket Ordinary",
+        "cost": 10.93,
+        "days": "4-9"
+      },
+      {
+        "name": "YunExpress Sensitive",
+        "cost": 11.53,
+        "days": "4-7"
+      },
+      {
+        "name": "CJPacket Sensitive",
+        "cost": 12.38,
+        "days": "4-9"
+      },
+      {
+        "name": "CJPacket Eub",
+        "cost": 12.47,
+        "days": "12-50"
+      }
+    ],
+    "methods_total_found": 36,
+    "promise_max_days": 25,
+    "previous_method": {
+      "name": "see previous variant_costs",
+      "note": "what the earlier landed costs were based on"
+    },
+    "other_cj_suppliers": [
+      {
+        "pid": "2609211018021623500",
+        "name": "Pet Latex Toy Multi-color Realistic Donut Shap",
+        "item": 1.58,
+        "ship": 4.75,
+        "method": "CJPacket Super Pure Electricity",
+        "days": "5-11",
+        "landed": 6.33
+      },
+      {
+        "pid": "2609200423441638100",
+        "name": "Infant Shaped Comfort Pillow For Sleep And Hea",
+        "item": 5.23,
+        "ship": 9.17,
+        "method": "LuWei Ordinary US",
+        "days": "5-11",
+        "landed": 14.4
+      },
+      {
+        "pid": "2609220847121614300",
+        "name": "A Cool-looking Bubble Machine In The Shape Of ",
+        "item": 1.8,
+        "ship": 16.76,
+        "method": "CJPacket FJTY Eub Special Line",
+        "days": "15-25",
+        "landed": 18.56
+      }
+    ],
+    "other_cj_suppliers_note": "CJ keyword search returned mostly unrelated products; no genuine same-product listing was cheaper than ours.",
+    "consumer_prices": [
+      {
+        "site": "Temu",
+        "regular_price": null,
+        "checked_at": "2026-09-22",
+        "note": "Temu requires login for automated reads \u2014 blocked; no figure collected for this product.",
+        "url": "https://www.temu.com/search_result.html?search_key=matching%20eggs%20shape%20sorter%20toy"
+      },
+      {
+        "site": "AliExpress",
+        "url": "https://www.aliexpress.com/w/wholesale-matching-eggs-shape-sorter-toy.html",
+        "regular_price": 8.87,
+        "shipping": 0,
+        "checked_at": "2026-09-22",
+        "screenshot": "scratchpad/market/aliexpress_egg.png",
+        "note": "median of 36 listing prices, ILS converted at 3.34 \u2014 AliExpress geo-locks this IP to Israel/ILS"
+      }
+    ],
+    "landed": 12.91,
+    "landed_previous": 13.86,
+    "market_median": 15.49,
+    "price_at_20pct": 17.9,
+    "price_for_12_profit": 26.9,
+    "profit_per_order": null,
+    "fails": [
+      "a",
+      "b",
+      "c"
+    ],
+    "verdict": "drop",
+    "decided_by_itzik": false,
+    "decided_at": null,
+    "checked_at": "2026-09-22"
+  }
 }

@@ -179,24 +179,16 @@
   ],
   "nav": [
     {
-      "label": "Toys",
-      "url": "/collections/toys"
+      "label": "Home",
+      "url": "/"
     },
     {
-      "label": "Carriers",
-      "url": "/collections/carriers"
+      "label": "Shop All",
+      "url": "/collections/all"
     },
     {
-      "label": "Sleep & Nursery",
-      "url": "/collections/sleep-nursery"
-    },
-    {
-      "label": "Bath",
-      "url": "/collections/bath"
-    },
-    {
-      "label": "Outdoor",
-      "url": "/collections/outdoor"
+      "label": "Contact",
+      "url": "/pages/contact"
     }
   ],
   "hero": {
@@ -305,5 +297,7 @@
       "✓ 30-day easy returns",
       "✓ Guaranteed Safe & Secure Checkout"
     ]
-  }
+  },
+  "_nav_note": "Level 05 5B.1 (v3.2): every item must resolve to a collection with at least one PUBLISHED product, and under ~6 live products we don't use category nav at all. On 2026-09-25 the nav offered Toys(1), Carriers(1), Sleep & Nursery(0), Bath(0), Outdoor(0) — three links to empty pages. The collections still exist in Shopify; they come back here when each holds 3+ live products.",
+  "_tiles_note": "Dead config: no component reads `tiles` or `categoryHeading`. Kept for reference only; the category tiles they describe point at baby-boys/baby-girls/unisex, which are clothing collections this store no longer sells."
 }

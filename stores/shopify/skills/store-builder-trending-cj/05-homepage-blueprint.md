@@ -131,3 +131,41 @@ the real numbers say the space is now in two other places:
    at 375px width.
 The product grid itself is already tight (`padding-top: 10px`,
 `row-gap: 6px`) — leave it alone.
+
+## 5B.1 — The menu only offers what we actually sell (v3.2, Itzik's rule)
+
+Checked live on 2026-09-25: the header and the mobile menu offer Toys,
+Carriers, Sleep & Nursery, Bath and Outdoor. The catalog behind them is
+Toys 1 product, Carriers 1, **Sleep & Nursery 0, Bath 0, Outdoor 0**.
+Three of the five links lead to an empty page. The same check found the
+domino train gone from the storefront entirely (`/products/automatic-domino-train-set`
+404s, it is not in `products.json`) although it has an approved pricing
+record, content, reviews and variant images in the repo — it was deleted
+by accident and nothing caught it.
+
+An empty category is worse than a missing one. A parent who clicks
+"Bath" and lands on nothing learns that this store is a shell, and that
+is exactly the doubt a new baby store cannot afford.
+
+**Rules:**
+
+1. **Every menu item must resolve to a collection with at least one
+   published product.** The nav in `app/theme.config.json` is not a
+   wish list. A category with zero live products is removed from the
+   nav — the collection itself may stay in Shopify, ready for the day
+   it has stock.
+2. **With fewer than about 6 live products, don't use category nav at
+   all.** Home · Shop All · Contact is the honest shape. Categories
+   start earning their place when each one holds 3+ products.
+3. **No "Sign in" in the menu.** The store sells to guests; an account
+   link on a first visit is friction and an invitation to abandon. It
+   comes back only if we ever ship a real account area.
+4. **The menu is validated against the live catalog on every build**,
+   not written once. Level 14's `TestNavMatchesCatalog` fails the build
+   on an empty nav target.
+5. **A product with an approved pricing record must be live.** If a
+   handle we have approved, priced and built disappears from the
+   catalog, that is a failure, not a state — report it to Itzik the
+   same day and restore it from the repo records
+   (`pdp_content`, `pricing/`, `variant-images/`, `hero-selection/`,
+   reviews). Never let a silent deletion pass as "the catalog changed".

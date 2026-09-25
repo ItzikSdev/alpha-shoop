@@ -3,7 +3,7 @@
   "pid": "1441350234507710464",
   "variant_costs": [
     {
-      "variant_id": 43185805295687,
+      "variant_id": 48949984493639,
       "variant": "Blue / 60 pieces",
       "previous_title": "Blue / 60pcs",
       "cj_item": 3.79,
@@ -13,7 +13,7 @@
       "checked_at": "2026-09-21"
     },
     {
-      "variant_id": 43185805393991,
+      "variant_id": 48949984591943,
       "variant": "Pink / 60 pieces",
       "previous_title": "Pink / 60pcs",
       "cj_item": 3.75,
@@ -104,5 +104,163 @@
       "reason": "9 Chinese characters on the image; wrong_colour: photo shows orange, purple, and red"
     }
   ],
-  "variant_set_changed": "v2.6: variants removed per Level 09 7.A.2 (wrong colour, Chinese text on the image, soft image, or a different product in the photo). Landed costs re-derived for the surviving set; margins re-checked against the new worst variant."
+  "variant_set_changed": "v2.6: variants removed per Level 09 7.A.2 (wrong colour, Chinese text on the image, soft image, or a different product in the photo). Landed costs re-derived for the surviving set; margins re-checked against the new worst variant.",
+  "supply_check": {
+    "cheapest_method": {
+      "name": "UniUni+",
+      "cost": 10.59,
+      "days": "3-8",
+      "from": "US"
+    },
+    "methods_considered": [
+      {
+        "name": "UniUni+",
+        "cost": 10.59,
+        "days": "3-8"
+      },
+      {
+        "name": "GOFO+",
+        "cost": 10.65,
+        "days": "3-8"
+      },
+      {
+        "name": "GOFO GC parcel+",
+        "cost": 10.89,
+        "days": "3-8"
+      },
+      {
+        "name": "USPS+VIP",
+        "cost": 13.02,
+        "days": "3-7"
+      },
+      {
+        "name": "YunExpress Sensitive",
+        "cost": 14.3,
+        "days": "4-7"
+      },
+      {
+        "name": "USPS+",
+        "cost": 14.4,
+        "days": "3-7"
+      },
+      {
+        "name": "USPS+WSC For VIP",
+        "cost": 14.4,
+        "days": "3-7"
+      },
+      {
+        "name": "CJPacket Sensitive",
+        "cost": 15.09,
+        "days": "4-9"
+      },
+      {
+        "name": "CJPacket Pure Electricity",
+        "cost": 16.07,
+        "days": "7-14"
+      },
+      {
+        "name": "CJPacket Eub Special Line",
+        "cost": 16.77,
+        "days": "10-23"
+      },
+      {
+        "name": "CJPacket Liquid US",
+        "cost": 17.45,
+        "days": "5-11"
+      },
+      {
+        "name": "Qfulfillment A line",
+        "cost": 18.43,
+        "days": "10-25"
+      }
+    ],
+    "methods_total_found": 27,
+    "promise_max_days": 25,
+    "previous_method": {
+      "name": "see previous variant_costs",
+      "note": "what the earlier landed costs were based on"
+    },
+    "other_cj_suppliers": [
+      {
+        "pid": "2609220142571634800",
+        "name": "Christmas Desktop Rotating Stress-relief Tree ",
+        "item": 1.23,
+        "ship": 4.75,
+        "method": "CJPacket Super Pure Electricity",
+        "days": "5-11",
+        "landed": 5.98
+      },
+      {
+        "pid": "2102326202428313602",
+        "name": "Axolotl  Stress Relief Toy Glitter Fidget Toys",
+        "item": 2.6,
+        "ship": 6.04,
+        "method": "LuWei Ordinary US",
+        "days": "5-11",
+        "landed": 8.64
+      },
+      {
+        "pid": "2609211306491625300",
+        "name": "Soda Bottle Squeeze Toy With Quicksand",
+        "item": 1.42,
+        "ship": 9.11,
+        "method": "CJPacket Eub Special Line",
+        "days": "10-23",
+        "landed": 10.53
+      },
+      {
+        "pid": "2609220302351631000",
+        "name": "Space Astronaut Pocket Mini Bubble Gun Fully A",
+        "item": 1.99,
+        "ship": 9.21,
+        "method": "CJPacket Sensitive Pro",
+        "days": "5-11",
+        "landed": 11.2
+      },
+      {
+        "pid": "2609220005011619700",
+        "name": "Cross-border Childrens Camera With High-defini",
+        "item": 8.33,
+        "ship": 8.63,
+        "method": "CJPacket Pure Electricity",
+        "days": "7-14",
+        "landed": 16.96
+      }
+    ],
+    "other_cj_suppliers_note": "CJ keyword search returned mostly unrelated products; no genuine same-product listing was cheaper than ours.",
+    "consumer_prices": [
+      {
+        "site": "Temu",
+        "regular_price": null,
+        "checked_at": "2026-09-22",
+        "note": "Temu requires login for automated reads — blocked; no figure collected for this product.",
+        "url": "https://www.temu.com/search_result.html?search_key=domino%20train%20set%20toy"
+      },
+      {
+        "site": "AliExpress",
+        "url": "https://www.aliexpress.com/w/wholesale-domino-train-set-toy.html",
+        "regular_price": 20.24,
+        "shipping": 0,
+        "checked_at": "2026-09-22",
+        "screenshot": "scratchpad/market/aliexpress_domino.png",
+        "note": "median of 98 listing prices, ILS converted at 3.34 — AliExpress geo-locks this IP to Israel/ILS"
+      }
+    ],
+    "landed": 14.38,
+    "landed_previous": 18.09,
+    "market_median": 29.99,
+    "price_at_20pct": 19.9,
+    "price_for_12_profit": 27.9,
+    "profit_per_order": 4.64,
+    "fails": [],
+    "verdict": "no_ads",
+    "decided_by_itzik": false,
+    "decided_at": null,
+    "checked_at": "2026-09-22",
+    "verdict_note": "Passes (a) and (b). At the CURRENT live price of $24.90 profit is $9.50, under the $12 ads floor, so today it is no_ads. It becomes 'sell' at the proposed $27.90 (profit $12.41, still below the $29.99 market median) — needs Itzik's approval to reprice.",
+    "proposed_price": 27.9,
+    "proposed_profit_per_order": 12.41
+  },
+  "restored_at": "2026-09-25",
+  "restore_note": "Rebuilt 2026-09-25 after accidental deletion. Price, Buy-2 total and landed costs are the approved values, unchanged; only the Shopify variant IDs are new."
 }

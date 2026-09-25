@@ -178,15 +178,9 @@ function MobileMenuNav() {
   const {close} = useAside();
   return (
     <nav className="tob-mob-nav" role="navigation" aria-label="Main navigation">
-      {/* Cart + Account now live in the header next to the logo, not here. */}
-      <NavLink
-        to="/"
-        end
-        className={({isActive}) => (isActive ? 'tob-mob-link tob-mob-link--active' : 'tob-mob-link')}
-        onClick={close}
-      >
-        Home
-      </NavLink>
+      {/* Cart lives in the header next to the logo, not here.
+          The Home link is no longer hardcoded: since v3.2 `nav` itself starts
+          with Home (Level 05 5B.1 rule 2), and having both rendered it twice. */}
       {config.nav.map((l) => (
         <NavLink
           key={l.url}
@@ -197,13 +191,9 @@ function MobileMenuNav() {
           {l.label}
         </NavLink>
       ))}
-      <NavLink
-        to="/account/login"
-        className={({isActive}) => (isActive ? 'tob-mob-link tob-mob-link--active' : 'tob-mob-link')}
-        onClick={close}
-      >
-        Sign In
-      </NavLink>
+      {/* Level 05 5B.1 rule 3: no "Sign in" in the menu — this store sells to
+          guests, and an account link on a first visit is friction. It comes
+          back only if we ever ship a real account area. */}
     </nav>
   );
 }

@@ -635,3 +635,90 @@ sweep silently undoes this section's work. Until that's wired in,
 treat the live catalog as unverified until re-checked, even right after a
 round that hid the right six.
 
+### 2.H — The price reality gate: is this product worth selling at all? (v3.1, Itzik's rule)
+
+Itzik found our carrier on Temu at ₪45.78 (a 56% flash price; ~₪100 /
+about $30 regular) while our landed cost for it is $32.74. We cannot buy
+the product cheaper than our customer can. The cause is shipping, on
+every product we carry:
+
+| Product | CJ item | CJ shipping | Landed | Shipping's share |
+|---|---|---|---|---|
+| Carrier (Navy) | $12.89 | $18.84 | $32.74 | 58% |
+| Domino (Blue 60) | $3.79 | $14.30 | $18.09 | 79% |
+| Sorting egg (Green) | $4.53 | $9.33 | $13.86 | 67% |
+
+Temu and AliExpress ship the same factory goods to the same customer for
+free. So a price that looks greedy is usually a supply-chain problem, and
+the answer is to fix the supply or drop the product — never to quietly
+keep a price the customer can beat in ten seconds on their phone.
+
+Run this gate **before sourcing a product**, for **every product already
+live**, and again whenever CJ costs change.
+
+**Step 1 — the cheapest compliant landed cost.** For every variant, query
+*all* of CJ's shipping methods and warehouses for that product, including
+US / overseas warehouse stock, and every other CJ listing of the same
+product from a different supplier. Pick the cheapest method that still
+reaches the US inside the delivery time we promise on the page and is
+trackable. Record every method considered, with price and days.
+
+**Step 2 — what the same item costs the customer elsewhere.** Find the
+same or an equivalent item on **Temu** and on **AliExpress**: the regular
+price, not the flash-sale price, shipping included, with URL, date and a
+screenshot. Then at least 3 western retail comparables (Walmart, Amazon,
+Target) and their median, as Level 03 already requires.
+
+**Step 3 — the three fail conditions.** Any one of them and the product
+does not get sold as it stands:
+
+- **(a) Undercut at source:** landed cost >= the regular Temu/AliExpress
+  consumer price. We are paying more to buy it than the customer pays to
+  own it.
+- **(b) No room for 20%:** landed > 0.77 x market median - $0.30, i.e.
+  the Level 03 price cannot both keep 20% margin and stay at or below the
+  market median.
+- **(c) Too thin for ads:** profit per order at the compliant price is
+  under $12. A normal paid-ads CPA for baby goods eats that. Such a
+  product may stay in the catalog as an AOV / cross-sell item, but it
+  gets no ad budget — Itzik decides which.
+
+**Step 4 — fix the shipping before touching the price.** If a product
+fails only on shipping, report what you tried (methods, warehouses, other
+CJ suppliers, and the landed cost each gives) before proposing to drop
+it. A product that works with a $9 method and fails with a $19 one is a
+sourcing mistake, not a bad product.
+
+**Step 5 — record it** inside that product's
+`store-profiles/alphaforbaby/pricing/<handle>.json`:
+
+```json
+"supply_check": {
+  "cheapest_method": {"name": "LuWei Ordinary US", "cost": 9.33, "days": "8-12"},
+  "methods_considered": [{"name": "CJPacket Eub", "cost": 18.84, "days": "10-15"}],
+  "other_cj_suppliers": [{"pid": "...", "landed": 21.40}],
+  "consumer_prices": [
+    {"site": "Temu", "url": "...", "regular_price": 30.00, "sale_price": 13.70,
+     "shipping": 0, "checked_at": "2026-09-22", "screenshot": "..."},
+    {"site": "AliExpress", "url": "...", "regular_price": 27.50, "shipping": 0,
+     "checked_at": "2026-09-22"}
+  ],
+  "landed": 32.74, "market_median": 29.99, "profit_per_order": 9.59,
+  "fails": ["a", "c"],
+  "verdict": "drop",
+  "decided_by_itzik": false, "decided_at": null
+}
+```
+
+`verdict` is one of `sell` (passes all three), `no_ads` (fails only (c) —
+stays in the catalog, no ad budget) or `drop`. **Never set
+`decided_by_itzik: true` yourself** — a product leaves the store only
+after he says so.
+
+**And a selection rule for the future (2.A):** a product a customer can
+recognise as a Temu commodity — generic, unbranded, sold by thousands of
+sellers — is a weak candidate however well it trends, because the only
+thing we can compete on is price and we will lose. Prefer products where
+we can be genuinely better: a set or bundle nobody else assembles, our
+own label on the product, or stock in a US warehouse that arrives in days
+instead of weeks.

@@ -276,14 +276,8 @@ function AccountLinkResolved({loggedIn}) {
           </span>
         </>
       )}
-      <Link
-        to={loggedIn ? '/account' : '/account/login'}
-        prefetch="intent"
-        className="tob-hcart reset"
-        aria-label={loggedIn ? 'Account' : 'Sign in'}
-      >
-        <IconAccount />
-      </Link>
+      {/* Level 05 5B.1 rule 3: the account/sign-in entry point is gone — we sell
+          to guests. The cart icon stays. */}
     </span>
   );
 }
@@ -328,14 +322,6 @@ function IconBag() {
     <svg className="tob-ic" viewBox="0 0 20 20" aria-hidden="true">
       <path d="M5 6h10l1 11H4L5 6z" />
       <path d="M7.5 6V5a2.5 2.5 0 0 1 5 0v1" />
-    </svg>
-  );
-}
-function IconAccount() {
-  return (
-    <svg className="tob-ic" viewBox="0 0 20 20" aria-hidden="true">
-      <circle cx="10" cy="6.5" r="3.5" />
-      <path d="M3 17c1.2-3.5 4-5.2 7-5.2s5.8 1.7 7 5.2" />
     </svg>
   );
 }

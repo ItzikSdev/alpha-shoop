@@ -3,10 +3,10 @@
   "pixel_gate": "Itzik, 2026-09-21: the >=1000px Stage-1 check applies to the HERO image only. CJ publishes variant images at 800x800 max, so applying it here would have left the carrier and the domino with zero sellable variants. Sharpness (Laplacian >= 100), zero Chinese text and colour-must-match are unchanged and were enforced.",
   "variants": [
     {
-      "variant_id": 43185805295687,
+      "variant_id": 48949984493639,
       "title": "Blue / 60 pieces",
       "previous_title": "Blue / 60pcs",
-      "image_url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/a83920b7-15ae-4827-b4fe-a2497a9e9a11.jpg?v=1789053741",
+      "image_url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/a83920b7-15ae-4827-b4fe-a2497a9e9a11.jpg?v=1790317436",
       "cj_source_url": "https://oss-cf.cjdropshipping.com/product/2025/10/15/02/a83920b7-15ae-4827-b4fe-a2497a9e9a11.jpg",
       "short_side": 800,
       "width": 800,
@@ -19,10 +19,10 @@
       "shares_image_with": null
     },
     {
-      "variant_id": 43185805393991,
+      "variant_id": 48949984591943,
       "title": "Pink / 60 pieces",
       "previous_title": "Pink / 60pcs",
-      "image_url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/2d050736-24ab-441e-8a78-7d18611374e6.jpg?v=1789053742",
+      "image_url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/2d050736-24ab-441e-8a78-7d18611374e6.jpg?v=1790317440",
       "cj_source_url": "https://oss-cf.cjdropshipping.com/product/2025/10/15/02/2d050736-24ab-441e-8a78-7d18611374e6.jpg",
       "short_side": 800,
       "width": 800,
@@ -50,5 +50,7 @@
     }
   ],
   "model": "alpha/worker-fast (anthropic/claude-haiku-4-5) via LiteLLM proxy",
-  "checked_at": "2026-09-21"
+  "checked_at": "2026-09-21",
+  "restored_at": "2026-09-25",
+  "restore_note": "Product was deleted from Shopify on/around 2026-09-25 and rebuilt from these records. Shopify issues new IDs on recreate, so variant_id and image_url were re-bound to the rebuilt product (new product id 9056462897223). The CJ source images, checks and verdicts are unchanged."
 }
