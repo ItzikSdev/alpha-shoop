@@ -58,7 +58,6 @@ function ReviewCard({review}) {
           {review.name}
           {review.country ? ` ${review.country}` : ''}
         </span>
-        <span className="text-[11.5px] font-semibold text-accent-700">✓ Verified buyer</span>
       </div>
 
       <p className="mt-2 text-[14.5px] leading-[1.5] text-ink/85">{review.comment}</p>
@@ -120,6 +119,13 @@ export function PdpReviews({reviews = []}) {
           <span className="text-[13px] text-ink/70">
             {average.toFixed(1)} out of 5 · {count} review{count === 1 ? '' : 's'}
             {withPhotos.length > 0 && ` · ${withPhotos.length} with photos`}
+          </span>
+          {/* These reviews were imported from our supplier's platform: real
+              buyers of this exact product, but not orders placed in this store.
+              Saying so is the honest label; "Verified buyer" was not (Level 01
+              rule 10). */}
+          <span className="basis-full text-[12px] text-ink/55" data-review-source>
+            Reviews from buyers of this product on our supplier&apos;s marketplace.
           </span>
         </div>
       ) : (

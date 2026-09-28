@@ -722,3 +722,158 @@ thing we can compete on is price and we will lose. Prefer products where
 we can be genuinely better: a set or bundle nobody else assembles, our
 own label on the product, or stock in a US warehouse that arrives in days
 instead of weeks.
+
+### 2.I — The winning-product filter (v3.6, Itzik's rule — apply BEFORE anything is built)
+
+Three products were built to spec and none of them can carry a paid ad:
+the carrier lands at $32.74 against a ~$30 Temu price, the domino makes
+$5.79 an order and has no usable photos or video, the egg sells at $26.90
+against a $15.49 market median and makes $11.96. The pages are fine. The
+products were wrong, and they were wrong the day they were chosen.
+
+Itzik's brief, in his words: a winning product, competitively priced,
+with many good reviews, good shipping we can offer free, and **more than
+$12 profit on every single sale** — and special, not something the
+customer can find everywhere.
+
+From here on, no product is sourced, priced, photographed or written
+about until it passes all eight hard gates below. A product that fails
+one gate is dropped, not improved.
+
+**The eight hard gates**
+
+| # | Gate | The bar | Why |
+|---|---|---|---|
+| 1 | Profit per order | >= **$15** at a price at or below the market median (hard floor $12) | A paid sale has to cost less than we make. Below $12 there is no room for any CPA. |
+| 2 | Landed cost | <= **30%** of the realistic retail price | The 3.3x rule: it is what makes free shipping and a real Buy 2 discount possible at once. |
+| 3 | Shipping | <= **20% of retail** and <= 8 days to the US — US-warehouse stock strongly preferred (v3.7: the old "<= $5" bar is not reachable by any US parcel; see 2.J) | $14-19 CJ shipping is what killed all three current products. |
+| 4 | Price point | realistic retail **$29-$79** | Under $29 can't pay for a click; over $79 needs trust we don't have yet. |
+| 5 | Social proof at the source | >= **50** supplier reviews, >= **20 with real photos**, rating >= 4.5 | Our own review gate needs 15 photo reviews. Six of nine products failed it after they were built. Check it first. |
+| 6 | Supplier assets | >= **6 images at 1000px+ with no Chinese text**, **and a product video** | The domino died here: every CJ image was 382-888px or had Chinese text on the box, so the page shipped with two photos of a sealed carton. No assets, no product. |
+| 7 | Not a commodity | Not findable at half our price on Temu/AliExpress; or we can genuinely differentiate — a kit we assemble, our own label, or fast US stock | We lose every price comparison against Temu. This is gate 7 for a reason: it is the one Itzik caught by hand. |
+| 8 | A 5-second hook | Something visibly happens that a phone camera can show in 5 seconds | This is what makes a video ad work. A product with no visual hook cannot be advertised, whatever its margin. |
+
+**Soft scoring, once all eight pass** — one point each, 5+ to bring it to
+Itzik: solves a real parent problem rather than being a novelty · used
+daily or weekly, not once · low return risk (no sizing, nothing fragile,
+no battery quirks) · year-round demand · lets us build a natural bundle
+or second unit · safe with no small-parts risk for the age it targets.
+
+**How to run it**
+
+1. Pull candidates from CJ Ad-Trends and Top Selling as in 2.C/2.D, but
+   filter on gates 1-4 from the API data **before** opening a single
+   listing.
+2. For each survivor, check gates 5-8 by hand and record the evidence:
+   review counts, image sizes measured, the video URL, the Temu and
+   AliExpress price with links and date, and one sentence describing the
+   5-second hook.
+3. Write `store-profiles/alphaforbaby/candidates/<handle>.json`:
+
+```json
+{
+  "name": "...", "pid": "...", "cj_url": "...",
+  "gates": {"profit_per_order": 18.40, "landed": 9.80, "retail": 39.90,
+            "shipping": {"cost": 4.20, "days": "5-9", "warehouse": "US"},
+            "reviews": {"total": 320, "with_photos": 74, "rating": 4.7},
+            "assets": {"images_1000px_clean": 9, "video": "https://..."},
+            "commodity": {"temu": 34.90, "aliexpress": 31.00, "checked_at": "..."},
+            "hook": "the lid closes by itself when the baby pulls the strap"},
+  "passes": true, "score": 5,
+  "checked_at": "...", "chosen_by_itzik": null
+}
+```
+
+4. Bring Itzik **5 candidates that pass all eight gates**, in one table,
+   with the failures you rejected and the gate each failed on. He picks
+   one. Nothing is built before he picks.
+
+**And the rule that follows from it:** a product already in the store
+that fails gate 1 or gate 7 doesn't get more work. Don't improve its
+photos, don't rewrite its copy, don't generate video for it. Put the
+effort into finding the product that passes.
+
+
+### 2.J — What a full CJ scan proved (v3.7, measured 2026-09-25)
+
+Itzik asked for one product that can carry a paid ad and still make more
+than $12 a sale. Before sourcing further, this is what the CJ API itself
+returned when 23 product types and 6 baby categories were scanned, most
+listed first, and the promising ones were checked in depth (detail,
+reviews, and CJ's own freight quote to the US):
+
+**Shipping has a floor, and it's high.** Cheapest CJ quote to the US, by
+parcel weight:
+
+| Weight | From China | From a CJ US warehouse |
+|---|---|---|
+| ~200 g (nail clipper, nursing pillow) | $6.73-7.62 | $6.53-6.76 |
+| 300-430 g (sound machine, baby monitor, magnetic blocks) | $7.74-11.50 | $7.80-8.75 |
+| 750 g (the hip carrier) | $18.84 (12-50 days) / $19.52 (LuWei, 5-11 days) | $11.55 quoted, but **no US stock** — all variants are in China |
+| 1.1 kg (electronic toy dog) | $29.55 | $15.69 |
+
+A US-lane quote means nothing without US stock: check `product/stock/queryByVid` before believing it.
+
+Since the US ended duty-free de minimis entry (China in May 2025, all
+countries in August 2025), China-direct parcels carry duties, which is
+the main reason these quotes are what they are. Nothing on CJ ships to
+the US for $5.
+
+**CJ has almost no reviews.** Deep-checked candidates returned 0, 0, 0,
+2, 8 and 19 reviews in total. The 15-photo-review gate (2.G) and gate 5
+of 2.I can almost never be met from CJ's own review data.
+
+**The market squeezes generic goods from both sides.** Walmart, checked
+the same day: portable bottle warmers run from $12.99-15.99 generic to
+$39.99-79.99 branded (Momcozy, 387-878 reviews); night-light sound
+machines from $6.28-25.99 generic to $19.98-39.99 branded (Yogasleep 902
+reviews, Momcozy 340). The CJ versions land at about $20.70-25.45. A new
+store with an unbranded copy and no reviews is more expensive than the
+generic and less trusted than the brand.
+
+| Candidate (CJ pid) | Item + cheapest ship = landed | Market | Verdict |
+|---|---|---|---|
+| Portable wireless bottle warmer (1493435854604079104), listed 4,094x | $15.75 + $9.70 = $25.45 | $13-16 generic, $40-80 branded | Fail 5 (8 reviews), 7 |
+| White noise machine (73818233-...), listed 331x | $12.96 + $7.74 = $20.70 | $6-26 generic, $20-40 branded | Fail 5 (2 reviews), 7 |
+| "Hatch-style" rest sound machine (27F41039-...), listed 422x | $14.76 + $10.04 = $24.80 | as above | Fail 5 (0), 7 |
+| WiFi baby monitor (47261E0C-...), listed 1,679x | $12.88 + $8.17 = $21.05 | crowded, branded | Fail 5 (0), 7 |
+| Electric baby swing, US stock (2003406428934283266) | $55.00 + US ship | $80-130 generic | Fail 4, 5 (0) |
+
+**The rule that follows:** for this niche, CJ as a catalog of generic
+goods cannot produce a product that passes 2.I, because the three things
+that make a winner — price below the market, reviews, and a reason to buy
+here — are exactly what a generic CJ listing lacks. Before another CJ
+search, Itzik decides the model. The options, with what each costs:
+
+1. **Own label, small batch.** One product, 100-300 units from a factory,
+   our own packaging, stocked at a US 3PL. Lower unit cost than CJ,
+   3-5 day delivery, a product nobody else sells under our name, and
+   reviews that accrue to us. Needs upfront stock money and, for
+   anything for children 12 and under, third-party testing and a
+   Children's Product Certificate (CPSC) — the importer's legal duty.
+2. **A US-warehouse dropship supplier** (e.g. Spocket, US/EU suppliers,
+   2-7 days, subscription ~$40/month). Faster and less Temu-comparable,
+   but item costs are higher; run 2.I on real quotes before committing.
+3. **Personalised products** (name puzzles, custom keepsakes). Nothing to
+   compare against, but competitors already sell at $15.90-29.90 (e.g.
+   Woodemon), so the margin has to be checked just as hard.
+
+Until he picks one, no product is sourced.
+
+**AliExpress, checked the same day (ship-to US):** the identical 12-egg
+set is $11.94-12.88 with free shipping, 6-13 days (668 reviews, 4.8) —
+the same as CJ's $12.91-13.86 landed. A comparable hip-seat carrier is
+$54.16 list / $26 on a new-shopper promo. Switching the current products
+to AliExpress does not lower their cost; the promo prices shown on first
+visit are not what a dropshipping account pays.
+
+**Two rules that have to change with it:**
+
+- Gate 3 is now **shipping <= 20% of retail and <= 8 days**. "<= $5" was
+  not achievable by any US parcel.
+- The review gate (2.G) was written for products imported with CJ
+  reviews. A genuinely new product — which is what every option above
+  produces — starts at zero. Launching one needs Itzik's decision on how
+  reviews are earned (for example an early-buyer programme); importing
+  reviews of other sellers' products and showing them as our own buyers'
+  is not an option.

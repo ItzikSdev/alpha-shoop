@@ -206,14 +206,23 @@ def _closest_month_cm(months: int) -> int:
 
 
 def _normalize_size(token: str, age_map: dict[int, str]) -> tuple[str, int]:
-    """Turn a CJ size token into a PURE-cm label ("XXcm") — store rule: every
-    Size button on one product must show the SAME kind of information (cm only),
-    never a mix of cm / age-band / raw-code buttons side by side (confirmed
-    2026-07-09: live products showed "NEWBORN", "3 M", "WW942", bare "100" all as
-    Size options on different products with no consistent unit). Returns
-    ("", 9999) when no cm value can be recovered at all (CJ's own internal codes
-    like "WW942", or garbage like "Flagship 2") — the caller drops that variant
-    rather than show a non-cm button next to real ones.
+    """Turn a CJ size token into a PURE-cm label ("XXcm") when this is a real
+    clothing height/age size — store rule: every Size button on an APPAREL
+    product must show the SAME kind of information (cm only), never a mix of
+    cm / age-band / raw-code buttons side by side (confirmed 2026-07-09: live
+    products showed "NEWBORN", "3 M", "WW942", bare "100" all as Size options
+    on different products with no consistent unit).
+
+    2026-09-10: the store's catalog is no longer apparel-only — most gear/toy
+    listings have a single non-size dimension (a color, a style code like
+    "1style", a letter "A"-"H", a set size like "60pcs") that will never look
+    like a cm value. Silently dropping those (the old behavior — returning
+    ("", 9999) to signal "unrecognizable") threw away every real, sellable
+    option on non-apparel products. When no cm/age pattern is recognized, fall
+    back to the CJ token itself as the label — the storefront's
+    normalizeSizeLabel() already passes non-cm labels through unchanged, so
+    this is safe for the apparel path too (it only ever hits this branch when
+    no cm value was recoverable, i.e. exactly the case that used to be dropped).
     """
     t = token.strip()
     m = re.search(r'(\d{2,3})\s*cm', t, re.IGNORECASE)
@@ -241,7 +250,11 @@ def _normalize_size(token: str, age_map: dict[int, str]) -> tuple[str, int]:
         return f"{cm}cm", cm
     if re.match(r'NEWBORN|NB\b', t, re.IGNORECASE):
         return f"{_MONTH_TO_CM[0]}cm", _MONTH_TO_CM[0]
-    return "", 9999
+    # Not a recognizable clothing size — use the supplier's own token verbatim
+    # (a color, style code, letter, pack size, etc.) rather than dropping the
+    # variant. Sort key 9999 keeps these after any real cm sizes on the rare
+    # listing that mixes both; ties break on the original CJ order (stable sort).
+    return t, 9999
 
 
 def _build_supplier_variants(variants: list[dict], price_ratio: float, description: str = "") -> list[dict]:

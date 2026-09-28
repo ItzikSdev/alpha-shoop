@@ -14,12 +14,36 @@
  *
  * @param {{line?: string, avatars?: string[], buyerCount?: number}}
  */
-export function PdpUrgencyStrip({line, avatars = [], buyerCount = 0}) {
+// A scarcity or velocity claim needs proof this store doesn't have: ~40,000
+// units in stock and no sales yet. The metafield text "SELLING QUICK, LOW
+// STOCK" shipped anyway, so the guard lives in code (Level 01 rule 10).
+const UNPROVABLE = /low stock|almost gone|only \d+ left|selling (fast|quick)|sold out soon|limited stock/i;
+
+// True urgency instead (Itzik, 2026-09-25): what the store can actually stand
+// behind. Dispatch time is the shipping policy's own "processed within 1–2
+// business days"; the holiday cutoff comes from theme.config.json
+// (`holidayCutoff`), chosen so the policy's slowest case (2 + 14 business
+// days) still arrives before the holiday. After the cutoff date it simply
+// disappears — it is never moved forward to keep the pressure on.
+function trueUrgency(cutoff) {
+  const parts = ['Ships in 1–2 business days'];
+  if (cutoff?.date && cutoff?.label) {
+    const end = new Date(`${cutoff.date}T23:59:59Z`);
+    if (Date.now() <= end.getTime()) {
+      const md = end.toLocaleDateString('en-US', {month: 'short', day: 'numeric', timeZone: 'UTC'});
+      parts.push(`Order by ${md} for ${cutoff.label}`);
+    }
+  }
+  return parts.join(' · ');
+}
+
+export function PdpUrgencyStrip({line: rawLine, avatars = [], buyerCount = 0, holidayCutoff}) {
+  const line = rawLine && !UNPROVABLE.test(rawLine) ? rawLine : trueUrgency(holidayCutoff);
   if (!line && !avatars.length) return null;
   return (
     <div className="px-4 pt-2 md:px-0" data-urgency-strip>
       {line && (
-        <p className="m-0 inline-block whitespace-nowrap rounded border border-accent/40 bg-accent/5 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[.05em] text-accent-700">
+        <p data-true-urgency className="m-0 inline-block rounded border border-accent/40 bg-accent/5 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[.05em] text-accent-700">
           {line}
         </p>
       )}
@@ -39,7 +63,7 @@ export function PdpUrgencyStrip({line, avatars = [], buyerCount = 0}) {
           </span>
           {buyerCount > 0 && (
             <span className="whitespace-nowrap rounded-full bg-ink/5 px-2.5 py-1 text-[11.5px] font-semibold text-ink/75">
-              Join {buyerCount} verified buyers
+              {buyerCount} reviews from buyers
             </span>
           )}
         </div>

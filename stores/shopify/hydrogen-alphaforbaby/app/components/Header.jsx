@@ -199,9 +199,12 @@ function HeaderSearch() {
 function DesktopNav() {
   return (
     <nav className="tob-hnav tob-hnav-desktop" role="navigation" aria-label="Main navigation">
-      <NavLink to="/" end>Home</NavLink>
+      {/* `nav` already starts with Home (Level 05 5B.1). A hardcoded Home link
+          here rendered it twice ("HOME HOME PRODUCTS", seen live 2026-09-25);
+          the mobile drawer was fixed the same way earlier. `end` keeps Home
+          from matching every path as active. */}
       {config.nav.map((l) => (
-        <NavLink key={l.url} to={l.url}>{l.label}</NavLink>
+        <NavLink key={l.url} to={l.url} end={l.url === '/'}>{l.label}</NavLink>
       ))}
     </nav>
   );

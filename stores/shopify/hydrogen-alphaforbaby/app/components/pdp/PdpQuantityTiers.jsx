@@ -21,10 +21,32 @@ import {AddToCartButton} from '~/components/AddToCartButton';
  * @param {{tiers: Array<{qty:number,percentage:number,badge?:string}>,
  *          variant: object, inStock: boolean}}
  */
+/** A multi-unit tier is shown only if it saves at least this much. "Buy 2 —
+ * you save 1%" (90 cents on the egg, seen live 2026-09-25) is not an offer; it
+ * reads as a trick and costs trust. Below this the product gets the plain buy
+ * box and is marked data-no-real-bundle so the bundle tests know it's a rule,
+ * not a regression (Level 04 / 7.D #59). */
+const MIN_REAL_SAVING = 0.1;
+
+function tierSaving(t, unitPrice) {
+  if (!t || t.qty <= 1) return 0;
+  const gross = unitPrice * t.qty;
+  if (t.amountOff != null) return gross > 0 ? t.amountOff / gross : 0;
+  return t.percentage || 0;
+}
+
 export function PdpQuantityTiers({
-  tiers = [], variant, inStock, variants = [], benefits = {}, optionName = 'Option',
-  onVariantPreview,
+  tiers: configuredTiers = [], variant, inStock, variants = [], benefits = {},
+  optionName = 'Option', onVariantPreview,
 }) {
+  const unitPriceForTiers = Number(variant?.price?.amount || 0);
+  const realMulti = configuredTiers.filter(
+    (t) => t.qty > 1 && tierSaving(t, unitPriceForTiers) >= MIN_REAL_SAVING,
+  );
+  const tokenOnly = configuredTiers.some((t) => t.qty > 1) && realMulti.length === 0;
+  const tiers = realMulti.length
+    ? configuredTiers.filter((t) => t.qty <= 1 || realMulti.includes(t))
+    : [];
   // 7.D #43: every place a shopper picks a variant reports it upward, so the
   // main gallery can follow. With Buy 2 open the most recently changed unit
   // wins, which falls out of this being called on each change.
@@ -61,46 +83,90 @@ export function PdpQuantityTiers({
   // which reads as finished and is worse than an obviously unbuilt page
   // (7.D #29). Fall back to a plain single-purchase box for any product.
   if (!tiers.length) {
+    // Single-purchase card (Itzik, 2026-09-25): no multi-buy offer — a "Buy 2"
+    // under 10% saving is hidden (7.D #59) — but the page keeps the tier-card
+    // look he liked: one selected "Buy 1" card with the price, and under it the
+    // choice row with the small image of the chosen variant. Same hooks as the
+    // bundle (data-tier-card, #tier1-u0-color, data-unit-preview) so the
+    // gallery-follows-choice tests still apply.
+    const sel = variants.find((v) => v.id === unitVariant(1, 0)) || variant;
     return (
-      <section className="pt-2" data-quantity-tiers data-simple-buybox>
-        <div className="flex items-baseline gap-2">
-          <span className="tnum text-[22px] font-semibold">
-            <Money as="span" data={variant.price} />
-          </span>
-          {variant.compareAtPrice && (
-            <span className="tnum text-[15px] text-ink/45 line-through">
-              <Money as="span" data={variant.compareAtPrice} />
-            </span>
-          )}
-        </div>
-
-        {variants.length > 1 && (
-          <div className="mt-3">
-            <label className="mb-1 block text-[11px] uppercase tracking-[.08em] text-ink/50"
-              htmlFor={optionSlug}>
-              {optionName}
-            </label>
-            <select
-              id={optionSlug}
-              name={optionSlug}
-              value={unitVariant(1, 0)}
-              onChange={(e) => chooseUnit('1-0', e.target.value)}
-              className="min-h-[44px] w-full rounded-md border border-divider bg-white px-2 text-[14px]"
+      <section
+        className="pt-2"
+        data-quantity-tiers
+        data-simple-buybox
+        {...(tokenOnly ? {'data-no-real-bundle': ''} : {})}
+      >
+        <ul className="mt-1 list-none p-0">
+          <li className="relative">
+            <div
+              role="radio"
+              aria-checked="true"
+              data-tier-card={1}
+              className="mb-2 flex w-full items-center gap-3 rounded-lg border-2 border-accent bg-accent/5 p-3 text-left"
             >
-              {variants.map((v) => (
-                <option key={v.id} value={v.id} disabled={!v.availableForSale}>
-                  {v.title}
-                  {v.availableForSale ? '' : ' — sold out'}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+              <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full border-2 border-accent">
+                <span className="h-3 w-3 rounded-full bg-accent" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-semibold">Buy 1</span>
+                {benefits[1] && (
+                  <span className="mt-1 block text-[12px] leading-snug text-ink/55">{benefits[1]}</span>
+                )}
+              </span>
+              <span className="flex-none text-right">
+                <span className="tnum block text-[15px] font-semibold">
+                  <Money as="span" data={sel?.price || variant.price} />
+                </span>
+                {variant.compareAtPrice && (
+                  <span className="tnum block text-[12px] text-ink/45 line-through">
+                    <Money as="span" data={variant.compareAtPrice} />
+                  </span>
+                )}
+              </span>
+            </div>
+
+            {variants.length > 1 && (
+              <div className="mb-3 -mt-1 rounded-b-lg border-2 border-t-0 border-accent bg-accent/5 px-3 pb-3 pt-1">
+                <span className="mb-1 block text-[11px] uppercase tracking-[.08em] text-ink/50">
+                  {`Choose your ${optionName.toLowerCase()}`}
+                </span>
+                <div className="flex items-center gap-2">
+                  {sel?.image?.url ? (
+                    <img
+                      src={sel.image.url}
+                      alt={sel.title}
+                      data-unit-preview
+                      className="h-10 w-10 flex-none rounded border border-divider object-cover"
+                    />
+                  ) : (
+                    <span className="h-10 w-10 flex-none rounded border border-divider bg-ink/5" />
+                  )}
+                  <label className="sr-only" htmlFor="tier1-u0-color">{optionName}</label>
+                  <select
+                    id="tier1-u0-color"
+                    name={optionSlug}
+                    value={unitVariant(1, 0)}
+                    onChange={(e) => chooseUnit('1-0', e.target.value)}
+                    className="min-h-[40px] w-full min-w-0 flex-1 rounded-md border border-divider bg-white px-2 text-[13px]"
+                  >
+                    {variants.map((v) => (
+                      <option key={v.id} value={v.id} disabled={!v.availableForSale}>
+                        {v.title}
+                        {v.availableForSale ? '' : ' — sold out'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+          </li>
+        </ul>
 
         <AddToCartButton
           disabled={!inStock}
           redirectTo="/cart"
-          className="btn btn-primary mt-3 min-h-[52px] w-full tracking-[.08em]"
+          className="btn btn-primary mt-2 min-h-[52px] w-full tracking-[.08em]"
           lines={[{merchandiseId: unitVariant(1, 0), quantity: 1}]}
         >
           {inStock ? 'ADD TO CART' : 'SOLD OUT'}

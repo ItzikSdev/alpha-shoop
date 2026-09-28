@@ -715,6 +715,8 @@ class TestBundleRequired:
         _goto(page, base_url, handle)
         if handle in deliberate_no_bundle:
             pytest.skip("quantityTiers: [] is a recorded deliberate choice here")
+        if page.locator("[data-no-real-bundle]").count() > 0:
+            pytest.skip("Buy 2 would save under 10% at the approved price, so it is hidden by rule (7.D #59)")
         assert page.locator("[data-quantity-tiers]").count() > 0, (
             f"/products/{handle} renders no quantity-tier block at all. " + _BUNDLE_FAIL
         )
@@ -726,6 +728,8 @@ class TestBundleRequired:
         _goto(page, base_url, handle)
         if handle in deliberate_no_bundle:
             pytest.skip("quantityTiers: [] is a recorded deliberate choice here")
+        if page.locator("[data-no-real-bundle]").count() > 0:
+            pytest.skip("Buy 2 would save under 10% at the approved price, so it is hidden by rule (7.D #59)")
         simple_only = (
             page.locator("[data-simple-buybox]").count() > 0
             and "Buy more, save more" not in page.inner_text("body")
@@ -740,6 +744,8 @@ class TestBundleRequired:
         _goto(page, base_url, handle)
         if handle in deliberate_no_bundle:
             pytest.skip("quantityTiers: [] is a recorded deliberate choice here")
+        if page.locator("[data-no-real-bundle]").count() > 0:
+            pytest.skip("Buy 2 would save under 10% at the approved price, so it is hidden by rule (7.D #59)")
         text = page.inner_text("body")
         if "Buy more, save more" not in text:
             pytest.fail(
@@ -762,6 +768,8 @@ class TestBundleRequired:
         _goto(page, base_url, handle)
         if handle in deliberate_no_bundle:
             pytest.skip("quantityTiers: [] is a recorded deliberate choice here")
+        if page.locator("[data-no-real-bundle]").count() > 0:
+            pytest.skip("Buy 2 would save under 10% at the approved price, so it is hidden by rule (7.D #59)")
         text = page.inner_text("body")
         if "Buy more, save more" not in text:
             pytest.fail(f"/products/{handle} has no bundle to price-check")
@@ -1545,3 +1553,36 @@ class TestReviewPhotosAreBrowsable:
             f"strip ({before} -> {after})"
         )
 
+
+@pytest.mark.parametrize("handle", PRODUCT_HANDLES)
+class TestHonestSocialProof:
+    """v3.8 — Level 01 rule 10 / 7.D #60: before a single paid visitor lands,
+    the page claims nothing it can't back up."""
+
+    def test_imported_reviews_are_not_called_verified(self, page, base_url, handle):
+        _goto(page, base_url, handle)
+        text = page.inner_text("body")
+        assert "Verified buyer" not in text and "verified buyers" not in text, (
+            f"/products/{handle} still calls imported supplier reviews "
+            f"'verified' — they are not orders from this store (rule 10)"
+        )
+        if page.locator("[data-review-source]").count() == 0 and re.search(r"\d+ reviews?", text):
+            pytest.fail(f"/products/{handle} shows reviews without saying where they come from")
+
+    def test_no_unprovable_scarcity(self, page, base_url, handle):
+        _goto(page, base_url, handle)
+        text = page.inner_text("body")
+        bad = re.findall(r"low stock|almost gone|only \d+ left|selling (?:fast|quick)", text, re.I)
+        assert not bad, (
+            f"/products/{handle} makes a scarcity/velocity claim the store "
+            f"can't prove: {bad} (rule 10)"
+        )
+
+    def test_no_token_multi_buy_offer(self, page, base_url, handle):
+        _goto(page, base_url, handle)
+        text = page.inner_text("body")
+        for pct in re.findall(r"You save (\d+)%", text):
+            assert int(pct) >= 10, (
+                f"/products/{handle} shows 'You save {pct}%' — a multi-buy "
+                f"offer under 10% is hidden, not shown (7.D #59)"
+            )

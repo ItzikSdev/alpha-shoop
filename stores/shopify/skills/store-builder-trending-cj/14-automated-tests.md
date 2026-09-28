@@ -1785,7 +1785,109 @@ class TestReviewPhotosAreBrowsable:
             f"/products/{handle}: clicking next didn't move the review photo "
             f"strip ({before} -> {after})"
         )
+
+
+class TestWinningProductFilter:
+    """v3.5 — Level 02 Section 2.I: nothing is built before the product has
+    passed the eight hard gates, and the evidence is on disk, not in a
+    report. This checks the candidate records themselves."""
+
+    CANDIDATES_DIR = os.environ.get(
+        "CANDIDATES_DIR", "store-profiles/alphaforbaby/candidates"
+    )
+    MIN_PROFIT = 15.0
+    FLOOR_PROFIT = 12.0
+
+    def _records(self):
+        if not os.path.isdir(self.CANDIDATES_DIR):
+            return []
+        out = []
+        for name in sorted(os.listdir(self.CANDIDATES_DIR)):
+            if name.endswith(".json"):
+                with open(os.path.join(self.CANDIDATES_DIR, name), encoding="utf-8") as fh:
+                    out.append((name[:-5], json.load(fh)))
+        return out
+
+    def test_a_passing_candidate_really_passes_every_gate(self):
+        bad = []
+        for handle, rec in self._records():
+            if not rec.get("passes"):
+                continue
+            g = rec.get("gates", {})
+            ship = g.get("shipping", {})
+            rev = g.get("reviews", {})
+            assets = g.get("assets", {})
+            com = g.get("commodity", {})
+            checks = {
+                "profit>=12": (g.get("profit_per_order") or 0) >= self.FLOOR_PROFIT,
+                "landed<=30% of retail": (g.get("landed") or 99) <= 0.30 * (g.get("retail") or 0.01),
+                "shipping<=20% of retail": (ship.get("cost") or 99) <= 0.20 * (g.get("retail") or 0.01),
+                "retail 29-79": 29 <= (g.get("retail") or 0) <= 79,
+                "reviews>=50": (rev.get("total") or 0) >= 50,
+                "photo reviews>=20": (rev.get("with_photos") or 0) >= 20,
+                "rating>=4.5": (rev.get("rating") or 0) >= 4.5,
+                "images>=6": (assets.get("images_1000px_clean") or 0) >= 6,
+                "video": bool(assets.get("video")),
+                "not undercut on temu": (com.get("temu") or 0) > (g.get("landed") or 0),
+                "hook": bool(g.get("hook")),
+            }
+            failed = [k for k, ok in checks.items() if not ok]
+            if failed:
+                bad.append(f"{handle}: marked passing but fails {failed}")
+        assert not bad, (
+            "candidate records claim to pass the 2.I filter and don't: "
+            + "; ".join(bad)
+        )
+
+    def test_nothing_was_built_for_a_product_itzik_never_picked(self):
+        chosen = {h for h, r in self._records() if r.get("chosen_by_itzik")}
+        built = set()
+        pricing_dir = "store-profiles/alphaforbaby/pricing"
+        if os.path.isdir(pricing_dir):
+            built = {n[:-5] for n in os.listdir(pricing_dir) if n.endswith(".json")}
+        records = {h for h, _ in self._records()}
+        premature = sorted((built & records) - chosen)
+        assert not premature, (
+            f"work was done on candidate(s) Itzik hasn't picked: {premature} "
+            f"(Level 02 2.I: nothing is built before he picks)"
+        )
+
+
+@pytest.mark.parametrize("handle", PRODUCT_HANDLES)
+class TestHonestSocialProof:
+    """v3.8 — Level 01 rule 10 / 7.D #60: before a single paid visitor lands,
+    the page claims nothing it can't back up."""
+
+    def test_imported_reviews_are_not_called_verified(self, page, base_url, handle):
+        _goto(page, base_url, handle)
+        text = page.inner_text("body")
+        assert "Verified buyer" not in text and "verified buyers" not in text, (
+            f"/products/{handle} still calls imported supplier reviews "
+            f"'verified' — they are not orders from this store (rule 10)"
+        )
+        if page.locator("[data-review-source]").count() == 0 and re.search(r"\d+ reviews?", text):
+            pytest.fail(f"/products/{handle} shows reviews without saying where they come from")
+
+    def test_no_unprovable_scarcity(self, page, base_url, handle):
+        _goto(page, base_url, handle)
+        text = page.inner_text("body")
+        bad = re.findall(r"low stock|almost gone|only \d+ left|selling (?:fast|quick)", text, re.I)
+        assert not bad, (
+            f"/products/{handle} makes a scarcity/velocity claim the store "
+            f"can't prove: {bad} (rule 10)"
+        )
+
+    def test_no_token_multi_buy_offer(self, page, base_url, handle):
+        _goto(page, base_url, handle)
+        text = page.inner_text("body")
+        for pct in re.findall(r"You save (\d+)%", text):
+            assert int(pct) >= 10, (
+                f"/products/{handle} shows 'You save {pct}%' — a multi-buy "
+                f"offer under 10% is hidden, not shown (7.D #59)"
+            )
 ```
+
+
 
 
 

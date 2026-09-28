@@ -237,56 +237,7 @@
   "productGridHeading": "Shop All",
   "productGridLimit": 12,
   "testimonialsHeading": "Loved by parents",
-  "testimonials": [
-    {
-      "name": "Maya R.",
-      "location": "Tel Aviv",
-      "author": "Maya R. — Tel Aviv",
-      "stars": 5,
-      "verified": true,
-      "text": "Great quality and thoughtful design — you can tell these were actually picked with babies in mind."
-    },
-    {
-      "name": "Daniel K.",
-      "location": "New York",
-      "author": "Daniel K. — New York",
-      "stars": 5,
-      "verified": true,
-      "text": "Ordered for my newborn and the quality blew me away for the price. Shipping was fast and free."
-    },
-    {
-      "name": "Sophie L.",
-      "location": "London",
-      "author": "Sophie L. — London",
-      "stars": 4,
-      "verified": true,
-      "text": "Well made and easy to use — exactly what we needed for a newborn, no fuss."
-    },
-    {
-      "name": "Noa B.",
-      "location": "Toronto",
-      "author": "Noa B. — Toronto",
-      "stars": 5,
-      "verified": true,
-      "text": "Feels like a premium brand at a fair price. Already ordered more for our second baby."
-    },
-    {
-      "name": "Tom H.",
-      "location": "Berlin",
-      "author": "Tom H. — Berlin",
-      "stars": 5,
-      "verified": true,
-      "text": "Finally a baby brand that looks as good as it feels. Returns policy gave me total peace of mind."
-    },
-    {
-      "name": "Aria M.",
-      "location": "Sydney",
-      "author": "Aria M. — Sydney",
-      "stars": 4,
-      "verified": true,
-      "text": "Obsessed. Sturdy, well designed, and holds up to a very active toddler."
-    }
-  ],
+  "testimonials": [],
   "productPage": {
     "trustBadges": [
       "✓ Free shipping (7–25 business days)",
@@ -295,5 +246,13 @@
     ]
   },
   "_nav_note": "Level 05 5B.1 rule 3 (v3.3, Itzik): the menu holds exactly two items — Home and Products (the all-products page). Everything else is out of both the header and the mobile drawer. The account / sign-in control stays in the header next to the cart as a CONTROL, not as a menu line item.",
-  "_tiles_note": "Dead config: no component reads `tiles` or `categoryHeading`. Kept for reference only; the category tiles they describe point at baby-boys/baby-girls/unisex, which are clothing collections this store no longer sells."
+  "_tiles_note": "Dead config: no component reads `tiles` or `categoryHeading`. Kept for reference only; the category tiles they describe point at baby-boys/baby-girls/unisex, which are clothing collections this store no longer sells.",
+  "_testimonials_note": "Emptied 2026-09-25: the six entries (Maya R. — Tel Aviv, Daniel K. — New York, …) were invented people marked verified on a store with no sales. Only real customer reviews go here (Level 01 rule 10).",
+  "_metaPixelId_note": "Meta pixel id from Events Manager (public, not a secret). Empty = pixel off. Purchase comes from the Facebook & Instagram channel on Shopify checkout, not from here.",
+  "metaPixelId": "2246132889517820",
+  "_holidayCutoff_note": "Last order date for delivery before the holiday under the shipping policy (1-2 + up to 14 business days). Shown on product pages until the date passes, then disappears. Never move it later to keep urgency.",
+  "holidayCutoff": {
+    "date": "2026-11-30",
+    "label": "Christmas"
+  }
 }

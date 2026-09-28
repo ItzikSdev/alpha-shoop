@@ -36,11 +36,14 @@ export default async function handleRequest(
     // replicate Hydrogen's existing computed defaults (visible live before
     // this change) plus clarity.ms — an override here REPLACES the default
     // for that directive, so the prior entries must stay, not just clarity.ms.
-    scriptSrc: ["'self'", 'https://cdn.shopify.com', 'https://shopify.com', 'https://www.clarity.ms', 'https://*.clarity.ms'],
+    // Meta pixel (2026-09-25): fbevents.js from connect.facebook.net, its
+    // beacons to www.facebook.com. Same replace-not-append rule as Clarity.
+    scriptSrc: ["'self'", 'https://cdn.shopify.com', 'https://shopify.com', 'https://www.clarity.ms', 'https://*.clarity.ms', 'https://connect.facebook.net'],
     connectSrc: [
       "'self'", 'https://cdn.shopify.com/', 'https://monorail-edge.shopifysvc.com',
       'https://alphaforbaby.com', 'https://kgg8n0-k0.myshopify.com',
       'https://www.clarity.ms', 'https://*.clarity.ms',
+      'https://connect.facebook.net', 'https://www.facebook.com',
     ],
     // Buyer photos attached to imported third-party reviews are hosted on the
     // review source's own object storage, not Shopify's CDN, so they fall under
@@ -53,6 +56,7 @@ export default async function handleRequest(
       'https://cc-west-usa.oss-accelerate.aliyuncs.com',
       'https://oss-cf.cjdropshipping.com', 'https://cf.cjdropshipping.com',
       'https://c.clarity.ms',
+      'https://www.facebook.com',
     ],
   });
 

@@ -63,6 +63,18 @@ export function PdpGallery({images = [], selectedVariantImage, title}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetUrl]);
 
+  // The slide the page opens on. When the URL carries a variant (?Style=…),
+  // the effect above jumps straight to that variant's slide — and if that
+  // slide is lazy-loaded, the first screen is a blank white box until the
+  // shopper scrolls (native lazy-loading doesn't fire for an image parked
+  // off to the side of a horizontal scroller). Measured live 2026-09-25 on
+  // the egg page: the opening slide had naturalWidth 0. So the opening
+  // slide, and the first three, always load eagerly.
+  const openingIndex = Math.max(
+    0,
+    slides.findIndex((s) => sameImage(s.url, targetUrl)),
+  );
+
   if (!slides.length) return null;
 
   const go = (next) => {
@@ -108,7 +120,8 @@ export function PdpGallery({images = [], selectedVariantImage, title}) {
               aspectRatio="1/1"
               sizes="(min-width: 768px) 560px, 100vw"
               className="w-full rounded-lg object-cover"
-              loading={i === 0 ? 'eager' : 'lazy'}
+              loading={i < 3 || i === openingIndex ? 'eager' : 'lazy'}
+              fetchPriority={i === openingIndex ? 'high' : undefined}
             />
           </li>
         ))}

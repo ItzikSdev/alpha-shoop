@@ -16,6 +16,7 @@ import resetStyles from './styles/reset.css?url';
 import appStyles from './styles/app.css?url';
 import {themeCss, config} from './lib/theme';
 import {PageLayout} from './components/PageLayout';
+import {MetaPixel} from './components/MetaPixel';
 import {isLoggedIn, getSessionCustomerId, getCustomerById} from './lib/customer';
 import {reconcileCustomerCart} from './lib/cartSync';
 
@@ -262,6 +263,7 @@ export default function App() {
         shop={data.shop}
         consent={data.consent}
       >
+        <MetaPixel pixelId={config.metaPixelId} />
         <PageLayout {...data}>
           <Outlet />
         </PageLayout>

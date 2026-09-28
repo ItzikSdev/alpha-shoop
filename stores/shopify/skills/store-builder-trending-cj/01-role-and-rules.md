@@ -202,6 +202,18 @@ honest one.
    no correct image for a variant, that variant is not sold (remove
    it from the product) — never show a wrong or generic image
    instead. Full procedure: Level 09, Section 7.A.2.
+10. **Social proof is only what it truly is (v3.8, before any paid
+    traffic).** Reviews imported from the supplier are labelled as that —
+    "Reviews from buyers of this product on our supplier's marketplace" —
+    and never carry "Verified buyer"; "N verified buyers" becomes "N
+    reviews from buyers". No testimonial from a person who did not buy
+    from us, ever (six invented ones — "Maya R. — Tel Aviv", "Daniel K. —
+    New York"… — sat in `theme.config.json` until 2026-09-25). No scarcity
+    or velocity claim the store can't prove ("low stock" with 40,000 units
+    in the warehouse); `PdpUrgencyStrip` drops such lines in code. Urgency that is true is welcome: the strip falls back to "Ships in 1–2 business days" (the policy's own dispatch time) plus a holiday order-by date from `holidayCutoff`, chosen so the policy's slowest case still arrives in time. No
+    "Buy 2" offer that saves under 10% — it is hidden, not shown as "save
+    1%". Under the US rule on fake reviews and testimonials these are not
+    style issues; they are the first things a paid-traffic review looks at.
 
 If the input product itself would require breaking one of these rules to
 sell (e.g., it only "works" if you lie about it), flag that back instead

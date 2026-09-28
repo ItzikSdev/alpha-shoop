@@ -113,6 +113,11 @@ type Pages = {
   "/blogs": {
     params: {};
   };
+  "/cdn-video/*": {
+    params: {
+      "*": string;
+    };
+  };
   "/account": {
     params: {};
   };
@@ -151,12 +156,21 @@ type Pages = {
       "*": string;
     };
   };
+  "/graphiql": {
+    params: {};
+  };
+  "/subrequest-profiler": {
+    params: {};
+  };
+  "/.well-known/appspecific/com.chrome.devtools.json": {
+    params: {};
+  };
 };
 
 type RouteFiles = {
   "root.jsx": {
     id: "root";
-    page: "/" | "/blogs/:blogHandle/:articleHandle" | "/sitemap/:type/:page.xml" | "/blogs/:blogHandle" | "/admin/fix-collections" | "/collections/:handle" | "/pages/accessibility" | "/collections" | "/account/register" | "/account/recover" | "/policies/:handle" | "/products/:handle" | "/account/logout" | "/collections/all" | "/policies" | "/account/login" | "/account/login/google" | "/account/login/google/callback" | "/account/login/apple" | "/account/login/apple/callback" | "/account/reset" | "/discount/:code" | "/pages/about-us" | "/sitemap.xml" | "/pages/:handle" | "/pages/contact" | "/robots.txt" | "/blogs" | "/account" | "/account/orders" | "/account/orders/:id" | "/account/addresses" | "/account/profile" | "/account/*" | "/search" | "/cart" | "/cart/:lines" | "/*";
+    page: "/" | "/blogs/:blogHandle/:articleHandle" | "/sitemap/:type/:page.xml" | "/blogs/:blogHandle" | "/admin/fix-collections" | "/collections/:handle" | "/pages/accessibility" | "/collections" | "/account/register" | "/account/recover" | "/policies/:handle" | "/products/:handle" | "/account/logout" | "/collections/all" | "/policies" | "/account/login" | "/account/login/google" | "/account/login/google/callback" | "/account/login/apple" | "/account/login/apple/callback" | "/account/reset" | "/discount/:code" | "/pages/about-us" | "/sitemap.xml" | "/pages/:handle" | "/pages/contact" | "/robots.txt" | "/blogs" | "/cdn-video/*" | "/account" | "/account/orders" | "/account/orders/:id" | "/account/addresses" | "/account/profile" | "/account/*" | "/search" | "/cart" | "/cart/:lines" | "/*" | "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json";
   };
   "routes/blogs.$blogHandle.$articleHandle.jsx": {
     id: "routes/blogs.$blogHandle.$articleHandle";
@@ -266,6 +280,10 @@ type RouteFiles = {
     id: "routes/blogs._index";
     page: "/blogs";
   };
+  "routes/cdn-video.$.jsx": {
+    id: "routes/cdn-video.$";
+    page: "/cdn-video/*";
+  };
   "routes/account.jsx": {
     id: "routes/account";
     page: "/account" | "/account/orders" | "/account/orders/:id" | "/account/addresses" | "/account/profile" | "/account/*";
@@ -314,6 +332,26 @@ type RouteFiles = {
     id: "routes/$";
     page: "/*";
   };
+  "../node_modules/@shopify/hydrogen/dist/vite/virtual-routes/layout.jsx": {
+    id: "/Users/itziksavaia/Documents/git/alpha-shoop/stores/shopify/hydrogen-alphaforbaby/node_modules/@shopify/hydrogen/dist/vite/virtual-routes/layout";
+    page: "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json" | "/";
+  };
+  "../node_modules/@shopify/hydrogen/dist/vite/virtual-routes/routes/graphiql.jsx": {
+    id: "vite/virtual-routes/routes/graphiql";
+    page: "/graphiql";
+  };
+  "../node_modules/@shopify/hydrogen/dist/vite/virtual-routes/routes/subrequest-profiler.jsx": {
+    id: "vite/virtual-routes/routes/subrequest-profiler";
+    page: "/subrequest-profiler";
+  };
+  "../node_modules/@shopify/hydrogen/dist/vite/virtual-routes/routes/[.]well-known.appspecific.com[.]chrome[.]devtools[.]json.jsx": {
+    id: "vite/virtual-routes/routes/[.]well-known.appspecific.com[.]chrome[.]devtools[.]json";
+    page: "/.well-known/appspecific/com.chrome.devtools.json";
+  };
+  "../node_modules/@shopify/hydrogen/dist/vite/virtual-routes/routes/index.jsx": {
+    id: "vite/virtual-routes/routes/index";
+    page: "/";
+  };
 };
 
 type RouteModules = {
@@ -345,6 +383,7 @@ type RouteModules = {
   "routes/pages.contact": typeof import("./app/routes/pages.contact.jsx");
   "routes/[robots.txt]": typeof import("./app/routes/[robots.txt].jsx");
   "routes/blogs._index": typeof import("./app/routes/blogs._index.jsx");
+  "routes/cdn-video.$": typeof import("./app/routes/cdn-video.$.jsx");
   "routes/account": typeof import("./app/routes/account.jsx");
   "routes/account.orders._index": typeof import("./app/routes/account.orders._index.jsx");
   "routes/account.orders.$id": typeof import("./app/routes/account.orders.$id.jsx");
@@ -357,4 +396,9 @@ type RouteModules = {
   "routes/cart": typeof import("./app/routes/cart.jsx");
   "routes/cart.$lines": typeof import("./app/routes/cart.$lines.jsx");
   "routes/$": typeof import("./app/routes/$.jsx");
+  "/Users/itziksavaia/Documents/git/alpha-shoop/stores/shopify/hydrogen-alphaforbaby/node_modules/@shopify/hydrogen/dist/vite/virtual-routes/layout": unknown;
+  "vite/virtual-routes/routes/graphiql": unknown;
+  "vite/virtual-routes/routes/subrequest-profiler": unknown;
+  "vite/virtual-routes/routes/[.]well-known.appspecific.com[.]chrome[.]devtools[.]json": unknown;
+  "vite/virtual-routes/routes/index": unknown;
 };
