@@ -4,6 +4,7 @@ import {Aside, useAside} from '~/components/Aside';
 import {Footer} from '~/components/Footer';
 import {Header} from '~/components/Header';
 import {AnnouncementTicker} from '~/components/AnnouncementTicker';
+import {BackToTop} from '~/components/BackToTop';
 import {CartMain} from '~/components/CartMain';
 import {
   SEARCH_ENDPOINT,
@@ -54,13 +55,14 @@ export function PageLayout({cart, children = null, isLoggedIn}) {
     <Aside.Provider>
       <div className={`tob tob-chrome-${dir}`}>
         {/* All drawers rendered here so they're inside .tob and get the CSS vars */}
-        <MobileMenuAside />
+        <MobileMenuAside isLoggedIn={isLoggedIn} />
         <CartAside cart={cart} />
         <SearchAside />
         <AnnouncementTicker />
         <Header cart={cart} isLoggedIn={isLoggedIn} />
         <main>{children}</main>
         <Footer />
+        <BackToTop />
       </div>
     </Aside.Provider>
   );
@@ -165,16 +167,16 @@ function SearchAside() {
   );
 }
 
-function MobileMenuAside() {
+function MobileMenuAside({isLoggedIn}) {
   return (
     <Aside type="mobile" heading="MENU">
-      <MobileMenuNav />
+      <MobileMenuNav isLoggedIn={isLoggedIn} />
     </Aside>
   );
 }
 
 /** Nav links inside the hamburger drawer — NavLink so active state works, close on click */
-function MobileMenuNav() {
+function MobileMenuNav({isLoggedIn}) {
   const {close} = useAside();
   return (
     <nav className="tob-mob-nav" role="navigation" aria-label="Main navigation">
@@ -191,10 +193,38 @@ function MobileMenuNav() {
           {l.label}
         </NavLink>
       ))}
-      {/* Level 05 5B.1 rule 3: no "Sign in" in the menu — this store sells to
-          guests, and an account link on a first visit is friction. It comes
-          back only if we ever ship a real account area. */}
+      {/* Level 05 5B.1 rule 3 (v3.4, 2026-09-28): Itzik asked for a Sign in
+          link back in the mobile menu, under the nav links — supersedes the
+          earlier "no account link in the menu" call. Header.jsx still has an
+          unused AccountLink component from the old "next to cart" plan; it's
+          dead code now and can be removed in a future cleanup pass. */}
+      <MobileMenuAccountLink isLoggedIn={isLoggedIn} close={close} />
     </nav>
+  );
+}
+
+/**
+ * @param {{isLoggedIn: Promise<boolean>, close: () => void}}
+ */
+function MobileMenuAccountLink({isLoggedIn, close}) {
+  return (
+    <Suspense fallback={<MobileMenuAccountLinkResolved loggedIn={false} close={close} />}>
+      <Await resolve={isLoggedIn}>
+        {(loggedIn) => <MobileMenuAccountLinkResolved loggedIn={loggedIn} close={close} />}
+      </Await>
+    </Suspense>
+  );
+}
+
+function MobileMenuAccountLinkResolved({loggedIn, close}) {
+  return (
+    <NavLink
+      to={loggedIn ? '/account' : '/account/login'}
+      className={({isActive}) => (isActive ? 'tob-mob-link tob-mob-link--active' : 'tob-mob-link')}
+      onClick={close}
+    >
+      {loggedIn ? 'Account' : 'Sign in'}
+    </NavLink>
   );
 }
 

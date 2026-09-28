@@ -12,6 +12,7 @@ import {
 } from '@shopify/hydrogen';
 import {discountPercent} from '~/components/ProductPrice';
 import {PdpGallery} from '~/components/pdp/PdpGallery';
+import {PdpShareButton} from '~/components/pdp/PdpShareButton';
 import {PdpSpecs, parseSpecs} from '~/components/pdp/PdpSpecs';
 import {PdpReviews, parseReviews} from '~/components/pdp/PdpReviews';
 import {PdpHowToUse} from '~/components/pdp/PdpHowToUse';
@@ -174,20 +175,38 @@ export default function Product() {
   const [previewVariant, setPreviewVariant] = useState(null);
 
   const images = product.images?.nodes ?? [];
-  const video = (product.media?.nodes ?? [])
+  const rawVideo = (product.media?.nodes ?? [])
     .flatMap((n) => n.sources ?? [])
     .find((s) => s.mimeType === 'video/mp4');
+  // Rewritten to our own /cdn-video/* proxy — see app/routes/cdn-video.$.jsx
+  // for why: the Storefront API returns this URL on a domain that isn't (or
+  // doesn't reliably work as) an allowed CSP media-src for a live <video>,
+  // even though the same URL fetches fine directly.
+  const video = rawVideo
+    ? {
+        ...rawVideo,
+        url:
+          '/cdn-video' +
+          new URL(rawVideo.url).pathname.replace(/^\/cdn\/shop\/videos/, ''),
+      }
+    : null;
 
   return (
     <div className="pdp bg-surface font-classical text-ink text-cbody">
       <div className="relative mx-auto w-full max-w-phone bg-bg shadow-cmd md:max-w-[1320px]">
         <div className="md:grid md:grid-cols-[715px_minmax(0,1fr)] md:items-start md:gap-12 md:px-8 md:pt-6">
           <div className="px-4 md:sticky md:top-24 md:px-0">
-            <PdpGallery
-              images={images}
-              selectedVariantImage={previewVariant?.image || selectedVariant?.image}
-              title={title}
-            />
+            <div className="relative">
+              <PdpGallery
+                images={images}
+                selectedVariantImage={previewVariant?.image || selectedVariant?.image}
+                title={title}
+              />
+              {/* 2026-09-28, Itzik: small share button in the gallery corner —
+                  native share sheet on mobile (covers WhatsApp etc.), a
+                  WhatsApp/Facebook/copy-link popover as the desktop fallback. */}
+              <PdpShareButton title={title} />
+            </div>
           </div>
 
           <div className="md:min-w-0">
@@ -195,6 +214,7 @@ export default function Product() {
               line={content?.urgencyLine}
               avatars={reviews.flatMap((r) => r.photos || []).slice(0, 5)}
               buyerCount={agBuyerCount}
+              holidayCutoff={config.holidayCutoff}
             />
 
             <section className="px-4 pt-1.5 md:px-0">

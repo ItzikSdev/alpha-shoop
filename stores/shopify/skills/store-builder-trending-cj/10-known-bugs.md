@@ -983,3 +983,69 @@ shipped without one, so this goes to Itzik.
     family as #53: when a test rejects a state the owner deliberately
     created, the test has an incomplete vocabulary, not the state.
 
+58. **An order would not have reached the supplier (v3.8).** The live
+    products are not in CJ's connection list — only 9 old clothing products
+    are — so fulfilment depends entirely on our own webhook service
+    (`src/org/fulfillment.py` → `createOrderV2`, default line "CJPacket
+    Ordinary"). With Sol stopped, nobody verified that service still runs.
+    Separately, logistics selection that takes the cheapest quote picks
+    CJPacket Eub (12-50 days) for the carrier while the policy promises
+    7-14 business days. Fix: one real test order before any ad (Level 16
+    §1.1-1.2), and choose the cheapest line whose max days fit the promise.
+59. **A token "Buy 2" is worse than none (v3.8).** The egg showed "Buy 2 —
+    you save 1%" (90 cents), the carrier 2%. `PdpQuantityTiers` now hides
+    any multi-unit tier under 10% saving and marks the simple box
+    `data-no-real-bundle`; the bundle tests skip on that marker.
+60. **Invented and inflated social proof (v3.8).** "✓ Verified buyer" on
+    reviews imported from CJ, "Join 121 verified buyers", six invented
+    testimonials in theme.config.json, and "SELLING QUICK, LOW STOCK" on a
+    product with ~40,000 units and zero sales. All removed or relabelled;
+    Level 01 rule 10; test `TestHonestSocialProof`.
+61. **Ads would have run blind (v3.8).** No Meta pixel anywhere on the
+    storefront and nothing for Facebook in the CSP. `MetaPixel.jsx` added
+    (PageView, ViewContent, AddToCart via Hydrogen's analytics bus), CSP
+    extended; inert until `metaPixelId` is set. Purchase comes from the
+    Facebook & Instagram channel on checkout.
+62. **Blank first screen when the URL carries a variant (v3.8).** The
+    gallery jumps to the variant's slide on load, and that slide was
+    `loading="lazy"` inside a horizontal scroller, so it never loaded until
+    the shopper scrolled (egg page: `naturalWidth` 0). The opening slide
+    and the first three now load eagerly, the opening one with
+    `fetchPriority="high"`.
+63. **The deploy script would have rolled the store back (v3.8).**
+    `scripts/deploy.sh` copies `store-profiles/alphaforbaby/theme.config.json`
+    over `app/theme.config.json` before building. The profile copy was months
+    stale — Baby Boys / Baby Girls / Unisex nav, old hero, the six invented
+    testimonials — while every change since was made in `app/`. One run of
+    the script would have silently reverted the menu, the hero and the
+    honesty fixes. Synced 2026-09-25 (profile := app; the old one is kept
+    only in the session's scratch). Rule: `app/theme.config.json` is the
+    source of truth; after editing it, copy it to the profile in the same
+    change.
+
+53. **The product demo video was a solid black box on every PDP — a CSP
+    `media-src` mismatch, not a broken file (found 2026-09-28, Itzik).**
+    `product.media.nodes[].sources[].url` from the Storefront API comes
+    back on `checkout.alphaforbaby.com` (the "Online Store" channel's own
+    Primary domain — see the Domains screen), not `cdn.shopify.com`. That
+    host isn't in this site's CSP `media-src` at all, so Chrome silently
+    kills the `<video src>` load ("Media load rejected by URL safety
+    check") even though the exact same URL returns a clean 200 with
+    `access-control-allow-origin: *` when fetched directly — it is a CSP
+    rule, not a broken link or a real CORS problem. The obvious fallback,
+    `kgg8n0-k0.myshopify.com`, IS listed in `media-src`
+    (`https://*.myshopify.com`) and a plain `fetch()` to it succeeds
+    (206 partial content) — but a live `<video src>` to that same URL
+    still just hangs at readyState 0 with no error event. Chromium does
+    not reliably honor a wildcard `media-src` host for a live
+    `<video>`/`<audio>` element, only for `fetch`/`XHR` (`connect-src`).
+    **Fix:** don't fight the wildcard — proxy the bytes through `'self'`,
+    the one unambiguous entry in `media-src`. New resource route
+    `app/routes/cdn-video.$.jsx` fetches from the myshopify.com host
+    server-side (Range header forwarded both ways so scrubbing still
+    works) and streams it back from `alphaforbaby.com`;
+    `products.$handle.jsx` rewrites the raw video URL's path onto
+    `/cdn-video/...` before handing it to `PdpGallery`/the video block.
+    No Level 14 test added yet for this class of bug (a rendered
+    `<video>` actually reaching `readyState >= 1` on a PDP) — flagged,
+    not actioned.

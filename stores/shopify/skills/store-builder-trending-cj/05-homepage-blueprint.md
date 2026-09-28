@@ -157,12 +157,18 @@ is exactly the doubt a new baby store cannot afford.
 2. **With fewer than about 6 live products, don't use category nav at
    all** (see rule 3 for the shape Itzik chose). Categories start
    earning their place when each one holds 3+ products.
-3. **The menu is Home and Products, and nothing else (v3.3, Itzik's
-   instruction, replacing the v3.2 wording).** Two items: `Home` and
-   `Products` (the all-products page). The account / sign-in control
-   stays as a control in the header — Itzik wants it — next to the cart
-   icon, not as a menu line item. Every other link comes out of both the
-   header and the mobile drawer.
+3. **The menu is Home and Products, plus a Sign in / Account link (v3.4,
+   2026-09-28, Itzik's instruction, replacing the v3.3 wording).** Two nav
+   items — `Home` and `Products` (the all-products page) — followed by a
+   Sign in (or Account, once logged in) link, rendered inside the mobile
+   drawer under the nav links via `MobileMenuAccountLink` in
+   `PageLayout.jsx`. This reverses v3.3: that version put the account
+   control next to the cart icon in the header instead of the menu, but
+   that control (`AccountLink` in `Header.jsx`) was never actually wired
+   up to render — the site had no Sign in control anywhere until this
+   fix. `Header.jsx`'s `AccountLink`/`AccountLinkResolved` are now dead
+   code and can be removed in a cleanup pass. Every other link still
+   comes out of both the header and the mobile drawer.
 4. **The menu is validated against the live catalog on every build**,
    not written once. Level 14's `TestNavMatchesCatalog` fails the build
    on an empty nav target.

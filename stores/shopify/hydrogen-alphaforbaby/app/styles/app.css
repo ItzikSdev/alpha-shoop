@@ -3129,3 +3129,26 @@ a.login-underline-link:hover{color:var(--tob-ink,#161616)}
   .tob .tob-fcol > summary::-webkit-details-marker { display: none; }
   .tob .tob-fcol > .tob-fcol-links { display: block !important; }
 }
+
+/* ── Back-to-top floating button (2026-09-28) ── */
+.tob .tob-back-to-top {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 45;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.tob .tob-back-to-top:hover { background: var(--accent); }
+.tob .tob-back-to-top:active { transform: scale(0.94); }
+@media (min-width: 820px) {
+  .tob .tob-back-to-top { right: 24px; bottom: 24px; }
+}

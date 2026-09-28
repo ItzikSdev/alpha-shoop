@@ -2048,4 +2048,149 @@ Home · Products menu with the account control back in the header.
 New: 7.D #56 (a page judged on a build that was never shipped — say what
 your held work would and would not have fixed) and #57 (tests that knew
 only `drop` and rejected a recorded `no_ads`).
+v3.6 — Itzik, after three products that were built correctly and still
+can't carry an ad: "we want a winning product we can sell at a competitive
+price, with many good reviews, good shipping we can give free, and more than
+$12 profit on every sale — and special, not something the customer finds
+everywhere." New Level 02 Section 2.I, the winning-product filter, applied
+BEFORE anything is sourced, priced or written: eight hard gates — >= $15
+profit per order at or below the market median (floor $12), landed <= 30% of
+retail, shipping <= $5 and <= 10 days (US warehouse preferred), retail
+$29-79, >= 50 supplier reviews with >= 20 photo reviews at 4.5+, >= 6 clean
+1000px images AND a video, not undercut on Temu/AliExpress without real
+differentiation, and a 5-second visual hook — plus a six-point soft score.
+Candidates are recorded in store-profiles/alphaforbaby/candidates/ with
+their evidence, five passing candidates go to Itzik, and nothing is built
+before he picks. A live product that fails gate 1 or gate 7 gets no more
+work. New TestWinningProductFilter (2 tests). Gate 7 is not theoretical: AliExpress sells the egg at $9.05 against our $13.86 landed cost.
+v3.7 — Itzik handed product search to Cowork directly (no Sol). A full CJ
+scan (23 product types, 6 baby categories, deep checks with CJ's own
+detail, review and freight APIs, market prices checked on Walmart) found no
+product that passes the 2.I filter, and why: CJ's cheapest US shipping is
+$6.53-7.62 even for a 200 g parcel and $7.74-11.55 for 300-750 g; CJ
+review counts on candidates were 0-19; and the market squeezes a generic
+copy between cheaper generics and branded products with hundreds of
+reviews. New Level 02 Section 2.J records the measurements and the model
+decision Itzik now has to make (own label small batch / US-warehouse
+supplier / personalised). Gate 3 changed from "<= $5" to "<= 20% of retail
+and <= 8 days". The review gate is flagged as incompatible with any
+genuinely new product until Itzik decides how reviews are earned. (Correction, same day: the carrier has no stock in CJ's US warehouse — all 12 variants sit in China, so the $11.55 US-lane quote does not apply; the cheapest reasonable line is LuWei Ordinary US at $19.52, 5-11 days, landed $31-33.)
+v3.8 — Cowork now works directly for Itzik (Sol retired from this store).
+Before any ad spend, the live store was checked end to end and five problems
+fixed or exposed: (7.D #58) the live products aren't in CJ's connection list
+and fulfilment rests on our own webhook service, never verified, whose
+logistics could pick a 12-50 day line against a 7-14 day promise; (#59)
+"Buy 2 — save 1%" hidden below a 10% saving; (#60) "Verified buyer" on
+imported reviews, "Join N verified buyers", six invented testimonials and a
+false "LOW STOCK" line — relabelled or removed, Level 01 rule 10; (#61) no
+Meta pixel at all — MetaPixel.jsx + CSP added, inert until the pixel id is
+set; (#62) blank first screen when the URL carries a variant — opening
+slide now eager. New Level 16 (ad-test playbook: prerequisites, budget,
+kill rules, creative, reading results) and Level 17 (Itzik's decisions and
+the measured facts, the project's short memory). Entry file rewritten with
+a "Start here" state summary and a clean blocker list. TestHonestSocialProof
+(3 tests).
+v3.9 — SourcinBox sourcing requests for both live products came back
+with real quotes, replacing the 09-25 estimates: egg landed cost $11.10
+(Shopify Cost per item updated from the stale $13.86 CJ figure; profit
+now $15.80/order, clearing the $15 target, not just the $12 floor) —
+carrier landed cost $31.88 (direct sourcing turned out to be a wash
+against CJ, not the hoped-for win; profit ~$12.02/order, clears the $12
+floor only). checkout.alphaforbaby.com set up and live-tested (Settings →
+Domains "Online Store" target, Primary domain — separate from the
+Hydrogen Production domain group, which is untouched); documented as a
+Level 17 fact since it's easy to get wrong on a headless store. Found and
+fixed a live bug: the egg's `Product specs` metafield said "18 months and
+up," contradicting its own description and FAQ — corrected to "3 years
+and up," no matching Level 14 test added yet (flagged, not actioned).
+SourcinBox's QC + private-label capability noted as the answer to Itzik's
+wife's product-safety question, but no certificate request has actually
+been sent yet — still open.
 
+## v3.10 — egg price lowered after real competitor check
+Itzik correctly pushed back on the earlier "don't lower prices" call,
+which only checked our internal $12 profit floor and never looked at
+what competitors actually charge. Checked real market prices: matching-
+egg toys run $13.99 (Walmart MOONTOY) to $68.99 (Montessori Vision egg
+sets, flagship at $32.99); our egg at $26.90 was priced above several
+market options with room to come down. Hip-carrier competitors (Walmart)
+run $25.99-$59.99 — we're priced above most direct competitors at $43.90,
+but landed cost ($31.88) leaves zero room to cut without breaking the $12
+floor, so the fix there is a cheaper supplier, not a discount. Lowered
+the egg's price from $26.90 to $23.90 on all 3 variants (Green Carton,
+Shapes & Colours, Matching Eggs) in Shopify; new profit/order is
+$12.80 — clears the $12 floor but no longer clears the $15 target, so
+the running ad test's economics should be re-checked against this new
+number. Carrier price left untouched. Full detail in Level 17.
+
+## v3.11 — Sign in link added back to the mobile menu (reverses v3.3)
+Itzik asked for the Sign in button in the mobile sidebar, under the nav
+links — the opposite of what v3.3 (5B.1 rule 3) called for. Turned out
+the v3.3 plan was never actually live anyway: `Header.jsx` had an
+`AccountLink` component meant to sit next to the cart icon, but it was
+defined and never rendered — the site had NO Sign in control anywhere,
+header or menu. Fixed by adding `MobileMenuAccountLink` to
+`PageLayout.jsx`'s `MobileMenuNav`, threading the existing `isLoggedIn`
+promise down from `PageLayout` (it already flowed in from `root.jsx`,
+just wasn't passed to the mobile drawer). Links to `/account` when
+logged in, `/account/login` otherwise; closes the drawer on click, same
+pattern as the other nav links. `eslint` clean. Local `shopify hydrogen
+build` couldn't be verified — pre-existing, unrelated native-binding
+error in `node_modules/rolldown` on this machine ("Cannot find native
+binding"), not caused by this change; worth an `npm i` after removing
+`node_modules`/`package-lock.json` at some point. Not deployed — this is
+a local repo with no git remote configured, deploy is a manual
+`shopify hydrogen deploy` (or however Itzik normally ships) and needs his
+go-ahead since it touches the live storefront. Level 05 rule 3 updated to
+match; `Header.jsx`'s now-fully-dead `AccountLink`/`AccountLinkResolved`
+flagged for a future cleanup pass, not removed.
+
+## v3.12 — demo video was CSP-blocked on every PDP; proxied through our own domain
+Itzik caught it from a screenshot: the product demo video was a plain
+black box on the egg's PDP, right after Add to Cart / payment icons.
+Root cause was a CSP `media-src` mismatch, not a broken video file: the
+Storefront API returns the video's URL on `checkout.alphaforbaby.com`
+(the Online Store channel's Primary domain), which isn't in this site's
+`media-src` at all — Chrome kills the `<video src>` load outright ("Media
+load rejected by URL safety check") even though the URL itself is a
+clean 200 with open CORS when fetched directly. The obvious fix,
+pointing at `kgg8n0-k0.myshopify.com` (which IS listed via
+`https://*.myshopify.com`), didn't work either: `fetch()` to it succeeds,
+but a live `<video src>` to the same URL just hangs forever with no
+error — Chromium doesn't reliably honor a wildcard media-src host for
+media elements, only for fetch/XHR. Fixed by proxying instead of fighting
+the wildcard: new route `app/routes/cdn-video.$.jsx` fetches the video
+server-side from the myshopify.com host (forwarding Range so scrubbing
+works) and streams it back same-origin; `products.$handle.jsx` rewrites
+the raw URL onto `/cdn-video/...` before it reaches the video element.
+`eslint` clean on both files (the pre-existing `Star`/`off`/`kicker`
+unused-var errors in `products.$handle.jsx` predate this change and
+aren't from it). Full detail + Level 10 bug #53. Not deployed yet —
+same as v3.11, needs a `git push` to `alphaforbaby/production`, which
+Itzik hasn't confirmed.
+
+## v3.13 — back-to-top button + product share button (WhatsApp/Facebook/copy link)
+Two small UX adds Itzik asked for right after the video fix. (1) Floating
+"back to top" button: new `app/components/BackToTop.jsx`, shown once
+scrollY > 480px, smooth-scrolls to top, rendered once from `PageLayout.jsx`
+so it's site-wide, not just the PDP; styled via new `.tob-back-to-top`
+rules appended to `app/styles/app.css` (z-index 45 — below the aside
+drawers' 200, above the header's 50/60 doesn't matter since they never
+overlap visually). (2) Small share button in the product gallery's corner:
+new `app/components/pdp/PdpShareButton.jsx`, wired into
+`products.$handle.jsx` beside `PdpGallery`. Uses the native Web Share API
+when available (`navigator.share` — the OS share sheet on mobile already
+lists WhatsApp etc., zero extra code needed there) and falls back to a
+small popover (WhatsApp `wa.me` link, Facebook sharer, copy-link) for
+browsers without it, which today is most desktops. lucide-react doesn't
+ship a Facebook glyph any more, so that one icon is a small hand-rolled
+inline SVG, same pattern as Header.jsx's existing icons. `eslint` clean on
+all 4 touched/new files (the pre-existing `Star`/`off`/`kicker` errors in
+`products.$handle.jsx` are unrelated, predate this session). Could not
+visually verify in a running dev server or build — this machine's
+`node_modules/rolldown` has a pre-existing "Cannot find native binding"
+error (npm optional-deps bug) that blocks both `hydrogen build` and
+`hydrogen dev`, unrelated to any of today's changes; fix is `npm i` after
+removing `node_modules`/`package-lock.json`, not done since it wasn't
+asked for. Not deployed — same open item as v3.11/v3.12, still needs
+Itzik's go-ahead to `git push` to `alphaforbaby/production`.
