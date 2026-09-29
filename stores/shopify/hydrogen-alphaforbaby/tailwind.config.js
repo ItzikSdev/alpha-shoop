@@ -26,7 +26,17 @@ export default withMT({
         },
       },
       fontFamily: {
-        classical: ['FbTubicSans-Light', 'FbTubicSans-Light-en', 'Assistant', 'system-ui', 'sans-serif'],
+        // Assistant first: it is the only family here that is actually served.
+        // FbTubicSans-Light is a licensed Israeli print font that no visitor has
+        // installed and that we do not ship as a webfont, so leading with it
+        // meant the stack always fell through to system-ui (7.D #28).
+        classical: ['Assistant', 'system-ui', 'sans-serif'],
+        // Tailwind's preflight sets `html { font-family: theme(fontFamily.sans) }`,
+        // so anything outside a .tob/.pdp scope (the <body> itself, the header,
+        // the footer) took Tailwind's default system stack no matter what the
+        // design tokens said. Overriding `sans` is what actually puts the
+        // webfont on the page rather than only on scoped components.
+        sans: ['Assistant', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
       fontSize: {
         kicker: ['11px', {lineHeight: '1.4', letterSpacing: '0.08em'}],

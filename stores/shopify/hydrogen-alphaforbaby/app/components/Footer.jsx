@@ -1,6 +1,28 @@
 import {Link} from 'react-router';
 import {config} from '~/lib/theme';
 
+/**
+ * One footer link column.
+ *
+ * Rendered as a native <details> so it collapses to a single heading row on
+ * mobile and stays open on desktop (CSS forces `open` behaviour at >=861px).
+ * Twelve always-expanded links made the footer 604px tall on a 375px screen —
+ * taller than the product grid — and no amount of gap-tightening gets that
+ * under the 420px target; the list length is the height. <details> gives the
+ * collapse with no JS, real keyboard support and no ARIA of our own to get
+ * wrong, and it degrades to a plain expanded list if CSS fails to load.
+ */
+function FooterCol({heading, children}) {
+  return (
+    <details className="tob-fcol" name="footer-col">
+      <summary>
+        <b>{heading}</b>
+      </summary>
+      <div className="tob-fcol-links">{children}</div>
+    </details>
+  );
+}
+
 // Dark footer — brand, Shop links (= nav), Support and legal links all from theme.config.json.
 export function Footer() {
   const {name, tagline, supportEmail, copyright} = config.brand;
@@ -31,28 +53,25 @@ export function Footer() {
           <p>{tagline}</p>
         </div>
 
-        <div className="tob-fcol">
-          <b>Shop</b>
+        <FooterCol heading="Shop">
           {config.nav.map((l) => (
             <Link key={l.url} to={l.url} prefetch="intent">
               {l.label}
             </Link>
           ))}
-        </div>
+        </FooterCol>
 
-        <div className="tob-fcol">
-          <b>Support</b>
+        <FooterCol heading="Support">
           <a href={`mailto:${supportEmail}`}>{supportEmail}</a>
-        </div>
+        </FooterCol>
 
-        <div className="tob-fcol">
-          <b>Legal</b>
+        <FooterCol heading="Legal">
           {legalLinks.map((l) => (
             <Link key={l.url} to={l.url} prefetch="intent">
               {l.label}
             </Link>
           ))}
-        </div>
+        </FooterCol>
       </div>
 
       {payIcons.length ? (

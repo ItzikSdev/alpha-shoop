@@ -4,6 +4,31 @@ Every change to the store is recorded here. **Newest on top.**
 
 ---
 
+## 2026-09-20 06:16 (Asia/Jerusalem) — Milo: dedupe (from chat)
+**By:** Milo
+**Context:** Owner asked in chat: Sol asked you to do this now: Check if CJ's variant SKUs for PID 2609040624391621700 are properly unique and compatible 
+**Changed:** Removed 4 duplicate(s) (of 4 found).
+
+## 2026-09-18 22:37 (Asia/Jerusalem) — Nova: dedupe (from chat)
+**By:** Nova
+**Context:** Owner asked in chat: Sol asked you to do this now: Diagnose why duplicate SKU 'CJ-2609040624391621700-RED' for PID 2609040624391621700 is cau
+**Changed:** Removed 2 duplicate(s) (of 2 found).
+
+## 2026-09-15 15:43 (Asia/Jerusalem) — Nova: dedupe (from chat)
+**By:** Nova
+**Context:** Owner asked in chat: Sol asked you to do this now: Confirm if the duplicate SKU 'CJ-2609040624391621700-RED' with cjInventory=0 is the root c
+**Changed:** Removed 5 duplicate(s) (of 5 found).
+
+## 2026-09-13 14:01 (Asia/Jerusalem) — Milo: dedupe (from chat)
+**By:** Milo
+**Context:** Owner asked in chat: Sol asked you to do this now: Investigate SKU duplication conflict for PID 2609040624391621700 (TKT-d732d49f) — check Sh
+**Changed:** Removed 0 duplicate(s) (of 0 found).
+
+## 2026-09-13 08:13 (Asia/Jerusalem) — Milo: dedupe (from chat)
+**By:** Milo
+**Context:** Owner asked in chat: Sol asked you to do this now: Investigate duplicate SKU conflicts for PID 2609090851191638300 in Shopify and resolve any
+**Changed:** Removed 2 duplicate(s) (of 2 found).
+
 ## 2026-09-07 20:13 (Asia/Jerusalem) — Ava: dedupe (from chat)
 **By:** Ava
 **Context:** Owner asked in chat: Sol asked you to do this now: Review the duplicate product entries (PIDs 2609031000531616200, 2609030854571611000, 26083

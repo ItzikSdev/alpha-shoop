@@ -1,0 +1,78 @@
+{
+  "handle": "montessori-shape-sorting-egg",
+  "pixel_gate": "Itzik, 2026-09-21: the >=1000px Stage-1 check applies to the HERO image only. CJ publishes variant images at 800x800 max, so applying it here would have left the carrier and the domino with zero sellable variants. Sharpness (Laplacian >= 100), zero Chinese text and colour-must-match are unchanged and were enforced.",
+  "variants": [
+    {
+      "variant_id": 43185801461831,
+      "title": "Green Carton",
+      "previous_title": "Green",
+      "image_url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/5f4f3741-7703-4e9c-9518-9552405ecf00_b426ba78-db7e-4d32-ba66-90e19ef6aa33.jpg?v=1790009354",
+      "cj_source_url": "https://cf.cjdropshipping.com/5f4f3741-7703-4e9c-9518-9552405ecf00.jpg",
+      "short_side": 800,
+      "width": 800,
+      "height": 800,
+      "laplacian_var": 132.01,
+      "cjk_chars": 0,
+      "vision_match": true,
+      "vision_answer": "The product is a Montessori shape-sorting egg toy set with a dominant bright green colour that matches the 'Green' variant.",
+      "vision_colour_seen": "bright green",
+      "shares_image_with": null
+    },
+    {
+      "variant_id": 43185801560135,
+      "title": "Shapes & Colours",
+      "previous_title": "1style",
+      "image_url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/d6171946-ec0f-4897-bca8-aa01adace411_de64b640-d5a0-43e8-982c-717e17638cb8.jpg?v=1790009357",
+      "cj_source_url": "https://cf.cjdropshipping.com/d6171946-ec0f-4897-bca8-aa01adace411.jpg",
+      "short_side": 800,
+      "width": 800,
+      "height": 800,
+      "laplacian_var": 302.44,
+      "cjk_chars": 0,
+      "vision_match": true,
+      "vision_answer": "This is a Montessori shape-sorting egg toy set with 12 coloured eggs visible in the photo.",
+      "vision_colour_seen": "multicolour (red, orange, yellow, green, blue, purple)",
+      "shares_image_with": null
+    },
+    {
+      "variant_id": 43185801658439,
+      "title": "Matching Eggs",
+      "previous_title": "4style",
+      "image_url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/14e90879-c9b7-4626-9e3b-a655a183732d_ea955487-3a7f-448a-bd2b-d109e0a52c47.jpg?v=1790009360",
+      "cj_source_url": "https://cf.cjdropshipping.com/14e90879-c9b7-4626-9e3b-a655a183732d.jpg",
+      "short_side": 432,
+      "width": 432,
+      "height": 800,
+      "laplacian_var": 839.98,
+      "cjk_chars": 0,
+      "vision_match": true,
+      "vision_answer": "This is a Montessori shape-sorting egg toy set with 4 style components (matching eggs, puzzle board, and colorful sorting pieces) visible in the photo.",
+      "vision_colour_seen": "yellow, white, multicolour (rainbow)",
+      "shares_image_with": null
+    }
+  ],
+  "removed_variants": [
+    {
+      "title": "2style",
+      "reason": "soft image (Laplacian 56 < 100)"
+    },
+    {
+      "title": "3style",
+      "reason": "wrong_product: photo shows yellow, multicoloured (rainbow colours)"
+    },
+    {
+      "title": "5style",
+      "reason": "different product: Number Stamps Set"
+    },
+    {
+      "title": "Car.",
+      "reason": "different product: Dough Set with Molds"
+    },
+    {
+      "title": "SetA",
+      "reason": "soft image (Laplacian 55 < 100)"
+    }
+  ],
+  "model": "alpha/worker-fast (anthropic/claude-haiku-4-5) via LiteLLM proxy",
+  "checked_at": "2026-09-21"
+}

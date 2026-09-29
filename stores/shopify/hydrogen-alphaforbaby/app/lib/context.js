@@ -36,9 +36,20 @@ export async function createHydrogenRouterContext(
     AppSession.init(request, [env.SESSION_SECRET]),
   ]);
 
+  // The Oxygen-injected PRIVATE_STOREFRONT_API_TOKEN cannot read metafields: it
+  // returns null for EVERY `metafield(...)` field (reviews, review_photos,
+  // size_guide) while all other product data resolves normally — so the failure
+  // is silent, and the size guide had been dead in production because of it.
+  // Verified 2026-09-11: the same query with PUBLIC_STOREFRONT_API_TOKEN returns
+  // those metafields in full. Hydrogen prefers the private token whenever it is
+  // present, so withholding it is what forces the working path.
+  // Proper fix is to grant that token `unauthenticated_read_metafields` in the
+  // Hydrogen/Oxygen storefront settings, then drop these two lines.
+  const {PRIVATE_STOREFRONT_API_TOKEN: _lacksMetafieldScope, ...envPublicTokenOnly} = env;
+
   const hydrogenContext = createHydrogenContext(
     {
-      env,
+      env: envPublicTokenOnly,
       request,
       cache,
       waitUntil,

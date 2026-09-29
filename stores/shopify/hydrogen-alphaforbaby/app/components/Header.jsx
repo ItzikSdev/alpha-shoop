@@ -21,6 +21,10 @@ export function Header({cart, isLoggedIn}) {
   return (
     <header className="tob-header">
       <div className="tob-wrap tob-hrow">
+        {/* 7.D #15: the hamburger must be the FIRST element of the row so it
+            pins to the true left edge; the copy inside HeaderCtas is hidden on
+            mobile so the cart alone sits right. */}
+        <MobileMenuButton />
         <NavLink prefetch="intent" to="/" end className="tob-hlogo">
           {LOGO_PARTS ? (
             <span>
@@ -72,7 +76,7 @@ function HeaderSearch() {
   }, [open, fetcher]);
 
   return (
-    <div className="tob-hsearch-wrap" ref={wrapRef}>
+    <div className="tob-hsearch-wrap tob-hsearch-desktop-only" ref={wrapRef}>
       <SearchFormPredictive className="tob-hsearch" role="search">
         {({fetchResults, goToSearch, inputRef}) => (
           <>
@@ -195,9 +199,12 @@ function HeaderSearch() {
 function DesktopNav() {
   return (
     <nav className="tob-hnav tob-hnav-desktop" role="navigation" aria-label="Main navigation">
-      <NavLink to="/" end>Home</NavLink>
+      {/* `nav` already starts with Home (Level 05 5B.1). A hardcoded Home link
+          here rendered it twice ("HOME HOME PRODUCTS", seen live 2026-09-25);
+          the mobile drawer was fixed the same way earlier. `end` keeps Home
+          from matching every path as active. */}
       {config.nav.map((l) => (
-        <NavLink key={l.url} to={l.url}>{l.label}</NavLink>
+        <NavLink key={l.url} to={l.url} end={l.url === '/'}>{l.label}</NavLink>
       ))}
     </nav>
   );
@@ -207,11 +214,23 @@ function DesktopNav() {
 /**
  * @param {{isLoggedIn: Promise<boolean>, cart: Promise<CartApiQueryFragment|null>}}
  */
+function MobileMenuButton() {
+  const {open} = useAside();
+  return (
+    <button
+      className="tob-hburger reset"
+      aria-label="Open menu"
+      onClick={() => open('mobile')}
+    >
+      <IconMenu />
+    </button>
+  );
+}
+
 function HeaderCtas({isLoggedIn, cart}) {
   const {open} = useAside();
   return (
     <nav className="tob-hcta" role="navigation" aria-label="Header actions">
-      <AccountLink isLoggedIn={isLoggedIn} />
       <CartToggle cart={cart} />
       <button
         className="tob-hmob reset"
@@ -260,6 +279,9 @@ function AccountLinkResolved({loggedIn}) {
           </span>
         </>
       )}
+      {/* Level 05 5B.1 rule 3 (v3.3): the account/sign-in CONTROL belongs here,
+          next to the cart — Itzik wants it. What the rule forbids is an account
+          LINE ITEM in the menu, not this control. */}
       <Link
         to={loggedIn ? '/account' : '/account/login'}
         prefetch="intent"
@@ -315,14 +337,6 @@ function IconBag() {
     </svg>
   );
 }
-function IconAccount() {
-  return (
-    <svg className="tob-ic" viewBox="0 0 20 20" aria-hidden="true">
-      <circle cx="10" cy="6.5" r="3.5" />
-      <path d="M3 17c1.2-3.5 4-5.2 7-5.2s5.8 1.7 7 5.2" />
-    </svg>
-  );
-}
 function IconMenu() {
   return (
     <svg className="tob-ic" viewBox="0 0 20 20" aria-hidden="true">
@@ -352,3 +366,13 @@ function CartBadgeOptimistic({cart}) {
 }
 
 /** @typedef {import('storefrontapi.generated').CartApiQueryFragment} CartApiQueryFragment */
+
+function IconAccount() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}

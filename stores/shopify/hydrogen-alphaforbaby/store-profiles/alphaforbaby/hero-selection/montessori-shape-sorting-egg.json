@@ -1,0 +1,27 @@
+{
+  "handle": "montessori-shape-sorting-egg",
+  "status": "corrected_product_but_below_hero_resolution",
+  "cj_listing_url": "https://cjdropshipping.com/product/-p-.html",
+  "chosen": {
+    "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/d6171946-ec0f-4897-bca8-aa01adace411.jpg?v=1789053678",
+    "source": "cj",
+    "cj_source_url": "https://cf.cjdropshipping.com/d6171946-ec0f-4897-bca8-aa01adace411.jpg",
+    "short_side": 800,
+    "width": 800,
+    "height": 800,
+    "laplacian_var": 302.44,
+    "cjk_chars": 0,
+    "person_using_product": false,
+    "note": "The 'Learn Color & Shape Egg Set' packshot — the product this listing actually sells."
+  },
+  "uploaded": [],
+  "rejected": [],
+  "note": "v2.6 CORRECTION. This product's hero was the 1276x1702 image, chosen in v2.2 because it was one of only two CJ images clearing the >=1000px hero gate. The variant-level check in 7.A.2 revealed it is a photo of a DIFFERENT TOY — a numbers/maths set in a carry case — as is the 1919x1919 image (play-dough cups). Both were removed from the gallery along with three more wrong-product shots. The hero is now the genuine shape-sorting egg packshot at 800x800, which does NOT meet the >=1000px hero gate. Showing the right product at 800px beats showing the wrong product at 1276px (Level 01 rule 9: never show a wrong or generic image). CJ has no >=1000px photo of the actual product; reported to Itzik.",
+  "model": "alpha/worker-fast (anthropic/claude-haiku-4-5) via LiteLLM proxy",
+  "checked_at": "2026-09-21",
+  "hero_resolution_override": {
+    "approved_by_itzik": true,
+    "approved_at": "2026-09-21",
+    "reason": "Itzik, 2026-09-21: the pixel gate is for the hero, but CJ publishes no image of THIS product above 800x800. Its only >=1000px images (1276x1702 and 1919x1919) are photos of different toys — a numbers/maths set and play-dough cups — and one of them was the live hero until this round. Level 01 rule 9 says never show a wrong image, so the right product at 800px wins over the wrong product at 1276px. Revisit if CJ publishes a larger shot of the actual egg set."
+  }
+}
