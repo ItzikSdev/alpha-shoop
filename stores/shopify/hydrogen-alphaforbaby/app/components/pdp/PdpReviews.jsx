@@ -120,12 +120,17 @@ export function PdpReviews({reviews = []}) {
             {average.toFixed(1)} out of 5 · {count} review{count === 1 ? '' : 's'}
             {withPhotos.length > 0 && ` · ${withPhotos.length} with photos`}
           </span>
-          {/* These reviews were imported from our supplier's platform: real
-              buyers of this exact product, but not orders placed in this store.
-              Saying so is the honest label; "Verified buyer" was not (Level 01
-              rule 10). */}
+          {/* Rule 10 (7.D #60) still requires SOME true disclosure that
+              these aren't orders placed in this store -- the compliance
+              suite fails the page if a review count shows with no
+              [data-review-source] element. What changed (Itzik, 2026-09-29):
+              the literal words "supplier" and "marketplace" read as
+              import/dropshipping jargon and were flagged as a trust-killer
+              in the first few seconds a US ad visitor sees the page, so the
+              wording is softer -- still true, still not "Verified buyer" --
+              without volunteering the supply-chain detail. */}
           <span className="basis-full text-[12px] text-ink/55" data-review-source>
-            Reviews from buyers of this product on our supplier&apos;s marketplace.
+            Reviews from buyers who purchased this exact product elsewhere online.
           </span>
         </div>
       ) : (

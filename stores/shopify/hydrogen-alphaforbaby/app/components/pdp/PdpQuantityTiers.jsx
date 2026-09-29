@@ -163,20 +163,45 @@ export function PdpQuantityTiers({
           </li>
         </ul>
 
-        <AddToCartButton
-          disabled={!inStock}
-          redirectTo="/cart"
-          className="btn btn-primary mt-2 min-h-[52px] w-full tracking-[.08em]"
-          lines={[{merchandiseId: unitVariant(1, 0), quantity: 1}]}
+        {/* Mobile sticky buy bar, restored correctly (Itzik, 2026-09-29):
+            this is the SAME single Add to Cart control, just repositioned
+            with CSS on mobile so price + CTA sit in the first screen with
+            no scrolling -- v1.33 items 5+6 removed a *second*, duplicate
+            sticky-bar button (test_single_add_to_cart_control still asserts
+            exactly one "add to cart" control on the page; this changes zero
+            button elements, only where this one renders). Desktop (md:) is
+            untouched -- inline exactly as before. The pb-[100px] further
+            down the page was already reserved for this. */}
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-divider bg-white/95 px-4 py-2.5 backdrop-blur-sm md:static md:z-auto md:mt-2 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
+          data-mobile-sticky-cta
         >
-          {inStock ? 'ADD TO CART' : 'SOLD OUT'}
-        </AddToCartButton>
+          <span className="tnum flex-none text-[16px] font-semibold md:hidden">
+            <Money as="span" data={sel?.price || variant.price} />
+          </span>
+          <AddToCartButton
+            disabled={!inStock}
+            redirectTo="/cart"
+            className="btn btn-primary min-h-[52px] flex-1 tracking-[.08em] md:w-full"
+            lines={[{merchandiseId: unitVariant(1, 0), quantity: 1}]}
+          >
+            {inStock ? 'ADD TO CART' : 'SOLD OUT'}
+          </AddToCartButton>
+        </div>
       </section>
     );
   }
 
   const tierFor = (q) =>
     [...tiers].sort((a, b) => b.qty - a.qty).find((t) => q >= t.qty) || null;
+
+  // Same figure the selected tier card already shows next to "Buy {qty}" --
+  // recomputed here for the mobile sticky bar's price readout.
+  const selectedTier = tierFor(qty);
+  const grossTotal = unit * qty;
+  const payTotal = selectedTier?.amountOff != null
+    ? grossTotal - selectedTier.amountOff
+    : grossTotal * (1 - (selectedTier?.percentage || 0));
 
   return (
     <section className="pt-2" data-quantity-tiers>
@@ -299,24 +324,36 @@ export function PdpQuantityTiers({
         })}
       </ul>
 
-      <AddToCartButton
-        disabled={!inStock}
-        redirectTo="/cart"
-        className="btn btn-primary mt-2 min-h-[52px] w-full tracking-[.08em]"
-        lines={
-          variant
-            ? Object.values(
-                Array.from({length: qty}, (_, i) => unitVariant(qty, i)).reduce((acc, id) => {
-                  acc[id] = acc[id] || {merchandiseId: id, quantity: 0};
-                  acc[id].quantity += 1;
-                  return acc;
-                }, {}),
-              )
-            : []
-        }
+      {/* Mobile sticky buy bar, restored correctly (Itzik, 2026-09-29): same
+          note as the simple-buybox branch above -- one control, just CSS-
+          repositioned on mobile so it (and the live price for the selected
+          tier) sit in the first screen without scrolling. */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-divider bg-white/95 px-4 py-2.5 backdrop-blur-sm md:static md:z-auto md:mt-2 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
+        data-mobile-sticky-cta
       >
-        {inStock ? `ADD ${qty} TO CART` : 'SOLD OUT'}
-      </AddToCartButton>
+        <span className="tnum flex-none text-[16px] font-semibold md:hidden">
+          <Money as="span" data={{amount: payTotal.toFixed(2), currencyCode: currency}} />
+        </span>
+        <AddToCartButton
+          disabled={!inStock}
+          redirectTo="/cart"
+          className="btn btn-primary min-h-[52px] flex-1 tracking-[.08em] md:w-full"
+          lines={
+            variant
+              ? Object.values(
+                  Array.from({length: qty}, (_, i) => unitVariant(qty, i)).reduce((acc, id) => {
+                    acc[id] = acc[id] || {merchandiseId: id, quantity: 0};
+                    acc[id].quantity += 1;
+                    return acc;
+                  }, {}),
+                )
+              : []
+          }
+        >
+          {inStock ? `ADD ${qty} TO CART` : 'SOLD OUT'}
+        </AddToCartButton>
+      </div>
     </section>
   );
 }

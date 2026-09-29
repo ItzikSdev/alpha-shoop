@@ -25,11 +25,22 @@ const UNPROVABLE = /low stock|almost gone|only \d+ left|selling (fast|quick)|sol
 // (`holidayCutoff`), chosen so the policy's slowest case (2 + 14 business
 // days) still arrives before the holiday. After the cutoff date it simply
 // disappears — it is never moved forward to keep the pressure on.
+// A holiday order-by date is true the day it's set, but showing "Order by
+// Nov 30 for Christmas" to a visitor landing in September doesn't read as
+// urgency -- it reads as a banner nobody updated, and it was one of only
+// two things visible above the fold to real Facebook-ad visitors who bounce
+// immediately without scrolling (Itzik, 2026-09-29, via Clarity heatmaps).
+// So the cutoff line only surfaces once it's genuinely close; the rest of
+// the year the strip just carries the honest dispatch-time line.
+const HOLIDAY_WINDOW_DAYS = 45;
+
 function trueUrgency(cutoff) {
   const parts = ['Ships in 1–2 business days'];
   if (cutoff?.date && cutoff?.label) {
     const end = new Date(`${cutoff.date}T23:59:59Z`);
-    if (Date.now() <= end.getTime()) {
+    const now = Date.now();
+    const windowStart = end.getTime() - HOLIDAY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    if (now >= windowStart && now <= end.getTime()) {
       const md = end.toLocaleDateString('en-US', {month: 'short', day: 'numeric', timeZone: 'UTC'});
       parts.push(`Order by ${md} for ${cutoff.label}`);
     }

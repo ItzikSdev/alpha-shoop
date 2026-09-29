@@ -175,19 +175,28 @@ export default function Product() {
   const [previewVariant, setPreviewVariant] = useState(null);
 
   const images = product.images?.nodes ?? [];
-  const rawVideo = (product.media?.nodes ?? [])
-    .flatMap((n) => n.sources ?? [])
-    .find((s) => s.mimeType === 'video/mp4');
+  const videoNode = (product.media?.nodes ?? []).find((n) =>
+    (n.sources ?? []).some((s) => s.mimeType === 'video/mp4'),
+  );
+  const rawVideo = videoNode?.sources?.find((s) => s.mimeType === 'video/mp4');
   // Rewritten to our own /cdn-video/* proxy — see app/routes/cdn-video.$.jsx
   // for why: the Storefront API returns this URL on a domain that isn't (or
   // doesn't reliably work as) an allowed CSP media-src for a live <video>,
   // even though the same URL fetches fine directly.
+  //
+  // 2026-09-29 (Itzik): this is skill 09 §7.B Slot 2 — the gallery's own
+  // video slide, not a second player. `poster` (Shopify's own previewImage
+  // for the clip) is what the gallery paints before/instead of the live
+  // <video>: the opening frame on first paint, the thumbnail-strip badge,
+  // and the stand-in while the lightbox's enlarged copy is the one <video>
+  // on the page (7.D — the v1.23 "two players" incident).
   const video = rawVideo
     ? {
         ...rawVideo,
         url:
           '/cdn-video' +
           new URL(rawVideo.url).pathname.replace(/^\/cdn\/shop\/videos/, ''),
+        poster: videoNode?.previewImage?.url || null,
       }
     : null;
 
@@ -199,7 +208,9 @@ export default function Product() {
             <div className="relative">
               <PdpGallery
                 images={images}
+                video={video}
                 selectedVariantImage={previewVariant?.image || selectedVariant?.image}
+                hasUserPicked={!!previewVariant}
                 title={title}
               />
               {/* 2026-09-28, Itzik: small share button in the gallery corner —
@@ -263,24 +274,13 @@ export default function Product() {
           <PdpMiniReviews reviews={reviews} />
         </div>
 
-        {/* v1.44 #10: the one real demo clip is primary content and now sits
-            directly after the mini reviews. "Three ways to wear it" keeps its
-            own explanatory steps lower down, without a second player. */}
-        {video && (
-          <div className="px-4 pt-3 md:px-8" data-pdp-section="video">
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption -- supplier clip has no caption track */}
-            <video
-              className="w-full rounded-lg bg-black"
-              src={video.url}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              style={{pointerEvents: 'none'}}
-            />
-          </div>
-        )}
+        {/* 2026-09-29 (Itzik): the one real demo clip moved INTO the gallery
+            as its slide 0 (skill 09 §7.B Slot 2) — an ad visitor's first
+            screen is now the same clip they just watched in the ad, without
+            waiting to scroll this far down. This is no longer a second
+            player: it's the same slot the v1.44 #10 standalone section used
+            to own, and test_exactly_one_video_instance_on_page (7.D — the
+            v1.23 incident) is what stops it from ever being both again. */}
 
         {/* Skill §5C v1.53, Itzik's explicit order: the full "Ratings & Reviews"
             block sits IMMEDIATELY after the product video, before the benefit
@@ -290,9 +290,11 @@ export default function Product() {
           <PdpReviews reviews={reviews} />
         </div>
 
-        {/* Section order per skill §5C v1.53: mini carousel → video → Ratings &
+        {/* Section order per skill §5C v1.53: mini carousel → Ratings &
             Reviews → benefits → size/shipping → how-to-use → why it works →
             lifestyle → comparison → full description/specs → FAQ → guarantee.
+            (The demo video is no longer its own section here — it's the
+            gallery's slide 0, per skill 09 §7.B Slot 2, 2026-09-29.)
             pb-[100px] moved here: this block is now what the mobile sticky bar
             overlaps at the bottom of the page. */}
         <div className="mx-auto max-w-4xl px-4 pb-[100px] md:px-6">
@@ -376,7 +378,7 @@ const PRODUCT_FRAGMENT = `#graphql
     images(first: 50) { nodes { __typename id url altText width height } }
     media(first: 50) {
       nodes {
-        ... on Video { id sources { url mimeType } }
+        ... on Video { id sources { url mimeType } previewImage { url } }
       }
     }
     options {
