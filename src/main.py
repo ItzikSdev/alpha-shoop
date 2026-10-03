@@ -15,6 +15,7 @@ from src.api.routes import org as org_router
 from src.api.routes import finance as finance_router
 from src.api.routes import videos as videos_router
 from src.api.routes import images as images_router
+from src.api.routes import social as social_router
 from src.api.routes.agents import _daemon, _spawn_run
 from src.db.engine import create_tables
 from src.org.daemon import org_tick
@@ -410,6 +411,7 @@ app.include_router(health.router, prefix="/api/v1", tags=["Health"])
 app.include_router(agents_router.router, prefix="/api/v1", tags=["Agents"])
 app.include_router(stores_router.router, prefix="/api/v1", tags=["Stores"])
 app.include_router(org_router.router, prefix="/api/v1", tags=["Organization"])
+app.include_router(social_router.router, prefix="/api/v1", tags=["Social"])
 app.include_router(finance_router.router, prefix="/api/v1", tags=["Finance"])
 app.include_router(videos_router.router, prefix="/api/v1", tags=["Videos"])
 app.include_router(images_router.router, prefix="/api/v1", tags=["Images"])

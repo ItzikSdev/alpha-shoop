@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { Overview } from './pages/Overview';
@@ -16,6 +16,7 @@ import { VideosPage } from './pages/VideosPage';
 import { RagPage } from './pages/RagPage';
 import { TicketsPage } from './pages/TicketsPage';
 import { Company } from './pages/Company';
+const Office = lazy(() => import('./pages/Office').then((m) => ({ default: m.Office })));
 import { UpdatesPage } from './pages/UpdatesPage';
 
 export default function App() {
@@ -50,6 +51,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Overview />} />
             <Route path="/company" element={<Company />} />
+            <Route path="/office" element={<Suspense fallback={<div className="p-6 text-gray-500">טוען…</div>}><Office /></Suspense>} />
             <Route path="/updates" element={<UpdatesPage />} />
             <Route path="/finance" element={<FinancePage />} />
             <Route path="/integrations" element={<IntegrationsPage />} />

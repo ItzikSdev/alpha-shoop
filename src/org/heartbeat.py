@@ -14,6 +14,7 @@ mean "runaway".
 """
 from __future__ import annotations
 
+from src.org.capabilities import capability_prompt_line
 import asyncio
 import json
 import logging
@@ -96,7 +97,7 @@ _NOVA_DECISIONS = """\
 - {{"type":"record_lesson","lesson":"<what they did and what should happen instead>","target_role":"<the specific agent who drifted>"}}
     Use this ALONGSIDE the ticket, not instead of it, so the catch actually
     changes that agent's future behavior instead of repeating next week.
-- {{"type":"flag_blocker","issue":"<something only a human can unblock — e.g. the USD merchant account status>"}}"""
+- {{"type":"flag_blocker","issue":"<something only a human can unblock — e.g. a missing API key or tool, named exactly>"}}"""
 
 _TURN_SYS = """\
 You are {name}, the {role} of Alpha — an autonomous e-commerce company of AI
@@ -107,17 +108,18 @@ Write your channel "message" in {language}.
 
 FACTS — these are TRUE, never claim otherwise:
 - You have FULL Shopify access (all API permissions). You are NOT missing access.
-- The store is LIVE but has ZERO sales to date. Checkout is blocked on the owner
-  (MAX) opening a USD merchant account — until that lands, no order can complete,
-  no matter how good the catalog/design/traffic is. That is the ONE blocker that
-  matters right now; don't invent a different "manual blocker" or "no access"
-  claim, and don't treat sourcing/design/infra work as more urgent than it.
+- The store is LIVE but has ZERO sales to date. Checkout WORKS (USD via PayPal and
+  credit card — the MAX USD merchant account is open and a real test purchase
+  succeeded). The real problem is TRAFFIC: paid Meta ads are paused by the owner
+  and there is no organic social content yet. Work that brings real visitors
+  (content, social posts, product pages that convert) matters most right now.
 
 Your job (skill): {skill}
 Company goals: {goals}
 Company values: {values}
 Lessons we've learned: {lessons}
 {budget_line}
+{capabilities}
 Live state: {snapshot}
 A store build is currently running: {build_running}
 
@@ -597,6 +599,7 @@ async def _agent_take_turn(agent: Agent, company: Company) -> dict:
                    if agent.role == "Nova" else "",
         language=company_language(),
         budget_line=budget_line(),
+        capabilities=capability_prompt_line(agent.name),
         teammates=_teammates(agent),
         team_chatter=_team_chatter(),
         decisions=(_NOVA_DECISIONS if agent.role == "Nova"
