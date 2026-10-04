@@ -1,0 +1,22 @@
+{
+  "candidate": "Cross-border Electric Baby Nail Clipper/Grinder (anti-pinch)",
+  "source_url": "https://detail.1688.com/offer/773200122342.html",
+  "price_1688_usd": "~$5-8",
+  "sold": "1000+",
+  "rating": "4.8-5.0",
+  "total_reviews": "1000+",
+  "photo_reviews": 3,
+  "gates": {
+    "1_profit_15": "UNKNOWN",
+    "2_landed_pct_30": "PASS (low landed cost)",
+    "3_shipping": "not checked",
+    "4_price_point_29_79": "FAIL - standalone item too small/cheap to hit $29 floor without bundling",
+    "5_photo_reviews_20": "FAIL - only 3 photo reviews out of 1000+ total reviews",
+    "6_assets": "not checked",
+    "7_not_commodity": "FAIL - widely available on Temu/AliExpress",
+    "8_hook": "PASS - very strong 5-second hook (visible clipping demo)"
+  },
+  "verdict": "REJECT",
+  "primary_fail_gates": [4, 5, 7],
+  "notes": "Best hook of all candidates checked, but same structural photo-review wall despite 1000+ total reviews - confirms it's platform-wide, not volume-related."
+}

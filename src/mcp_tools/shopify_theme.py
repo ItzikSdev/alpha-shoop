@@ -56,6 +56,10 @@ async def _read_asset(theme_id: str, key: str) -> dict | str:
 
 
 async def _write_asset(theme_id: str, key: str, content: dict | str) -> bool:
+    from src.org.design_lock import theme_writes_blocked
+    if theme_writes_blocked():
+        logger.warning("write_asset %s blocked: design lock is on", key)
+        return False
     value = json.dumps(content, ensure_ascii=False) if isinstance(content, dict) else content
     try:
         await _shopify_rest("PUT", f"themes/{theme_id}/assets.json", {

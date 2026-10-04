@@ -97,19 +97,112 @@ async def store_media(limit: int = 10) -> dict:
     return {"ok": True, "products": [{**p, "description": (p.get("description") or "")[:400]} for p in items[:limit]]}
 
 
+@tool
+async def store_videos(limit: int = 20, query: str = "") -> dict:
+    """Products that already have a video on the store (direct .mp4 + product page URL). We never
+    generate videos — every reel starts from one of these."""
+    return await _call("store_videos", {"limit": limit, "query": query})
+
+
+@tool
+async def reel_playbook() -> dict:
+    """The proven reel formula (hook formulas, structure, caption, what to avoid). Read before make_reel."""
+    return await _call("reel_playbook")
+
+
+@tool
+async def make_reel(video_url: str, hook: str, cta: str = "", start: float = 0.0, max_seconds: float = 15.0) -> dict:
+    """Cut an existing store video into a vertical <=15s reel with a hook line on top (+ optional
+    end CTA) and host it. Returns media_url — pass it to draft_post(kind='reel' for facebook/instagram,
+    kind='video' for tiktok). Use `start` to skip a dull intro."""
+    return await _call("make_reel", {"video_url": video_url, "hook": hook, "cta": cta, "start": start,
+                                     "max_seconds": max_seconds})
+
+
+@tool
+async def ad_library_search(query: str, countries: list[str] | None = None, limit: int = 12) -> dict:
+    """Meta Ad Library: ads other stores run NOW (copy, headline, running since). Long-running ads =
+    proven. If the result says needs_owner, report it as a blocker and use web_social_search."""
+    return await _call("ad_library_search", {"query": query, "countries": countries or [], "limit": limit})
+
+
+@tool
+async def web_social_search(query: str, num: int = 8) -> dict:
+    """Public web results about how other baby/toy brands post on Facebook/Instagram/TikTok."""
+    return await _call("web_social_search", {"query": query, "num": num})
+
+
+@tool
+async def save_pattern(source: str, brand: str, hook_type: str, hook_example: str, structure: str,
+                       cta: str, why_it_works: str, url: str = "", platform: str = "") -> dict:
+    """Keep ONE pattern you learned from another store's post. PARAPHRASE only: hook_example <=140
+    chars (never a copy of their text), structure/why_it_works <=400. hook_type: question|bold-claim|
+    problem-agitate|demo-in-first-second|social-proof|curiosity-gap|relatable-moment|how-to|before-after|other."""
+    return await _call("save_pattern", {"source": source, "brand": brand, "hook_type": hook_type,
+                                        "hook_example": hook_example, "structure": structure, "cta": cta,
+                                        "why_it_works": why_it_works, "url": url, "platform": platform})
+
+
+@tool
+async def social_playbook(limit: int = 25, hook_type: str = "", platform: str = "") -> dict:
+    """Everything learned from other stores so far (patterns by hook type). Read before every draft."""
+    return await _call("social_playbook", {"limit": limit, "hook_type": hook_type, "platform": platform})
+
+
+@tool
+async def traffic_results(days: int = 7) -> dict:
+    """YOUR SCORECARD. Real store results by traffic source over the last N days (default 7):
+    visits, product views, add-to-carts, checkouts, purchases and revenue for facebook / instagram / tiktok /
+    direct / other (from the live-visitor beacon), plus the posts you published in that window.
+    Call it at the start of every round and judge your own work by it: visits and purchases, not likes."""
+    out: dict = {"ok": True}
+    try:
+        import redis.asyncio as aioredis
+        from src.config import get_settings
+        from src.visitors import events as E
+        r = aioredis.from_url(get_settings().redis_url, decode_responses=True)
+        try:
+            out["results"] = await E.results(r, days)
+        finally:
+            await r.aclose()
+    except Exception as exc:  # noqa: BLE001
+        out["results"] = {"error": str(exc)[:200]}
+    try:
+        from datetime import datetime, timedelta, timezone
+        from src.social_mcp import queue as _sq
+        cut = datetime.now(timezone.utc) - timedelta(days=max(1, int(days)))
+        posts = [d for d in _sq.list_drafts("published")
+                 if d.get("published_at") and datetime.fromisoformat(d["published_at"]) >= cut]
+        out["published_posts"] = [{"id": d["id"], "platform": d["platform"], "kind": d.get("kind"),
+                                   "published_at": d["published_at"], "remote_id": d.get("remote_id"),
+                                   "first_line": (d.get("message") or "")[:80]} for d in posts]
+    except Exception as exc:  # noqa: BLE001
+        out["published_posts"] = {"error": str(exc)[:200]}
+    return out
+
+
 TOOLS = [social_status, recent_posts, read_comments, post_insights, list_drafts, draft_post,
-         publish_approved, store_media]
+         publish_approved, store_media, store_videos, reel_playbook, make_reel,
+         ad_library_search, web_social_search, save_pattern, social_playbook, traffic_results]
 TOOL_NAMES = [t.name for t in TOOLS]
 _BY_NAME = {t.name: t for t in TOOLS}
 
 _SYSTEM = """You are Lia, Social Media Manager at Alpha (alphaforbaby.com — baby products, sells globally, English content).
 GOAL: bring REAL visitors to the store with organic content on Facebook, Instagram and TikTok. The store has zero sales; checkout works; traffic is the problem.
+YOU ARE JUDGED BY RESULTS: store visits and purchases that come from your posts (traffic_results), not by posts made or likes. Itzik pays for outcomes. Start every round with traffic_results; do more of what brought visits, stop what brought none, and say plainly in your report when the numbers are zero and what you will change. Always put the product link with utm_source=<platform> (facebook|instagram|tiktok) and utm_medium=organic so visits are attributed to you.
 HOW YOU WORK:
 1. social_status first. If a platform is not connected, say exactly which env/permission is missing and work on the connected ones.
-2. Learn before you write: recent_posts (what got reactions/views), list_drafts (read Itzik's feedback on rejected drafts — never repeat a rejected idea).
+2. Learn before you write: social_playbook (patterns learned from other stores — use them), recent_posts (what got reactions/views), list_drafts (read Itzik's feedback on rejected drafts — never repeat a rejected idea).
+   MARKET RESEARCH (when asked, and daily): ad_library_search / web_social_search for other baby & Montessori toy stores' posts → study what hooks, structures and CTAs they use (prefer ads running for weeks) → save_pattern for each real insight (paraphrase in your own words — never copy their text, names or claims). Then draft 3 NEW posts for OUR products that apply those patterns, each with a rationale naming the pattern. Competitors are inspiration, never material to copy.
 3. Draft with draft_post: short scroll-stopping hook in the first line, one clear benefit, a call to action (comment/tag/link). Use real product media from store_media — never invent product claims, prices or reviews.
 4. Everything you draft waits for Itzik's approval. publish_approved only for drafts already approved.
-5. Finish with a short report: what you drafted (ids), what you learned from the numbers, what's blocked and why.
+5. REELS (priority — video is what gets reach): the store's product videos already exist, you never create or generate video.
+   reel_playbook → store_videos → pick a product → make_reel (hook on top, optional CTA) → draft_post(kind='reel') for facebook AND instagram
+   (and kind='video' for tiktok once connected) with the video's `tracked_url` (the storefront product link) in `link` and the media_url from make_reel. Only videos of products that are live in the store are returned — never promote anything else.
+   Vary the hook across posts so the numbers show which formula wins; after posts go live, learn from recent_posts/post_insights.
+   Only real footage from store_videos — never AI-generated people, never footage we do not own.
+   Prefer clips of 8s+ that show the product being used. Clips of ~4s are product rotations: fine as filler, weak as the main post. If the store has too few usable clips, say so in your report (that is a content gap for Itzik) instead of padding.
+6. Finish with a short report: what you drafted (ids), what you learned from the numbers, what's blocked and why.
 RULES: never post personal details of the owner; public contact is support@alphaforbaby.com only. No Harry-Potter-style or other trademarked themes. No fake urgency or fake scarcity."""
 
 

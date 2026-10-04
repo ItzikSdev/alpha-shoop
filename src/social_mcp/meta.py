@@ -1,7 +1,8 @@
 """Meta Graph API — Facebook Page + its linked Instagram Business account.
 
-Env: META_PAGE_ID, and FB_PAGE_ACCESS_TOKEN (preferred) or META_ACCESS_TOKEN (a
-user/system-user token with pages_manage_posts, pages_read_engagement,
+Env: META_PAGE_ID, and FB_PAGE_ACCESS_TOKEN (preferred) or a user/system-user token in
+META_ACCESS_TOKEN_ALPHA_FOR_BABY (the "Alpha for Baby" app; falls back to the legacy META_ACCESS_TOKEN)
+(the token with pages_manage_posts, pages_read_engagement,
 pages_read_user_content, instagram_basic, instagram_content_publish,
 instagram_manage_comments, instagram_manage_insights — the Page token is derived
 from it). Optional: META_IG_USER_ID (else read from the Page's
@@ -28,12 +29,24 @@ def page_id() -> str:
     return os.environ.get("META_PAGE_ID", "").strip()
 
 
+USER_TOKEN_VARS = ("META_ACCESS_TOKEN_ALPHA_FOR_BABY", "META_ACCESS_TOKEN")
+
+
+def user_token() -> str:
+    """User/system-user token for the Alpha for Baby app (legacy META_ACCESS_TOKEN is the fallback)."""
+    for k in USER_TOKEN_VARS:
+        v = os.environ.get(k, "").strip()
+        if v:
+            return v
+    return ""
+
+
 def missing_env() -> list[str]:
     miss = []
     if not page_id():
         miss.append("META_PAGE_ID")
-    if not (os.environ.get("FB_PAGE_ACCESS_TOKEN", "").strip() or os.environ.get("META_ACCESS_TOKEN", "").strip()):
-        miss.append("FB_PAGE_ACCESS_TOKEN|META_ACCESS_TOKEN")
+    if not (os.environ.get("FB_PAGE_ACCESS_TOKEN", "").strip() or user_token()):
+        miss.append("FB_PAGE_ACCESS_TOKEN|META_ACCESS_TOKEN_ALPHA_FOR_BABY")
     return miss
 
 
@@ -51,7 +64,7 @@ async def page_token(c: httpx.AsyncClient) -> str:
     tok = os.environ.get("FB_PAGE_ACCESS_TOKEN", "").strip()
     if tok:
         return tok
-    user = os.environ.get("META_ACCESS_TOKEN", "").strip()
+    user = user_token()
     if not user or not page_id():
         raise MetaError("missing " + ", ".join(missing_env()))
     j = _check(await c.get(f"{GRAPH}/{page_id()}", params={"fields": "access_token", "access_token": user}))
@@ -191,9 +204,22 @@ async def insights(platform: str, object_id: str) -> dict:
         if platform == "facebook":
             j = _check(await c.get(f"{GRAPH}/{object_id}", params={
                 "fields": "reactions.summary(true).limit(0),comments.summary(true).limit(0),shares", "access_token": tok}))
-            return {"reactions": j.get("reactions", {}).get("summary", {}).get("total_count"),
-                    "comments": j.get("comments", {}).get("summary", {}).get("total_count"),
-                    "shares": (j.get("shares") or {}).get("count", 0)}
+            out = {"reactions": j.get("reactions", {}).get("summary", {}).get("total_count"),
+                   "comments": j.get("comments", {}).get("summary", {}).get("total_count"),
+                   "shares": (j.get("shares") or {}).get("count", 0)}
+            # views / reach / link-and-other clicks (Meta's current post metrics; impressions were retired).
+            # An empty `data` means Meta has no number yet (fresh post or no views) — reported as null, not 0.
+            for key, metric in (("views", "post_media_view"), ("reach", "post_total_media_view_unique"),
+                                ("clicks", "post_clicks")):
+                try:
+                    k = _check(await c.get(f"{GRAPH}/{object_id}/insights",
+                                           params={"metric": metric, "access_token": tok}))
+                    vals = (k.get("data") or [{}])[0].get("values") or [{}]
+                    out[key] = vals[0].get("value")
+                except MetaError as e:
+                    out[key] = None
+                    out.setdefault("insights_error", {})[key] = str(e)[:160]
+            return out
         j = _check(await c.get(f"{GRAPH}/{object_id}", params={"fields": "like_count,comments_count,media_type", "access_token": tok}))
         out = {"likes": j.get("like_count"), "comments": j.get("comments_count")}
         try:  # reach/views need instagram_manage_insights; report honestly if absent

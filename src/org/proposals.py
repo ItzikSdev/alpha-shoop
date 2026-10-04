@@ -28,6 +28,10 @@ def init_proposals() -> None:
             id TEXT PRIMARY KEY, agent TEXT, kind TEXT, payload TEXT,
             reason TEXT, status TEXT DEFAULT 'pending', result TEXT DEFAULT '',
             created_at TEXT NOT NULL)""")
+        # Read-only requests never need a human. Old pending GETs (filed while the
+        # approval gate was on) are discarded so they stop cluttering "needs you".
+        c.execute("UPDATE org_proposals SET status='rejected', result='auto-closed: read-only GET needs no approval' "
+                  "WHERE status='pending' AND kind='shopify' AND upper(json_extract(payload,'$.method'))='GET'")
 
 
 def _row(r: tuple) -> dict:
@@ -78,7 +82,10 @@ async def execute_shopify(method: str, path: str, body: dict | None) -> dict:
     to the channel so the fix surfaces itself instead of silently breaking."""
     import httpx
     from src.config import get_settings
+    from src.org.design_lock import LOCKED, is_theme_write, theme_writes_blocked
     from src.stores import list_stores
+    if theme_writes_blocked() and is_theme_write(method, path):
+        return dict(LOCKED)
     try:
         stores = list_stores()
     except Exception:
@@ -139,7 +146,10 @@ async def execute_shopify_graphql(query: str, variables: dict | None) -> dict:
     reach it here instead of hand-rolling REST."""
     import httpx
     from src.config import get_settings
+    from src.org.design_lock import LOCKED, is_theme_graphql_write, theme_writes_blocked
     from src.stores import list_stores
+    if theme_writes_blocked() and is_theme_graphql_write(query):
+        return dict(LOCKED)
     try:
         stores = list_stores()
     except Exception:

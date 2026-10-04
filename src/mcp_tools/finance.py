@@ -171,7 +171,7 @@ def integrations_status() -> list[dict]:
                         and (meta_creds.get("ad_account_id") or s.meta_ad_account_id))
     # Current active roster (org_agents, not the departed legacy 5-role pipeline
     # names — see [[org_roster]] in memory / docs/DECISIONS_LOG.md for history).
-    ALL = ["Ava", "Sol", "Reel", "Nora", "Milo", "Kai", "Nova"]
+    ALL = ["Ava", "Sol", "Reel", "Nora", "Milo", "Kai", "Nova", "Lia"]
     return [
         row("shopify", "Shopify (storefront + admin)", "Platform", ["Sol", "Ava"],
             shop_ok, "Store admin token present." if shop_ok else "No access token — re-auth via /org/shopify-reauth."),

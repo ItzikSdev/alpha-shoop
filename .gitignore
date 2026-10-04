@@ -39,3 +39,4 @@ data/
 *.log
 _to_delete/
 
+scripts/shopify_visitor_pixel.ready.js

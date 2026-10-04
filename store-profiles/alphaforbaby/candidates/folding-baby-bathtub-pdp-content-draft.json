@@ -1,0 +1,64 @@
+{
+  "_meta": {
+    "status": "DRAFT - not yet written to Shopify metafield",
+    "blocked_on": "product does not exist in Shopify yet (SourcinBox import pending - session expired, waiting for Itzik to log in)",
+    "open_decisions": [
+      "Which 1688 SKU config to sell as the BASE product: 'Single basin + iron frame + extended water pipe' (¥89.9, ~$12.50) is the true differentiator (elevated/no-bend-over) vs plain 'Gray single basin' (¥25.9) which is a commodity flat tub with no hook. Recommend selling the iron-frame+pipe config as the core product, matching gate 8's hook.",
+      "imageIndex values below are PLACEHOLDERS (0,1,2...) - must be corrected once real gallery is uploaded to Shopify and the real images.nodes order is known (per 5D.3 field notes)",
+      "quantityTiers.amountOff is a PLACEHOLDER - must be derived from the FINAL Shopify retail price per the 5D.6 rule (2x unit, ~10% off, round to nearest .90) and matched to a real Shopify automatic discount before going live",
+      "sizeAndShipping folded/unfolded dimensions in cm were not listed in cm on the 1688 page (only weights in grams) - need to pull from product images/description or ask supplier before publishing real numbers"
+    ]
+  },
+  "urgencyLine": "SELLING QUICK, LOW STOCK 🚨",
+  "quantityTiers": [
+    {"qty": 2, "amountOff": "TODO"}
+  ],
+  "tierBenefits": {
+    "2": "One for grandma's house or the second bathroom — no more hauling the tub between floors."
+  },
+  "benefits": [
+    {"icon": "baby", "title": "Bathe standing up, no bending over", "text": "The heightened iron-frame stand lifts the basin to standing height, so you wash your baby without hunching over a tub on the floor."},
+    {"icon": "shield", "title": "Touch-sensor water temperature", "text": "The built-in touch sensor changes color to warn you if the water is too hot or too cold before baby gets in."},
+    {"icon": "repeat", "title": "Folds flat in seconds", "text": "The frame folds down for storage between baths — no dedicated bathroom space needed."},
+    {"icon": "umbrella", "title": "Food-grade PP plastic", "text": "The basin is made from PP plastic, the same material used in baby bottles and feeding gear."}
+  ],
+  "sizeAndShipping": [
+    {"question": "Does it come with the stand?", "answer": "TODO - depends on final SKU config chosen (see open_decisions)"},
+    {"question": "How do I drain it?", "answer": "The extended water pipe lets you drain the tub directly without lifting or tipping it."},
+    {"question": "How long does shipping take?", "answer": "TODO - pull from store's real shipping_reality once product is set up in SourcinBox"}
+  ],
+  "howToUse": {
+    "heading": "How to use it",
+    "intro": "",
+    "steps": [
+      {"n": 1, "title": "Unfold the stand", "text": "Open the iron frame legs and lock them in place.", "imageIndex": "TODO"},
+      {"n": 2, "title": "Fill and check the temperature", "text": "Fill the basin and watch the touch sensor confirm a safe temperature.", "imageIndex": "TODO"},
+      {"n": 3, "title": "Bathe standing up", "text": "Wash baby at standing height — no kneeling or bending over the tub.", "imageIndex": "TODO"},
+      {"n": 4, "title": "Drain and fold away", "text": "Drain through the extended pipe, then fold the frame flat for storage.", "imageIndex": "TODO"}
+    ]
+  },
+  "whyItWorks": {
+    "heading": "Why it works",
+    "text": "Most baby bathtubs sit on the floor or in the big tub, forcing parents to kneel or hunch over for the whole bath. Raising the basin to standing height on a stable iron frame removes that strain entirely, while the touch temperature sensor takes the guesswork out of water safety.",
+    "points": ["No kneeling or bending over the tub", "Sensor flags unsafe water temperature before baby gets in", "Folds flat between baths"]
+  },
+  "lifestyle": {
+    "imageIndex": "TODO",
+    "headline": "Bath time without the backache",
+    "text": ""
+  },
+  "comparison": {
+    "heading": "Compare",
+    "without": {"title": "Without it", "items": ["Kneeling or hunching over a floor-level tub every bath", "Guessing water temperature by hand", "A bulky tub taking up permanent floor space"]},
+    "with": {"title": "With it", "items": ["Standing-height bathing on a stable stand", "Touch sensor confirms safe water temperature", "Folds flat and tucks away between baths"]}
+  },
+  "faq": [
+    {"question": "What is the basin made of?", "answer": "Food-grade PP plastic, the same material used in baby bottles and feeding gear."},
+    {"question": "How do I clean it?", "answer": "Rinse with warm water after each use; wipe the frame dry to prevent rust."},
+    {"question": "Is the stand stable?", "answer": "TODO - confirm real weight capacity / stability claim with supplier before publishing"}
+  ],
+  "guarantee": {
+    "heading": "30 days to change your mind",
+    "text": "If it isn't right for your family, reach out within 30 days at support@alphaforbaby.com."
+  }
+}

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
 
-from src.social_mcp import meta, publish, queue, tiktok
+from src.social_mcp import meta, publish, queue, reel, research, tiktok
 
 mcp = FastMCP("social")
 
@@ -113,8 +113,100 @@ async def tiktok_publish_status(publish_id: str) -> dict:
         return _err(e)
 
 
+@mcp.tool()
+async def store_videos(limit: int = 20, query: str = "") -> dict:
+    """Products that ALREADY have a video on the store (direct https .mp4 + the product page URL).
+    We do not generate videos — reels are made from these. `query` = Shopify product search."""
+    try:
+        vids = await reel.list_store_videos(limit, query)
+        if not vids:
+            return {"ok": False, "error": "no product videos found on the store (or Shopify is unreachable)"}
+        return {"ok": True, "videos": vids}
+    except Exception as e:  # noqa: BLE001
+        return _err(e)
+
+
+@mcp.tool()
+async def make_reel(video_url: str, hook: str, cta: str = "", start: float = 0.0,
+                    max_seconds: float = 15.0) -> dict:
+    """Turn one EXISTING store video into a vertical 9:16 reel (<=15s): hook text on top the whole
+    time, optional CTA text in the last 3s, source audio removed. Uploads it to Shopify Files and
+    returns `media_url` (public https) to pass to draft_post(kind='reel'/'video')."""
+    try:
+        return {"ok": True, **await reel.make_reel(video_url, hook, cta, start, max_seconds)}
+    except Exception as e:  # noqa: BLE001
+        return _err(e)
+
+
+REEL_PLAYBOOK = {
+    "source": "Studied a viral organic reel (~99K views) from another baby-product store, 2026-10.",
+    "format": [
+        "8-15 seconds, vertical 9:16, ONE continuous shot or two — real footage, no AI-made people.",
+        "Show the product being used / put on / opened; the reveal or best moment lands in the last 2-3 seconds.",
+        "Hook text sits at the top from the very first frame and stays on the whole video.",
+    ],
+    "hook_formulas": [
+        "Don't let a [type]-loving mom see this 😍   (names the buyer + curiosity)",
+        "POV: you found the [product] before everyone else",
+        "Wait for the end 👀",
+        "Every new mom needs to see this",
+    ],
+    "caption": "Two lines max. 'More info here ⬇️' + the product link (or 'link in bio'). 1-3 relevant hashtags.",
+    "sound": "The viral reel used a trending in-app sound. The API cannot attach one — reels are rendered silent; "
+             "when Itzik approves, he can add a trending sound in the app, or leave it silent.",
+    "do_not": [
+        "Copy another store's theme or any trademarked character/brand (the reference reel was Harry-Potter themed - do NOT).",
+        "Invent reviews, prices, scarcity or 'going viral / low stock' claims.",
+        "Use footage of children that we do not own or have permission for.",
+    ],
+    "measure": "After a post is live: recent_posts + post_insights; compare views/saves/shares per hook formula and keep what wins.",
+}
+
+
+@mcp.tool()
+def reel_playbook() -> dict:
+    """What makes the short product reels work (hook formulas, structure, caption, what to avoid). Read before make_reel."""
+    return REEL_PLAYBOOK
+
+
+@mcp.tool()
+async def ad_library_search(query: str, countries: list[str] | None = None, limit: int = 12) -> dict:
+    """Meta Ad Library: ads OTHER advertisers run right now (copy, headline, how long running).
+    If it says needs_owner, the owner must unlock the API once — use web_social_search meanwhile."""
+    try:
+        return await research.ad_library_search(query, countries, limit)
+    except Exception as e:  # noqa: BLE001
+        return _err(e)
+
+
+@mcp.tool()
+async def web_social_search(query: str, num: int = 8) -> dict:
+    """Public web results on how other brands post (e.g. 'montessori toy brand facebook post hook')."""
+    try:
+        return await research.web_social_search(query, num)
+    except Exception as e:  # noqa: BLE001
+        return _err(e)
+
+
+@mcp.tool()
+def save_pattern(source: str, brand: str, hook_type: str, hook_example: str, structure: str, cta: str,
+                 why_it_works: str, url: str = "", platform: str = "", tags: list[str] | None = None) -> dict:
+    """Keep ONE learned pattern in the playbook. Paraphrase — hook_example <=140 chars, never a copy.
+    hook_type: question|bold-claim|problem-agitate|demo-in-first-second|social-proof|curiosity-gap|relatable-moment|how-to|before-after|other"""
+    return research.save_pattern(source, brand, hook_type, hook_example, structure, cta, why_it_works,
+                                 url, platform, tags)
+
+
+@mcp.tool()
+def social_playbook(limit: int = 25, hook_type: str = "", platform: str = "") -> dict:
+    """Everything learned from other stores' posts so far. Read before every draft."""
+    return research.read_playbook(limit, hook_type, platform)
+
+
 TOOL_NAMES = ["social_status", "draft_post", "list_drafts", "publish_approved", "recent_posts",
-              "read_comments", "post_insights", "tiktok_login", "tiktok_complete_auth", "tiktok_publish_status"]
+              "read_comments", "post_insights", "tiktok_login", "tiktok_complete_auth", "tiktok_publish_status",
+              "store_videos", "make_reel", "reel_playbook",
+              "ad_library_search", "web_social_search", "save_pattern", "social_playbook"]
 
 if __name__ == "__main__":
     mcp.run()

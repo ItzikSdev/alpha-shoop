@@ -2,6 +2,10 @@
 
 # Level 16 — The paid-ad test playbook (v3.8)
 
+> **ON HOLD since 2026-10-03 (v3.15):** Itzik wants visitors without paid
+> advertising. Do not spend or set up ads. Organic path = Level 18 (Lia).
+> This playbook stays valid if paid ads are ever restarted.
+
 Why this level exists: after three built products and a full supplier scan
 (Level 02 2.I/2.J), no product could be shown on paper to be a winner.
 In dropshipping a winner is found by small, capped ad tests — research only

@@ -77,6 +77,41 @@ async def update_product_copy(
     return {"success": True, "product": product}
 
 
+_GQL_METAFIELDS_SET = """
+mutation setMetafields($metafields: [MetafieldsSetInput!]!) {
+  metafieldsSet(metafields: $metafields) {
+    metafields { id namespace key }
+    userErrors { field message }
+  }
+}
+"""
+
+
+async def set_product_metafield(
+    product_id: str, namespace: str, key: str, value: str, type: str = "json",
+) -> dict:
+    """Write ONE metafield on an existing product (e.g. custom.pdp_content,
+    custom.reviews) via the real Admin GraphQL API — the same `metafieldsSet`
+    pattern already used for `custom.size_guide` in
+    `src/org/agent_loop.py::cj_add_product`. Use this instead of editing the
+    metafield textarea by hand in the Shopify admin UI (keystrokes or DOM/JS
+    injection): those bypass this codebase's tooling entirely and leave no
+    programmatic record of what changed. `value` must already be a string
+    (json.dumps it yourself for type="json")."""
+    try:
+        data = await _shopify_gql(_GQL_METAFIELDS_SET, {"metafields": [{
+            "ownerId": product_id, "namespace": namespace, "key": key,
+            "type": type, "value": value,
+        }]})
+    except Exception as exc:  # noqa: BLE001
+        return {"success": False, "error": str(exc)}
+    result = data.get("metafieldsSet", {})
+    errors = result.get("userErrors", [])
+    if errors:
+        return {"success": False, "error": str(errors)}
+    return {"success": True, "metafields": result.get("metafields", [])}
+
+
 _GQL_SET_PRICE = """
 mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
   productVariantsBulkUpdate(productId: $productId, variants: $variants) {

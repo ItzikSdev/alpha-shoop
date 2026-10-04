@@ -88,3 +88,31 @@ export function timeAgo(iso: string | null | undefined): string {
   if (s < 86400) return `לפני ${Math.round(s / 3600)} ש׳`;
   return new Date(iso).toLocaleDateString('he-IL');
 }
+
+// ── Live store visitors (GET /visitors/live — anonymous: source + country + stage only) ──
+export type VisitorStage = 'browsing' | 'product' | 'cart' | 'checkout' | 'purchased';
+export interface Visitor {
+  id: string;
+  stage: VisitorStage;
+  source: string;
+  country: string;
+  first_seen: number;   // unix seconds
+  last_seen: number;
+  total?: number | null;
+}
+
+export const SOURCE_LABEL: Record<string, string> = {
+  facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok', google: 'Google', youtube: 'YouTube',
+  pinterest: 'Pinterest', email: 'אימייל', bing: 'Bing', direct: 'ישיר', other: 'אתר אחר',
+};
+export const SOURCE_COLOR: Record<string, string> = {
+  facebook: '#1877f2', instagram: '#e1306c', tiktok: '#111827', google: '#ea4335', youtube: '#ff0000',
+  pinterest: '#e60023', email: '#0ea5e9', bing: '#0c8484', direct: '#64748b', other: '#94a3b8',
+};
+export const STAGE_LABEL: Record<VisitorStage, string> = {
+  browsing: 'מעיין', product: 'מסתכל על מוצר', cart: 'הוסיף לעגלה', checkout: 'בקופה', purchased: 'קנה! 🎉',
+};
+export function flagOf(cc: string): string {
+  if (!/^[A-Z]{2}$/.test(cc)) return '';
+  return String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+}

@@ -877,3 +877,186 @@ visit are not what a dropshipping account pays.
   reviews are earned (for example an early-buyer programme); importing
   reviews of other sellers' products and showing them as our own buyers'
   is not an option.
+
+
+### 2.K — Sourcing origin is 1688, not CJ's own catalog (v3.14, Itzik's rule, 2026-09-29)
+
+2.J already found CJ's own catalog largely unworkable for this niche —
+thin margins, high shipping, almost no reviews. Itzik's instruction
+following that (2026-09-29, on the 4-in-1 Baby Food Maker & Steamer
+Blender): **products are sourced from 1688, then brought in through
+SourcinBox — not searched/imported directly from CJ's own catalog or
+MCP.** SourcinBox is the fulfillment/import bridge from a 1688 listing,
+not itself a product-discovery tool — confirmed the hard way: the
+blender's SourcinBox product page (`Product ID` on
+`app.sourcinbox.com/v2/product/ProductDetail/...`) has no reviews
+feature at all, and the item isn't on CJ under any searchable keyword
+(`cj_mcp.search_products` returned 0 results for every keyword tried,
+and `get_product_inventory` came back "Product not found" for the SKU's
+numeric id) — so for a SourcinBox-sourced product, CJ is a dead end for
+both images and reviews, and 1688 is the only real source.
+
+**Workflow for a product already in the store (or being sourced now):**
+1. Search 1688 (`s.1688.com`) for the product. **Plain keyword search is
+   unreliable across the language gap** — English keywords return
+   unrelated Chinese results (tried "baby food maker steamer blender" →
+   meat grinders), and typing Chinese keywords through browser keystroke
+   simulation garbles the input (mis-encoded characters, wrong results).
+   **Use 1688's own image search instead** ("Image Search" /
+   以图搜款 button next to the search box): upload the product's actual
+   reference photo (e.g. its current Shopify hero image) as a file —
+   this reliably surfaces the real listing (or its close variants) by
+   visual match rather than a language-dependent text query.
+2. **1688's image search requires being signed into a 1688/Taobao
+   account in the browser** (it redirects to `login.taobao.com` /
+   `login.1688.com` otherwise). Ask Itzik to log in in the tab, the same
+   way as the CJ login flow — never enter credentials on his behalf.
+3. Once the matching 1688 listing is found: check its price **including
+   shipping** against competitor retail pricing before importing it to
+   SourcinBox (continue the 2.H price-reality-gate discipline — a
+   landed cost close to or above what competitors already charge retail
+   is a fail, same as a CJ candidate would be).
+4. Import via SourcinBox from that confirmed listing.
+5. **The photo reviews required by the 2.G gate (>= 15, real, re-hosted
+   on Shopify's CDN) come from that same 1688 listing** — never
+   substituted from a different marketplace's listing of a
+   visually-similar or even physically-identical product (checked and
+   rejected today: AliExpress/Amazon listings of what looks like the
+   same mold under a different brand have real reviews, but they are
+   real buyers of THAT seller's product, not ours). This is the same
+   rule 2.J already states in different words: "importing reviews of
+   other sellers' products and showing them as our own buyers' is not
+   an option."
+6. **No Chinese text anywhere in what gets published** — images, titles,
+   descriptions, specs (Level 01 rule 8). 1688 listing photos and specs
+   are almost always Chinese-labeled; OCR-check every image before
+   upload and only use captions/specs translated into English.
+
+
+### 2.L — 1688 photo-review scarcity is structural, not per-listing (v3.15, 2026-09-29)
+
+Correction to 2.K step 1: **Chinese-keyword text search on 1688 works
+fine once logged in.** The earlier "garbled/unreliable" finding was a
+symptom of being logged out, not a language/encoding problem. Once
+signed in, typing the full Chinese search string at once (not simulated
+per-character keystrokes) via the direct URL pattern
+`https://air.1688.com/kapp/1688-global/sales/search?keywords=<URL-encoded
+Chinese term>&charset=utf8` returns genuinely relevant results reliably.
+Image search still needs login too, but its upload step is separately
+blocked by browser-automation tooling (native file-picker dialog) —
+that is a tooling problem, not a login problem.
+
+**Bigger finding, checked across 4 independent, unrelated, high-volume
+baby-product categories while searching for 5 candidates per Itzik's
+2026-09-29 request** (electric nasal aspirator, electric nail clipper,
+folding baby bathtub, 3-in-1 milk warmer/sterilizer/dryer — full detail
+in `store-profiles/alphaforbaby/candidates/*.json`):
+
+| Candidate | Total reviews | Photo reviews | Units sold |
+|---|---|---|---|
+| Nasal aspirator | 400+ | 3 | 400+ |
+| Nail clipper | 1000+ | 3 | 1000+ |
+| Folding bathtub | 60+ | 2 | 1000+ (12K+ same-style) |
+| Milk warmer/sterilizer/dryer | 80+ | 1 | 10,000+ |
+
+Photo-review count does not scale with sales volume at all — a listing
+with 10,000+ units sold had fewer photo reviews (1) than one with 400
+total reviews (3). **This means gate 5 (>= 20 photo reviews) is not a
+per-listing risk to shop around — it is close to structurally
+impossible to clear on 1688 as currently defined**, because 1688's
+buyer base is overwhelmingly other businesses/resellers restocking
+inventory, not end consumers who photograph and review products the
+way Amazon/AliExpress/Temu shoppers do. Every candidate found so far
+that otherwise looked promising (price point, hook, differentiation)
+was rejected on gate 5 alone or gate 5 plus commodity/gate-7.
+
+**Open question for Itzik, not yet resolved:** since 1688 is the
+mandated sourcing origin (2.K) but structurally can't supply gate 5's
+photo-review count, one of these has to change before a 1688-sourced
+product can pass all 8 gates:
+(a) relax/redefine gate 5 for 1688-sourced products (e.g. lower the
+    photo-review floor, or accept total-review count + rating as the
+    proxy instead of photo count),
+(b) source the *product* from 1688 but generate the store's own review
+    base another way (early-buyer/seeding programme — echoes the open
+    question already flagged in 2.J), or
+(c) treat gate 5 as a post-launch gate (satisfied by the store's own
+    accumulated reviews) rather than a pre-launch sourcing gate.
+No product should be brought to Itzik as a "passes all 8 gates"
+candidate against the current literal gate-5 definition until this is
+decided, since none will.
+
+### 2.M — Gate 5 resolved: bundle + seeded post-purchase reviews (Itzik's decision, 2026-09-29)
+
+Itzik resolved the 2.L open question: **option (b)**. A 1688-sourced
+product that can't clear gate 5 at the source is still sourced and
+launched, but:
+
+1. **Launch as a bundle add-on, not standalone.** Offer the new
+   (review-less) product as a discounted add-on at checkout/cart when a
+   customer buys an existing, already-selling product — this drives its
+   first real sales without needing it to convert cold on its own
+   listing. (Native option: Shopify's own Bundles feature, or a
+   cart-level "frequently bought together" / cross-sell app; a fixed
+   discount code applied to the add-on works too — pick whichever needs
+   the least new app surface, given the store is Hydrogen/custom
+   storefront, not vanilla Online Store 2.0.)
+2. **Collect real reviews after delivery, automatically.** Every order
+   needs a post-delivery review-request flow (email, timed off
+   fulfillment/delivery — industry-standard window is 7-14 days after
+   delivery) so the *store's own buyers* build gate 5's review base
+   organically instead of relying on the 1688 listing's reviews. Needs
+   a Shopify review app; none is installed yet. Comparison researched
+   2026-09-29 (pricing/features change — re-check before committing):
+   - **Judge.me** — free forever, unlimited automated post-purchase
+     email requests, supports photo review requests, ~4-8% photo
+     capture rate. Best budget fit given the store currently has zero
+     sales (per store profile) — no fixed cost while proving the flow
+     out.
+   - **Loox** — from $9.99/mo, email leads with "share a photo" as the
+     primary CTA (rating secondary) which measurably drives a much
+     higher photo capture rate (~12-22% vs Judge.me's 4-8%) — better
+     fit once volume justifies the cost, since photo reviews are
+     specifically the thing 1688 can't supply.
+   - Both (and most competitors — Yotpo, Okendo, Stamped, Fera, Junip)
+     support discount-code incentives for photo reviews; worth pairing
+     the review request with a small code to lift the photo rate
+     further, same logic as the bundle discount above.
+   **Recommendation, not yet actioned:** start with Judge.me (free) to
+   get the post-delivery request flow running now; revisit Loox once
+   there's real order volume and the photo-capture rate matters more
+   than the $0 cost.
+3. **Net effect on gate 5:** for a 1688-sourced product, gate 5 is now
+   satisfied by the store's *own* accumulated post-launch reviews, not
+   the 1688 listing's. The 1688 listing's review count is no longer a
+   pass/fail gate before sourcing — it's just informational. The other
+   7 gates (price, landed cost, shipping, price point, assets,
+   not-commodity, hook) are still checked pre-launch as before.
+
+Not yet built: no bundle/cross-sell mechanism exists yet — needs
+implementation before this applies to a real product launch.
+
+## 2.N — Correction: a review app is already installed (checked 2026-09-29)
+
+The "Not yet built" note above and the Judge.me/Loox recommendation in
+2.M point 2 are **wrong on one count, checked directly against Shopify
+Admin's Apps page**: a review app is already installed on this store —
+**AG Product Reviews** (Avada's "Air Reviews" app, installed ~2 weeks
+before this check). Its metafield (`air_reviews_product.data`) is the
+same one already referenced throughout this skill and 07's PDP contract
+— it was never a gap.
+
+**Do NOT install Judge.me or Loox.** Use AG Product Reviews instead —
+it already has the pieces 2.M point 2 asked for: a "Review request"
+flow (order-status-triggered, currently unconfigured — 0 pending
+requests), Import reviews, Email notifications, and a
+discount-incentive option (matches the bundle-discount logic in 2.M
+point 1 directly, same app, no separate discount code plumbing needed).
+
+Still open, not yet done: the "Review request" automation itself has
+not been configured/turned on (would start sending real customer
+emails — needs Itzik's go-ahead before enabling), and its UI has a
+"Manage" button that did not respond to clicks during one check attempt
+(possibly a nested-iframe coordinate issue, same class of problem as
+1688's image-upload automation) — worth a fresh attempt rather than
+assuming it's broken.

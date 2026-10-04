@@ -2194,3 +2194,52 @@ error (npm optional-deps bug) that blocks both `hydrogen build` and
 removing `node_modules`/`package-lock.json`, not done since it wasn't
 asked for. Not deployed — same open item as v3.11/v3.12, still needs
 Itzik's go-ahead to `git push` to `alphaforbaby/production`.
+
+
+## v3.14 — 2.K: sourcing origin is 1688, not CJ's own catalog
+Itzik's instruction (2026-09-29, on the 4-in-1 Baby Food Maker & Steamer
+Blender, which turned out to be SourcinBox-sourced with no matching CJ
+listing at all — `cj_mcp.search_products` returned 0 results for every
+keyword, `get_product_inventory` came back "Product not found"):
+products are sourced from 1688, then brought in through SourcinBox, not
+searched/imported directly via CJ's own catalog or MCP. Documents the
+concrete technique in new Level 2 section 2.K: 1688 text search is
+unreliable across the language gap (English keywords return unrelated
+results; typing Chinese via browser keystroke simulation garbles the
+input), so use 1688's own image search — upload the product's real
+photo — which requires being signed into a 1688/Taobao account in the
+browser (same human-login pattern as CJ; never enter credentials on
+Itzik's behalf). Also makes explicit, for this sourcing path
+specifically, what 2.J already said in different words: the review-gate
+photos (2.G, >= 15 real, re-hosted) must come from that SAME 1688
+listing, never substituted from a different marketplace's listing of a
+visually-similar or even physically-identical product under another
+brand (checked and rejected today on AliExpress/Amazon candidates before
+Itzik redirected back to 1688).
+
+
+## v3.15 — new Level 18: 3D Office, alpha-beacon, Lia/organic social; paid ads on hold
+Itzik (2026-10-04) asked that the skill describe everything built since
+v3.14 so work isn't repeated. Audit of the whole skill found none of it
+mentioned (no 3D Office, no beacon, no Lia/social MCP, no design lock,
+and the "paid ads" goal / "Sol no longer involved" text outdated).
+Added `18-platform-office-beacon-social.md` (map of what exists, the visitor
+pipeline end to end, why custom pixels don't run on Hydrogen, the
+Hydrogen `VisitorBeacon.jsx` + CSP + `theme.config.json` keys, the checkout
+pixel settings, Lia's tools/approval gate/video rule, Instagram + TikTok
+status, ffmpeg Dockerfile change, design lock, open items). Entry file:
+new "Also exists today" block, row 18 in the traffic lights, new blocker 0,
+"Superseded" note on the ad plan, version 3.15. Level 17: decisions table
+for 2026-10-03/04. Level 16: "on hold" banner. Code changes this version
+(all uncommitted, not deployed): `app/components/VisitorBeacon.jsx` (new),
+`app/root.jsx`, `app/theme.config.json`, `app/entry.server.jsx` (CSP) in
+`hydrogen-alphaforbaby`; `Dockerfile` (ffmpeg). No Level 10 bug / Level 14 test
+added — listed as an open item in Level 18 §7.
+
+## v3.15 (addendum, 2026-10-04) — results-based scorecard and traffic-first mandate
+Itzik: no sales, no paid ads, so Lia must deliver results and the whole team
+works on bringing visitors, measured by sales. Added Level 18 §4b: daily
+visit/funnel/revenue counters by source (`events.count_progress/results`,
+`GET /visitors/results`), Lia tool `traffic_results`, 6-hourly posting tick,
+traffic-first company goal/value, stale paid-ads goal removal. Code changes
+uncommitted, API restart needed.

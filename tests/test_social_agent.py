@@ -27,7 +27,7 @@ def lia(monkeypatch, tmp_path):
     from src.social_mcp import queue
     monkeypatch.setattr(queue, "_PATH", tmp_path / "q.json")          # this process reads the same file
     monkeypatch.setenv("TRACES_DB_PATH", str(tmp_path / "traces.db"))
-    for k in ("META_PAGE_ID", "META_ACCESS_TOKEN", "FB_PAGE_ACCESS_TOKEN"):
+    for k in ("META_PAGE_ID", "META_ACCESS_TOKEN", "META_ACCESS_TOKEN_ALPHA_FOR_BABY", "FB_PAGE_ACCESS_TOKEN"):
         monkeypatch.delenv(k, raising=False)
     script = [
         AIMessage(content="", tool_calls=[{"id": "1", "name": "social_status", "args": {}}]),

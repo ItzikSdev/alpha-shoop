@@ -6,6 +6,17 @@ One local MCP server (`python -m src.social_mcp.server`, stdio) for the store's 
 
 Not the same as `src/tiktok_mcp` (TikTok **Ads** reporting) or `src/mcp_tools/meta_ads.py` (paid ads).
 
+## Connect (run in your own terminal — tokens never go through chat)
+    python -m src.social_mcp.connect status      # what is connected right now
+    python -m src.social_mcp.connect meta        # Facebook Page + Instagram (writes FB_PAGE_ACCESS_TOKEN, META_IG_USER_ID)
+    python -m src.social_mcp.connect tiktok      # TikTok organic posting (writes TIKTOK_USER_*)
+
+## Reels (no video generation)
+`store_videos` lists the videos that already exist on the store's products; `make_reel` crops one to
+9:16, trims to <=15s, burns a hook line (+ end CTA), removes the source audio, uploads it to Shopify Files
+(needs the `write_files` scope) and returns a public https `media_url` for `draft_post`.
+`reel_playbook` holds the formula learned from a viral reference reel. Needs `ffmpeg` + Pillow on the machine.
+
 ## Approval gate
 `draft_post` → **pending** → Itzik decides in platform-app **Needs you**
 (Approve = publish now · Hold · Send back with feedback · Instruct) →
@@ -16,7 +27,8 @@ Not the same as `src/tiktok_mcp` (TikTok **Ads** reporting) or `src/mcp_tools/me
 2. In the Meta app (developers.facebook.com) get a token with:
    `pages_show_list, pages_manage_posts, pages_read_engagement, pages_read_user_content,
    instagram_basic, instagram_content_publish, instagram_manage_comments, instagram_manage_insights`.
-   A long-lived **Page** token in `FB_PAGE_ACCESS_TOKEN` is best; otherwise it is derived from `META_ACCESS_TOKEN`.
+   A long-lived **Page** token in `FB_PAGE_ACCESS_TOKEN` is best; otherwise it is derived from the user token in `META_ACCESS_TOKEN_ALPHA_FOR_BABY` (legacy fallback: `META_ACCESS_TOKEN`).
+   `python -m src.social_mcp.connect meta` reads that variable, exchanges it for a long-lived Page token and saves `FB_PAGE_ACCESS_TOKEN`.
 3. `.env`: `META_PAGE_ID` (already set), optional `META_IG_USER_ID`, optional `META_GRAPH_VERSION`.
 4. Check: `GET /api/v1/social/status` — names exactly what's missing, never prints a token.
 

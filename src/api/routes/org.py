@@ -311,6 +311,9 @@ footer,.footer{border-top:1px solid var(--line);background:#fafafa;}
 
 @router.post("/org/apply-design", summary="Apply a clean TerminalX-style design to the live theme")
 async def apply_design() -> dict:
+    from src.org.design_lock import LOCKED, theme_writes_blocked
+    if theme_writes_blocked():
+        return {"error": LOCKED["error"]}
     import httpx
     from src.stores import list_stores
     stores = list_stores()

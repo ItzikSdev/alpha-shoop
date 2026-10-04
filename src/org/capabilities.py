@@ -21,7 +21,7 @@ from src.org.tool_catalog import AGENT_TOOL_GROUPS
 
 _SHOPIFY = ["SHOPIFY_ACCESS_TOKEN", "SHOPIFY_STORE_DOMAIN"]
 _TIKTOK = ["TIKTOK_ACCESS_TOKEN", "TIKTOK_ADVERTISER_ID"]
-_META = ["META_PAGE_ID", "FB_PAGE_ACCESS_TOKEN|META_ACCESS_TOKEN"]
+_META = ["META_PAGE_ID", "FB_PAGE_ACCESS_TOKEN|META_ACCESS_TOKEN_ALPHA_FOR_BABY"]
 _GMAIL = ["SUPPORT_GMAIL_CLIENT_ID", "SUPPORT_GMAIL_CLIENT_SECRET", "SUPPORT_GMAIL_REFRESH_TOKEN"]
 
 # tool name -> env vars that must ALL be set for it to work. Tools not listed
@@ -48,7 +48,10 @@ TOOL_ENV: dict[str, list[str]] = {
     # SEPARATE developer app from the TikTok Ads one (see src/social_mcp/README.md).
     **{t: _META for t in ("social_status", "recent_posts", "read_comments", "post_insights",
                           "publish_approved")},
+    "web_social_search": ["SERPER_API_KEY"],
+    "ad_library_search": ["META_ACCESS_TOKEN_ALPHA_FOR_BABY|META_ACCESS_TOKEN"],
     "store_media": _SHOPIFY,
+    **{t: _SHOPIFY for t in ("store_videos", "make_reel")},
     "search_market_prices": ["SERPER_API_KEY"],
 }
 
@@ -91,6 +94,15 @@ def agent_capabilities(name: str) -> dict:
     # A role need with `requires_env` disappears once those keys are all set.
     missing_tools = [m for m in ROLE_NEEDS.get(name, [])
                      if not m.get("requires_env") or _missing(m["requires_env"])]
+    if name == "Lia":
+        # make_reel renders locally: it needs ffmpeg/ffprobe on PATH and Pillow (text overlay).
+        from src.social_mcp.reel import tools_ok
+        have = tools_ok()
+        absent = [k for k, v in have.items() if not v]
+        if absent:
+            missing_tools.append({
+                "need": "Reel rendering on this machine", "why": f"Missing locally: {', '.join(absent)}.",
+                "fix": "brew install ffmpeg  /  pip install Pillow"})
     return {"agent": name, "ok": not not_connected and not missing_tools,
             "connected": connected, "not_connected": not_connected, "missing_tools": missing_tools}
 

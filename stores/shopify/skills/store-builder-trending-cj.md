@@ -1,6 +1,6 @@
 ---
 name: store-builder-skill
-version: 3.13
+version: 3.15
 description: >
   Build and verify complete, high-converting product pages for the
   alphaforbaby Shopify Hydrogen store from trending CJ Dropshipping
@@ -56,7 +56,8 @@ resume without the chat history.
   Carrier stays at $43.90; landed cost $31.88 -> profit
   **~$12.02/order, right at the $12 floor, zero room to cut price** —
   needs a cheaper supplier, not a discount.
-- **The plan Itzik approved:** capped ad tests (Level 16) on 2-3 products
+- **Superseded 2026-10-03:** Itzik now wants visitors without paid ads (Level 18 §5); the capped ad tests below are on hold.
+- **The plan Itzik approved (2026-09-25):** capped ad tests (Level 16) on 2-3 products
   whose profit per order is >= $12 — after the pre-flight in Level 16 §1
   passes. Candidate new product: electric baby nail file set (CJ pid
   BC4566AA-DB0F-4C3A-B118-015B1858791D, ~234 g, item $2.88-3.76, landed
@@ -73,6 +74,27 @@ resume without the chat history.
   isn't live until it's committed, pushed to `alphaforbaby/production` and
   Oxygen shows a new deployment.
 
+## Also exists today — the platform around the store (v3.15, 2026-10-04)
+
+Not part of the store code, but already built — **do not rebuild or say
+"we don't have it"; read Level 18 first:**
+
+- **3D Office** in `platform-app` (`/office`): the agent team at desks plus
+  an "Alpha for Baby" store building with real visitors as figures.
+- **alpha-beacon**: public visitor endpoint `beacon.alpha-tech.live` (Cloudflare
+  Tunnel → docker `beacon` → Redis → `/api/v1/visitors/live`). Sender on the
+  storefront = `VisitorBeacon.jsx` (written, **not deployed yet**); sender on
+  checkout = Shopify custom pixel "Alpha live visitors" (live, Permission
+  "Not required"; no cookie banner by decision).
+- **Lia + social MCP**: organic Facebook / Instagram / TikTok, drafts only,
+  Itzik approves in "Needs you". Facebook works; **Instagram and TikTok are not
+  connected**. Reels are cut from existing store videos (`make_reel`; needs
+  ffmpeg — added to `Dockerfile`, image rebuild pending).
+- **Direction change (2026-10-03):** visitors **without paid ads**. The paid
+  goal above and Level 16's $5 test are on hold. The agents are running again
+  for the platform; store design is locked against agent edits
+  (`design_lock.py`).
+
 ## How to use the levels
 
 1. **Always read Level 01 first** (role and non-negotiable honesty
@@ -84,9 +106,11 @@ resume without the chat history.
 3. **Read a whole level, not a grep of it.** Most repeated misses in this
    project came from fixing the named symptom without reading the spec
    around it.
-4. **Nothing is done until Level 14's suite has actually run** and its
+4. **Anything about the 3D Office, visitors/beacon, Lia or social:** read
+   Level 18 first.
+5. **Nothing is done until Level 14's suite has actually run** and its
    real `pytest -v` output is pasted in the report — failures included.
-5. **Section numbers still work.** Levels keep the original section
+6. **Section numbers still work.** Levels keep the original section
    headings, so a reference like "7.D #31" or "Section 5C" resolves
    through the map in the table below.
 
@@ -98,9 +122,9 @@ developed yet, or broken · ⚪ reference only (nothing to develop)
 
 | Level | File | Old section | Status | Where it stands |
 |---|---|---|---|---|
-| 00 | [00-changelog.md](store-builder-trending-cj/00-changelog.md) | changelog | ⚪ | History v1.1 -> v3.1. |
+| 00 | [00-changelog.md](store-builder-trending-cj/00-changelog.md) | changelog | ⚪ | History v1.1 -> v3.15. |
 | 01 | [01-role-and-rules.md](store-builder-trending-cj/01-role-and-rules.md) | ROLE, 1 | 🟢 Done | Rules in force across the whole store: rule 7 (15 photo reviews or hidden), 8 (CJ-only images), 9 (picture matches the choice), 10 (honest social proof, v3.8). |
-| 02 | [02-product-sourcing.md](store-builder-trending-cj/02-product-sourcing.md) | 2 | 🟡 In progress | Reviews imported on 8, crib's 23 restored. New review gate (2.G): only 3 of 9 pass (carrier, sorting egg, domino) — the other 6 must be hidden. v3.1 adds the 2.H price reality gate - not yet run on any product. v3.6 adds 2.I, the winning-product filter: eight hard gates before anything is built. v3.7 adds 2.J: a full CJ scan found no product that passes 2.I; model decision pending. |
+| 02 | [02-product-sourcing.md](store-builder-trending-cj/02-product-sourcing.md) | 2 | 🟡 In progress | Reviews imported on 8, crib's 23 restored. New review gate (2.G): only 3 of 9 pass (carrier, sorting egg, domino) — the other 6 must be hidden. v3.1 adds the 2.H price reality gate - not yet run on any product. v3.6 adds 2.I, the winning-product filter: eight hard gates before anything is built. v3.7 adds 2.J: a full CJ scan found no product that passes 2.I; model decision pending. v3.14 adds 2.K: sourcing origin is 1688 -> SourcinBox (not CJ's own catalog), with the image-search technique for finding a product's exact 1688 listing. |
 | 03 | [03-build-pipeline-and-brief.md](store-builder-trending-cj/03-build-pipeline-and-brief.md) | 3, 4 | 🟢 Done | v2.3 pricing applied to all 3 live products: domino $24.90, egg $26.90, carrier $43.90 — each with a compliant Buy 2 and `approved_by_itzik: true`. Above-median prices on carrier and egg carry a recorded `market_override` that the suite re-warns on every run. v2.5 added step 3b: the unit price must admit a valid Buy-2 total. |
 | 04 | [04-product-page-blueprint.md](store-builder-trending-cj/04-product-page-blueprint.md) | 5 | 🟡 In progress | 5.E applied: every section carries `data-pdp-section` and TestSectionDepth measures the characters inside. Open: the domino has no demo video and CJ has none. |
 | 05 | [05-homepage-blueprint.md](store-builder-trending-cj/05-homepage-blueprint.md) | 5B | 🟢 Done | Pixel budgets pass at 375px. 5B.1 applied: nav is Home / Shop All / Contact, no empty categories, no Sign In in the menu or header; footer Shop column follows the same `nav`; the homepage category tiles were dead config. |
@@ -116,8 +140,15 @@ developed yet, or broken · ⚪ reference only (nothing to develop)
 | 15 | [15-owner-audit-before-ads.md](store-builder-trending-cj/15-owner-audit-before-ads.md) | new | 🔴 Not done | Written in v2.6, never run. Run after Level 14 passes, before any ad spend. |
 | 16 | [16-ad-test-playbook.md](store-builder-trending-cj/16-ad-test-playbook.md) | new | 🔴 Not done | Written v3.8. Pre-flight (§1) not yet passed: pixel id, test order, deploy of v3.8 fixes. |
 | 17 | [17-decisions-log.md](store-builder-trending-cj/17-decisions-log.md) | new | ⚪ | Itzik's decisions and the measured facts. Read second, after "Start here". |
+| 18 | [18-platform-office-beacon-social.md](store-builder-trending-cj/18-platform-office-beacon-social.md) | new | 🟡 In progress | v3.15: 3D Office built; alpha-beacon backend + checkout pixel live; storefront `VisitorBeacon` not deployed; Lia works for Facebook only (Instagram/TikTok not connected, ffmpeg rebuild pending). No Level 14 tests yet. |
 
 ## Top blockers right now, in order
+
+0. **Organic traffic first (2026-10-03, Level 18):** deploy `VisitorBeacon`
+   (needs Itzik's go-ahead), link Instagram to the Facebook Page, rebuild the
+   API image for ffmpeg, then have Lia draft the first reel from the egg video.
+   Items 3-5 below (paid pixel/ads/$5) are on hold while the direction is
+   "no paid ads"; item 2 (test order) still matters for any real sale.
 
 1. ~~Deploy the v3.8 fixes~~ — live since 2026-09-25 (Level 17). The code
    is deployed but still uncommitted in `stores/shopify/hydrogen-alphaforbaby`.

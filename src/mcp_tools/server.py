@@ -24,6 +24,7 @@ _TOOLS: dict[str, Any] = {
     "check_media_status": shopify.check_media_status,
     "create_shopify_product": shopify.create_shopify_product,
     "update_inventory": shopify.update_inventory,
+    "set_product_metafield": shopify.set_product_metafield,
     "create_google_campaign": ads.create_google_campaign,
     "get_campaign_metrics": ads.get_campaign_metrics,
     "place_supplier_order": fulfillment.place_supplier_order,

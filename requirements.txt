@@ -60,6 +60,7 @@ arq>=0.26.1
 # OpenCV Haar cascade that missed real cases (see image_person.py docstring).
 Pillow>=10.4.0
 mediapipe>=0.10.0
+google-genai>=1.0  # Reel product media: Gemini photos + Veo videos (src/video/gemini_images.py, veo_video.py)
 
 # ── Testing ────────────────────────────────────────────────────────────────
 pytest>=8.3.0

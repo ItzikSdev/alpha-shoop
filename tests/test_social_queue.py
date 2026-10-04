@@ -68,7 +68,7 @@ async def test_failed_publish_stays_approved(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_status_names_missing_env_without_network(monkeypatch):
-    for k in ("META_PAGE_ID", "FB_PAGE_ACCESS_TOKEN", "META_ACCESS_TOKEN", "TIKTOK_CLIENT_KEY",
+    for k in ("META_PAGE_ID", "FB_PAGE_ACCESS_TOKEN", "META_ACCESS_TOKEN", "META_ACCESS_TOKEN_ALPHA_FOR_BABY", "TIKTOK_CLIENT_KEY",
               "TIKTOK_CLIENT_SECRET", "TIKTOK_CONTENT_REDIRECT_URI", "TIKTOK_USER_ACCESS_TOKEN"):
         monkeypatch.delenv(k, raising=False)
     s = await publish.all_status()

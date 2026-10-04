@@ -10,10 +10,12 @@ history.
 ## Who does the work
 
 - **2026-09-25** — Itzik: Claude (Cowork) does everything directly; Sol and
-  the other org agents are no longer involved in this store. The
+  the other org agents are no longer involved in this store. *(2026-10-04: for the store build this still holds; the agents run again for the platform — Level 18 §5.)* The
   `Claude outputs/` folder is not needed.
 
 ## Goal
+
+> **Update 2026-10-03:** paid ads are on hold — Itzik wants visitors without paid advertising (Level 18 §5). The paragraph below is the original goal.
 
 - The store must start selling through paid ads, with **more than $12
   profit on every single sale** (Itzik runs it as an exempt dealer, עוסק
@@ -239,3 +241,16 @@ Itzik pushed back on the earlier "don't lower prices" call — correctly: that c
 **Action taken**: lowered the egg's price from $26.90 to **$23.90** on all 3 variants (Green Carton, Shapes & Colours, Matching Eggs). New profit/order: $23.90 - $11.10 = **$12.80** — still clears the $12 floor, more competitive against the market, though it no longer clears the $15 target on its own (ad-test economics should be re-evaluated with this new number). Did NOT touch the carrier price — flagged instead that a cheaper carrier supplier is the actual lever, not a price cut.
 
 Note: the egg has an ad test running (see Level 16) — changing price mid-test affects the test's cost/conversion data going forward from today.
+
+## 2026-10-03 / 04 — Platform, visitors and organic social (see Level 18)
+
+| Date | Decision / fact | Level |
+|---|---|---|
+| 2026-10-03 | **No paid advertising for now** — get visitors organically; Lia (social agent) runs it. Level 16 ad test on hold | 18 §5 |
+| 2026-10-03 | Agents must not change store design (`design_lock.py`, "שלא ישנו עיצוב של חנות") | 18 §6 |
+| 2026-10-03 | Live visitors shown in the 3D Office via public beacon `beacon.alpha-tech.live` (Cloudflare Tunnel `alpha-beacon`) | 18 §3 |
+| 2026-10-03 | No cookie banner / "בלי עוגיות": Shopify custom pixel Permission set to "Not required"; visitor id is a per-session random id, no cookie, no PII | 18 §3 |
+| 2026-10-03 | Fact: custom pixels don't run on the Hydrogen storefront, only on checkout → visitor events sent from Hydrogen code (`VisitorBeacon.jsx`, Option 1, approved by Itzik) | 18 §3 |
+| 2026-10-03 | Reel-from-video is Lia's job (take the product's existing store video, never generate video); Reel the agent is not used for it | 18 §4 |
+| 2026-10-04 | Fact: Instagram not linked to the Facebook Page (personal account); TikTok not connected | 18 §4 |
+| 2026-10-04 | Level 17 "Sol and the other agents no longer involved" (2026-09-25) is superseded for the platform; store building stays with Claude | 18 §5 |

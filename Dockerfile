@@ -7,8 +7,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_PREFER_BINARY=1
 
 # ── System deps ───────────────────────────────────────────────────────────────
+# ffmpeg/ffprobe: Lia's make_reel (src/social_mcp/reel.py) cuts existing store videos into reels.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl build-essential libpq-dev \
+    curl build-essential libpq-dev ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Python deps ───────────────────────────────────────────────────────────────

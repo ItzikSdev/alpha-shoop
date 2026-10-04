@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiGet, apiPost } from '../api/client';
 import { OfficeScene } from './office/Scene';
 import { Panel, type Tab } from './office/Panel';
-import type { AgentPublic, AgentState, Capability, InboxItem, Meeting, Msg, Ticket } from './office/types';
+import type { AgentPublic, AgentState, Capability, InboxItem, Meeting, Msg, Ticket, Visitor } from './office/types';
 
 const SPEAKING_WINDOW_MS = 90_000;
 const MEETING_WINDOW_MS = 15 * 60_000;
@@ -32,6 +32,7 @@ export function Office() {
   const [inbox, setInbox] = useState<InboxItem[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [online, setOnline] = useState(true);
   const [weather, setWeather] = useState<{ t: number; code: number; day: boolean } | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -62,6 +63,28 @@ export function Office() {
     return () => clearInterval(t);
   }, [load]);
 
+  // Real shoppers right now (anonymous: source + country + stage). Fast poll — it's the live part.
+  useEffect(() => {
+    let alive = true;
+    if (new URLSearchParams(window.location.search).has('demoVisitors')) {   // ?demoVisitors → preview with fake shoppers
+      const n = Date.now() / 1000;
+      setVisitors([
+        { id: 'd1', stage: 'browsing', source: 'facebook', country: 'US', first_seen: n - 10, last_seen: n },
+        { id: 'd2', stage: 'browsing', source: 'instagram', country: 'IL', first_seen: n - 25, last_seen: n },
+        { id: 'd3', stage: 'browsing', source: 'google', country: 'DE', first_seen: n - 40, last_seen: n },
+        { id: 'd4', stage: 'product', source: 'tiktok', country: 'GB', first_seen: n - 400, last_seen: n },
+        { id: 'd5', stage: 'checkout', source: 'direct', country: 'US', first_seen: n - 600, last_seen: n },
+        { id: 'd6', stage: 'purchased', source: 'facebook', country: 'CA', first_seen: n - 700, last_seen: n, total: 38.5 },
+      ]);
+      return () => { alive = false; };
+    }
+    const get = () => apiGet<{ visitors: Visitor[] }>('/visitors/live')
+      .then((r) => { if (alive) setVisitors(r.visitors ?? []); }).catch(() => undefined);
+    get();
+    const t = setInterval(get, 4_000);
+    return () => { alive = false; clearInterval(t); };
+  }, []);
+
   useEffect(() => {
     let alive = true;
     const get = () => fetch(WEATHER_URL).then((r) => r.json()).then((j) => {
@@ -80,10 +103,13 @@ export function Office() {
   const inMeeting = useMemo(() => {
     const ids = new Set<string>();
     for (const m of meetings) {
-      if (Date.now() - new Date(m.held_at).getTime() < MEETING_WINDOW_MS) m.attendees.forEach((a) => ids.add(a));
+      // The backend also logs one-person "standups" every time a single agent acts; a meeting is
+      // only a meeting when at least two people from the roster are in it.
+      const here = m.attendees.filter((id) => agents.some((a) => a.agent_id === id));
+      if (here.length >= 2 && Date.now() - new Date(m.held_at).getTime() < MEETING_WINDOW_MS) here.forEach((a) => ids.add(a));
     }
     return ids;
-  }, [meetings]);
+  }, [meetings, agents]);
 
   const needsYouOf = (a: AgentPublic) =>
     inbox.some((i) => i.decide && i.agent === a.name) || caps.find((c) => c.agent === a.name)?.ok === false;
@@ -142,7 +168,7 @@ export function Office() {
     <div className="flex h-screen flex-col md:flex-row">
       <div className="relative min-h-[55vh] flex-1">
         <OfficeScene agents={agents} stateOf={stateOf} bubbleOf={bubbleOf} needsYouOf={needsYouOf} talkToOf={talkToOf}
-          selectedId={selectedId} onSelect={(id) => { setSelectedId(id); if (id) setTab('team'); }} night={night} />
+          selectedId={selectedId} onSelect={(id) => { setSelectedId(id); if (id) setTab('team'); }} night={night} visitors={visitors} />
 
         <div className="pointer-events-none absolute left-3 top-3 flex flex-wrap items-center gap-2" dir="rtl">
           <span className="rounded-lg bg-white/90 px-3 py-1.5 font-mono text-sm font-extrabold tracking-wider text-slate-900 shadow">
@@ -150,6 +176,7 @@ export function Office() {
           </span>
           <span className={chip}>{agents.length} בצוות</span>
           <span className={chip}>{clock}</span>
+          <span className={chip}>🛍️ {visitors.filter((v) => v.stage !== 'purchased').length} מבקרים בחנות</span>
           {weather && <span className={chip}>{weatherEmoji(weather.code, weather.day)} {Math.round(weather.t)}° תל אביב</span>}
         </div>
 

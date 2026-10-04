@@ -473,7 +473,9 @@ async def _dev_turn(agent: Agent, company: Company) -> dict:
         pid = create_proposal(agent.name, "shopify", {"method": method, "path": path, "body": rbody}, req.get("reason", ""))
         # Gate OFF (default, per the owner) → Grace executes Shopify directly.
         # Set GRACE_SHOPIFY_GATE=on to require manual approval again.
-        gate = os.environ.get("GRACE_SHOPIFY_GATE", "off").lower() in ("on", "1", "true")
+        # Reads (GET) NEVER need approval — only writes can be gated (owner, 2026-10-03).
+        gate = (os.environ.get("GRACE_SHOPIFY_GATE", "off").lower() in ("on", "1", "true")
+                and str(method).upper() != "GET")
         if gate:
             await post_as(agent.name, agent.role,
                           f"🔐 Approval request [{pid}]: {method} {path} — {req.get('reason','')[:80]}\n"
@@ -1370,6 +1372,94 @@ async def _nova_tick(company: Company) -> None:
         logger.warning("Nova weekly check failed: %s", exc)
 
 
+_LIA_RESEARCH_HOURS = 24.0
+_LIA_RESEARCH_TASK = (
+    "DAILY MARKET RESEARCH. 1) social_playbook — see what you already learned (do not repeat it). "
+    "2) Find how OTHER baby / Montessori / educational-toy stores post: ad_library_search (try 'montessori toy', "
+    "'baby sensory toy', 'toddler learning toy') and web_social_search. If ad_library_search says needs_owner, "
+    "mention it once in your report and continue with web_social_search. "
+    "3) Save 3-6 NEW real insights with save_pattern (paraphrased, never copied text). "
+    "4) Draft exactly 3 NEW posts for OUR live products that apply those patterns (draft_post, each rationale "
+    "names the pattern it uses). 5) Report: patterns learned, drafts queued (ids), what was blocked."
+)
+
+
+async def _lia_research_tick(company: Company) -> None:
+    """Once a day Lia studies other stores' posts and queues 3 pattern-based drafts for Itzik.
+    Everything still waits for his approval — this never publishes."""
+    interval_h = float(company.daemon.get("lia_research_interval_hours", _LIA_RESEARCH_HOURS))
+    last = company.daemon.get("lia_research_at")
+    if last:
+        try:
+            since_h = (datetime.now(timezone.utc) - datetime.fromisoformat(last)).total_seconds() / 3600
+            if since_h < interval_h:
+                return
+        except Exception:
+            pass
+    if _build_running():
+        return
+    mem_ok, mem_detail = _system_memory_ok()
+    if not mem_ok:
+        logger.warning("Lia research skipped: %s", mem_detail)
+        return
+    company.daemon["lia_research_at"] = datetime.now(timezone.utc).isoformat()
+    save_company(company)
+    try:
+        from src.org.social_agent import run_social_task
+        await run_social_task(_LIA_RESEARCH_TASK)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Lia daily research failed: %s", exc)
+
+
+# --- Lia: frequent organic posting (owner request 2026-10-04: no sales yet, no paid ads, so
+# social must run as much as possible). Drafts only — publishing still needs Itzik's approval. ---
+_LIA_POST_HOURS = 6.0
+_LIA_MAX_PENDING = 4   # don't pile drafts on Itzik's "Needs you" queue
+_LIA_POST_TASK = (
+    "ORGANIC POSTING ROUND. 1) social_status + list_drafts — see what is already pending/published, "
+    "do not duplicate it. 2) social_playbook — use the best patterns you learned. 3) Draft 1-2 NEW posts "
+    "for OUR live products on every connected platform (draft_post; Facebook link posts carry the product "
+    "URL with utm_source=social&utm_medium=organic). Vary the angle each time (benefit, parent pain point, "
+    "question, how-to-play, gift idea). If store_videos has a video and ffmpeg works, make_reel and draft a "
+    "reel too. No invented reviews, no fake urgency, no store-design changes. 4) Check read_comments / "
+    "post_insights on published posts and note what worked via save_pattern. "
+    "5) Report: drafts queued (ids), what was blocked (e.g. Instagram/TikTok not connected)."
+)
+
+
+async def _lia_post_tick(company: Company) -> None:
+    """Every ~6 h Lia queues fresh organic drafts, unless Itzik already has plenty waiting."""
+    interval_h = float(company.daemon.get("lia_post_interval_hours", _LIA_POST_HOURS))
+    last = company.daemon.get("lia_post_at")
+    if last:
+        try:
+            since_h = (datetime.now(timezone.utc) - datetime.fromisoformat(last)).total_seconds() / 3600
+            if since_h < interval_h:
+                return
+        except Exception:
+            pass
+    if _build_running():
+        return
+    mem_ok, mem_detail = _system_memory_ok()
+    if not mem_ok:
+        logger.warning("Lia posting round skipped: %s", mem_detail)
+        return
+    try:
+        from src.social_mcp import queue as _sq
+        waiting = len(_sq.list_drafts("pending")) + len(_sq.list_drafts("held"))
+    except Exception:
+        waiting = 0
+    if waiting >= int(company.daemon.get("lia_max_pending", _LIA_MAX_PENDING)):
+        return  # wait for Itzik to approve/reject before queuing more
+    company.daemon["lia_post_at"] = datetime.now(timezone.utc).isoformat()
+    save_company(company)
+    try:
+        from src.org.social_agent import run_social_task
+        await run_social_task(_LIA_POST_TASK)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Lia posting round failed: %s", exc)
+
+
 async def agent_heartbeat() -> dict | None:
     """Advance one agent's proactive turn. No-op unless the daemon is enabled."""
     company = seed_founding_team()
@@ -1387,6 +1477,8 @@ async def agent_heartbeat() -> dict | None:
     await _media_sweep_tick(company)
     await _order_poll_tick(company)
     await _nova_tick(company)
+    await _lia_research_tick(company)
+    await _lia_post_tick(company)
     await _clarity_report_tick(company)
 
     # Respect the global kill-switch (lazy import avoids a route import cycle).

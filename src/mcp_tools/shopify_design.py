@@ -507,6 +507,9 @@ async def ensure_global_layout(store_slug: str = "", theme_id: str | None = None
 async def apply_site_design(store_slug: str = "", theme_id: str | None = None) -> dict:
     """Render site.json → live homepage section + index.json. Also auto-heals the global
     header/footer. Returns {ok, site} where `site` is the spec dict for channel review."""
+    from src.org.design_lock import LOCKED, theme_writes_blocked
+    if theme_writes_blocked():
+        return {"ok": False, "error": LOCKED["error"]}
     site = load_site_json(store_slug)
     if not site:
         return {"ok": False, "error": "no site.json"}

@@ -21,7 +21,9 @@ services:
     image: ollama/ollama:latest
     restart: unless-stopped
     ports:
-      - "11434:11434"
+      # Host port 11435: 11434 belongs to the native Ollama on the Mac, which holds the
+      # qwen3 models litellm_config.yaml reaches via host.docker.internal:11434.
+      - "11435:11434"
     volumes:
       - ollama_data:/root/.ollama
     healthcheck:
@@ -122,6 +124,33 @@ services:
         condition: service_healthy
       falkordb:
         condition: service_healthy
+
+  # ── Live visitors: the ONLY public surface (beacon) + optional Cloudflare Tunnel ──
+  # The beacon accepts events from our Shopify Custom Pixel and writes them to Redis; it has no
+  # access to .env secrets (only the anti-noise token below). The private API reads Redis.
+  beacon:
+    image: alpha-shoop-api:prod
+    command: uvicorn src.visitors.beacon_app:app --host 0.0.0.0 --port 8100
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8100:8100"   # local test only; the internet reaches it through the tunnel
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      VISITOR_BEACON_TOKEN: ${VISITOR_BEACON_TOKEN:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # Start only when you have a tunnel token:  docker compose --profile tunnel up -d
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate run
+    restart: unless-stopped
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - beacon
 
   # ── React Docs (production build, nginx) ─────────────────────────────────
   docs:
