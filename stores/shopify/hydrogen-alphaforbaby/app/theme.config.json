@@ -250,6 +250,9 @@
   "_testimonials_note": "Emptied 2026-09-25: the six entries (Maya R. — Tel Aviv, Daniel K. — New York, …) were invented people marked verified on a store with no sales. Only real customer reviews go here (Level 01 rule 10).",
   "_metaPixelId_note": "Meta pixel id from Events Manager (public, not a secret). Empty = pixel off. Purchase comes from the Facebook & Instagram channel on Shopify checkout, not from here.",
   "metaPixelId": "2246132889517820",
+  "_visitorBeacon_note": "Live visitors in the Alpha Shoop 3D office. URL = public beacon (Cloudflare Tunnel). Token only filters noise and is visible in the page source. Empty url or token = off. No visual output.",
+  "visitorBeaconUrl": "https://beacon.alpha-tech.live/v",
+  "visitorBeaconToken": "0YIcxP4g6819Kg7s-5wR8SaE",
   "_holidayCutoff_note": "Last order date for delivery before the holiday under the shipping policy (1-2 + up to 14 business days). Shown on product pages until the date passes, then disappears. Never move it later to keep urgency.",
   "holidayCutoff": {
     "date": "2026-11-30",

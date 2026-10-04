@@ -17,6 +17,7 @@ import appStyles from './styles/app.css?url';
 import {themeCss, config} from './lib/theme';
 import {PageLayout} from './components/PageLayout';
 import {MetaPixel} from './components/MetaPixel';
+import {VisitorBeacon} from './components/VisitorBeacon';
 import {isLoggedIn, getSessionCustomerId, getCustomerById} from './lib/customer';
 import {reconcileCustomerCart} from './lib/cartSync';
 
@@ -264,6 +265,10 @@ export default function App() {
         consent={data.consent}
       >
         <MetaPixel pixelId={config.metaPixelId} />
+        <VisitorBeacon
+          url={config.visitorBeaconUrl}
+          token={config.visitorBeaconToken}
+        />
         <PageLayout {...data}>
           <Outlet />
         </PageLayout>

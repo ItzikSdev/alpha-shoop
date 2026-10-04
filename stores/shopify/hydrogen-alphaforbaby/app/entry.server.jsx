@@ -44,6 +44,8 @@ export default async function handleRequest(
       'https://alphaforbaby.com', 'https://kgg8n0-k0.myshopify.com',
       'https://www.clarity.ms', 'https://*.clarity.ms',
       'https://connect.facebook.net', 'https://www.facebook.com',
+      // Alpha Shoop live-visitor beacon (VisitorBeacon.jsx), 2026-10-04.
+      'https://beacon.alpha-tech.live',
     ],
     // Buyer photos attached to imported third-party reviews are hosted on the
     // review source's own object storage, not Shopify's CDN, so they fall under
