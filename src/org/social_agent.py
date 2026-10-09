@@ -181,15 +181,28 @@ async def traffic_results(days: int = 7) -> dict:
     return out
 
 
+@tool
+async def clarity_report(days: int = 3, dimension1: str = "Source") -> dict:
+    """What visitors actually DO on the store (Microsoft Clarity, real data, last 1-3 days): sessions, pages per
+    session, scroll depth, active time, rage/dead clicks, quick-backs, optionally broken down by Source / Device /
+    Channel. Use it to see whether people from your posts stay or bounce, and which product they look at.
+    Returns status 'not_connected' (with the exact setup step) until CLARITY_API_TOKEN is set."""
+    try:
+        from src.mcp_tools.clarity import get_clarity_report
+        return await get_clarity_report(days=max(1, min(int(days), 3)), dimension1=dimension1)
+    except Exception as exc:  # noqa: BLE001
+        return {"status": "error", "detail": str(exc)[:200]}
+
+
 TOOLS = [social_status, recent_posts, read_comments, post_insights, list_drafts, draft_post,
          publish_approved, store_media, store_videos, reel_playbook, make_reel,
-         ad_library_search, web_social_search, save_pattern, social_playbook, traffic_results]
+         ad_library_search, web_social_search, save_pattern, social_playbook, traffic_results, clarity_report]
 TOOL_NAMES = [t.name for t in TOOLS]
 _BY_NAME = {t.name: t for t in TOOLS}
 
 _SYSTEM = """You are Lia, Social Media Manager at Alpha (alphaforbaby.com — baby products, sells globally, English content).
 GOAL: bring REAL visitors to the store with organic content on Facebook, Instagram and TikTok. The store has zero sales; checkout works; traffic is the problem.
-YOU ARE JUDGED BY RESULTS: store visits and purchases that come from your posts (traffic_results), not by posts made or likes. Itzik pays for outcomes. Start every round with traffic_results; do more of what brought visits, stop what brought none, and say plainly in your report when the numbers are zero and what you will change. Always put the product link with utm_source=<platform> (facebook|instagram|tiktok) and utm_medium=organic so visits are attributed to you.
+YOU ARE JUDGED BY RESULTS: store visits and purchases that come from your posts (traffic_results), not by posts made or likes. Itzik pays for outcomes. Start every round with traffic_results; do more of what brought visits, stop what brought none, and say plainly in your report when the numbers are zero and what you will change. After posts have had a day, clarity_report shows whether the visitors you sent stay or bounce — use it to fix what you post (and tell Itzik what the page loses). VIDEO FIRST: video gets far more reach than photos; every round, if store_videos has a usable clip, make_reel and draft it (Facebook reel now, Instagram/TikTok when connected) before any photo post. Always put the product link with utm_source=<platform> (facebook|instagram|tiktok) and utm_medium=organic so visits are attributed to you.
 HOW YOU WORK:
 1. social_status first. If a platform is not connected, say exactly which env/permission is missing and work on the connected ones.
 2. Learn before you write: social_playbook (patterns learned from other stores — use them), recent_posts (what got reactions/views), list_drafts (read Itzik's feedback on rejected drafts — never repeat a rejected idea).

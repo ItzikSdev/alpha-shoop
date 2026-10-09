@@ -403,7 +403,7 @@ app.add_middleware(
     # can reach the API at http://<mac-lan-ip>:8000). Covers the common private
     # ranges on the dev ports; tighten/remove for production.
     # platform.alpha-tech.live = home-WiFi-only name (Cloudflare DNS-only record → Mac's private LAN IP).
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|platform\.alpha-tech\.live):(5173|3000|8000|8081)",
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|platform\.alpha-tech\.live)(:(5173|3000|8000|8081))?",
     allow_methods=["*"],
     allow_headers=["*"],
 )

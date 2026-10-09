@@ -1420,8 +1420,8 @@ _LIA_POST_TASK = (
     "do not duplicate it. 2) social_playbook — use the best patterns you learned. 3) Draft 1-2 NEW posts "
     "for OUR live products on every connected platform (draft_post; Facebook link posts carry the product "
     "URL with utm_source=social&utm_medium=organic). Vary the angle each time (benefit, parent pain point, "
-    "question, how-to-play, gift idea). If store_videos has a video and ffmpeg works, make_reel and draft a "
-    "reel too. No invented reviews, no fake urgency, no store-design changes. 4) Check read_comments / "
+    "question, how-to-play, gift idea). VIDEO FIRST: if store_videos has a usable clip, make_reel and draft the reel BEFORE any "
+    "photo post (video brings far more reach); only fall back to a photo/link post if no clip works. No invented reviews, no fake urgency, no store-design changes. 4) Check read_comments / "
     "post_insights on published posts and note what worked via save_pattern. "
     "5) Report: drafts queued (ids), what was blocked (e.g. Instagram/TikTok not connected)."
 )

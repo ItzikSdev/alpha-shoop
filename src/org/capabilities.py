@@ -43,6 +43,7 @@ TOOL_ENV: dict[str, list[str]] = {
     "get_ads_report": _TIKTOK,
     "list_campaigns": _TIKTOK,
     "get_clarity_report": ["CLARITY_API_TOKEN"],
+    "clarity_report": ["CLARITY_API_TOKEN"],
     "search_web": ["SERPER_API_KEY"],
     # Lia's social tools — Meta covers Facebook + Instagram; TikTok organic posting is a
     # SEPARATE developer app from the TikTok Ads one (see src/social_mcp/README.md).

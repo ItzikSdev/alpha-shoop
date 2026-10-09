@@ -76,7 +76,7 @@ AGENT_TOOL_GROUPS: dict[str, dict[str, list[str]]] = {
         "drafts": ["draft_post", "list_drafts", "publish_approved"],
         "content": ["store_media", "store_videos", "reel_playbook", "make_reel"],
         "research": ["ad_library_search", "web_social_search", "save_pattern", "social_playbook"],
-        "results": ["traffic_results"],
+        "results": ["traffic_results", "clarity_report"],
     },
     "Nova": {
         # create_ticket/close_ticket-only by charter — same authority every other

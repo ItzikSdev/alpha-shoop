@@ -172,6 +172,26 @@ Facts that already cost time — do not rediscover:
 - All of this needs an API restart to take effect; not tested against a
   live Redis (logic checked with a fake Redis).
 
+## 4c. Access audit of Lia's Meta/Facebook rights (2026-10-04) and phone access fix
+
+- `FB_PAGE_ACCESS_TOKEN`: valid PAGE token, never expires. Scopes: pages_manage_posts,
+  pages_read_engagement, pages_read_user_content, pages_show_list, instagram_basic/content_publish/
+  manage_comments/manage_insights. => can post, read posts/comments/reactions; Instagram scopes exist but
+  no IG account is linked. **Missing**: read_insights (page-level), pages_manage_engagement (reply to
+  comments), pages_messaging (inbox), ads_read/ads_management/business_management (ads, Ad Library).
+- `META_ACCESS_TOKEN` and `META_ACCESS_TOKEN_ALPHA_FOR_BABY` are **invalid/expired** => `ad_library_search`
+  and any paid-ads path are blocked until Itzik re-authorizes. Lia has no ad tools by design.
+- Facebook video: `video_reels` publishing is implemented (`meta.publish_facebook`); Shopify token has
+  write_files/write_products. Only the ffmpeg image rebuild blocks `make_reel`.
+- Post insights for Facebook now return views/reach/clicks (null until Meta has data). Page has 0 followers.
+- Clarity (project y9evik4b8h, last 3 days, read in the dashboard 2026-10-04): 11 human sessions (7 bots
+  excluded), 7 unique users, 1.27 pages/session, 41.7% scroll depth, 38 s active time, 0 rage/dead clicks,
+  sources facebook.com / l.facebook.com (5 sessions), most-viewed page = Montessori egg (7). Lia's new tool
+  `clarity_report` works only after `CLARITY_API_TOKEN` is set (Clarity -> Settings -> Data Export -> Add API token, by Itzik).
+- Phone access: Vite dev server (:5173) was NOT running (connection refused). Fix: `docs` service (nginx,
+  production build of platform-app) now also on port 80 -> `http://platform.alpha-tech.live` (and :3000);
+  rebuild with `docker compose up -d --build docs api`. API CORS accepts the name with/without port.
+
 ## 5. Strategy change that overrides older text in this skill
 
 - **2026-10-03 — Itzik: get visitors to the store without paid

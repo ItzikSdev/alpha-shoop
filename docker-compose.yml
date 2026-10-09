@@ -161,6 +161,7 @@ services:
     restart: unless-stopped
     ports:
       - "3000:80"
+      - "80:80"      # http://platform.alpha-tech.live (home WiFi, phone) — no dev server needed
 
 volumes:
   traces_data:
