@@ -1,0 +1,66 @@
+{
+  "handle": "ergonomic-baby-hip-carrier",
+  "status": "blocked_no_compliant_image",
+  "cj_listing_url": "https://cjdropshipping.com/product/-p-FDE0817B-91FC-42D2-A6FE-8AFF85E23A78.html",
+  "chosen": null,
+  "current_first_image": {
+    "url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/hero-carrier.jpg",
+    "source": "unknown",
+    "short_side": 1000,
+    "width": 1000,
+    "height": 1000,
+    "laplacian_var": 101.92,
+    "cjk_chars": 0,
+    "person_using_product": false,
+    "note": "Passes both hard checks but is NOT one of the 13 images on the CJ listing, so it fails the v2.2 provenance rule. Origin unknown - predates this round."
+  },
+  "uploaded": [],
+  "rejected": [
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/20200521/307674343984.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/20200521/2026304065028.jpg",
+      "reason": "pixelated: short side 480px < 1000; pixelated: laplacian 88.69 < 100"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/20200521/977502878523.jpg",
+      "reason": "pixelated: short side 480px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/20200923/2289140396200.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/20200923/565995251337.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/20200521/1775333548077.jpg",
+      "reason": "pixelated: short side 480px < 1000; pixelated: laplacian 85.41 < 100"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/20200521/927682396908.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/20200923/51949050913.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/20200923/8261364542185.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    },
+    {
+      "cj_source_url": "https://cf.cjdropshipping.com/20200923/2220511375443.jpg",
+      "reason": "pixelated: short side 800px < 1000"
+    }
+  ],
+  "stage1_passed": 0,
+  "stage1_total": 13,
+  "note": "0 of 13 CJ images pass Stage 1. Every one is 800x800 or 480x480 - they are SHARP (Laplacian up to 538) and carry no Chinese text; they fail on resolution alone. Per 7.A.1 this product has no usable CJ imagery and was reported to Itzik before building.",
+  "model": "alpha/worker-fast (anthropic/claude-haiku-4-5) via LiteLLM proxy",
+  "checked_at": "2026-09-21",
+  "v2_6_note": "Variant set reduced by 7.A.2 (see variant-images record). The hero remains blocked: no CJ image of this product reaches the >=1000px hero gate. Itzik confirmed 2026-09-21 that the pixel gate applies to the hero only, so the variant images below 1000px are allowed; the hero itself is still unresolved."
+}

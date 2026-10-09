@@ -78,6 +78,9 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    // Home-WiFi name (DNS-only record in Cloudflare → the Mac's private LAN IP). Vite blocks
+    // unknown Host headers, so the name has to be allowed explicitly.
+    allowedHosts: ['platform.alpha-tech.live', '.local'],
   },
   // mermaid ships as ESM; let Vite pre-bundle it and its deps normally
   optimizeDeps: {

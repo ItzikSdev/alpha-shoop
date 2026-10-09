@@ -1,7 +1,9 @@
 """MCP Tool Group 3: Shopify Admin GraphQL API 2024-07."""
 from __future__ import annotations
 import asyncio
+import json as _json
 import logging
+import re as _re
 import httpx
 from src.config import get_settings
 from src.stores import _current_store
@@ -32,6 +34,25 @@ mutation productUpdate($product: ProductUpdateInput!) {
 """
 
 
+_FENCE_LINE = _re.compile(r"^[ \t]*(?:<p>\s*)?```[a-zA-Z0-9]*[ \t]*(?:\s*</p>)?[ \t]*$", _re.M)
+
+
+def strip_code_fences(html: str) -> str:
+    """Drop markdown code-fence markers from LLM-authored description HTML.
+
+    Copy generators habitually wrap their output in a ```html fence. Shopify
+    stores descriptionHtml verbatim, so the fence then renders as literal
+    backticks on the storefront — it shipped that way on 7 of 9 live products
+    before anyone opened one of those pages (7.D bug #7). Strip at the write
+    boundary so no generator has to remember to.
+    """
+    if not html or "```" not in html:
+        return html
+    out = _FENCE_LINE.sub("", html)
+    out = _re.sub(r"```[a-zA-Z0-9]*", "", out)  # inline stragglers
+    return _re.sub(r"\n{3,}", "\n\n", out).strip()
+
+
 async def update_product_copy(
     product_id: str, title: str, description_html: str,
     seo_title: str = "", seo_description: str = "",
@@ -39,7 +60,10 @@ async def update_product_copy(
     """Rewrite an EXISTING Shopify product's title/description/SEO fields — e.g. to
     replace raw supplier copy with real marketing copy. Does not touch images,
     variants, or price."""
-    product_input: dict = {"id": product_id, "title": title, "descriptionHtml": description_html}
+    product_input: dict = {
+        "id": product_id, "title": title,
+        "descriptionHtml": strip_code_fences(description_html),
+    }
     if seo_title or seo_description:
         product_input["seo"] = {"title": seo_title or title, "description": seo_description or ""}
     try:
@@ -51,6 +75,41 @@ async def update_product_copy(
     if errors or not product:
         return {"success": False, "error": str(errors) or "no product returned"}
     return {"success": True, "product": product}
+
+
+_GQL_METAFIELDS_SET = """
+mutation setMetafields($metafields: [MetafieldsSetInput!]!) {
+  metafieldsSet(metafields: $metafields) {
+    metafields { id namespace key }
+    userErrors { field message }
+  }
+}
+"""
+
+
+async def set_product_metafield(
+    product_id: str, namespace: str, key: str, value: str, type: str = "json",
+) -> dict:
+    """Write ONE metafield on an existing product (e.g. custom.pdp_content,
+    custom.reviews) via the real Admin GraphQL API — the same `metafieldsSet`
+    pattern already used for `custom.size_guide` in
+    `src/org/agent_loop.py::cj_add_product`. Use this instead of editing the
+    metafield textarea by hand in the Shopify admin UI (keystrokes or DOM/JS
+    injection): those bypass this codebase's tooling entirely and leave no
+    programmatic record of what changed. `value` must already be a string
+    (json.dumps it yourself for type="json")."""
+    try:
+        data = await _shopify_gql(_GQL_METAFIELDS_SET, {"metafields": [{
+            "ownerId": product_id, "namespace": namespace, "key": key,
+            "type": type, "value": value,
+        }]})
+    except Exception as exc:  # noqa: BLE001
+        return {"success": False, "error": str(exc)}
+    result = data.get("metafieldsSet", {})
+    errors = result.get("userErrors", [])
+    if errors:
+        return {"success": False, "error": str(errors)}
+    return {"success": True, "metafields": result.get("metafields", [])}
 
 
 _GQL_SET_PRICE = """
@@ -299,6 +358,25 @@ REQUIRE_STOCK_TO_PUBLISH = True
 # counting that would let a product go live on media nobody ever approved.
 SUPPLIER_MEDIA_ALT = "supplier::"
 
+# Explicit owner-approved marker (2026-09-11). The gate's real purpose is that
+# no UNREVIEWED media reaches customers; "supplier-provided" was only ever a
+# proxy for "nobody looked at it". That proxy is wrong when the owner has
+# actually watched the supplier's clip and approved it — which is the normal
+# case for CJ listings whose video is visible on the live product page but comes
+# back empty from product/query's `productVideo` field (a known CJ API gap, not
+# evidence the video is missing). Media stamped with this prefix has been
+# reviewed by a human and counts toward the gate; an unmarked supplier clip
+# still does not, so the original protection is intact.
+APPROVED_MEDIA_ALT = "approved::"
+
+
+def video_counts_toward_gate(alt: str | None) -> bool:
+    """Whether one video's alt text lets it satisfy the storefront gate."""
+    alt = alt or ""
+    if alt.startswith(APPROVED_MEDIA_ALT):
+        return True
+    return not alt.startswith(SUPPLIER_MEDIA_ALT)
+
 
 class PublishBlocked(RuntimeError):
     """A product failed the storefront gate. Not a pipeline error — it means the
@@ -306,11 +384,92 @@ class PublishBlocked(RuntimeError):
 
 
 _GATE_PRODUCT_QUERY = (
-    'query($id:ID!){ product(id:$id){ id title '
+    'query($id:ID!){ product(id:$id){ id title handle '
     'images(first:50){ nodes{ id } } '
     'media(first:50){ nodes{ mediaContentType alt } } '
+    'reviews: metafield(namespace:"custom", key:"reviews"){ value } '
     'variants(first:100){ nodes{ sku } } } }'
 )
+
+# Level 01 rule 7 / Level 02 Section 2.G (store-builder skill v2.1): a product is
+# DISPLAYED only with at least this many real reviews that each carry a photo
+# that is re-hosted on Shopify's CDN.
+MIN_PHOTO_REVIEWS_TO_PUBLISH = 15
+
+
+def owner_approval_blockers(node: dict) -> list[str]:
+    """No product reaches the storefront without Itzik saying so.
+
+    2026-09-22, his instruction: "tell agents not push new products to store
+    without human permission." Two rounds of softer measures had already
+    failed — a paused flag the tool didn't read, then rules in a charter the
+    model could be talked out of — so this is an allowlist, checked in the one
+    function every publish path goes through.
+
+    The list lives in `company.daemon['publish_approved_handles']` (data, not
+    code) so Itzik can approve a product without a deploy. An empty or missing
+    list means nothing may be published — deliberately fail-closed: the failure
+    mode we keep hitting is products appearing, never products missing.
+    """
+    handle = node.get("handle")
+    if not handle:
+        return ["product has no handle — cannot check it against the owner's approved list"]
+    try:
+        from src.org.models import get_company
+        company = get_company()
+        approved = list((company.daemon.get("publish_approved_handles") or []) if company else [])
+    except Exception as exc:  # noqa: BLE001 — a broken lookup must not open the door
+        return [f"could not read the owner's approved-product list ({exc}) — refusing to publish"]
+    if handle in approved:
+        return []
+    return [
+        f"'{handle}' is not on the owner's approved-to-publish list. Itzik must "
+        f"approve a product before it reaches the store — a teammate message or a "
+        f"ticket is not approval. He approves by adding the handle to "
+        f"company.daemon['publish_approved_handles']. Rules: "
+        f"stores/shopify/skills/store-builder-trending-cj.md"
+    ]
+
+
+def review_gate_blockers(node: dict) -> list[str]:
+    """The review gate, as a publish blocker.
+
+    Why this lives here and not in a checklist: the six products under the gate
+    were unpublished by hand three times between 21 and 22 Sep and came back
+    every time, because `shopify_publish_products` sweeps every product with
+    `publishedAt is None` and republishes anything that clears images+video+
+    stock — which these do. The gate and the sweep were two independent facts
+    about the same product with no shared source of truth, so the sweep kept
+    winning. Now the sweep asks this function too.
+    """
+    raw = (node.get("reviews") or {}).get("value")
+    if not raw:
+        return [
+            f"0 reviews with photos — the store-builder skill (Level 01 rule 7, "
+            f"Level 02 2.G) needs >= {MIN_PHOTO_REVIEWS_TO_PUBLISH} real reviews "
+            f"that each carry a working photo before a product is displayed"
+        ]
+    try:
+        reviews = _json.loads(raw)
+    except Exception:  # noqa: BLE001 — unparseable is not "passes"
+        return ["custom.reviews is not valid JSON — cannot count photo reviews"]
+    if not isinstance(reviews, list):
+        return ["custom.reviews is not a list — cannot count photo reviews"]
+    with_photo = 0
+    for r in reviews:
+        if not isinstance(r, dict):
+            continue
+        photos = r.get("photos") or []
+        if any(isinstance(u, str) and "cdn.shopify.com" in u for u in photos):
+            with_photo += 1
+    if with_photo < MIN_PHOTO_REVIEWS_TO_PUBLISH:
+        return [
+            f"only {with_photo} review(s) carry a re-hosted photo — the "
+            f"store-builder skill (Level 01 rule 7, Level 02 2.G) needs "
+            f">= {MIN_PHOTO_REVIEWS_TO_PUBLISH} before this product is displayed. "
+            f"Import more real reviews or leave it hidden; never delete it."
+        ]
+    return []
 
 
 def media_blockers(node: dict) -> list[str]:
@@ -325,7 +484,7 @@ def media_blockers(node: dict) -> list[str]:
         n_videos = sum(
             1 for m in node.get("media", {}).get("nodes", [])
             if m.get("mediaContentType") in ("VIDEO", "EXTERNAL_VIDEO")
-            and not (m.get("alt") or "").startswith(SUPPLIER_MEDIA_ALT)
+            and video_counts_toward_gate(m.get("alt"))
         )
         if n_videos == 0:
             reasons.append("no 360° video")
@@ -372,8 +531,17 @@ async def publish_blockers(product_gid: str) -> list[str]:
     node = data.get("product")
     if not node:
         return [f"product {product_gid} not found on Shopify"]
-    # Skip the slow, rate-limited CJ calls when media already blocks it.
-    return media_blockers(node) or await stock_blockers(node)
+    # Skip the slow, rate-limited CJ calls when media or the review gate already
+    # blocks it. The review gate is checked from data we already have, so it is
+    # free — and it is the one that kept being silently undone (7.D #46).
+    # Owner approval first: it is free, it is the owner's explicit instruction,
+    # and it is the only one that cannot be satisfied by an agent on its own.
+    return (
+        owner_approval_blockers(node)
+        or media_blockers(node)
+        or review_gate_blockers(node)
+        or await stock_blockers(node)
+    )
 
 
 async def check_media_status(product_gid: str) -> dict:
@@ -387,7 +555,7 @@ async def check_media_status(product_gid: str) -> dict:
     n_images = len(node.get("images", {}).get("nodes", []))
     videos = [m for m in node.get("media", {}).get("nodes", [])
               if m.get("mediaContentType") in ("VIDEO", "EXTERNAL_VIDEO")]
-    real_videos = [v for v in videos if not (v.get("alt") or "").startswith(SUPPLIER_MEDIA_ALT)]
+    real_videos = [v for v in videos if video_counts_toward_gate(v.get("alt"))]
     blockers = media_blockers(node)
     return {
         "product_id": product_gid,
@@ -591,6 +759,60 @@ async def get_sales_channels() -> list[str]:
         return []
 
 
+# CJ ships these as raw enum constants. Printed verbatim they read as internal
+# supplier data on a consumer PDP ("Features: HAVE_MAGNETISM"), so map the ones
+# that carry real shopper value and fall back to sentence case for the rest.
+_SPEC_ENUMS = {
+    "HAVE_MAGNETISM": "Contains magnets",
+    "NO_MAGNETISM": "",           # absence of a hazard is not a feature
+    "HAVE_BATTERY": "Battery powered",
+    "NO_BATTERY": "",
+    "HAVE_ELECTRICITY": "Electrically powered",
+    "NO_ELECTRICITY": "",
+    "HAVE_POWDER": "Contains powder",
+    "NO_POWDER": "",
+    "HAVE_LIQUID": "Contains liquid",
+    "NO_LIQUID": "",
+    "PURE_ELECTRIC": "Battery powered",
+    "BATTERY": "Battery powered",
+    "ELECTRONIC": "Electronic",
+    # Logistics classifications, not product features — CJ uses them to route
+    # freight. "Features: Oversize" tells a shopper nothing about the product.
+    "OVERSIZE": "",
+    "OVERWEIGHT": "",
+    "FRAGILE": "",
+    "ORDINARY": "",
+}
+
+
+def _humanize_spec(value) -> str:
+    """Turn a raw CJ spec value into something a shopper should see.
+
+    Values arrive either as a single enum or a comma/pipe-separated list of
+    them. Anything mapped to "" is dropped rather than shown, so a spec row can
+    disappear entirely if every one of its values was supplier noise.
+    """
+    if not value:
+        return ""
+    parts = [p.strip() for p in _re.split(r"[,|;]", str(value)) if p.strip()]
+    out = []
+    for p in parts:
+        key = p.upper().replace(" ", "_").replace("-", "_")
+        if key in _SPEC_ENUMS:
+            mapped = _SPEC_ENUMS[key]
+            if mapped:
+                out.append(mapped)
+        elif _re.fullmatch(r"[A-Z0-9_]{2,}", p):
+            # unmapped SCREAMING_SNAKE constant — sentence-case it rather than
+            # leaking the constant, e.g. WATER_RESISTANT -> "Water resistant"
+            out.append(p.replace("_", " ").capitalize())
+        else:
+            out.append(p)
+    # Two different CJ enums can map to the same phrase (PURE_ELECTRIC and
+    # HAVE_BATTERY both mean "battery powered") — dedupe, keeping first order.
+    return ", ".join(dict.fromkeys(out))
+
+
 def _specs_html(specs: dict | None) -> str:
     """Render CJ's rich spec fields (fabric, package contents, weight, customs,
     supplier) as a 'Product Details' table appended to the PDP description. Only
@@ -598,9 +820,12 @@ def _specs_html(specs: dict | None) -> str:
     if not specs:
         return ""
     rows = [
-        ("Material", specs.get("material")),
-        ("Package contents", specs.get("packaging")),
-        ("Features", specs.get("properties")),
+        ("Material", _humanize_spec(specs.get("material"))),
+        # CJ's "packaging" is the packaging *material* ("Plastic bags"), not what
+        # is in the box — labelling it "Package contents" told shoppers the
+        # product was a bag of plastic.
+        ("Packaging", _humanize_spec(specs.get("packaging"))),
+        ("Features", _humanize_spec(specs.get("properties"))),
         ("Item weight", _weight_label(specs.get("product_weight_g"))),
         ("Package weight", _weight_label(specs.get("package_weight_g"))),
     ]
@@ -690,7 +915,7 @@ async def create_shopify_product(
         "title": title,
         # Marketing copy + a real spec table built from CJ's rich REST
         # fields (material/packaging/weight) that we used to discard.
-        "descriptionHtml": description + _specs_html(specs),
+        "descriptionHtml": strip_code_fences(description) + _specs_html(specs),
         "status": "ACTIVE",
     }
     if seo_title or seo_description:

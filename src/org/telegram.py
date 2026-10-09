@@ -847,8 +847,12 @@ async def _start_agent_callback_apps() -> list:
     main = _token()
     seen: set[str] = {main}
     apps: list = []
-    for name in ("Ava", "Sol", "Reel", "Nora", "Milo", "Kai", "Nova"):
-        token = os.environ.get(f"TELEGRAM_BOT_TOKEN_{name.upper()}", "").strip()
+    # Every TELEGRAM_BOT_TOKEN_<NAME> in the environment is a per-agent bot (Lia and any future
+    # agent included) — no hard-coded roster to forget to update.
+    per_agent = sorted(k[len("TELEGRAM_BOT_TOKEN_"):] for k in os.environ
+                       if k.startswith("TELEGRAM_BOT_TOKEN_") and k != "TELEGRAM_BOT_TOKEN")
+    for name in per_agent:
+        token = os.environ.get(f"TELEGRAM_BOT_TOKEN_{name}", "").strip()
         if not token or token in seen:
             continue
         seen.add(token)

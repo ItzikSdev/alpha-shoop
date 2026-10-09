@@ -45,6 +45,11 @@ falkordb>=1.0.0,<=1.2.0  # falkordb>=1.2.1 requires redis>=6.0, which breaks arq
 # generated HTML for a vision-model critique). Needs a one-time
 # `playwright install chromium` after pip install — not run automatically.
 playwright>=1.62.0
+# The PDP compliance suite must run in parallel to be usable (~3.5 min at
+# -n 4 vs ~35 min serially). Run it at -n 4, never higher: the Vite dev
+# server returns 500s and partial pages under 8 concurrent SSR renders,
+# which the suite reports as plausible-looking content bugs (7.D #38).
+pytest-xdist>=3.8.0
 
 # ── Task Queue ─────────────────────────────────────────────────────────────
 arq>=0.26.1
@@ -55,6 +60,7 @@ arq>=0.26.1
 # OpenCV Haar cascade that missed real cases (see image_person.py docstring).
 Pillow>=10.4.0
 mediapipe>=0.10.0
+google-genai>=1.0  # Reel product media: Gemini photos + Veo videos (src/video/gemini_images.py, veo_video.py)
 
 # ── Testing ────────────────────────────────────────────────────────────────
 pytest>=8.3.0

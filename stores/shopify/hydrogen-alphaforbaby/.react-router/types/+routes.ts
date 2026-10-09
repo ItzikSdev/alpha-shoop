@@ -113,6 +113,11 @@ type Pages = {
   "/blogs": {
     params: {};
   };
+  "/cdn-video/*": {
+    params: {
+      "*": string;
+    };
+  };
   "/account": {
     params: {};
   };
@@ -165,7 +170,7 @@ type Pages = {
 type RouteFiles = {
   "root.jsx": {
     id: "root";
-    page: "/" | "/blogs/:blogHandle/:articleHandle" | "/sitemap/:type/:page.xml" | "/blogs/:blogHandle" | "/admin/fix-collections" | "/collections/:handle" | "/pages/accessibility" | "/collections" | "/account/register" | "/account/recover" | "/policies/:handle" | "/products/:handle" | "/account/logout" | "/collections/all" | "/policies" | "/account/login" | "/account/login/google" | "/account/login/google/callback" | "/account/login/apple" | "/account/login/apple/callback" | "/account/reset" | "/discount/:code" | "/pages/about-us" | "/sitemap.xml" | "/pages/:handle" | "/pages/contact" | "/robots.txt" | "/blogs" | "/account" | "/account/orders" | "/account/orders/:id" | "/account/addresses" | "/account/profile" | "/account/*" | "/search" | "/cart" | "/cart/:lines" | "/*" | "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json";
+    page: "/" | "/blogs/:blogHandle/:articleHandle" | "/sitemap/:type/:page.xml" | "/blogs/:blogHandle" | "/admin/fix-collections" | "/collections/:handle" | "/pages/accessibility" | "/collections" | "/account/register" | "/account/recover" | "/policies/:handle" | "/products/:handle" | "/account/logout" | "/collections/all" | "/policies" | "/account/login" | "/account/login/google" | "/account/login/google/callback" | "/account/login/apple" | "/account/login/apple/callback" | "/account/reset" | "/discount/:code" | "/pages/about-us" | "/sitemap.xml" | "/pages/:handle" | "/pages/contact" | "/robots.txt" | "/blogs" | "/cdn-video/*" | "/account" | "/account/orders" | "/account/orders/:id" | "/account/addresses" | "/account/profile" | "/account/*" | "/search" | "/cart" | "/cart/:lines" | "/*" | "/graphiql" | "/subrequest-profiler" | "/.well-known/appspecific/com.chrome.devtools.json";
   };
   "routes/blogs.$blogHandle.$articleHandle.jsx": {
     id: "routes/blogs.$blogHandle.$articleHandle";
@@ -275,6 +280,10 @@ type RouteFiles = {
     id: "routes/blogs._index";
     page: "/blogs";
   };
+  "routes/cdn-video.$.jsx": {
+    id: "routes/cdn-video.$";
+    page: "/cdn-video/*";
+  };
   "routes/account.jsx": {
     id: "routes/account";
     page: "/account" | "/account/orders" | "/account/orders/:id" | "/account/addresses" | "/account/profile" | "/account/*";
@@ -374,6 +383,7 @@ type RouteModules = {
   "routes/pages.contact": typeof import("./app/routes/pages.contact.jsx");
   "routes/[robots.txt]": typeof import("./app/routes/[robots.txt].jsx");
   "routes/blogs._index": typeof import("./app/routes/blogs._index.jsx");
+  "routes/cdn-video.$": typeof import("./app/routes/cdn-video.$.jsx");
   "routes/account": typeof import("./app/routes/account.jsx");
   "routes/account.orders._index": typeof import("./app/routes/account.orders._index.jsx");
   "routes/account.orders.$id": typeof import("./app/routes/account.orders.$id.jsx");

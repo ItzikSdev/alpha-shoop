@@ -1,0 +1,118 @@
+{
+  "handle": "ergonomic-baby-hip-carrier",
+  "pixel_gate": "Itzik, 2026-09-21: the >=1000px Stage-1 check applies to the HERO image only. CJ publishes variant images at 800x800 max, so applying it here would have left the carrier and the domino with zero sellable variants. Sharpness (Laplacian >= 100), zero Chinese text and colour-must-match are unchanged and were enforced.",
+  "variants": [
+    {
+      "variant_id": 43185803264071,
+      "title": "Blue",
+      "previous_title": "Blue",
+      "image_url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/977502878523.jpg?v=1789053709",
+      "cj_source_url": "https://cf.cjdropshipping.com/20200521/977502878523.jpg",
+      "short_side": 480,
+      "width": 480,
+      "height": 480,
+      "laplacian_var": 104.26,
+      "cjk_chars": 0,
+      "vision_match": true,
+      "vision_answer": "The product is an ergonomic baby hip-seat carrier in blue, matching the variant name.",
+      "vision_colour_seen": "blue",
+      "shares_image_with": null
+    },
+    {
+      "variant_id": 43185803395143,
+      "title": "Blue & Cream",
+      "previous_title": "Breathable blue",
+      "image_url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/51949050913.jpg?v=1789053710",
+      "cj_source_url": "https://cf.cjdropshipping.com/20200923/51949050913.jpg",
+      "short_side": 800,
+      "width": 800,
+      "height": 800,
+      "laplacian_var": 216.2,
+      "cjk_chars": 0,
+      "vision_match": true,
+      "vision_answer": "The photo shows a breathable blue hip-seat carrier with cream mesh panels, matching the variant name.",
+      "vision_colour_seen": "blue and cream/off-white",
+      "shares_image_with": null
+    },
+    {
+      "variant_id": 43185803427911,
+      "title": "Pink Floral",
+      "previous_title": "Pink flower",
+      "image_url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/569768213553.jpg?v=1789053709",
+      "cj_source_url": "https://cf.cjdropshipping.com/20200923/569768213553.jpg",
+      "short_side": 800,
+      "width": 800,
+      "height": 800,
+      "laplacian_var": 198.04,
+      "cjk_chars": 0,
+      "vision_match": true,
+      "vision_answer": "The product is an ergonomic baby hip-seat carrier in pink with a floral flower pattern, matching the 'Pink flower' variant.",
+      "vision_colour_seen": "pink with floral pattern",
+      "shares_image_with": null
+    },
+    {
+      "variant_id": 43185803558983,
+      "title": "Navy & Cream",
+      "previous_title": "Breathable Dark blue",
+      "image_url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/7385946037545.jpg?v=1789053710",
+      "cj_source_url": "https://cf.cjdropshipping.com/20200923/7385946037545.jpg",
+      "short_side": 800,
+      "width": 800,
+      "height": 800,
+      "laplacian_var": 410.93,
+      "cjk_chars": 0,
+      "vision_match": true,
+      "vision_answer": "The photo shows a breathable dark blue hip-seat carrier matching the variant name.",
+      "vision_colour_seen": "Dark blue/navy with cream/beige accents",
+      "shares_image_with": null
+    },
+    {
+      "variant_id": 43185803690055,
+      "title": "Navy",
+      "previous_title": "Navy",
+      "image_url": "https://cdn.shopify.com/s/files/1/0686/0993/3383/files/927682396908.jpg?v=1789053709",
+      "cj_source_url": "https://cf.cjdropshipping.com/20200521/927682396908.jpg",
+      "short_side": 800,
+      "width": 800,
+      "height": 800,
+      "laplacian_var": 415.65,
+      "cjk_chars": 0,
+      "vision_match": true,
+      "vision_answer": "This is a navy ergonomic baby hip-seat carrier that matches the variant name.",
+      "vision_colour_seen": "Navy blue with grey mesh panels",
+      "shares_image_with": null
+    }
+  ],
+  "removed_variants": [
+    {
+      "title": "Green",
+      "reason": "soft image (Laplacian 89 < 100); wrong_colour: photo shows light blue, pale blue"
+    },
+    {
+      "title": "Claret",
+      "reason": "2 Chinese characters on the image"
+    },
+    {
+      "title": "Breathable powder",
+      "reason": "wrong_colour: photo shows pink and cream/white"
+    },
+    {
+      "title": "Blue Flower",
+      "reason": "2 Chinese characters on the image"
+    },
+    {
+      "title": "Green flower",
+      "reason": "2 Chinese characters on the image; wrong_colour: photo shows turquoise/light blue"
+    },
+    {
+      "title": "Powder",
+      "reason": "soft image (Laplacian 85 < 100); wrong_colour: photo shows coral pink, light gray"
+    },
+    {
+      "title": "Breathable Green",
+      "reason": "wrong_colour: photo shows Blue and cream/beige"
+    }
+  ],
+  "model": "alpha/worker-fast (anthropic/claude-haiku-4-5) via LiteLLM proxy",
+  "checked_at": "2026-09-21"
+}

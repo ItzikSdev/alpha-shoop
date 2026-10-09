@@ -9,6 +9,7 @@ const NAV: { path: string; icon: string; label: string; highlight?: boolean }[] 
   { path: '/', icon: '🏠', label: 'Overview' },
   { path: '/updates', icon: '📰', label: 'Updates', highlight: true },
   { path: '/company', icon: '🏢', label: 'The Company', highlight: true },
+  { path: '/office', icon: '🎮', label: '3D Office', highlight: true },
   { path: '/finance', icon: '💰', label: 'Finance', highlight: true },
   { path: '/integrations', icon: '🔌', label: 'Integrations' },
   { path: '/agent-logs', icon: '💬', label: 'Agent Logs' },

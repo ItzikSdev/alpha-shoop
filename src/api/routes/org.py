@@ -51,6 +51,63 @@ async def get_org() -> dict:
     return _company_payload()
 
 
+@router.get("/org/capabilities", summary="Per-agent connections: what's connected, what's missing (env names only)")
+async def get_org_capabilities(live: bool = True) -> list[dict]:
+    from src.org.capabilities import all_capabilities, with_live_checks
+    caps = all_capabilities()
+    return await with_live_checks(caps) if live else caps
+
+
+@router.get("/org/inbox", summary="'Needs you' — everything waiting on a human, one list")
+async def get_org_inbox() -> dict:
+    from src.org.inbox import build_inbox
+    from src.org.capabilities import with_live_checks
+    items = build_inbox()
+    for c in await with_live_checks([{"agent": "Lia", "ok": True, "not_connected": []}]):
+        for nc in c["not_connected"]:
+            items.append({"id": f"cap:Lia:{nc['tool']}", "kind": "connection", "decide": False,
+                          "title": f"Lia can't use {nc['tool']}", "agent": "Lia", "context": "connection",
+                          "status": "broken", "created_at": None, "summary": nc.get("error", ""),
+                          "body": "Set a fresh token (see src/social_mcp/README.md).", "media_url": "",
+                          "link": "", "error": None})
+    return {"items": items, "decide_count": sum(1 for i in items if i["decide"]), "count": len(items)}
+
+
+@router.post("/org/inbox/{item_id}/decide", summary="Approve / hold / send back an inbox item")
+async def post_org_inbox_decide(item_id: str, body: dict) -> dict:
+    decision = (body or {}).get("decision", "")
+    feedback = (body or {}).get("feedback", "")
+    kind, _, ref = item_id.partition(":")
+    if kind == "social":
+        from src.api.routes.social import decide_and_maybe_publish
+        return await decide_and_maybe_publish(ref, decision, "Itzik", feedback)
+    if kind == "proposal":
+        if decision == "approve":
+            return await approve_proposal(ref)
+        if decision == "reject":
+            return await reject_proposal(ref)
+        return {"note": "hold leaves a proposal pending"}
+    return {"error": f"{kind} items are informational — use instruct"}
+
+
+@router.post("/org/inbox/{item_id}/instruct", summary="Send an instruction about an inbox item to its agent")
+async def post_org_inbox_instruct(item_id: str, body: dict) -> dict:
+    text = ((body or {}).get("text") or "").strip()
+    if not text:
+        return {"error": "empty instruction"}
+    kind, _, ref = item_id.partition(":")
+    agent = (body or {}).get("agent") or ("Lia" if kind == "social" else "Ava")
+    if kind == "social":
+        from src.social_mcp import queue
+        queue.decide(ref, "reject", "Itzik", text)  # the instruction becomes the draft's feedback
+        task = f"Itzik sent back draft {ref} with this instruction: {text}. Revise it as a new draft."
+    else:
+        task = f"About '{item_id}': {text}"
+    from src.org.conversation import dispatch_to_agent
+    asyncio.create_task(dispatch_to_agent(name=agent, task=task, requested_by="Itzik"))
+    return {"sent_to": agent, "task": task}
+
+
 @router.get("/org/meetings", summary="Recent meetings + decisions")
 async def get_org_meetings(limit: int = 30) -> list[dict]:
     return [m.to_dict() for m in list_meetings(limit=limit)]
@@ -254,6 +311,9 @@ footer,.footer{border-top:1px solid var(--line);background:#fafafa;}
 
 @router.post("/org/apply-design", summary="Apply a clean TerminalX-style design to the live theme")
 async def apply_design() -> dict:
+    from src.org.design_lock import LOCKED, theme_writes_blocked
+    if theme_writes_blocked():
+        return {"error": LOCKED["error"]}
     import httpx
     from src.stores import list_stores
     stores = list_stores()

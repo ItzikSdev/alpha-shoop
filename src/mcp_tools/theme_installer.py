@@ -148,6 +148,10 @@ async def _install_theme_on_shopify(theme_config: dict) -> str | None:
     POST /themes.json with the GitHub ZIP URL.
     Returns the Shopify theme ID (numeric string) or None on failure.
     """
+    from src.org.design_lock import theme_writes_blocked
+    if theme_writes_blocked():
+        logger.warning("Theme install blocked: design lock is on")
+        return None
     try:
         result = await _shopify_rest(
             "POST",
@@ -174,6 +178,9 @@ async def _wait_for_theme_ready(theme_id: str, timeout_s: int = 120) -> bool:
     """
     Poll GET /themes/{id}.json until processing is complete, then publish it as main theme.
     """
+    from src.org.design_lock import theme_writes_blocked
+    if theme_writes_blocked():
+        return False
     for _ in range(timeout_s // 5):
         await asyncio.sleep(5)
         try:

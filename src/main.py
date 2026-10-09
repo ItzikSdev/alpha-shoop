@@ -15,6 +15,8 @@ from src.api.routes import org as org_router
 from src.api.routes import finance as finance_router
 from src.api.routes import videos as videos_router
 from src.api.routes import images as images_router
+from src.api.routes import social as social_router
+from src.api.routes import visitors as visitors_router
 from src.api.routes.agents import _daemon, _spawn_run
 from src.db.engine import create_tables
 from src.org.daemon import org_tick
@@ -400,7 +402,8 @@ app.add_middleware(
     # Also allow the dashboard served from a LAN IP (so a phone on the same Wi-Fi
     # can reach the API at http://<mac-lan-ip>:8000). Covers the common private
     # ranges on the dev ports; tighten/remove for production.
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+):(5173|3000|8000|8081)",
+    # platform.alpha-tech.live = home-WiFi-only name (Cloudflare DNS-only record → Mac's private LAN IP).
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|platform\.alpha-tech\.live)(:(5173|3000|8000|8081))?",
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -410,6 +413,8 @@ app.include_router(health.router, prefix="/api/v1", tags=["Health"])
 app.include_router(agents_router.router, prefix="/api/v1", tags=["Agents"])
 app.include_router(stores_router.router, prefix="/api/v1", tags=["Stores"])
 app.include_router(org_router.router, prefix="/api/v1", tags=["Organization"])
+app.include_router(social_router.router, prefix="/api/v1", tags=["Social"])
+app.include_router(visitors_router.router, prefix="/api/v1", tags=["Visitors"])
 app.include_router(finance_router.router, prefix="/api/v1", tags=["Finance"])
 app.include_router(videos_router.router, prefix="/api/v1", tags=["Videos"])
 app.include_router(images_router.router, prefix="/api/v1", tags=["Images"])

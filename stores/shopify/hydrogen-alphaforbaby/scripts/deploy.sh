@@ -55,7 +55,7 @@ npm ci --no-audit --no-fund
 npm run build
 
 # 4) deploy to Oxygen
-DEPLOY_FLAGS="--no-lockfile-check --force --env-branch main"   # production (live domain)
+DEPLOY_FLAGS="--no-lockfile-check --force --env-branch alphaforbaby/production"   # production (live domain) — "main" is NOT production (2026-09-25)
 if [ "$MODE" = "--preview" ]; then
   DEPLOY_FLAGS="--no-lockfile-check --force --preview"
   echo "▶ Deploying to Oxygen (PREVIEW)…"

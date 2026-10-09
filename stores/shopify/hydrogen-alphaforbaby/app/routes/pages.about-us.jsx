@@ -45,10 +45,10 @@ export default function AboutUs() {
           <div className="tob-about-values">
             <div className="tob-about-value">
               <span className="tob-about-value-icon" aria-hidden="true">🌿</span>
-              <h3>Organic &amp; safe</h3>
+              <h3>Safety first</h3>
               <p>
-                We prioritise organic cotton and non-toxic materials — gentle on delicate skin
-                from day one.
+                We prioritise safe, non-toxic materials and sturdy construction — chosen with
+                real babies and toddlers in mind.
               </p>
             </div>
             <div className="tob-about-value">

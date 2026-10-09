@@ -12,7 +12,7 @@ export const meta = ({data}) => {
     title: 'Products',
     titleTemplate: 'ALPHA FOR BABY — %s',
     description:
-      'Shop the full ALPHA FOR BABY collection — organic-cotton baby clothing and essentials.',
+      'Shop the full ALPHA FOR BABY collection — toys, carriers, sleep, bath, and outdoor essentials.',
     url: data?.url,
   });
 };

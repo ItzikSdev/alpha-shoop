@@ -69,6 +69,15 @@ AGENT_TOOL_GROUPS: dict[str, dict[str, list[str]]] = {
         # status="not_connected" instead of guessing a number.
         "analytics_reporting": ["get_clarity_report"],
     },
+    "Lia": {
+        # Real MCP (src/social_mcp/server.py over stdio, via src/org/social_agent.py).
+        # Drafts only; publish_approved refuses anything a human hasn't approved.
+        "social_meta": ["social_status", "recent_posts", "read_comments", "post_insights"],
+        "drafts": ["draft_post", "list_drafts", "publish_approved"],
+        "content": ["store_media", "store_videos", "reel_playbook", "make_reel"],
+        "research": ["ad_library_search", "web_social_search", "save_pattern", "social_playbook"],
+        "results": ["traffic_results", "clarity_report"],
+    },
     "Nova": {
         # create_ticket/close_ticket-only by charter — same authority every other
         # non-CEO agent has, no assign/ask_teammate/dispatch_to_agent. Read-only

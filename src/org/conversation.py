@@ -251,6 +251,8 @@ the message is about; do NOT funnel everything to the CEO. Use the EXACT role st
   tool loop — actually sources from CJ and pushes to Shopify himself.
 - "Video Producer" (Reel)    → ad video generation/status, product video ideas,
   the video review/approve-reject queue.
+- "Social Media Manager" (Lia) → organic posts on our Facebook Page / Instagram /
+  TikTok, content ideas, what our posts' numbers say, the social drafts queue.
 - "Customer Support" (Nora)  → customer emails/tickets, support inbox questions,
   refund/complaint handling status.
 - "Growth Marketing Analyst" (Kai) → TikTok Ads Manager data — spend, ROAS, CTR,
@@ -1318,6 +1320,8 @@ async def route_and_respond(message: str, author: str = "You",
                 reply = await _agent_act_design(agent, message, company)
             elif agent.role == "Video Producer":
                 reply = await _agent_act_video(agent, message, company)
+            elif agent.role == "Social Media Manager":
+                reply = await _agent_act_social(agent, message, company)
             elif agent.role == "Growth Marketing Analyst":
                 reply = await _agent_act_growth(agent, message, company)
             elif agent.role == "Nova":
@@ -1419,6 +1423,8 @@ async def dispatch_to_agent(name: str, task: str, requested_by: str = "Ava",
                 reply = await _agent_act_shopify(agent, message, company)
             elif agent.role == "Video Producer":
                 reply = await _agent_act_video(agent, message, company)
+            elif agent.role == "Social Media Manager":
+                reply = await _agent_act_social(agent, message, company)
             elif agent.role == "Growth Marketing Analyst":
                 reply = await _agent_act_growth(agent, message, company)
             elif agent.role == "Product Hunter":
@@ -1462,3 +1468,11 @@ async def dispatch_to_agent(name: str, task: str, requested_by: str = "Ava",
 # itself the moment it arrives — there is nothing left to poll.
 def two_way_enabled() -> bool:
     return telegram_enabled()
+
+
+async def _agent_act_social(agent: Agent, message: str, company) -> str:
+    """Lia ACTS: runs her real MCP tool loop (src/org/social_agent.py) and returns
+    her own closing report. She narrates her steps herself, so no extra roleplay."""
+    from src.org.social_agent import run_social_task
+    result = await run_social_task(message, narrate=False)
+    return str(result.get("final") or "(Lia finished without a closing report)")
